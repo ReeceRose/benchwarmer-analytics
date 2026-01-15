@@ -1,8 +1,10 @@
+using Benchwarmer.Data;
 using Benchwarmer.Api.Filters;
 using Benchwarmer.Ingestion.Jobs;
 using Benchwarmer.Ingestion.Services;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -17,6 +19,9 @@ try
         configuration.ReadFrom.Configuration(context.Configuration));
 
     builder.Services.AddOpenApi();
+
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     // Hangfire with in-memory storage (switch to PostgreSQL when DB is added)
     builder.Services.AddHangfire(config => config

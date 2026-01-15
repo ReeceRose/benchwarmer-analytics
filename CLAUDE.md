@@ -21,10 +21,10 @@ Benchwarmer Analytics is a hockey analytics platform for exploring NHL data, lin
 dotnet build server/
 
 # Run the API (from project root)
-dotnet run --project server/Benchwarmer.Api
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project server/Benchwarmer.Api
 
 # Run with hot reload
-dotnet watch run --project server/Benchwarmer.Api
+ASPNETCORE_ENVIRONMENT=Development dotnet watch run --project server/Benchwarmer.Api
 
 # Run all tests
 dotnet test server/

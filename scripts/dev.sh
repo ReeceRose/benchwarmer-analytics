@@ -71,8 +71,8 @@ cmd_migrate() {
 
     echo -e "${GREEN}Running Entity Framework migrations...${NC}"
     dotnet ef database update \
-        --project server/Benchwarmer.Data \
-        --startup-project server/Benchwarmer.Api
+        -p server/Benchwarmer.Data \
+        -s server/Benchwarmer.Api
     echo -e "${GREEN}Migrations applied successfully!${NC}"
 }
 
