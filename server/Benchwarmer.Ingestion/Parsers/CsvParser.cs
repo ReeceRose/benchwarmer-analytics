@@ -4,9 +4,9 @@ using CsvHelper.Configuration;
 
 namespace Benchwarmer.Ingestion.Parsers;
 
-public class SkaterCsvParser
+public static class CsvParser
 {
-  public static IEnumerable<SkaterRecord> Parse(string csvContent)
+  public static IEnumerable<T> Parse<T>(string csvContent)
   {
     using var reader = new StringReader(csvContent);
     using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -15,6 +15,6 @@ public class SkaterCsvParser
       HeaderValidated = null
     });
 
-    return [.. csv.GetRecords<SkaterRecord>()];
+    return [.. csv.GetRecords<T>()];
   }
 }

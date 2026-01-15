@@ -23,7 +23,7 @@ public class WeeklyBioSyncJob(
 
         if (result.Success && result.Content != null)
         {
-            var bios = PlayerBioCsvParser.Parse(result.Content);
+            var bios = CsvParser.Parse<PlayerBioRecord>(result.Content);
             var count = await _playerBioImporter.ImportAsync(bios);
 
             var duration = DateTime.UtcNow - startTime;

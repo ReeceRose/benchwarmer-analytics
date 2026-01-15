@@ -4,12 +4,12 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>00a1b353-899e-4f20-a2ac-f42cb6acc776</UserSecretsId>
+     <UserSecretsId>00a1b353-899e-4f20-a2ac-f42cb6acc776</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
-    <PackageReference Include="Hangfire.MemoryStorage" Version="1.8.1.2" />
+    <PackageReference Include="Hangfire.PostgreSql" Version="1.20.13" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

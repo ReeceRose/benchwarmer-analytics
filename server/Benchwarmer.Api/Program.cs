@@ -4,7 +4,7 @@ using Benchwarmer.Ingestion.Importers;
 using Benchwarmer.Ingestion.Jobs;
 using Benchwarmer.Ingestion.Services;
 using Hangfire;
-using Hangfire.MemoryStorage;
+using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -24,19 +24,22 @@ try
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-    // Hangfire with in-memory storage (switch to PostgreSQL when DB is added)
     builder.Services.AddHangfire(config => config
         .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
         .UseSimpleAssemblyNameTypeSerializer()
         .UseRecommendedSerializerSettings()
-        .UseMemoryStorage());
+        .UsePostgreSqlStorage(options =>
+            options.UseNpgsqlConnection(
+                builder.Configuration.GetConnectionString("DefaultConnection"))));
     builder.Services.AddHangfireServer();
 
     // Services
     builder.Services.AddHttpClient<MoneyPuckDownloader>();
     builder.Services.AddScoped<IngestionService>();
+    builder.Services.AddScoped<LineImporter>();
     builder.Services.AddScoped<SkaterImporter>();
     builder.Services.AddScoped<PlayerBioImporter>();
+    builder.Services.AddScoped<TeamImporter>();
     builder.Services.AddScoped<InitialSeedJob>();
     builder.Services.AddScoped<NightlySyncJob>();
     builder.Services.AddScoped<WeeklyBioSyncJob>();

@@ -8,8 +8,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<Team> Teams => Set<Team>();
   public DbSet<Player> Players => Set<Player>();
   public DbSet<SkaterSeason> SkaterSeasons => Set<SkaterSeason>();
+  public DbSet<TeamSeason> TeamSeasons => Set<TeamSeason>();
   public DbSet<LineCombination> LineCombinations => Set<LineCombination>();
-  public DbSet<IngestionLog> IngestionLogs => Set<IngestionLog>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -47,6 +47,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       e.HasIndex(s => new { s.Season, s.Team });
     });
 
+    // TeamSeason
+    modelBuilder.Entity<TeamSeason>(e =>
+    {
+      e.HasOne(t => t.Team)
+              .WithMany()
+              .HasForeignKey(t => t.TeamAbbreviation)
+              .HasPrincipalKey(t => t.Abbreviation);
+
+      e.HasIndex(t => new { t.TeamAbbreviation, t.Season, t.Situation }).IsUnique();
+      e.HasIndex(t => t.Season);
+    });
+
     // LineCombination
     modelBuilder.Entity<LineCombination>(e =>
     {
@@ -58,11 +70,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       e.HasIndex(l => new { l.Season, l.Team });
     });
 
-    // IngestionLog
-    modelBuilder.Entity<IngestionLog>(e =>
-    {
-      e.HasIndex(i => new { i.Dataset, i.Season });
-    });
   }
 
   private static string ToSnakeCase(string name)

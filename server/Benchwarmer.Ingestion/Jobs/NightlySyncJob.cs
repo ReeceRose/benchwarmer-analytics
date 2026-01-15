@@ -7,11 +7,15 @@ namespace Benchwarmer.Ingestion.Jobs;
 
 public class NightlySyncJob(
     MoneyPuckDownloader downloader,
+    LineImporter lineImporter,
     SkaterImporter skaterImporter,
+    TeamImporter teamImporter,
     ILogger<NightlySyncJob> logger)
 {
     private readonly MoneyPuckDownloader _downloader = downloader;
     private readonly SkaterImporter _skaterImporter = skaterImporter;
+    private readonly LineImporter _lineImporter = lineImporter;
+    private readonly TeamImporter _teamImporter = teamImporter;
     private readonly ILogger<NightlySyncJob> _logger = logger;
 
     private static readonly string[] Datasets = ["teams", "skaters", "lines"];
@@ -64,17 +68,28 @@ public class NightlySyncJob(
         return dataset switch
         {
             "skaters" => await ImportSkatersAsync(content),
-            // TODO: Add lines and teams importers
-            "lines" => 0,
-            "teams" => 0,
+            "lines" => await ImportLinesAsync(content),
+            "teams" => await ImportTeamAsync(content),
             _ => 0
         };
     }
 
     private async Task<int> ImportSkatersAsync(string csvContent)
     {
-        var records = SkaterCsvParser.Parse(csvContent);
+        var records = CsvParser.Parse<SkaterRecord>(csvContent);
         return await _skaterImporter.ImportAsync(records);
+    }
+
+    private async Task<int> ImportLinesAsync(string csvContent)
+    {
+        var records = CsvParser.Parse<LineRecord>(csvContent);
+        return await _lineImporter.ImportAsync(records);
+    }
+
+    private async Task<int> ImportTeamAsync(string csvContent)
+    {
+        var records = CsvParser.Parse<TeamRecord>(csvContent);
+        return await _teamImporter.ImportAsync(records);
     }
 
     private static int GetCurrentSeason()
