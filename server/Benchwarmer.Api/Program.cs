@@ -1,5 +1,6 @@
 using Benchwarmer.Data;
 using Benchwarmer.Api.Filters;
+using Benchwarmer.Ingestion.Importers;
 using Benchwarmer.Ingestion.Jobs;
 using Benchwarmer.Ingestion.Services;
 using Hangfire;
@@ -34,8 +35,11 @@ try
     // Services
     builder.Services.AddHttpClient<MoneyPuckDownloader>();
     builder.Services.AddScoped<IngestionService>();
+    builder.Services.AddScoped<SkaterImporter>();
+    builder.Services.AddScoped<PlayerBioImporter>();
     builder.Services.AddScoped<InitialSeedJob>();
     builder.Services.AddScoped<NightlySyncJob>();
+    builder.Services.AddScoped<WeeklyBioSyncJob>();
 
     var app = builder.Build();
 
@@ -57,6 +61,13 @@ try
         "0 9 * * *",
         new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
 
+    // Schedule weekly bio sync on Sundays at 5 AM EST (10 AM UTC)
+    RecurringJob.AddOrUpdate<WeeklyBioSyncJob>(
+        "weekly-bio-sync",
+        job => job.RunAsync(CancellationToken.None),
+        "0 10 * * 0",
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
     app.MapGet("/api/health", () => new { status = "healthy" })
         .WithName("HealthCheck");
 
@@ -75,6 +86,14 @@ try
         return new { message = "Nightly sync started", jobId };
     })
     .WithName("TriggerSync")
+    .AddEndpointFilter<ApiKeyFilter>();
+
+    app.MapPost("/api/admin/sync-bios", (WeeklyBioSyncJob job) =>
+    {
+        var jobId = BackgroundJob.Enqueue(() => job.RunAsync(CancellationToken.None));
+        return new { message = "Bio sync started", jobId };
+    })
+    .WithName("TriggerBioSync")
     .AddEndpointFilter<ApiKeyFilter>();
 
     app.Run();

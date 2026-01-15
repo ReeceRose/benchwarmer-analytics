@@ -1,23 +1,25 @@
+using Benchwarmer.Ingestion.Importers;
+using Benchwarmer.Ingestion.Parsers;
 using Benchwarmer.Ingestion.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Benchwarmer.Ingestion.Jobs;
 
-public class InitialSeedJob
+public class InitialSeedJob(
+    MoneyPuckDownloader downloader,
+    SkaterImporter skaterImporter,
+    PlayerBioImporter playerBioImporter,
+    ILogger<InitialSeedJob> logger)
 {
-    private readonly MoneyPuckDownloader _downloader;
-    private readonly ILogger<InitialSeedJob> _logger;
+    private readonly MoneyPuckDownloader _downloader = downloader;
+    private readonly SkaterImporter _skaterImporter = skaterImporter;
+    private readonly PlayerBioImporter _playerBioImporter = playerBioImporter;
+    private readonly ILogger<InitialSeedJob> _logger = logger;
 
     // MoneyPuck data starts from 2008
     private const int FirstSeason = 2008;
 
     private static readonly string[] Datasets = ["teams", "skaters", "lines"];
-
-    public InitialSeedJob(MoneyPuckDownloader downloader, ILogger<InitialSeedJob> logger)
-    {
-        _downloader = downloader;
-        _logger = logger;
-    }
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
@@ -30,12 +32,14 @@ public class InitialSeedJob
         // Download player bios first (not season-specific)
         _logger.LogInformation("Downloading player bios...");
         var biosResult = await _downloader.DownloadPlayerBiosAsync(cancellationToken);
-        if (biosResult.Success)
+        if (biosResult.Success && biosResult.Content != null)
         {
-            totalRecords += biosResult.RecordCount;
-            _logger.LogInformation("Player bios: {Count} records", biosResult.RecordCount);
+            var bios = PlayerBioCsvParser.Parse(biosResult.Content);
+            var count = await _playerBioImporter.ImportAsync(bios);
+            totalRecords += count;
+            _logger.LogInformation("Player bios: imported {Count} records", count);
         }
-        else
+        else if (!biosResult.Success)
         {
             _logger.LogWarning("Failed to download player bios: {Error}", biosResult.ErrorMessage);
         }
@@ -56,6 +60,7 @@ public class InitialSeedJob
                 var result = await DownloadDatasetAsync(dataset, season, cancellationToken);
                 if (result.Success)
                 {
+
                     totalRecords += result.RecordCount;
                 }
             }
@@ -78,16 +83,35 @@ public class InitialSeedJob
             _ => throw new ArgumentException($"Unknown dataset: {dataset}")
         };
 
-        if (result.Success)
+        if (result.Success && result.Content != null)
         {
-            _logger.LogInformation("  {Dataset} {Season}: {Count} records", dataset, season, result.RecordCount);
+            var importedCount = await ImportDatasetAsync(dataset, result.Content);
+            _logger.LogInformation("  {Dataset} {Season}: imported {Count} records", dataset, season, importedCount);
         }
-        else
+        else if (!result.Success)
         {
             _logger.LogWarning("  {Dataset} {Season}: failed - {Error}", dataset, season, result.ErrorMessage);
         }
 
         return result;
+    }
+
+    private async Task<int> ImportDatasetAsync(string dataset, string content)
+    {
+        return dataset switch
+        {
+            "skaters" => await ImportSkatersAsync(content),
+            // TODO: Add lines and teams importers
+            "lines" => 0,
+            "teams" => 0,
+            _ => 0
+        };
+    }
+
+    private async Task<int> ImportSkatersAsync(string csvContent)
+    {
+        var records = SkaterCsvParser.Parse(csvContent);
+        return await _skaterImporter.ImportAsync(records);
     }
 
     private static int GetCurrentSeason()
