@@ -11,6 +11,8 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.2" />
     <!-- Override vulnerable transitive dependency from Hangfire.PostgreSql -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- Align EF Core version with Benchwarmer.Data to avoid version conflict -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.2" />
   </ItemGroup>
 
   <PropertyGroup>
