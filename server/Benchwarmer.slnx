@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Benchwarmer.Api/Benchwarmer.Api.csproj" />
+  <Project Path="Benchwarmer.Data/Benchwarmer.Data.csproj" />
+  <Project Path="Benchwarmer.Ingestion/Benchwarmer.Ingestion.csproj" />
+  <Project Path="Benchwarmer.Tests/Benchwarmer.Tests.csproj" />
+</Solution>
