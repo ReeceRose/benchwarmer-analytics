@@ -107,26 +107,24 @@ Benchwarmer Analytics provides interactive tools for analyzing NHL player and li
    cd benchwarmer-analytics
    ```
 
-2. **Start the database**
+2. **Start PostgreSQL**
    ```bash
-   docker compose up -d postgres
+   ./scripts/dev.sh
    ```
 
-3. **Run database migrations**
+3. **Run database migrations** (after creating them in Phase 3)
    ```bash
-   dotnet ef database update --project server/Benchwarmer.Data --startup-project server/Benchwarmer.Api
+   ./scripts/dev.sh migrate
    ```
 
-4. **Start the API**
+4. **Start the API** (Terminal 1)
    ```bash
-   dotnet run --project server/Benchwarmer.Api
+   dotnet watch run --project server/Benchwarmer.Api --no-hot-reload
    ```
 
-5. **Start the frontend** (in a separate terminal)
+5. **Start the frontend** (Terminal 2)
    ```bash
-   cd client
-   npm install
-   npm run dev
+   cd client && npm run dev
    ```
 
 6. **Access the application**
@@ -135,13 +133,26 @@ Benchwarmer Analytics provides interactive tools for analyzing NHL player and li
    - Swagger: http://localhost:5000/swagger
    - Hangfire Dashboard: http://localhost:5000/hangfire
 
-### Running with Docker Compose
+### Development Script
 
-```bash
-docker compose up -d
-```
+Database and infrastructure tasks are handled by `./scripts/dev.sh`:
 
-This starts the full stack: PostgreSQL, API, and frontend.
+| Command | Description |
+|---------|-------------|
+| `./scripts/dev.sh` | Start PostgreSQL |
+| `./scripts/dev.sh stop` | Stop all Docker containers |
+| `./scripts/dev.sh migrate` | Apply EF Core database migrations |
+| `./scripts/dev.sh reset` | Drop and recreate databases (destroys data) |
+
+### Database Connection
+
+| Setting | Value |
+|---------|-------|
+| Host | `localhost` |
+| Port | `5432` |
+| Database | `benchwarmer` |
+| Username | `benchwarmer` |
+| Password | `benchwarmer` |
 
 ---
 

@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: benchwarmer-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Optional: API service for containerized development
+  # Uncomment to run the API in a container instead of locally
+  # api:
+  #   build:
+  #     context: ./server
+  #     dockerfile: Dockerfile
+  #   container_name: benchwarmer-api
+  #   ports:
+  #     - "5000:8080"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=benchwarmer;Username=benchwarmer;Password=benchwarmer
+  #     - ConnectionStrings__HangfireConnection=Host=postgres;Port=5432;Database=hangfire;Username=benchwarmer;Password=benchwarmer
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+
+volumes:
+  postgres_data:
