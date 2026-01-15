@@ -5,21 +5,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Benchwarmer.Ingestion.Jobs;
 
-public class WeeklyBioSyncJob
+public class WeeklyBioSyncJob(
+    MoneyPuckDownloader downloader,
+    PlayerBioImporter playerBioImporter,
+    ILogger<WeeklyBioSyncJob> logger)
 {
-    private readonly MoneyPuckDownloader _downloader;
-    private readonly PlayerBioImporter _playerBioImporter;
-    private readonly ILogger<WeeklyBioSyncJob> _logger;
-
-    public WeeklyBioSyncJob(
-        MoneyPuckDownloader downloader,
-        PlayerBioImporter playerBioImporter,
-        ILogger<WeeklyBioSyncJob> logger)
-    {
-        _downloader = downloader;
-        _playerBioImporter = playerBioImporter;
-        _logger = logger;
-    }
+    private readonly MoneyPuckDownloader _downloader = downloader;
+    private readonly PlayerBioImporter _playerBioImporter = playerBioImporter;
+    private readonly ILogger<WeeklyBioSyncJob> _logger = logger;
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {

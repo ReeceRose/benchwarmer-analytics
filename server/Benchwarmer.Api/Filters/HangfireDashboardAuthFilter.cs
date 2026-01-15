@@ -2,15 +2,10 @@ using Hangfire.Dashboard;
 
 namespace Benchwarmer.Api.Filters;
 
-public class HangfireDashboardAuthFilter : IDashboardAuthorizationFilter
+public class HangfireDashboardAuthFilter(IConfiguration configuration) : IDashboardAuthorizationFilter
 {
     private const string ApiKeyHeader = "X-API-Key";
-    private readonly string _configuredKey;
-
-    public HangfireDashboardAuthFilter(IConfiguration configuration)
-    {
-        _configuredKey = configuration["AdminApiKey"] ?? "";
-    }
+    private readonly string _configuredKey = configuration["AdminApiKey"] ?? "";
 
     public bool Authorize(DashboardContext context)
     {

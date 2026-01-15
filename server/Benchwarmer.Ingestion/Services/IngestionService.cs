@@ -2,18 +2,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Benchwarmer.Ingestion.Services;
 
-public class IngestionService
+public class IngestionService(
+    MoneyPuckDownloader downloader,
+    ILogger<IngestionService> logger)
 {
-    private readonly MoneyPuckDownloader _downloader;
-    private readonly ILogger<IngestionService> _logger;
-
-    public IngestionService(
-        MoneyPuckDownloader downloader,
-        ILogger<IngestionService> logger)
-    {
-        _downloader = downloader;
-        _logger = logger;
-    }
+    private readonly MoneyPuckDownloader _downloader = downloader;
+    private readonly ILogger<IngestionService> _logger = logger;
 
     public async Task<IngestionResult> RunIngestionAsync(string dataset, int? season)
     {

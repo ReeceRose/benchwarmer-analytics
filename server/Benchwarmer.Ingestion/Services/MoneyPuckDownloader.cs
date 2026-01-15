@@ -2,18 +2,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Benchwarmer.Ingestion.Services;
 
-public class MoneyPuckDownloader
+public class MoneyPuckDownloader(HttpClient httpClient, ILogger<MoneyPuckDownloader> logger)
 {
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<MoneyPuckDownloader> _logger;
+    private readonly HttpClient _httpClient = httpClient;
+    private readonly ILogger<MoneyPuckDownloader> _logger = logger;
 
     private const string BaseUrl = "https://moneypuck.com/moneypuck/playerData";
-
-    public MoneyPuckDownloader(HttpClient httpClient, ILogger<MoneyPuckDownloader> logger)
-    {
-        _httpClient = httpClient;
-        _logger = logger;
-    }
 
     public async Task<DownloadResult> DownloadSkatersAsync(int season, CancellationToken cancellationToken = default)
     {
