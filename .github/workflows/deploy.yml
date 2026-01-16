@@ -73,6 +73,7 @@ jobs:
         run: |
           dotnet tool install --global dotnet-ef
           dotnet restore server/
+          dotnet build server/ --no-restore
           dotnet ef database update --project server/Benchwarmer.Data --startup-project server/Benchwarmer.Api
         env:
           ConnectionStrings__DefaultConnection: ${{ secrets.NEON_CONNECTION_STRING }}
