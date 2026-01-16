@@ -9,7 +9,7 @@
       "value": "eastus2"
     },
     "appServiceSku": {
-      "value": "F1"
+      "value": "B1"
     }
   }
 }
