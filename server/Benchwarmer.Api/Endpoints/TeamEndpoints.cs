@@ -1,0 +1,214 @@
+using Benchwarmer.Api.Dtos;
+using Benchwarmer.Data.Repositories;
+
+namespace Benchwarmer.Api.Endpoints;
+
+public static class TeamEndpoints
+{
+    public static void MapTeamEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/teams")
+            .WithTags("Teams");
+
+        group.MapGet("/", GetAllTeams)
+            .WithName("GetAllTeams")
+            .WithSummary("Get all NHL teams");
+
+        group.MapGet("/{abbrev}", GetTeamByAbbrev)
+            .WithName("GetTeamByAbbrev")
+            .WithSummary("Get a team by abbreviation");
+
+        group.MapGet("/{abbrev}/roster", GetTeamRoster)
+            .WithName("GetTeamRoster")
+            .WithSummary("Get current roster for a team");
+
+        group.MapGet("/{abbrev}/lines", GetTeamLines)
+            .WithName("GetTeamLines")
+            .WithSummary("Get line combinations for a team");
+
+        group.MapGet("/{abbrev}/chemistry-matrix", GetChemistryMatrix)
+            .WithName("GetChemistryMatrix")
+            .WithSummary("Get player pair chemistry matrix for a team");
+    }
+
+    private static async Task<IResult> GetAllTeams(
+        ITeamRepository repository,
+        CancellationToken cancellationToken)
+    {
+        var teams = await repository.GetAllAsync(cancellationToken);
+        var dtos = teams.Select(t => new TeamDto(t.Id, t.Abbreviation, t.Name, t.Division, t.Conference)).ToList();
+        return Results.Ok(new TeamListDto(dtos));
+    }
+
+    private static async Task<IResult> GetTeamByAbbrev(
+        string abbrev,
+        ITeamRepository repository,
+        CancellationToken cancellationToken)
+    {
+        var team = await repository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+        return Results.Ok(new TeamDto(team.Id, team.Abbreviation, team.Name, team.Division, team.Conference));
+    }
+
+    private static async Task<IResult> GetTeamRoster(
+        string abbrev,
+        ITeamRepository teamRepository,
+        IPlayerRepository playerRepository,
+        CancellationToken cancellationToken)
+    {
+        var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+
+        var players = await playerRepository.GetByTeamAsync(abbrev, cancellationToken);
+
+        var dtos = players.Select(p => new PlayerDetailDto(
+            p.Id,
+            p.Name,
+            p.FirstName,
+            p.LastName,
+            p.Position,
+            p.CurrentTeamAbbreviation,
+            p.HeadshotUrl,
+            p.BirthDate,
+            p.HeightInches,
+            p.WeightLbs,
+            p.Shoots
+        )).ToList();
+
+        return Results.Ok(new RosterDto(abbrev, dtos));
+    }
+
+    private static readonly string[] ValidSituations = ["all", "5on5", "5on4", "4on5", "5on3", "3on5", "4on4", "3on3", "other"];
+    private static readonly string[] ValidLineTypes = ["forward", "defense"];
+    private static readonly string[] ValidSortFields = ["toi", "icetime", "gp", "gamesplayed", "gf", "goalsfor", "ga", "goalsagainst", "xgf", "xgoalsfor", "xgpct", "xgoalspct", "cf", "corsifor", "cfpct", "corsipct"];
+
+    private static async Task<IResult> GetTeamLines(
+        string abbrev,
+        int season,
+        string? situation,
+        string? lineType,
+        int? minToi,
+        string? sortBy,
+        string? sortDir,
+        int? page,
+        int? pageSize,
+        ITeamRepository teamRepository,
+        ILineRepository lineRepository,
+        CancellationToken cancellationToken)
+    {
+        // Validate situation
+        if (situation != null && !ValidSituations.Contains(situation.ToLowerInvariant()))
+        {
+            return Results.BadRequest(ApiError.InvalidSituation(ValidSituations));
+        }
+
+        // Validate lineType
+        if (lineType != null && !ValidLineTypes.Contains(lineType.ToLowerInvariant()))
+        {
+            return Results.BadRequest(ApiError.InvalidLineType(ValidLineTypes));
+        }
+
+        // Validate sortBy
+        if (sortBy != null && !ValidSortFields.Contains(sortBy.ToLowerInvariant()))
+        {
+            return Results.BadRequest(ApiError.InvalidSortField(ValidSortFields));
+        }
+
+        // Validate sortDir
+        var sortDescending = true;
+        if (sortDir != null)
+        {
+            if (sortDir.ToLowerInvariant() is not ("asc" or "desc"))
+            {
+                return Results.BadRequest(ApiError.InvalidSortDir);
+            }
+            sortDescending = sortDir.ToLowerInvariant() == "desc";
+        }
+
+        // Validate pagination
+        if ((page.HasValue && !pageSize.HasValue) || (!page.HasValue && pageSize.HasValue))
+        {
+            return Results.BadRequest(ApiError.InvalidPagination);
+        }
+        if (page.HasValue && page.Value < 1)
+        {
+            return Results.BadRequest(ApiError.InvalidPage);
+        }
+        if (pageSize.HasValue && (pageSize.Value < 1 || pageSize.Value > 100))
+        {
+            return Results.BadRequest(ApiError.InvalidPageSize);
+        }
+
+        var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+
+        var minToiSeconds = (minToi ?? 0) * 60;
+        var (lines, totalCount) = await lineRepository.GetByTeamAsync(
+            abbrev, season, situation, lineType, minToiSeconds, sortBy, sortDescending, page, pageSize, cancellationToken);
+
+        var dtos = lines.Select(l => new LineCombinationDto(
+            l.Id,
+            l.Season,
+            l.Team,
+            l.Situation,
+            new PlayerSummaryDto(l.Player1Id, l.Player1?.Name ?? "Unknown", l.Player1?.Position),
+            new PlayerSummaryDto(l.Player2Id, l.Player2?.Name ?? "Unknown", l.Player2?.Position),
+            l.Player3Id.HasValue
+                ? new PlayerSummaryDto(l.Player3Id.Value, l.Player3?.Name ?? "Unknown", l.Player3?.Position)
+                : null,
+            l.IceTimeSeconds,
+            l.GamesPlayed,
+            l.GoalsFor,
+            l.GoalsAgainst,
+            l.ExpectedGoalsPct,
+            l.CorsiPct
+        )).ToList();
+
+        int? totalPages = page.HasValue && pageSize.HasValue
+            ? (int)Math.Ceiling((double)totalCount / pageSize.Value)
+            : null;
+
+        return Results.Ok(new LineListDto(dtos, totalCount, page, pageSize, totalPages));
+    }
+
+    private static async Task<IResult> GetChemistryMatrix(
+        string abbrev,
+        int season,
+        string? situation,
+        ITeamRepository teamRepository,
+        ILineRepository lineRepository,
+        CancellationToken cancellationToken)
+    {
+        var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+
+        var pairs = await lineRepository.GetChemistryMatrixAsync(abbrev, season, situation, cancellationToken);
+
+        var dtos = pairs.Select(p => new ChemistryPairDto(
+            p.Player1Id,
+            p.Player1Name,
+            p.Player2Id,
+            p.Player2Name,
+            p.TotalIceTimeSeconds,
+            p.GamesPlayed,
+            p.GoalsFor,
+            p.GoalsAgainst,
+            p.ExpectedGoalsPct,
+            p.CorsiPct
+        )).ToList();
+
+        return Results.Ok(new ChemistryMatrixDto(abbrev, season, situation, dtos));
+    }
+}

@@ -1,16 +1,17 @@
 using Benchwarmer.Data;
 using Benchwarmer.Data.Entities;
+using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Parsers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Benchwarmer.Ingestion.Importers;
 
-public class TeamImporter(AppDbContext db, ILogger<TeamImporter> logger)
+public class TeamImporter(
+    AppDbContext db,
+    ITeamRepository teamRepository,
+    ILogger<TeamImporter> logger)
 {
-    private readonly AppDbContext _db = db;
-    private readonly ILogger<TeamImporter> _logger = logger;
-
     public async Task<int> ImportAsync(IEnumerable<TeamRecord> records)
     {
         var count = 0;
@@ -23,25 +24,17 @@ public class TeamImporter(AppDbContext db, ILogger<TeamImporter> logger)
         {
             var first = group.First();
 
-            // Upsert team
-            var team = await _db.Teams.FirstOrDefaultAsync(t => t.Abbreviation == first.Team);
-            if (team == null)
+            // Upsert team via repository
+            await teamRepository.UpsertAsync(new Team
             {
-                team = new Team
-                {
-                    Abbreviation = first.Team,
-                    Name = first.Name,
-                    CreatedAt = now,
-                    UpdatedAt = now
-                };
-                _db.Teams.Add(team);
-                await _db.SaveChangesAsync();
-            }
+                Abbreviation = first.Team,
+                Name = first.Name
+            });
 
-            // Upsert each season/situation record
+            // Upsert each season/situation record (TeamSeason - no repository yet)
             foreach (var record in group)
             {
-                var existing = await _db.TeamSeasons
+                var existing = await db.TeamSeasons
                     .FirstOrDefaultAsync(t =>
                         t.TeamAbbreviation == record.Team &&
                         t.Season == record.Season &&
@@ -49,7 +42,7 @@ public class TeamImporter(AppDbContext db, ILogger<TeamImporter> logger)
 
                 if (existing == null)
                 {
-                    _db.TeamSeasons.Add(MapToEntity(record, now));
+                    db.TeamSeasons.Add(MapToEntity(record, now));
                 }
                 else
                 {
@@ -60,8 +53,8 @@ public class TeamImporter(AppDbContext db, ILogger<TeamImporter> logger)
             }
         }
 
-        await _db.SaveChangesAsync();
-        _logger.LogInformation("Imported {Count} team season records", count);
+        await db.SaveChangesAsync();
+        logger.LogInformation("Imported {Count} team season records", count);
         return count;
     }
 
@@ -77,7 +70,6 @@ public class TeamImporter(AppDbContext db, ILogger<TeamImporter> logger)
             XGoalsPercentage = r.XGoalsPercentage,
             CorsiPercentage = r.CorsiPercentage,
             FenwickPercentage = r.FenwickPercentage,
-            // For stats
             XOnGoalFor = r.XOnGoalFor,
             XGoalsFor = r.XGoalsFor,
             XReboundsFor = r.XReboundsFor,
@@ -126,7 +118,6 @@ public class TeamImporter(AppDbContext db, ILogger<TeamImporter> logger)
             TotalShotCreditFor = r.TotalShotCreditFor,
             ScoreAdjustedTotalShotCreditFor = r.ScoreAdjustedTotalShotCreditFor,
             ScoreFlurryAdjustedTotalShotCreditFor = r.ScoreFlurryAdjustedTotalShotCreditFor,
-            // Against stats
             XOnGoalAgainst = r.XOnGoalAgainst,
             XGoalsAgainst = r.XGoalsAgainst,
             XReboundsAgainst = r.XReboundsAgainst,
@@ -187,7 +178,6 @@ public class TeamImporter(AppDbContext db, ILogger<TeamImporter> logger)
         e.XGoalsPercentage = r.XGoalsPercentage;
         e.CorsiPercentage = r.CorsiPercentage;
         e.FenwickPercentage = r.FenwickPercentage;
-        // For stats
         e.XOnGoalFor = r.XOnGoalFor;
         e.XGoalsFor = r.XGoalsFor;
         e.XReboundsFor = r.XReboundsFor;
@@ -236,7 +226,6 @@ public class TeamImporter(AppDbContext db, ILogger<TeamImporter> logger)
         e.TotalShotCreditFor = r.TotalShotCreditFor;
         e.ScoreAdjustedTotalShotCreditFor = r.ScoreAdjustedTotalShotCreditFor;
         e.ScoreFlurryAdjustedTotalShotCreditFor = r.ScoreFlurryAdjustedTotalShotCreditFor;
-        // Against stats
         e.XOnGoalAgainst = r.XOnGoalAgainst;
         e.XGoalsAgainst = r.XGoalsAgainst;
         e.XReboundsAgainst = r.XReboundsAgainst;

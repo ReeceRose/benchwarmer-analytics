@@ -1,4 +1,6 @@
 using Benchwarmer.Data;
+using Benchwarmer.Data.Repositories;
+using Benchwarmer.Api.Endpoints;
 using Benchwarmer.Api.Filters;
 using Benchwarmer.Ingestion.Importers;
 using Benchwarmer.Ingestion.Jobs;
@@ -32,6 +34,12 @@ try
             options.UseNpgsqlConnection(
                 builder.Configuration.GetConnectionString("DefaultConnection"))));
     builder.Services.AddHangfireServer();
+
+    // Repositories
+    builder.Services.AddScoped<ITeamRepository, TeamRepository>();
+    builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
+    builder.Services.AddScoped<ILineRepository, LineRepository>();
+    builder.Services.AddScoped<ISkaterStatsRepository, SkaterStatsRepository>();
 
     // Services
     builder.Services.AddHttpClient<MoneyPuckDownloader>();
@@ -70,6 +78,10 @@ try
         job => job.RunAsync(CancellationToken.None),
         "0 10 * * 0",
         new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+
+    app.MapTeamEndpoints();
+    app.MapPlayerEndpoints();
+    app.MapSeasonEndpoints();
 
     app.MapGet("/api/health", () => new { status = "healthy" })
         .WithName("HealthCheck");
