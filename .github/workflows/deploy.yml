@@ -123,7 +123,7 @@ jobs:
         working-directory: client
         run: npm run build
         env:
-          VITE_API_URL: https://benchwarmer-api.reecerose.com
+          VITE_API_URL: ${{ needs.deploy-infra.outputs.api-url }}
 
       - name: Deploy to Static Web App
         uses: Azure/static-web-apps-deploy@v1

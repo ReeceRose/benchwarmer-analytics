@@ -18,9 +18,6 @@ param corsOrigins array = []
 @description('Container image to deploy')
 param containerImage string
 
-@description('Custom domain for the API')
-param customDomain string = ''
-
 var containerAppEnvName = '${appName}-env'
 var containerAppName = '${appName}-api'
 var containerRegistryName = replace('${appName}acr', '-', '')
@@ -61,21 +58,9 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2023-05-01' = {
   }
 }
 
-// Managed certificate for custom domain (must be created before the Container App references it)
-resource managedCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2023-05-01' = if (!empty(customDomain)) {
-  name: 'cert-${replace(customDomain, '.', '-')}'
-  parent: containerAppEnv
-  location: location
-  properties: {
-    subjectName: customDomain
-    domainControlValidation: 'CNAME'
-  }
-}
-
 resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: containerAppName
   location: location
-  dependsOn: !empty(customDomain) ? [managedCertificate] : []
   properties: {
     managedEnvironmentId: containerAppEnv.id
     configuration: {
@@ -83,13 +68,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
         external: true
         targetPort: 8080
         transport: 'auto'
-        customDomains: !empty(customDomain) ? [
-          {
-            name: customDomain
-            certificateId: managedCertificate.id
-            bindingType: 'SniEnabled'
-          }
-        ] : []
+        // Custom domains managed manually via Azure Portal
         corsPolicy: {
           allowedOrigins: corsOrigins
           allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
