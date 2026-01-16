@@ -19,6 +19,7 @@ jobs:
   deploy-infra:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
+    environment: Production
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
       api-hostname: ${{ steps.deploy.outputs.apiHostName }}
@@ -49,6 +50,7 @@ jobs:
   deploy-api:
     name: Deploy API
     runs-on: ubuntu-latest
+    environment: Production
     needs: deploy-infra
 
     steps:
@@ -82,6 +84,7 @@ jobs:
   deploy-client:
     name: Deploy Client
     runs-on: ubuntu-latest
+    environment: Production
     needs: deploy-infra
 
     steps:
