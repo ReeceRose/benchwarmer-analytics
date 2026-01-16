@@ -18,6 +18,9 @@ param corsOrigins array = []
 @description('Container image to deploy')
 param containerImage string
 
+@description('Custom domain for the API')
+param customDomain string = ''
+
 var containerAppEnvName = '${appName}-env'
 var containerAppName = '${appName}-api'
 var containerRegistryName = replace('${appName}acr', '-', '')
@@ -144,6 +147,48 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
         ]
       }
     }
+  }
+}
+
+// Managed certificate for custom domain
+resource managedCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2023-05-01' = if (!empty(customDomain)) {
+  name: 'cert-${replace(customDomain, '.', '-')}'
+  parent: containerAppEnv
+  location: location
+  properties: {
+    subjectName: customDomain
+    domainControlValidation: 'CNAME'
+  }
+}
+
+// Custom domain binding
+resource customDomainBinding 'Microsoft.App/containerApps@2023-05-01' = if (!empty(customDomain)) {
+  name: containerApp.name
+  location: location
+  properties: {
+    managedEnvironmentId: containerAppEnv.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'auto'
+        customDomains: [
+          {
+            name: customDomain
+            certificateId: managedCertificate.id
+            bindingType: 'SniEnabled'
+          }
+        ]
+        corsPolicy: {
+          allowedOrigins: corsOrigins
+          allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+          allowedHeaders: ['*']
+        }
+      }
+      registries: containerApp.properties.configuration.registries
+      secrets: containerApp.properties.configuration.secrets
+    }
+    template: containerApp.properties.template
   }
 }
 

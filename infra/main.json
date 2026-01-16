@@ -1,0 +1,520 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.39.26.7824",
+      "templateHash": "15966338813309945832"
+    }
+  },
+  "parameters": {
+    "appName": {
+      "type": "string",
+      "defaultValue": "benchwarmer",
+      "metadata": {
+        "description": "Base name for all resources"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for resources"
+      }
+    },
+    "connectionString": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Database connection string"
+      }
+    },
+    "apiKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "API key for admin endpoints"
+      }
+    },
+    "customDomain": {
+      "type": "string",
+      "defaultValue": "https://benchwarmer.reecerose.com",
+      "metadata": {
+        "description": "Custom domain for the frontend"
+      }
+    },
+    "apiCustomDomain": {
+      "type": "string",
+      "defaultValue": "benchwarmer-api.reecerose.com",
+      "metadata": {
+        "description": "Custom domain for the API"
+      }
+    },
+    "containerImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+      "metadata": {
+        "description": "Container image to deploy (set by CI/CD)"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "staticWebApp",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "appName": {
+            "value": "[parameters('appName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "apiUrl": {
+            "value": ""
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "4065741859741132083"
+            }
+          },
+          "parameters": {
+            "appName": {
+              "type": "string",
+              "metadata": {
+                "description": "Base name for resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for resources"
+              }
+            },
+            "apiUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "Backend API URL for proxying"
+              }
+            }
+          },
+          "variables": {
+            "staticWebAppName": "[format('{0}-client', parameters('appName'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/staticSites",
+              "apiVersion": "2023-12-01",
+              "name": "[variables('staticWebAppName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Free",
+                "tier": "Free"
+              },
+              "properties": {
+                "stagingEnvironmentPolicy": "Enabled",
+                "allowConfigFileUpdates": true,
+                "buildProperties": {
+                  "appLocation": "client",
+                  "outputLocation": "dist"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Web/staticSites/config",
+              "apiVersion": "2023-12-01",
+              "name": "[format('{0}/{1}', variables('staticWebAppName'), 'appsettings')]",
+              "properties": {
+                "API_URL": "[parameters('apiUrl')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/staticSites', variables('staticWebAppName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "staticWebAppName": {
+              "type": "string",
+              "value": "[variables('staticWebAppName')]"
+            },
+            "staticWebAppHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/staticSites', variables('staticWebAppName')), '2023-12-01').defaultHostname]"
+            },
+            "staticWebAppUrl": {
+              "type": "string",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/staticSites', variables('staticWebAppName')), '2023-12-01').defaultHostname)]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "containerApp",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "appName": {
+            "value": "[parameters('appName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "connectionString": {
+            "value": "[parameters('connectionString')]"
+          },
+          "apiKey": {
+            "value": "[parameters('apiKey')]"
+          },
+          "containerImage": {
+            "value": "[parameters('containerImage')]"
+          },
+          "customDomain": {
+            "value": "[parameters('apiCustomDomain')]"
+          },
+          "corsOrigins": {
+            "value": [
+              "[reference(resourceId('Microsoft.Resources/deployments', 'staticWebApp'), '2025-04-01').outputs.staticWebAppUrl.value]",
+              "[parameters('customDomain')]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.39.26.7824",
+              "templateHash": "11308488894399476295"
+            }
+          },
+          "parameters": {
+            "appName": {
+              "type": "string",
+              "metadata": {
+                "description": "Base name for resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for resources"
+              }
+            },
+            "connectionString": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Database connection string"
+              }
+            },
+            "apiKey": {
+              "type": "securestring",
+              "metadata": {
+                "description": "API key for admin endpoints"
+              }
+            },
+            "corsOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Allowed CORS origins array"
+              }
+            },
+            "containerImage": {
+              "type": "string",
+              "metadata": {
+                "description": "Container image to deploy"
+              }
+            },
+            "customDomain": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Custom domain for the API"
+              }
+            }
+          },
+          "variables": {
+            "containerAppEnvName": "[format('{0}-env', parameters('appName'))]",
+            "containerAppName": "[format('{0}-api', parameters('appName'))]",
+            "containerRegistryName": "[replace(format('{0}acr', parameters('appName')), '-', '')]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerRegistry/registries",
+              "apiVersion": "2023-07-01",
+              "name": "[variables('containerRegistryName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Basic"
+              },
+              "properties": {
+                "adminUserEnabled": true
+              }
+            },
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2022-10-01",
+              "name": "[format('{0}-logs', parameters('appName'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30
+              }
+            },
+            {
+              "type": "Microsoft.App/managedEnvironments",
+              "apiVersion": "2023-05-01",
+              "name": "[variables('containerAppEnvName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "appLogsConfiguration": {
+                  "destination": "log-analytics",
+                  "logAnalyticsConfiguration": {
+                    "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-logs', parameters('appName'))), '2022-10-01').customerId]",
+                    "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-logs', parameters('appName'))), '2022-10-01').primarySharedKey]"
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', format('{0}-logs', parameters('appName')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2023-05-01",
+              "name": "[variables('containerAppName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('containerAppEnvName'))]",
+                "configuration": {
+                  "ingress": {
+                    "external": true,
+                    "targetPort": 8080,
+                    "transport": "auto",
+                    "corsPolicy": {
+                      "allowedOrigins": "[parameters('corsOrigins')]",
+                      "allowedMethods": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "OPTIONS"
+                      ],
+                      "allowedHeaders": [
+                        "*"
+                      ]
+                    }
+                  },
+                  "registries": [
+                    {
+                      "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('containerRegistryName')), '2023-07-01').loginServer]",
+                      "username": "[listCredentials(resourceId('Microsoft.ContainerRegistry/registries', variables('containerRegistryName')), '2023-07-01').username]",
+                      "passwordSecretRef": "registry-password"
+                    }
+                  ],
+                  "secrets": [
+                    {
+                      "name": "registry-password",
+                      "value": "[listCredentials(resourceId('Microsoft.ContainerRegistry/registries', variables('containerRegistryName')), '2023-07-01').passwords[0].value]"
+                    },
+                    {
+                      "name": "connection-string",
+                      "value": "[parameters('connectionString')]"
+                    },
+                    {
+                      "name": "api-key",
+                      "value": "[parameters('apiKey')]"
+                    }
+                  ]
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "api",
+                      "image": "[parameters('containerImage')]",
+                      "resources": {
+                        "cpu": "[json('0.5')]",
+                        "memory": "1Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "ASPNETCORE_ENVIRONMENT",
+                          "value": "Production"
+                        },
+                        {
+                          "name": "ConnectionStrings__DefaultConnection",
+                          "secretRef": "connection-string"
+                        },
+                        {
+                          "name": "Admin__ApiKey",
+                          "secretRef": "api-key"
+                        },
+                        {
+                          "name": "Cors__AllowedOrigins__0",
+                          "value": "[if(greater(length(parameters('corsOrigins')), 0), parameters('corsOrigins')[0], '')]"
+                        },
+                        {
+                          "name": "Cors__AllowedOrigins__1",
+                          "value": "[if(greater(length(parameters('corsOrigins')), 1), parameters('corsOrigins')[1], '')]"
+                        }
+                      ]
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": 0,
+                    "maxReplicas": 3,
+                    "rules": [
+                      {
+                        "name": "http-scale",
+                        "http": {
+                          "metadata": {
+                            "concurrentRequests": "100"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.App/managedEnvironments', variables('containerAppEnvName'))]",
+                "[resourceId('Microsoft.ContainerRegistry/registries', variables('containerRegistryName'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('customDomain')))]",
+              "type": "Microsoft.App/managedEnvironments/managedCertificates",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}/{1}', variables('containerAppEnvName'), format('cert-{0}', replace(parameters('customDomain'), '.', '-')))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "subjectName": "[parameters('customDomain')]",
+                "domainControlValidation": "CNAME"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.App/managedEnvironments', variables('containerAppEnvName'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('customDomain')))]",
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2023-05-01",
+              "name": "[variables('containerAppName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('containerAppEnvName'))]",
+                "configuration": {
+                  "ingress": {
+                    "external": true,
+                    "targetPort": 8080,
+                    "transport": "auto",
+                    "customDomains": [
+                      {
+                        "name": "[parameters('customDomain')]",
+                        "certificateId": "[resourceId('Microsoft.App/managedEnvironments/managedCertificates', variables('containerAppEnvName'), format('cert-{0}', replace(parameters('customDomain'), '.', '-')))]",
+                        "bindingType": "SniEnabled"
+                      }
+                    ],
+                    "corsPolicy": {
+                      "allowedOrigins": "[parameters('corsOrigins')]",
+                      "allowedMethods": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "OPTIONS"
+                      ],
+                      "allowedHeaders": [
+                        "*"
+                      ]
+                    }
+                  },
+                  "registries": "[reference(resourceId('Microsoft.App/containerApps', variables('containerAppName')), '2023-05-01').configuration.registries]",
+                  "secrets": "[reference(resourceId('Microsoft.App/containerApps', variables('containerAppName')), '2023-05-01').configuration.secrets]"
+                },
+                "template": "[reference(resourceId('Microsoft.App/containerApps', variables('containerAppName')), '2023-05-01').template]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.App/containerApps', variables('containerAppName'))]",
+                "[resourceId('Microsoft.App/managedEnvironments', variables('containerAppEnvName'))]",
+                "[resourceId('Microsoft.App/managedEnvironments/managedCertificates', variables('containerAppEnvName'), format('cert-{0}', replace(parameters('customDomain'), '.', '-')))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "containerAppName": {
+              "type": "string",
+              "value": "[variables('containerAppName')]"
+            },
+            "containerAppUrl": {
+              "type": "string",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', variables('containerAppName')), '2023-05-01').configuration.ingress.fqdn)]"
+            },
+            "containerRegistryName": {
+              "type": "string",
+              "value": "[variables('containerRegistryName')]"
+            },
+            "containerRegistryLoginServer": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('containerRegistryName')), '2023-07-01').loginServer]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'staticWebApp')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "apiUrl": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerApp'), '2025-04-01').outputs.containerAppUrl.value]"
+    },
+    "clientUrl": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'staticWebApp'), '2025-04-01').outputs.staticWebAppUrl.value]"
+    },
+    "clientHostName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'staticWebApp'), '2025-04-01').outputs.staticWebAppHostName.value]"
+    },
+    "staticWebAppName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'staticWebApp'), '2025-04-01').outputs.staticWebAppName.value]"
+    },
+    "containerRegistryName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerApp'), '2025-04-01').outputs.containerRegistryName.value]"
+    },
+    "containerRegistryLoginServer": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerApp'), '2025-04-01').outputs.containerRegistryLoginServer.value]"
+    },
+    "containerAppName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerApp'), '2025-04-01').outputs.containerAppName.value]"
+    }
+  }
+}
