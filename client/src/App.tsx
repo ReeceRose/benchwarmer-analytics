@@ -1,37 +1,30 @@
-import { useEffect, useState } from 'react'
-import './App.css'
-import { apiPath } from './config'
-
-type HealthStatus = {
-  status: 'loading' | 'healthy' | 'error'
-  message?: string
-}
-
 function App() {
-  const [health, setHealth] = useState<HealthStatus>({ status: 'loading' })
-
-  useEffect(() => {
-    fetch(apiPath('/api/health'))
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then(() => setHealth({ status: 'healthy' }))
-      .catch((err) => setHealth({ status: 'error', message: err.message }))
-  }, [])
-
   return (
-    <div className="app">
-      <h1>Benchwarmer Analytics</h1>
-      <div className="health-check">
-        <h2>API Status</h2>
-        {health.status === 'loading' && <p>Checking API connection...</p>}
-        {health.status === 'healthy' && (
-          <p className="status-healthy">✓ API is healthy</p>
-        )}
-        {health.status === 'error' && (
-          <p className="status-error">✗ API error: {health.message}</p>
-        )}
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-8">
+      <div className="text-center space-y-6 max-w-md">
+        <img src="/logo.svg" alt="Benchwarmer Analytics" className="w-24 h-24 mx-auto" />
+        <h1 className="text-4xl font-bold tracking-tight">
+          Benchwarmer Analytics
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          A personal research project exploring NHL data and analytics.
+        </p>
+        <p className="text-muted-foreground text-sm">
+          Coming soon.
+        </p>
+        <div className="pt-8 border-t border-border">
+          <p className="text-sm text-muted-foreground">
+            Data provided by{' '}
+            <a
+              href="https://moneypuck.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground transition-colors"
+            >
+              MoneyPuck
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   )
