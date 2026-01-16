@@ -37,4 +37,3 @@ resource staticWebAppSettings 'Microsoft.Web/staticSites/config@2023-12-01' = {
 output staticWebAppName string = staticWebApp.name
 output staticWebAppHostName string = staticWebApp.properties.defaultHostname
 output staticWebAppUrl string = 'https://${staticWebApp.properties.defaultHostname}'
-output deploymentToken string = staticWebApp.listSecrets().properties.apiKey

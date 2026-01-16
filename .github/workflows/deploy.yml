@@ -24,7 +24,7 @@ jobs:
     outputs:
       api-hostname: ${{ steps.deploy.outputs.apiHostName }}
       client-hostname: ${{ steps.deploy.outputs.clientHostName }}
-      swa-token: ${{ steps.deploy.outputs.staticWebAppDeploymentToken }}
+      swa-token: ${{ steps.get-swa-token.outputs.token }}
 
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +46,16 @@ jobs:
             connectionString="${{ secrets.NEON_CONNECTION_STRING }}"
             apiKey="${{ secrets.API_KEY }}"
           failOnStdErr: false
+
+      - name: Get SWA Deployment Token
+        id: get-swa-token
+        run: |
+          TOKEN=$(az staticwebapp secrets list \
+            --name ${{ steps.deploy.outputs.staticWebAppName }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "properties.apiKey" -o tsv)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
 
   deploy-api:
     name: Deploy API

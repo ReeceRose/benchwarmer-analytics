@@ -50,4 +50,4 @@ output apiUrl string = appService.outputs.webAppUrl
 output apiHostName string = appService.outputs.webAppHostName
 output clientUrl string = staticWebApp.outputs.staticWebAppUrl
 output clientHostName string = staticWebApp.outputs.staticWebAppHostName
-output staticWebAppDeploymentToken string = staticWebApp.outputs.deploymentToken
+output staticWebAppName string = staticWebApp.outputs.staticWebAppName
