@@ -116,7 +116,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               secretRef: 'connection-string'
             }
             {
-              name: 'Admin__ApiKey'
+              name: 'AdminApiKey'
               secretRef: 'api-key'
             }
             {
