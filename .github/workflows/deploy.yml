@@ -12,7 +12,6 @@ concurrency:
 
 env:
   AZURE_RESOURCE_GROUP: benchwarmer-rg
-  DOTNET_VERSION: '10.0.x'
   NODE_VERSION: '22'
 
 jobs:
@@ -22,9 +21,11 @@ jobs:
     environment: Production
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
-      api-hostname: ${{ steps.deploy.outputs.apiHostName }}
-      client-hostname: ${{ steps.deploy.outputs.clientHostName }}
+      api-url: ${{ steps.deploy.outputs.apiUrl }}
       swa-token: ${{ steps.get-swa-token.outputs.token }}
+      acr-login-server: ${{ steps.deploy.outputs.containerRegistryLoginServer }}
+      acr-name: ${{ steps.deploy.outputs.containerRegistryName }}
+      container-app-name: ${{ steps.deploy.outputs.containerAppName }}
 
     steps:
       - uses: actions/checkout@v4
@@ -50,10 +51,7 @@ jobs:
       - name: Get SWA Deployment Token
         id: get-swa-token
         run: |
-          TOKEN=$(az staticwebapp secrets list \
-            --name ${{ steps.deploy.outputs.staticWebAppName }} \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --query "properties.apiKey" -o tsv)
+          TOKEN=$(az staticwebapp secrets list --name ${{ steps.deploy.outputs.staticWebAppName }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.apiKey" -o tsv)
           echo "::add-mask::$TOKEN"
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
 
@@ -66,30 +64,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Restore dependencies
-        run: dotnet restore server/
-
-      - name: Build
-        run: dotnet build server/ --no-restore --configuration Release
-
-      - name: Publish
-        run: dotnet publish server/Benchwarmer.Api --configuration Release --output ./publish
-
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy to App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: benchwarmer-api
-          package: ./publish
+      - name: Login to ACR
+        run: az acr login --name ${{ needs.deploy-infra.outputs.acr-name }}
+
+      - name: Build and push image
+        run: |
+          IMAGE=${{ needs.deploy-infra.outputs.acr-login-server }}/benchwarmer-api:${{ github.sha }}
+          docker build -t $IMAGE -f server/Benchwarmer.Api/Dockerfile server/
+          docker push $IMAGE
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name ${{ needs.deploy-infra.outputs.container-app-name }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image ${{ needs.deploy-infra.outputs.acr-login-server }}/benchwarmer-api:${{ github.sha }}
 
   deploy-client:
     name: Deploy Client

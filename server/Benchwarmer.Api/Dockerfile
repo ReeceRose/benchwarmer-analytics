@@ -1,0 +1,22 @@
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS base
+WORKDIR /app
+EXPOSE 8080
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+WORKDIR /src
+COPY ["Benchwarmer.Api/Benchwarmer.Api.csproj", "Benchwarmer.Api/"]
+COPY ["Benchwarmer.Data/Benchwarmer.Data.csproj", "Benchwarmer.Data/"]
+COPY ["Benchwarmer.Ingestion/Benchwarmer.Ingestion.csproj", "Benchwarmer.Ingestion/"]
+RUN dotnet restore "Benchwarmer.Api/Benchwarmer.Api.csproj"
+COPY . .
+WORKDIR "/src/Benchwarmer.Api"
+RUN dotnet build -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENV ASPNETCORE_URLS=http://+:8080
+ENTRYPOINT ["dotnet", "Benchwarmer.Api.dll"]

@@ -7,9 +7,6 @@
     },
     "location": {
       "value": "eastus2"
-    },
-    "appServiceSku": {
-      "value": "B1"
     }
   }
 }
