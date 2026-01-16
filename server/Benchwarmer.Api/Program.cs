@@ -23,6 +23,18 @@ try
 
     builder.Services.AddOpenApi();
 
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                ?? ["http://localhost:5173"];
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+    });
+
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -58,6 +70,8 @@ try
     {
         app.MapOpenApi();
     }
+
+    app.UseCors();
 
     // Hangfire dashboard at /hangfire (secured in non-dev environments)
     app.UseHangfireDashboard("/hangfire", new DashboardOptions

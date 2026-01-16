@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import { apiPath } from './config'
 
 type HealthStatus = {
   status: 'loading' | 'healthy' | 'error'
@@ -10,7 +11,7 @@ function App() {
   const [health, setHealth] = useState<HealthStatus>({ status: 'loading' })
 
   useEffect(() => {
-    fetch('/api/health')
+    fetch(apiPath('/api/health'))
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
