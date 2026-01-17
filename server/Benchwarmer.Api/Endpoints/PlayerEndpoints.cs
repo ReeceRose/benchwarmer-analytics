@@ -1,5 +1,6 @@
 using Benchwarmer.Api.Dtos;
 using Benchwarmer.Data.Repositories;
+using Microsoft.AspNetCore.Http;
 
 namespace Benchwarmer.Api.Endpoints;
 
@@ -12,23 +13,64 @@ public static class PlayerEndpoints
 
         group.MapGet("/", SearchPlayers)
             .WithName("SearchPlayers")
-            .WithSummary("Search for players by name");
+            .WithSummary("Search for players by name")
+            .WithDescription("""
+                Search for players by name. Returns matching players with basic info (ID, name, position, team).
+
+                **Query Parameters:**
+                - `q`: Search query (required) - matches against player names
+                - `page`/`pageSize`: Pagination (both required together, max pageSize is 100)
+                """)
+            .Produces<PlayerSearchResultDto>()
+            .Produces(StatusCodes.Status400BadRequest);
 
         group.MapGet("/compare", ComparePlayers)
             .WithName("ComparePlayers")
-            .WithSummary("Compare multiple players' stats");
+            .WithSummary("Compare multiple players' stats")
+            .WithDescription("""
+                Compare statistics for multiple players side-by-side. Useful for radar chart comparisons.
+
+                **Query Parameters:**
+                - `ids`: Comma-separated player IDs (required, 2-5 players)
+                - `season`: Filter to specific season
+                - `situation`: Game situation filter (5on5, all, etc.)
+                """)
+            .Produces<PlayerComparisonResultDto>()
+            .Produces(StatusCodes.Status400BadRequest);
 
         group.MapGet("/{id:int}", GetPlayerById)
             .WithName("GetPlayerById")
-            .WithSummary("Get a player by ID");
+            .WithSummary("Get a player by ID")
+            .WithDescription("Returns detailed player information including biographical data, headshot URL, and current team.")
+            .Produces<PlayerDetailDto>()
+            .Produces(StatusCodes.Status404NotFound);
 
         group.MapGet("/{id:int}/stats", GetPlayerStats)
             .WithName("GetPlayerStats")
-            .WithSummary("Get statistics for a player");
+            .WithSummary("Get statistics for a player")
+            .WithDescription("""
+                Returns player statistics including goals, assists, shots, expected goals, Corsi%, and Fenwick%.
+
+                **Query Parameters:**
+                - `season`: Filter to specific season (e.g., 2024)
+                - `situation`: Game situation filter (5on5, 5on4, 4on5, all)
+
+                Returns stats broken down by season, team, and situation.
+                """)
+            .Produces<PlayerStatsDto>()
+            .Produces(StatusCodes.Status404NotFound);
 
         group.MapGet("/{id:int}/linemates", GetPlayerLinemates)
             .WithName("GetPlayerLinemates")
-            .WithSummary("Get linemate history for a player");
+            .WithSummary("Get linemate history for a player")
+            .WithDescription("""
+                Returns all players this player has shared ice time with, aggregated across line combinations.
+
+                Shows total ice time, games played, goals for/against, and expected goals % with each linemate.
+                Sorted by total ice time together (descending).
+                """)
+            .Produces<LinemateHistoryDto>()
+            .Produces(StatusCodes.Status404NotFound);
     }
 
     private static async Task<IResult> SearchPlayers(

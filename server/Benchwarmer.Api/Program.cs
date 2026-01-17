@@ -8,6 +8,7 @@ using Benchwarmer.Ingestion.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -21,7 +22,42 @@ try
     builder.Host.UseSerilog((context, configuration) =>
         configuration.ReadFrom.Configuration(context.Configuration));
 
-    builder.Services.AddOpenApi();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "Benchwarmer Analytics API",
+            Version = "v1",
+            Description = """
+                Hockey analytics API for exploring NHL data, line combinations, and player performance.
+
+                **Data Sources:**
+                - Player statistics and line combinations from [MoneyPuck.com](https://moneypuck.com)
+                - Player biographical data from [NHL.com](https://nhl.com)
+
+                *"Analysis from the cheap seats"*
+                """,
+            Contact = new OpenApiContact
+            {
+                Name = "Reece Rose",
+                Url = new Uri("https://reecerose.com")
+            },
+            License = new OpenApiLicense
+            {
+                Name = "MIT",
+                Url = new Uri("https://opensource.org/licenses/MIT")
+            }
+        });
+
+        options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey,
+            In = ParameterLocation.Header,
+            Name = "X-Api-Key",
+            Description = "API key required for admin endpoints"
+        });
+    });
 
     builder.Services.AddCors(options =>
     {
@@ -66,9 +102,17 @@ try
 
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment())
+    // Swagger UI always available in development, optionally in production via config
+    if (app.Environment.IsDevelopment() ||
+        builder.Configuration.GetValue<bool>("EnableSwagger"))
     {
-        app.MapOpenApi();
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Benchwarmer Analytics API v1");
+            options.RoutePrefix = "swagger";
+            options.DocumentTitle = "Benchwarmer Analytics API";
+        });
     }
 
     app.UseCors();
@@ -98,15 +142,23 @@ try
     app.MapSeasonEndpoints();
 
     app.MapGet("/api/health", () => new { status = "healthy" })
-        .WithName("HealthCheck");
+        .WithName("HealthCheck")
+        .WithTags("System")
+        .WithSummary("Check API health")
+        .WithDescription("Returns the current health status of the API. Used for monitoring and load balancer health checks.")
+        .Produces<object>(StatusCodes.Status200OK);
 
     app.MapPost("/api/admin/seed", (InitialSeedJob job) =>
     {
-        // Run in background so the request doesn't timeout
         var jobId = BackgroundJob.Enqueue(() => job.RunAsync(CancellationToken.None));
         return new { message = "Initial seed started", jobId };
     })
     .WithName("TriggerSeed")
+    .WithTags("Admin")
+    .WithSummary("Trigger initial data seed")
+    .WithDescription("Starts a background job to perform the initial data import from MoneyPuck. This downloads and imports all historical data. Only run once during initial setup. Requires X-Api-Key header.")
+    .Produces<object>(StatusCodes.Status200OK)
+    .Produces(StatusCodes.Status401Unauthorized)
     .AddEndpointFilter<ApiKeyFilter>();
 
     app.MapPost("/api/admin/sync", (NightlySyncJob job) =>
@@ -115,6 +167,11 @@ try
         return new { message = "Nightly sync started", jobId };
     })
     .WithName("TriggerSync")
+    .WithTags("Admin")
+    .WithSummary("Trigger nightly data sync")
+    .WithDescription("Starts a background job to sync the latest data from MoneyPuck. This is normally run automatically at 4 AM EST but can be triggered manually. Requires X-Api-Key header.")
+    .Produces<object>(StatusCodes.Status200OK)
+    .Produces(StatusCodes.Status401Unauthorized)
     .AddEndpointFilter<ApiKeyFilter>();
 
     app.MapPost("/api/admin/sync-bios", (WeeklyBioSyncJob job) =>
@@ -123,6 +180,11 @@ try
         return new { message = "Bio sync started", jobId };
     })
     .WithName("TriggerBioSync")
+    .WithTags("Admin")
+    .WithSummary("Trigger player bio sync")
+    .WithDescription("Starts a background job to sync player biographical data (names, headshots, etc.) from the NHL API. This is normally run automatically weekly. Requires X-Api-Key header.")
+    .Produces<object>(StatusCodes.Status200OK)
+    .Produces(StatusCodes.Status401Unauthorized)
     .AddEndpointFilter<ApiKeyFilter>();
 
     app.Run();

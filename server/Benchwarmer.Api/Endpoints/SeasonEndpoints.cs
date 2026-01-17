@@ -13,7 +13,15 @@ public static class SeasonEndpoints
 
         group.MapGet("/", GetAllSeasons)
             .WithName("GetAllSeasons")
-            .WithSummary("Get all available seasons with data");
+            .WithSummary("Get all available seasons with data")
+            .WithDescription("""
+                Returns all NHL seasons that have data in the database, sorted by most recent first.
+
+                Each season includes:
+                - `year`: The starting year (e.g., 2024 for the 2024-25 season)
+                - `label`: Display label (e.g., "2024-25")
+                """)
+            .Produces<SeasonListDto>();
     }
 
     private static async Task<IResult> GetAllSeasons(

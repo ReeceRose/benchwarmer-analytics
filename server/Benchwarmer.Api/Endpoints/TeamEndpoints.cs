@@ -1,5 +1,6 @@
 using Benchwarmer.Api.Dtos;
 using Benchwarmer.Data.Repositories;
+using Microsoft.AspNetCore.Http;
 
 namespace Benchwarmer.Api.Endpoints;
 
@@ -12,23 +13,53 @@ public static class TeamEndpoints
 
         group.MapGet("/", GetAllTeams)
             .WithName("GetAllTeams")
-            .WithSummary("Get all NHL teams");
+            .WithSummary("Get all NHL teams")
+            .WithDescription("Returns a list of all 32 NHL teams with their division and conference information.")
+            .Produces<TeamListDto>();
 
         group.MapGet("/{abbrev}", GetTeamByAbbrev)
             .WithName("GetTeamByAbbrev")
-            .WithSummary("Get a team by abbreviation");
+            .WithSummary("Get a team by abbreviation")
+            .WithDescription("Returns details for a specific team. Use standard 3-letter NHL abbreviations (e.g., EDM, TOR, NYR).")
+            .Produces<TeamDto>()
+            .Produces(StatusCodes.Status404NotFound);
 
         group.MapGet("/{abbrev}/roster", GetTeamRoster)
             .WithName("GetTeamRoster")
-            .WithSummary("Get current roster for a team");
+            .WithSummary("Get current roster for a team")
+            .WithDescription("Returns all players currently on a team's roster with biographical details including position, height, weight, and headshot URL.")
+            .Produces<RosterDto>()
+            .Produces(StatusCodes.Status404NotFound);
 
         group.MapGet("/{abbrev}/lines", GetTeamLines)
             .WithName("GetTeamLines")
-            .WithSummary("Get line combinations for a team");
+            .WithSummary("Get line combinations for a team")
+            .WithDescription("""
+                Returns line combinations (forward lines and defensive pairings) for a team with advanced statistics.
+
+                **Query Parameters:**
+                - `season`: Season year (e.g., 2024 for 2024-25 season)
+                - `situation`: Game situation filter (5on5, 5on4, 4on5, all, etc.)
+                - `lineType`: forward or defense
+                - `minToi`: Minimum time on ice in minutes (filters out low-sample combinations)
+                - `sortBy`: Sort field (toi, gf, ga, xgf, xgpct, cf, cfpct)
+                - `sortDir`: asc or desc
+                - `page`/`pageSize`: Pagination (both required together)
+                """)
+            .Produces<LineListDto>()
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status404NotFound);
 
         group.MapGet("/{abbrev}/chemistry-matrix", GetChemistryMatrix)
             .WithName("GetChemistryMatrix")
-            .WithSummary("Get player pair chemistry matrix for a team");
+            .WithSummary("Get player pair chemistry matrix for a team")
+            .WithDescription("""
+                Returns aggregated statistics for all player pairs on a team. Useful for building chemistry heat map visualizations.
+
+                Each pair shows combined ice time, goals for/against, and expected goals percentage when those two players are on the ice together.
+                """)
+            .Produces<ChemistryMatrixDto>()
+            .Produces(StatusCodes.Status404NotFound);
     }
 
     private static async Task<IResult> GetAllTeams(
