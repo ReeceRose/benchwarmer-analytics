@@ -11,6 +11,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<TeamSeason> TeamSeasons => Set<TeamSeason>();
   public DbSet<LineCombination> LineCombinations => Set<LineCombination>();
 
+  // Materialized views (read-only)
+  public DbSet<ChemistryPairView> ChemistryPairs => Set<ChemistryPairView>();
+
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
     // Use snake_case for PostgreSQL
@@ -68,6 +71,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
       e.HasIndex(l => new { l.Season, l.Team, l.Situation, l.Player1Id, l.Player2Id, l.Player3Id }).IsUnique();
       e.HasIndex(l => new { l.Season, l.Team });
+    });
+
+    // ChemistryPairView (materialized view - read only)
+    modelBuilder.Entity<ChemistryPairView>(e =>
+    {
+      e.HasNoKey();
+      e.ToView("chemistry_pairs");
+      e.Property(c => c.Player1Id).HasColumnName("player1_id");
+      e.Property(c => c.Player2Id).HasColumnName("player2_id");
+      e.Property(c => c.Player1Name).HasColumnName("player1_name");
+      e.Property(c => c.Player2Name).HasColumnName("player2_name");
+      e.Property(c => c.Team).HasColumnName("team");
+      e.Property(c => c.Season).HasColumnName("season");
+      e.Property(c => c.Situation).HasColumnName("situation");
+      e.Property(c => c.TotalIceTimeSeconds).HasColumnName("total_ice_time_seconds");
+      e.Property(c => c.GamesPlayed).HasColumnName("games_played");
+      e.Property(c => c.GoalsFor).HasColumnName("goals_for");
+      e.Property(c => c.GoalsAgainst).HasColumnName("goals_against");
+      e.Property(c => c.XGoalsFor).HasColumnName("x_goals_for");
+      e.Property(c => c.XGoalsAgainst).HasColumnName("x_goals_against");
+      e.Property(c => c.CorsiFor).HasColumnName("corsi_for");
+      e.Property(c => c.CorsiAgainst).HasColumnName("corsi_against");
     });
 
   }

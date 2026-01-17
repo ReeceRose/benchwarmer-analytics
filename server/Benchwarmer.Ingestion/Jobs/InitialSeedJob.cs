@@ -1,3 +1,4 @@
+using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Importers;
 using Benchwarmer.Ingestion.Parsers;
 using Benchwarmer.Ingestion.Services;
@@ -11,6 +12,7 @@ public class InitialSeedJob(
     SkaterImporter skaterImporter,
     PlayerBioImporter playerBioImporter,
     TeamImporter teamImporter,
+    ILineRepository lineRepository,
     ILogger<InitialSeedJob> logger)
 {
     private readonly MoneyPuckDownloader _downloader = downloader;
@@ -18,6 +20,7 @@ public class InitialSeedJob(
     private readonly SkaterImporter _skaterImporter = skaterImporter;
     private readonly PlayerBioImporter _playerBioImporter = playerBioImporter;
     private readonly TeamImporter _teamImporter = teamImporter;
+    private readonly ILineRepository _lineRepository = lineRepository;
     private readonly ILogger<InitialSeedJob> _logger = logger;
 
     // MoneyPuck data starts from 2008
@@ -69,6 +72,10 @@ public class InitialSeedJob(
                 }
             }
         }
+
+        // Refresh materialized views after import
+        _logger.LogInformation("Refreshing materialized views...");
+        await _lineRepository.RefreshChemistryPairsAsync(cancellationToken);
 
         var duration = DateTime.UtcNow - startTime;
         _logger.LogInformation(

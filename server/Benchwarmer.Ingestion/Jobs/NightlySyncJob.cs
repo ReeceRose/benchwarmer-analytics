@@ -1,3 +1,4 @@
+using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Importers;
 using Benchwarmer.Ingestion.Parsers;
 using Benchwarmer.Ingestion.Services;
@@ -10,12 +11,14 @@ public class NightlySyncJob(
     LineImporter lineImporter,
     SkaterImporter skaterImporter,
     TeamImporter teamImporter,
+    ILineRepository lineRepository,
     ILogger<NightlySyncJob> logger)
 {
     private readonly MoneyPuckDownloader _downloader = downloader;
     private readonly SkaterImporter _skaterImporter = skaterImporter;
     private readonly LineImporter _lineImporter = lineImporter;
     private readonly TeamImporter _teamImporter = teamImporter;
+    private readonly ILineRepository _lineRepository = lineRepository;
     private readonly ILogger<NightlySyncJob> _logger = logger;
 
     private static readonly string[] Datasets = ["teams", "skaters", "lines"];
@@ -55,6 +58,10 @@ public class NightlySyncJob(
                 _logger.LogWarning("{Dataset}: failed - {Error}", dataset, result.ErrorMessage);
             }
         }
+
+        // Refresh materialized views after import
+        _logger.LogInformation("Refreshing materialized views...");
+        await _lineRepository.RefreshChemistryPairsAsync(cancellationToken);
 
         var duration = DateTime.UtcNow - startTime;
         _logger.LogInformation(

@@ -103,42 +103,87 @@ public class LineRepository(AppDbContext db) : ILineRepository
         string? situation = null,
         CancellationToken cancellationToken = default)
     {
-        var query = db.LineCombinations
-            .Include(l => l.Player1)
-            .Include(l => l.Player2)
-            .Where(l => l.Team == teamAbbrev && l.Season == season);
+        var query = db.ChemistryPairs
+            .Where(c => c.Team == teamAbbrev && c.Season == season);
 
         if (!string.IsNullOrEmpty(situation))
         {
-            query = query.Where(l => l.Situation == situation);
+            query = query.Where(c => c.Situation == situation);
         }
 
-        // Get all line combinations and aggregate player pairs
-        var lines = await query.ToListAsync(cancellationToken);
+        var pairs = await query
+            .OrderByDescending(c => c.TotalIceTimeSeconds)
+            .ToListAsync(cancellationToken);
 
-        // Build a dictionary of player pairs with aggregated stats
-        var pairStats = new Dictionary<(int, int), ChemistryPairBuilder>();
+        return pairs.Select(c => ToChemistryPair(c)).ToList();
+    }
 
-        foreach (var line in lines)
+    public async Task<IReadOnlyList<ChemistryPair>> GetLinematesAsync(
+        int playerId,
+        int season,
+        string? situation = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = db.ChemistryPairs
+            .Where(c => c.Season == season &&
+                       (c.Player1Id == playerId || c.Player2Id == playerId));
+
+        if (!string.IsNullOrEmpty(situation))
         {
-            // Add Player1-Player2 pair
-            AddPair(pairStats, line.Player1Id, line.Player1?.Name ?? "Unknown",
-                line.Player2Id, line.Player2?.Name ?? "Unknown", line);
-
-            // If it's a forward line, also add Player1-Player3 and Player2-Player3 pairs
-            if (line.Player3Id.HasValue && line.Player3 != null)
-            {
-                AddPair(pairStats, line.Player1Id, line.Player1?.Name ?? "Unknown",
-                    line.Player3Id.Value, line.Player3.Name, line);
-                AddPair(pairStats, line.Player2Id, line.Player2?.Name ?? "Unknown",
-                    line.Player3Id.Value, line.Player3.Name, line);
-            }
+            query = query.Where(c => c.Situation == situation);
         }
 
-        return pairStats.Values
-            .Select(p => p.ToChemistryPair())
-            .OrderByDescending(p => p.TotalIceTimeSeconds)
-            .ToList();
+        var pairs = await query
+            .OrderByDescending(c => c.TotalIceTimeSeconds)
+            .ToListAsync(cancellationToken);
+
+        // Transform to return the "other" player as the linemate
+        return pairs.Select(c =>
+        {
+            var isPlayer1 = c.Player1Id == playerId;
+            return new ChemistryPair(
+                isPlayer1 ? c.Player2Id : c.Player1Id,
+                isPlayer1 ? c.Player2Name : c.Player1Name,
+                playerId,
+                isPlayer1 ? c.Player1Name : c.Player2Name,
+                (int)c.TotalIceTimeSeconds,
+                c.GamesPlayed,
+                c.GoalsFor,
+                c.GoalsAgainst,
+                CalculatePercentage(c.XGoalsFor, c.XGoalsAgainst),
+                CalculatePercentage(c.CorsiFor, c.CorsiAgainst)
+            );
+        }).ToList();
+    }
+
+    public async Task RefreshChemistryPairsAsync(CancellationToken cancellationToken = default)
+    {
+        // Use CONCURRENTLY to allow reads during refresh (requires unique index)
+        await db.Database.ExecuteSqlRawAsync(
+            "REFRESH MATERIALIZED VIEW CONCURRENTLY chemistry_pairs",
+            cancellationToken);
+    }
+
+    private static ChemistryPair ToChemistryPair(Entities.ChemistryPairView c)
+    {
+        return new ChemistryPair(
+            c.Player1Id,
+            c.Player1Name,
+            c.Player2Id,
+            c.Player2Name,
+            (int)c.TotalIceTimeSeconds,
+            c.GamesPlayed,
+            c.GoalsFor,
+            c.GoalsAgainst,
+            CalculatePercentage(c.XGoalsFor, c.XGoalsAgainst),
+            CalculatePercentage(c.CorsiFor, c.CorsiAgainst)
+        );
+    }
+
+    private static decimal? CalculatePercentage(decimal forValue, decimal againstValue)
+    {
+        var total = forValue + againstValue;
+        return total > 0 ? Math.Round(forValue / total, 2) : null;
     }
 
     public async Task UpsertBatchAsync(IEnumerable<LineCombination> lines, CancellationToken cancellationToken = default)
@@ -191,67 +236,5 @@ public class LineRepository(AppDbContext db) : ILineRepository
         }
 
         await db.SaveChangesAsync(cancellationToken);
-    }
-
-    private static void AddPair(
-        Dictionary<(int, int), ChemistryPairBuilder> pairStats,
-        int player1Id, string player1Name,
-        int player2Id, string player2Name,
-        LineCombination line)
-    {
-        // Normalize key so (A,B) and (B,A) are the same pair
-        var key = player1Id < player2Id ? (player1Id, player2Id) : (player2Id, player1Id);
-        var (name1, name2) = player1Id < player2Id
-            ? (player1Name, player2Name)
-            : (player2Name, player1Name);
-
-        if (!pairStats.TryGetValue(key, out var builder))
-        {
-            builder = new ChemistryPairBuilder(key.Item1, name1, key.Item2, name2);
-            pairStats[key] = builder;
-        }
-
-        builder.Add(line);
-    }
-
-    private class ChemistryPairBuilder(int player1Id, string player1Name, int player2Id, string player2Name)
-    {
-        private int _totalIceTime;
-        private int _gamesPlayed;
-        private int _goalsFor;
-        private int _goalsAgainst;
-        private decimal _xgFor;
-        private decimal _xgAgainst;
-        private int _corsiFor;
-        private int _corsiAgainst;
-
-        public void Add(LineCombination line)
-        {
-            _totalIceTime += line.IceTimeSeconds;
-            _gamesPlayed += line.GamesPlayed;
-            _goalsFor += line.GoalsFor;
-            _goalsAgainst += line.GoalsAgainst;
-            _xgFor += line.ExpectedGoalsFor ?? 0;
-            _xgAgainst += line.ExpectedGoalsAgainst ?? 0;
-            _corsiFor += line.CorsiFor;
-            _corsiAgainst += line.CorsiAgainst;
-        }
-
-        public ChemistryPair ToChemistryPair()
-        {
-            var totalXg = _xgFor + _xgAgainst;
-            var totalCorsi = _corsiFor + _corsiAgainst;
-
-            return new ChemistryPair(
-                player1Id, player1Name,
-                player2Id, player2Name,
-                _totalIceTime,
-                _gamesPlayed,
-                _goalsFor,
-                _goalsAgainst,
-                totalXg > 0 ? Math.Round(_xgFor / totalXg, 2) : null,
-                totalCorsi > 0 ? Math.Round((decimal)_corsiFor / totalCorsi, 2) : null
-            );
-        }
     }
 }

@@ -199,43 +199,22 @@ public static class PlayerEndpoints
             return Results.NotFound(ApiError.PlayerNotFound);
         }
 
-        // Get all line combinations involving this player
-        // We need to search across all teams the player has played for
-        // For now, use current team if available
-        if (string.IsNullOrEmpty(player.CurrentTeamAbbreviation))
-        {
-            return Results.Ok(new LinemateHistoryDto(id, player.Name, []));
-        }
-
-        var (lines, _) = await lineRepository.GetByTeamAsync(
-            player.CurrentTeamAbbreviation,
+        // Query pre-aggregated linemate data from materialized view
+        var pairs = await lineRepository.GetLinematesAsync(
+            id,
             season ?? DateTime.Now.Year,
             situation,
-            cancellationToken: cancellationToken);
+            cancellationToken);
 
-        // Filter to lines containing this player
-        var playerLines = lines
-            .Where(l => l.Player1Id == id || l.Player2Id == id || l.Player3Id == id)
-            .ToList();
-
-        // Aggregate linemate stats
-        var linemateStats = new Dictionary<int, LinemateBuilder>();
-
-        foreach (var line in playerLines)
-        {
-            // Add stats for each linemate (not the player themselves)
-            if (line.Player1Id != id)
-                AddLinemate(linemateStats, line.Player1Id, line.Player1?.Name ?? "Unknown", line);
-            if (line.Player2Id != id)
-                AddLinemate(linemateStats, line.Player2Id, line.Player2?.Name ?? "Unknown", line);
-            if (line.Player3Id.HasValue && line.Player3Id != id)
-                AddLinemate(linemateStats, line.Player3Id.Value, line.Player3?.Name ?? "Unknown", line);
-        }
-
-        var linemates = linemateStats.Values
-            .Select(l => l.ToLinemateDto())
-            .OrderByDescending(l => l.TotalIceTimeSeconds)
-            .ToList();
+        var linemates = pairs.Select(p => new LinemateDto(
+            p.Player1Id,
+            p.Player1Name,
+            p.TotalIceTimeSeconds,
+            p.GamesPlayed,
+            p.GoalsFor,
+            p.GoalsAgainst,
+            p.ExpectedGoalsPct
+        )).ToList();
 
         return Results.Ok(new LinemateHistoryDto(id, player.Name, linemates));
     }
@@ -302,50 +281,6 @@ public static class PlayerEndpoints
         }
 
         return Results.Ok(new PlayerComparisonResultDto(season, situation ?? "all", comparisons));
-    }
-
-    private static void AddLinemate(Dictionary<int, LinemateBuilder> stats, int playerId, string name, Data.Entities.LineCombination line)
-    {
-        if (!stats.TryGetValue(playerId, out var builder))
-        {
-            builder = new LinemateBuilder(playerId, name);
-            stats[playerId] = builder;
-        }
-        builder.Add(line);
-    }
-
-    private class LinemateBuilder(int playerId, string name)
-    {
-        private int _totalIceTime;
-        private int _gamesPlayed;
-        private int _goalsFor;
-        private int _goalsAgainst;
-        private decimal _xgFor;
-        private decimal _xgAgainst;
-
-        public void Add(Data.Entities.LineCombination line)
-        {
-            _totalIceTime += line.IceTimeSeconds;
-            _gamesPlayed += line.GamesPlayed;
-            _goalsFor += line.GoalsFor;
-            _goalsAgainst += line.GoalsAgainst;
-            _xgFor += line.ExpectedGoalsFor ?? 0;
-            _xgAgainst += line.ExpectedGoalsAgainst ?? 0;
-        }
-
-        public LinemateDto ToLinemateDto()
-        {
-            var totalXg = _xgFor + _xgAgainst;
-            return new LinemateDto(
-                playerId,
-                name,
-                _totalIceTime,
-                _gamesPlayed,
-                _goalsFor,
-                _goalsAgainst,
-                totalXg > 0 ? Math.Round(_xgFor / totalXg, 2) : null
-            );
-        }
     }
 }
 

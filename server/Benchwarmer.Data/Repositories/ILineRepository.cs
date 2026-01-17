@@ -23,6 +23,20 @@ public interface ILineRepository
         CancellationToken cancellationToken = default);
 
     Task UpsertBatchAsync(IEnumerable<LineCombination> lines, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Refreshes the chemistry_pairs materialized view. Call after importing line combinations.
+    /// </summary>
+    Task RefreshChemistryPairsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets linemates for a specific player with aggregated stats.
+    /// </summary>
+    Task<IReadOnlyList<ChemistryPair>> GetLinematesAsync(
+        int playerId,
+        int season,
+        string? situation = null,
+        CancellationToken cancellationToken = default);
 }
 
 public record ChemistryPair(
