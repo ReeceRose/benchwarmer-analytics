@@ -15,21 +15,24 @@ public static class TeamEndpoints
             .WithName("GetAllTeams")
             .WithSummary("Get all NHL teams")
             .WithDescription("Returns a list of all 32 NHL teams with their division and conference information.")
-            .Produces<TeamListDto>();
+            .Produces<TeamListDto>()
+            .CacheOutput(CachePolicies.StaticData);
 
         group.MapGet("/{abbrev}", GetTeamByAbbrev)
             .WithName("GetTeamByAbbrev")
             .WithSummary("Get a team by abbreviation")
             .WithDescription("Returns details for a specific team. Use standard 3-letter NHL abbreviations (e.g., EDM, TOR, NYR).")
             .Produces<TeamDto>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.StaticData);
 
         group.MapGet("/{abbrev}/roster", GetTeamRoster)
             .WithName("GetTeamRoster")
             .WithSummary("Get current roster for a team")
             .WithDescription("Returns all players currently on a team's roster with biographical details including position, height, weight, and headshot URL.")
             .Produces<RosterDto>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
 
         group.MapGet("/{abbrev}/lines", GetTeamLines)
             .WithName("GetTeamLines")
@@ -48,7 +51,8 @@ public static class TeamEndpoints
                 """)
             .Produces<LineListDto>()
             .Produces(StatusCodes.Status400BadRequest)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
 
         group.MapGet("/{abbrev}/chemistry-matrix", GetChemistryMatrix)
             .WithName("GetChemistryMatrix")
@@ -59,7 +63,8 @@ public static class TeamEndpoints
                 Each pair shows combined ice time, goals for/against, and expected goals percentage when those two players are on the ice together.
                 """)
             .Produces<ChemistryMatrixDto>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetAllTeams(

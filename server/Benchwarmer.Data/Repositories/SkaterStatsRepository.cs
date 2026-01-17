@@ -32,23 +32,39 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
 
     public async Task UpsertBatchAsync(IEnumerable<SkaterSeason> stats, CancellationToken cancellationToken = default)
     {
-        foreach (var stat in stats)
-        {
-            var existing = await db.SkaterSeasons
-                .FirstOrDefaultAsync(s =>
-                    s.PlayerId == stat.PlayerId &&
-                    s.Season == stat.Season &&
-                    s.Team == stat.Team &&
-                    s.Situation == stat.Situation,
-                    cancellationToken);
+        var statsList = stats.ToList();
+        if (statsList.Count == 0) return;
 
-            if (existing is null)
-            {
-                stat.CreatedAt = DateTime.UtcNow;
-                stat.UpdatedAt = DateTime.UtcNow;
-                db.SkaterSeasons.Add(stat);
-            }
-            else
+        // Extract unique keys to batch-fetch existing records
+        var keys = statsList
+            .Select(s => new { s.PlayerId, s.Season, s.Team, s.Situation })
+            .Distinct()
+            .ToList();
+
+        // Batch fetch all potentially existing records in a single query
+        var playerIds = keys.Select(k => k.PlayerId).Distinct().ToList();
+        var seasons = keys.Select(k => k.Season).Distinct().ToList();
+        var teams = keys.Select(k => k.Team).Distinct().ToList();
+        var situations = keys.Select(k => k.Situation).Distinct().ToList();
+
+        var existingRecords = await db.SkaterSeasons
+            .Where(s => playerIds.Contains(s.PlayerId) &&
+                       seasons.Contains(s.Season) &&
+                       teams.Contains(s.Team) &&
+                       situations.Contains(s.Situation))
+            .ToListAsync(cancellationToken);
+
+        // Build dictionary for O(1) lookup
+        var existingLookup = existingRecords
+            .ToDictionary(s => (s.PlayerId, s.Season, s.Team, s.Situation));
+
+        var now = DateTime.UtcNow;
+
+        foreach (var stat in statsList)
+        {
+            var key = (stat.PlayerId, stat.Season, stat.Team, stat.Situation);
+
+            if (existingLookup.TryGetValue(key, out var existing))
             {
                 existing.GamesPlayed = stat.GamesPlayed;
                 existing.IceTimeSeconds = stat.IceTimeSeconds;
@@ -61,7 +77,13 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
                 existing.OnIceSavePct = stat.OnIceSavePct;
                 existing.CorsiForPct = stat.CorsiForPct;
                 existing.FenwickForPct = stat.FenwickForPct;
-                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedAt = now;
+            }
+            else
+            {
+                stat.CreatedAt = now;
+                stat.UpdatedAt = now;
+                db.SkaterSeasons.Add(stat);
             }
         }
 

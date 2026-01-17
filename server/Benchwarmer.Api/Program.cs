@@ -1,3 +1,4 @@
+using Benchwarmer.Api;
 using Benchwarmer.Data;
 using Benchwarmer.Data.Repositories;
 using Benchwarmer.Api.Endpoints;
@@ -71,6 +72,18 @@ try
         });
     });
 
+    builder.Services.AddOutputCache(options =>
+    {
+        options.AddPolicy(CachePolicies.StaticData, b => b.Expire(TimeSpan.FromHours(24)));
+        options.AddPolicy(CachePolicies.SemiStaticData, b => b.Expire(TimeSpan.FromHours(6)));
+        options.AddPolicy(CachePolicies.TeamData, b => b
+            .Expire(TimeSpan.FromMinutes(30))
+            .SetVaryByQuery("season", "situation", "lineType", "minToi", "sortBy", "sortDir", "page", "pageSize"));
+        options.AddPolicy(CachePolicies.SearchResults, b => b
+            .Expire(TimeSpan.FromMinutes(5))
+            .SetVaryByQuery("q", "page", "pageSize"));
+    });
+
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -116,6 +129,7 @@ try
     }
 
     app.UseCors();
+    app.UseOutputCache();
 
     // Hangfire dashboard at /hangfire (secured in non-dev environments)
     app.UseHangfireDashboard("/hangfire", new DashboardOptions

@@ -22,7 +22,8 @@ public static class PlayerEndpoints
                 - `page`/`pageSize`: Pagination (both required together, max pageSize is 100)
                 """)
             .Produces<PlayerSearchResultDto>()
-            .Produces(StatusCodes.Status400BadRequest);
+            .Produces(StatusCodes.Status400BadRequest)
+            .CacheOutput(CachePolicies.SearchResults);
 
         group.MapGet("/compare", ComparePlayers)
             .WithName("ComparePlayers")
@@ -36,14 +37,16 @@ public static class PlayerEndpoints
                 - `situation`: Game situation filter (5on5, all, etc.)
                 """)
             .Produces<PlayerComparisonResultDto>()
-            .Produces(StatusCodes.Status400BadRequest);
+            .Produces(StatusCodes.Status400BadRequest)
+            .CacheOutput(CachePolicies.TeamData);
 
         group.MapGet("/{id:int}", GetPlayerById)
             .WithName("GetPlayerById")
             .WithSummary("Get a player by ID")
             .WithDescription("Returns detailed player information including biographical data, headshot URL, and current team.")
             .Produces<PlayerDetailDto>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
 
         group.MapGet("/{id:int}/stats", GetPlayerStats)
             .WithName("GetPlayerStats")
@@ -58,7 +61,8 @@ public static class PlayerEndpoints
                 Returns stats broken down by season, team, and situation.
                 """)
             .Produces<PlayerStatsDto>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
 
         group.MapGet("/{id:int}/linemates", GetPlayerLinemates)
             .WithName("GetPlayerLinemates")
@@ -70,7 +74,8 @@ public static class PlayerEndpoints
                 Sorted by total ice time together (descending).
                 """)
             .Produces<LinemateHistoryDto>()
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> SearchPlayers(

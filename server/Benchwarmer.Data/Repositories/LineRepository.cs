@@ -143,25 +143,32 @@ public class LineRepository(AppDbContext db) : ILineRepository
 
     public async Task UpsertBatchAsync(IEnumerable<LineCombination> lines, CancellationToken cancellationToken = default)
     {
-        foreach (var line in lines)
-        {
-            var existing = await db.LineCombinations
-                .FirstOrDefaultAsync(l =>
-                    l.Season == line.Season &&
-                    l.Team == line.Team &&
-                    l.Situation == line.Situation &&
-                    l.Player1Id == line.Player1Id &&
-                    l.Player2Id == line.Player2Id &&
-                    l.Player3Id == line.Player3Id,
-                    cancellationToken);
+        var linesList = lines.ToList();
+        if (linesList.Count == 0) return;
 
-            if (existing is null)
-            {
-                line.CreatedAt = DateTime.UtcNow;
-                line.UpdatedAt = DateTime.UtcNow;
-                db.LineCombinations.Add(line);
-            }
-            else
+        // Extract filter values to batch-fetch existing records
+        var seasons = linesList.Select(l => l.Season).Distinct().ToList();
+        var teams = linesList.Select(l => l.Team).Distinct().ToList();
+        var situations = linesList.Select(l => l.Situation).Distinct().ToList();
+
+        // Batch fetch all potentially existing records in a single query
+        var existingRecords = await db.LineCombinations
+            .Where(l => seasons.Contains(l.Season) &&
+                       teams.Contains(l.Team) &&
+                       situations.Contains(l.Situation))
+            .ToListAsync(cancellationToken);
+
+        // Build dictionary for O(1) lookup using composite key
+        var existingLookup = existingRecords
+            .ToDictionary(l => (l.Season, l.Team, l.Situation, l.Player1Id, l.Player2Id, l.Player3Id));
+
+        var now = DateTime.UtcNow;
+
+        foreach (var line in linesList)
+        {
+            var key = (line.Season, line.Team, line.Situation, line.Player1Id, line.Player2Id, line.Player3Id);
+
+            if (existingLookup.TryGetValue(key, out var existing))
             {
                 existing.IceTimeSeconds = line.IceTimeSeconds;
                 existing.GamesPlayed = line.GamesPlayed;
@@ -173,7 +180,13 @@ public class LineRepository(AppDbContext db) : ILineRepository
                 existing.CorsiFor = line.CorsiFor;
                 existing.CorsiAgainst = line.CorsiAgainst;
                 existing.CorsiPct = line.CorsiPct;
-                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedAt = now;
+            }
+            else
+            {
+                line.CreatedAt = now;
+                line.UpdatedAt = now;
+                db.LineCombinations.Add(line);
             }
         }
 

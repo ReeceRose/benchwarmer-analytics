@@ -79,17 +79,23 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
 
     public async Task UpsertBatchAsync(IEnumerable<Player> players, CancellationToken cancellationToken = default)
     {
-        foreach (var player in players)
-        {
-            var existing = await db.Players.FindAsync([player.Id], cancellationToken);
+        var playersList = players.ToList();
+        if (playersList.Count == 0) return;
 
-            if (existing is null)
-            {
-                player.CreatedAt = DateTime.UtcNow;
-                player.UpdatedAt = DateTime.UtcNow;
-                db.Players.Add(player);
-            }
-            else
+        // Batch fetch all existing players by ID in a single query
+        var playerIds = playersList.Select(p => p.Id).Distinct().ToList();
+        var existingRecords = await db.Players
+            .Where(p => playerIds.Contains(p.Id))
+            .ToListAsync(cancellationToken);
+
+        // Build dictionary for O(1) lookup
+        var existingLookup = existingRecords.ToDictionary(p => p.Id);
+
+        var now = DateTime.UtcNow;
+
+        foreach (var player in playersList)
+        {
+            if (existingLookup.TryGetValue(player.Id, out var existing))
             {
                 existing.Name = player.Name;
                 existing.FirstName = player.FirstName;
@@ -101,7 +107,13 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
                 existing.HeightInches = player.HeightInches;
                 existing.WeightLbs = player.WeightLbs;
                 existing.Shoots = player.Shoots;
-                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedAt = now;
+            }
+            else
+            {
+                player.CreatedAt = now;
+                player.UpdatedAt = now;
+                db.Players.Add(player);
             }
         }
 

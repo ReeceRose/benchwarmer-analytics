@@ -21,7 +21,8 @@ public static class SeasonEndpoints
                 - `year`: The starting year (e.g., 2024 for the 2024-25 season)
                 - `label`: Display label (e.g., "2024-25")
                 """)
-            .Produces<SeasonListDto>();
+            .Produces<SeasonListDto>()
+            .CacheOutput(CachePolicies.SemiStaticData);
     }
 
     private static async Task<IResult> GetAllSeasons(
