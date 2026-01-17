@@ -14,11 +14,11 @@ public class TeamImporter(
 {
     public async Task<int> ImportAsync(IEnumerable<TeamRecord> records)
     {
-        var count = 0;
+        var recordsList = records.ToList();
         var now = DateTime.UtcNow;
 
         // Group by team to upsert teams first
-        var teamGroups = records.GroupBy(r => r.Team);
+        var teamGroups = recordsList.GroupBy(r => r.Team);
 
         foreach (var group in teamGroups)
         {
@@ -30,32 +30,41 @@ public class TeamImporter(
                 Abbreviation = first.Team,
                 Name = first.Name
             });
+        }
 
-            // Upsert each season/situation record (TeamSeason - no repository yet)
-            foreach (var record in group)
+        // Batch fetch all existing TeamSeasons in a single query
+        var teams = recordsList.Select(r => r.Team).Distinct().ToList();
+        var seasons = recordsList.Select(r => r.Season).Distinct().ToList();
+        var situations = recordsList.Select(r => r.Situation).Distinct().ToList();
+
+        var existingRecords = await db.TeamSeasons
+            .Where(t => teams.Contains(t.TeamAbbreviation) &&
+                        seasons.Contains(t.Season) &&
+                        situations.Contains(t.Situation))
+            .ToListAsync();
+
+        // Build O(1) lookup dictionary with composite key
+        var existingLookup = existingRecords
+            .ToDictionary(t => (t.TeamAbbreviation, t.Season, t.Situation));
+
+        // Upsert each season/situation record using dictionary lookup
+        foreach (var record in recordsList)
+        {
+            var key = (record.Team, record.Season, record.Situation);
+
+            if (existingLookup.TryGetValue(key, out var existing))
             {
-                var existing = await db.TeamSeasons
-                    .FirstOrDefaultAsync(t =>
-                        t.TeamAbbreviation == record.Team &&
-                        t.Season == record.Season &&
-                        t.Situation == record.Situation);
-
-                if (existing == null)
-                {
-                    db.TeamSeasons.Add(MapToEntity(record, now));
-                }
-                else
-                {
-                    UpdateEntity(existing, record, now);
-                }
-
-                count++;
+                UpdateEntity(existing, record, now);
+            }
+            else
+            {
+                db.TeamSeasons.Add(MapToEntity(record, now));
             }
         }
 
         await db.SaveChangesAsync();
-        logger.LogInformation("Imported {Count} team season records", count);
-        return count;
+        logger.LogInformation("Imported {Count} team season records", recordsList.Count);
+        return recordsList.Count;
     }
 
     private static TeamSeason MapToEntity(TeamRecord r, DateTime now)
