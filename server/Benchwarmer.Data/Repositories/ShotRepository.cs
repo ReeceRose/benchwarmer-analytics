@@ -5,7 +5,7 @@ namespace Benchwarmer.Data.Repositories;
 
 public class ShotRepository(AppDbContext db) : IShotRepository
 {
-    private const int BatchSize = 5000;
+    private const int BatchSize = 500;
 
     public async Task<int> UpsertBatchAsync(IEnumerable<Shot> shots, CancellationToken cancellationToken = default)
     {

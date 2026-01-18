@@ -12,7 +12,7 @@ public class ShotImporter(
     private readonly IShotRepository _shotRepository = shotRepository;
     private readonly ILogger<ShotImporter> _logger = logger;
 
-    private const int BatchSize = 10000;
+    private const int BatchSize = 1000;
 
     public async Task<int> ImportAsync(IEnumerable<ShotRecord> shots, CancellationToken cancellationToken = default)
     {
