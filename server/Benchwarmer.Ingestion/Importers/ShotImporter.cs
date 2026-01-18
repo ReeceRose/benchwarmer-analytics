@@ -42,7 +42,7 @@ public class ShotImporter(
             // Identifiers
             ShotId = record.ShotId,
             GameId = record.GameId,
-            EventId = record.EventId,
+            EventId = (int)record.EventId,
             Season = record.Season,
             IsPlayoffGame = record.IsPlayoffGame != 0,
 
@@ -68,9 +68,9 @@ public class ShotImporter(
             Event = record.Event,
             IsGoal = record.Goal != 0,
             ShotType = record.ShotType,
-            Period = record.Period,
-            GameTimeSeconds = record.GameTimeSeconds,
-            TimeLeft = record.TimeLeft,
+            Period = (int)record.Period,
+            GameTimeSeconds = (int)record.GameTimeSeconds,
+            TimeLeft = record.TimeLeft.HasValue ? (int)record.TimeLeft.Value : null,
 
             // Location (raw)
             XCoord = record.XCoord,
@@ -97,7 +97,7 @@ public class ShotImporter(
             ShotWasOnGoal = record.ShotWasOnGoal != 0,
 
             // Play Continuation
-            ShotPlayContinued = record.ShotPlayContinued != 0,
+            ShotPlayContinued = record.ShotPlayContinued.HasValue && record.ShotPlayContinued != 0,
             ShotPlayContinuedInZone = record.ShotPlayContinuedInZone != 0,
             ShotPlayContinuedOutsideZone = record.ShotPlayContinuedOutsideZone != 0,
             ShotGoalieFroze = record.ShotGoalieFroze != 0,
@@ -114,10 +114,10 @@ public class ShotImporter(
             TimeDifferenceSinceChange = record.TimeDifferenceSinceChange,
 
             // Score State
-            HomeTeamGoals = record.HomeTeamGoals,
-            AwayTeamGoals = record.AwayTeamGoals,
-            HomeTeamScore = record.HomeTeamScore,
-            RoadTeamScore = record.RoadTeamScore,
+            HomeTeamGoals = (int)record.HomeTeamGoals,
+            AwayTeamGoals = (int)record.AwayTeamGoals,
+            HomeTeamScore = record.HomeTeamScore.HasValue ? (int)record.HomeTeamScore.Value : null,
+            RoadTeamScore = record.RoadTeamScore.HasValue ? (int)record.RoadTeamScore.Value : null,
             HomeEmptyNet = record.HomeEmptyNet != 0,
             AwayEmptyNet = record.AwayEmptyNet != 0,
 
@@ -128,12 +128,12 @@ public class ShotImporter(
             HomeWinProbability = record.HomeWinProbability,
 
             // Skaters On Ice
-            HomeSkatersOnIce = record.HomeSkatersOnIce,
-            AwaySkatersOnIce = record.AwaySkatersOnIce,
-            ShootingTeamForwardsOnIce = record.ShootingTeamForwardsOnIce,
-            ShootingTeamDefencemenOnIce = record.ShootingTeamDefencemenOnIce,
-            DefendingTeamForwardsOnIce = record.DefendingTeamForwardsOnIce,
-            DefendingTeamDefencemenOnIce = record.DefendingTeamDefencemenOnIce,
+            HomeSkatersOnIce = (int)record.HomeSkatersOnIce,
+            AwaySkatersOnIce = (int)record.AwaySkatersOnIce,
+            ShootingTeamForwardsOnIce = (int)record.ShootingTeamForwardsOnIce,
+            ShootingTeamDefencemenOnIce = (int)record.ShootingTeamDefencemenOnIce,
+            DefendingTeamForwardsOnIce = (int)record.DefendingTeamForwardsOnIce,
+            DefendingTeamDefencemenOnIce = (int)record.DefendingTeamDefencemenOnIce,
 
             // Time On Ice Stats (Shooting Team)
             ShootingTeamAverageTimeOnIce = record.ShootingTeamAverageTimeOnIce,

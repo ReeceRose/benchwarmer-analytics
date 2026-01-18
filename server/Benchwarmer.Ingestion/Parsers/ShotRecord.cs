@@ -11,16 +11,16 @@ public class ShotRecord
     public string GameId { get; set; } = "";
 
     [Name("id")]
-    public int EventId { get; set; }
+    public decimal EventId { get; set; }
 
     [Name("season")]
     public int Season { get; set; }
 
     [Name("isPlayoffGame")]
-    public int IsPlayoffGame { get; set; }
+    public decimal IsPlayoffGame { get; set; }
 
     [Name("playoffGame")]
-    public int PlayoffGame { get; set; }
+    public decimal? PlayoffGame { get; set; }
 
     [Name("homeTeamCode")]
     public string HomeTeamCode { get; set; } = "";
@@ -29,7 +29,7 @@ public class ShotRecord
     public string AwayTeamCode { get; set; } = "";
 
     [Name("roadTeamCode")]
-    public string RoadTeamCode { get; set; } = "";
+    public string? RoadTeamCode { get; set; }
 
     [Name("team")]
     public string Team { get; set; } = "";
@@ -38,10 +38,10 @@ public class ShotRecord
     public string TeamCode { get; set; } = "";
 
     [Name("isHomeTeam")]
-    public int IsHomeTeam { get; set; }
+    public decimal IsHomeTeam { get; set; }
 
     [Name("homeTeamWon")]
-    public int HomeTeamWon { get; set; }
+    public decimal HomeTeamWon { get; set; }
 
     [Name("shooterPlayerId")]
     public decimal? ShooterPlayerId { get; set; }
@@ -71,19 +71,19 @@ public class ShotRecord
     public string Event { get; set; } = "";
 
     [Name("goal")]
-    public int Goal { get; set; }
+    public decimal Goal { get; set; }
 
     [Name("shotType")]
     public string? ShotType { get; set; }
 
     [Name("period")]
-    public int Period { get; set; }
+    public decimal Period { get; set; }
 
     [Name("time")]
-    public int GameTimeSeconds { get; set; }
+    public decimal GameTimeSeconds { get; set; }
 
     [Name("timeLeft")]
-    public int? TimeLeft { get; set; }
+    public decimal? TimeLeft { get; set; }
 
     [Name("xCord")]
     public decimal? XCoord { get; set; }
@@ -125,37 +125,37 @@ public class ShotRecord
     public decimal? ArenaAdjustedShotDistance { get; set; }
 
     [Name("shotOnEmptyNet")]
-    public int ShotOnEmptyNet { get; set; }
+    public decimal ShotOnEmptyNet { get; set; }
 
     [Name("shotRebound")]
-    public int ShotRebound { get; set; }
+    public decimal ShotRebound { get; set; }
 
     [Name("shotRush")]
-    public int ShotRush { get; set; }
+    public decimal ShotRush { get; set; }
 
     [Name("offWing")]
-    public int OffWing { get; set; }
+    public decimal OffWing { get; set; }
 
     [Name("shotWasOnGoal")]
-    public int ShotWasOnGoal { get; set; }
+    public decimal ShotWasOnGoal { get; set; }
 
     [Name("shotPlayContinued")]
-    public int ShotPlayContinued { get; set; }
+    public decimal? ShotPlayContinued { get; set; }
 
     [Name("shotPlayContinuedInZone")]
-    public int ShotPlayContinuedInZone { get; set; }
+    public decimal ShotPlayContinuedInZone { get; set; }
 
     [Name("shotPlayContinuedOutsideZone")]
-    public int ShotPlayContinuedOutsideZone { get; set; }
+    public decimal ShotPlayContinuedOutsideZone { get; set; }
 
     [Name("shotGoalieFroze")]
-    public int ShotGoalieFroze { get; set; }
+    public decimal ShotGoalieFroze { get; set; }
 
     [Name("shotPlayStopped")]
-    public int ShotPlayStopped { get; set; }
+    public decimal ShotPlayStopped { get; set; }
 
     [Name("shotGeneratedRebound")]
-    public int ShotGeneratedRebound { get; set; }
+    public decimal ShotGeneratedRebound { get; set; }
 
     [Name("timeUntilNextEvent")]
     public decimal? TimeUntilNextEvent { get; set; }
@@ -179,52 +179,52 @@ public class ShotRecord
     public decimal? TimeDifferenceSinceChange { get; set; }
 
     [Name("homeTeamGoals")]
-    public int HomeTeamGoals { get; set; }
+    public decimal HomeTeamGoals { get; set; }
 
     [Name("awayTeamGoals")]
-    public int AwayTeamGoals { get; set; }
+    public decimal AwayTeamGoals { get; set; }
 
     [Name("homeTeamScore")]
-    public int? HomeTeamScore { get; set; }
+    public decimal? HomeTeamScore { get; set; }
 
     [Name("roadTeamScore")]
-    public int? RoadTeamScore { get; set; }
+    public decimal? RoadTeamScore { get; set; }
 
     [Name("homeEmptyNet")]
-    public int HomeEmptyNet { get; set; }
+    public decimal HomeEmptyNet { get; set; }
 
     [Name("awayEmptyNet")]
-    public int AwayEmptyNet { get; set; }
+    public decimal AwayEmptyNet { get; set; }
 
     [Name("gameOver")]
-    public int? GameOver { get; set; }
+    public decimal? GameOver { get; set; }
 
     [Name("wentToOT")]
-    public int? WentToOT { get; set; }
+    public decimal? WentToOT { get; set; }
 
     [Name("wentToShootout")]
-    public int? WentToShootout { get; set; }
+    public decimal? WentToShootout { get; set; }
 
     [Name("homeWinProbability")]
     public decimal? HomeWinProbability { get; set; }
 
     [Name("homeSkatersOnIce")]
-    public int HomeSkatersOnIce { get; set; }
+    public decimal HomeSkatersOnIce { get; set; }
 
     [Name("awaySkatersOnIce")]
-    public int AwaySkatersOnIce { get; set; }
+    public decimal AwaySkatersOnIce { get; set; }
 
     [Name("shootingTeamForwardsOnIce")]
-    public int ShootingTeamForwardsOnIce { get; set; }
+    public decimal ShootingTeamForwardsOnIce { get; set; }
 
     [Name("shootingTeamDefencemenOnIce")]
-    public int ShootingTeamDefencemenOnIce { get; set; }
+    public decimal ShootingTeamDefencemenOnIce { get; set; }
 
     [Name("defendingTeamForwardsOnIce")]
-    public int DefendingTeamForwardsOnIce { get; set; }
+    public decimal DefendingTeamForwardsOnIce { get; set; }
 
     [Name("defendingTeamDefencemenOnIce")]
-    public int DefendingTeamDefencemenOnIce { get; set; }
+    public decimal DefendingTeamDefencemenOnIce { get; set; }
 
     [Name("shootingTeamAverageTimeOnIce")]
     public decimal? ShootingTeamAverageTimeOnIce { get; set; }
@@ -413,5 +413,5 @@ public class ShotRecord
     public decimal? ShotAnglePlusReboundSpeed { get; set; }
 
     [Name("shotAngleReboundRoyalRoad")]
-    public int ShotAngleReboundRoyalRoad { get; set; }
+    public decimal ShotAngleReboundRoyalRoad { get; set; }
 }
