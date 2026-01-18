@@ -12,6 +12,7 @@ public class InitialSeedJob(
     SkaterImporter skaterImporter,
     PlayerBioImporter playerBioImporter,
     TeamImporter teamImporter,
+    ShotImporter shotImporter,
     ILineRepository lineRepository,
     ILogger<InitialSeedJob> logger)
 {
@@ -20,13 +21,14 @@ public class InitialSeedJob(
     private readonly SkaterImporter _skaterImporter = skaterImporter;
     private readonly PlayerBioImporter _playerBioImporter = playerBioImporter;
     private readonly TeamImporter _teamImporter = teamImporter;
+    private readonly ShotImporter _shotImporter = shotImporter;
     private readonly ILineRepository _lineRepository = lineRepository;
     private readonly ILogger<InitialSeedJob> _logger = logger;
 
     // MoneyPuck data starts from 2008
     private const int FirstSeason = 2008;
 
-    private static readonly string[] Datasets = ["teams", "skaters", "lines"];
+    private static readonly string[] Datasets = ["teams", "skaters", "lines", "shots"];
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
@@ -91,12 +93,13 @@ public class InitialSeedJob(
             "teams" => await _downloader.DownloadTeamsAsync(season, cancellationToken),
             "skaters" => await _downloader.DownloadSkatersAsync(season, cancellationToken),
             "lines" => await _downloader.DownloadLinesAsync(season, cancellationToken),
+            "shots" => await _downloader.DownloadShotsAsync(season, cancellationToken),
             _ => throw new ArgumentException($"Unknown dataset: {dataset}")
         };
 
         if (result.Success && result.Content != null)
         {
-            var importedCount = await ImportDatasetAsync(dataset, result.Content);
+            var importedCount = await ImportDatasetAsync(dataset, result.Content, cancellationToken);
             _logger.LogInformation("  {Dataset} {Season}: imported {Count} records", dataset, season, importedCount);
         }
         else if (!result.Success)
@@ -107,13 +110,14 @@ public class InitialSeedJob(
         return result;
     }
 
-    private async Task<int> ImportDatasetAsync(string dataset, string content)
+    private async Task<int> ImportDatasetAsync(string dataset, string content, CancellationToken cancellationToken = default)
     {
         return dataset switch
         {
             "skaters" => await ImportSkatersAsync(content),
             "lines" => await ImportLinesAsync(content),
             "teams" => await ImportTeamAsync(content),
+            "shots" => await ImportShotsAsync(content, cancellationToken),
             _ => 0
         };
     }
@@ -134,6 +138,12 @@ public class InitialSeedJob(
     {
         var records = CsvParser.Parse<TeamRecord>(csvContent);
         return await _teamImporter.ImportAsync(records);
+    }
+
+    private async Task<int> ImportShotsAsync(string csvContent, CancellationToken cancellationToken)
+    {
+        var records = CsvParser.Parse<ShotRecord>(csvContent);
+        return await _shotImporter.ImportAsync(records, cancellationToken);
     }
 
     private static int GetCurrentSeason()

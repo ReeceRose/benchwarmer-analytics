@@ -101,6 +101,7 @@ try
     builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
     builder.Services.AddScoped<ILineRepository, LineRepository>();
     builder.Services.AddScoped<ISkaterStatsRepository, SkaterStatsRepository>();
+    builder.Services.AddScoped<IShotRepository, ShotRepository>();
 
     // Services
     builder.Services.AddHttpClient<MoneyPuckDownloader>();
@@ -109,6 +110,7 @@ try
     builder.Services.AddScoped<SkaterImporter>();
     builder.Services.AddScoped<PlayerBioImporter>();
     builder.Services.AddScoped<TeamImporter>();
+    builder.Services.AddScoped<ShotImporter>();
     builder.Services.AddScoped<InitialSeedJob>();
     builder.Services.AddScoped<NightlySyncJob>();
     builder.Services.AddScoped<WeeklyBioSyncJob>();

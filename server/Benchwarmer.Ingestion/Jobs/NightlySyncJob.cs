@@ -11,6 +11,7 @@ public class NightlySyncJob(
     LineImporter lineImporter,
     SkaterImporter skaterImporter,
     TeamImporter teamImporter,
+    ShotImporter shotImporter,
     ILineRepository lineRepository,
     ILogger<NightlySyncJob> logger)
 {
@@ -18,10 +19,11 @@ public class NightlySyncJob(
     private readonly SkaterImporter _skaterImporter = skaterImporter;
     private readonly LineImporter _lineImporter = lineImporter;
     private readonly TeamImporter _teamImporter = teamImporter;
+    private readonly ShotImporter _shotImporter = shotImporter;
     private readonly ILineRepository _lineRepository = lineRepository;
     private readonly ILogger<NightlySyncJob> _logger = logger;
 
-    private static readonly string[] Datasets = ["teams", "skaters", "lines"];
+    private static readonly string[] Datasets = ["teams", "skaters", "lines", "shots"];
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
@@ -44,12 +46,13 @@ public class NightlySyncJob(
                 "teams" => await _downloader.DownloadTeamsAsync(season, cancellationToken),
                 "skaters" => await _downloader.DownloadSkatersAsync(season, cancellationToken),
                 "lines" => await _downloader.DownloadLinesAsync(season, cancellationToken),
+                "shots" => await _downloader.DownloadShotsAsync(season, cancellationToken),
                 _ => throw new ArgumentException($"Unknown dataset: {dataset}")
             };
 
             if (result.Success && result.Content != null)
             {
-                var importedCount = await ImportDatasetAsync(dataset, result.Content);
+                var importedCount = await ImportDatasetAsync(dataset, result.Content, cancellationToken);
                 totalRecords += importedCount;
                 _logger.LogInformation("{Dataset}: imported {Count} records", dataset, importedCount);
             }
@@ -70,13 +73,14 @@ public class NightlySyncJob(
             duration.TotalSeconds);
     }
 
-    private async Task<int> ImportDatasetAsync(string dataset, string content)
+    private async Task<int> ImportDatasetAsync(string dataset, string content, CancellationToken cancellationToken = default)
     {
         return dataset switch
         {
             "skaters" => await ImportSkatersAsync(content),
             "lines" => await ImportLinesAsync(content),
             "teams" => await ImportTeamAsync(content),
+            "shots" => await ImportShotsAsync(content, cancellationToken),
             _ => 0
         };
     }
@@ -97,6 +101,12 @@ public class NightlySyncJob(
     {
         var records = CsvParser.Parse<TeamRecord>(csvContent);
         return await _teamImporter.ImportAsync(records);
+    }
+
+    private async Task<int> ImportShotsAsync(string csvContent, CancellationToken cancellationToken)
+    {
+        var records = CsvParser.Parse<ShotRecord>(csvContent);
+        return await _shotImporter.ImportAsync(records, cancellationToken);
     }
 
     private static int GetCurrentSeason()

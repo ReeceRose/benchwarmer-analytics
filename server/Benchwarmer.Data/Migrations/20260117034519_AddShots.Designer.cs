@@ -3,6 +3,7 @@ using System;
 using Benchwarmer.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Benchwarmer.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260117034519_AddShots")]
+    partial class AddShots
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -88,7 +91,7 @@ namespace Benchwarmer.Data.Migrations
                         .HasColumnType("numeric")
                         .HasColumnName("x_goals_for");
 
-                    b.ToTable("chemistry_pairs", (string)null);
+                    b.ToTable("chemistry_pairs");
 
                     b.ToView("chemistry_pairs", (string)null);
                 });
@@ -189,7 +192,7 @@ namespace Benchwarmer.Data.Migrations
                     b.HasIndex("Season", "Team", "Situation", "Player1Id", "Player2Id", "Player3Id")
                         .IsUnique();
 
-                    b.ToTable("line_combinations", (string)null);
+                    b.ToTable("line_combinations");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.Player", b =>
@@ -256,7 +259,7 @@ namespace Benchwarmer.Data.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("players", (string)null);
+                    b.ToTable("players");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.Shot", b =>
@@ -836,7 +839,7 @@ namespace Benchwarmer.Data.Migrations
 
                     b.HasIndex("Season", "TeamCode");
 
-                    b.ToTable("shots", (string)null);
+                    b.ToTable("shots");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.SkaterSeason", b =>
@@ -925,7 +928,7 @@ namespace Benchwarmer.Data.Migrations
                     b.HasIndex("PlayerId", "Season", "Team", "Situation")
                         .IsUnique();
 
-                    b.ToTable("skater_seasons", (string)null);
+                    b.ToTable("skater_seasons");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.Team", b =>
@@ -968,7 +971,7 @@ namespace Benchwarmer.Data.Migrations
                     b.HasIndex("Abbreviation")
                         .IsUnique();
 
-                    b.ToTable("teams", (string)null);
+                    b.ToTable("teams");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.TeamSeason", b =>
@@ -1413,7 +1416,7 @@ namespace Benchwarmer.Data.Migrations
                     b.HasIndex("TeamAbbreviation", "Season", "Situation")
                         .IsUnique();
 
-                    b.ToTable("team_seasons", (string)null);
+                    b.ToTable("team_seasons");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.LineCombination", b =>
@@ -1439,6 +1442,21 @@ namespace Benchwarmer.Data.Migrations
                     b.Navigation("Player2");
 
                     b.Navigation("Player3");
+                });
+
+            modelBuilder.Entity("Benchwarmer.Data.Entities.Shot", b =>
+                {
+                    b.HasOne("Benchwarmer.Data.Entities.Player", "Goalie")
+                        .WithMany()
+                        .HasForeignKey("GoaliePlayerId");
+
+                    b.HasOne("Benchwarmer.Data.Entities.Player", "Shooter")
+                        .WithMany()
+                        .HasForeignKey("ShooterPlayerId");
+
+                    b.Navigation("Goalie");
+
+                    b.Navigation("Shooter");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.SkaterSeason", b =>

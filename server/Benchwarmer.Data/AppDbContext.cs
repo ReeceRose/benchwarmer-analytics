@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<SkaterSeason> SkaterSeasons => Set<SkaterSeason>();
   public DbSet<TeamSeason> TeamSeasons => Set<TeamSeason>();
   public DbSet<LineCombination> LineCombinations => Set<LineCombination>();
+  public DbSet<Shot> Shots => Set<Shot>();
 
   // Materialized views (read-only)
   public DbSet<ChemistryPairView> ChemistryPairs => Set<ChemistryPairView>();
@@ -71,6 +72,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
       e.HasIndex(l => new { l.Season, l.Team, l.Situation, l.Player1Id, l.Player2Id, l.Player3Id }).IsUnique();
       e.HasIndex(l => new { l.Season, l.Team });
+    });
+
+    // Shot (no FK constraints - player IDs stored but not enforced)
+    modelBuilder.Entity<Shot>(e =>
+    {
+      e.Ignore(s => s.Shooter);
+      e.Ignore(s => s.Goalie);
+
+      e.HasIndex(s => s.ShotId).IsUnique();
+      e.HasIndex(s => s.Season);
+      e.HasIndex(s => s.GameId);
+      e.HasIndex(s => s.ShooterPlayerId);
+      e.HasIndex(s => s.GoaliePlayerId);
+      e.HasIndex(s => new { s.Season, s.IsGoal });
+      e.HasIndex(s => new { s.Season, s.TeamCode });
     });
 
     // ChemistryPairView (materialized view - read only)
