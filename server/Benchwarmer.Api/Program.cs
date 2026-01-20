@@ -93,7 +93,12 @@ try
         .UseRecommendedSerializerSettings()
         .UsePostgreSqlStorage(options =>
             options.UseNpgsqlConnection(
-                builder.Configuration.GetConnectionString("DefaultConnection"))));
+                builder.Configuration.GetConnectionString("DefaultConnection")),
+            new PostgreSqlStorageOptions
+            {
+                // Initial seed can take hours - prevent job re-queue during long-running imports
+                InvisibilityTimeout = TimeSpan.FromHours(4)
+            }));
     builder.Services.AddHangfireServer();
 
     // Repositories

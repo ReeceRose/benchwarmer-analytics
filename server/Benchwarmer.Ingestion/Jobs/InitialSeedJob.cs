@@ -2,10 +2,14 @@ using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Importers;
 using Benchwarmer.Ingestion.Parsers;
 using Benchwarmer.Ingestion.Services;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 
 namespace Benchwarmer.Ingestion.Jobs;
 
+// Prevent concurrent execution and disable auto-retry (job handles failures internally)
+[DisableConcurrentExecution(timeoutInSeconds: 0)]
+[AutomaticRetry(Attempts = 0)]
 public class InitialSeedJob(
     MoneyPuckDownloader downloader,
     LineImporter lineImporter,

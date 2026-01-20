@@ -2,10 +2,13 @@ using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Importers;
 using Benchwarmer.Ingestion.Parsers;
 using Benchwarmer.Ingestion.Services;
+using Hangfire;
 using Microsoft.Extensions.Logging;
 
 namespace Benchwarmer.Ingestion.Jobs;
 
+[DisableConcurrentExecution(timeoutInSeconds: 0)]
+[AutomaticRetry(Attempts = 0)]
 public class NightlySyncJob(
     MoneyPuckDownloader downloader,
     LineImporter lineImporter,
