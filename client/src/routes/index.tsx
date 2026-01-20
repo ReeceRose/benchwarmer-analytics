@@ -70,7 +70,6 @@ function HomePage() {
 
   return (
     <div className="container py-6 space-y-8">
-      {/* Hero Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">NHL Analytics</h1>
@@ -79,7 +78,6 @@ function HomePage() {
           </p>
         </div>
 
-        {/* Global Filters */}
         <div className="flex items-center gap-3">
           <SeasonSelector
             value={effectiveSeason}
@@ -93,14 +91,12 @@ function HomePage() {
         </div>
       </div>
 
-      {/* Season Context */}
       {effectiveSeason && (
         <p className="text-sm text-muted-foreground">
           Showing {formatSeason(effectiveSeason)} {situation === "5on5" ? "5v5" : situation} stats
         </p>
       )}
 
-      {/* Error State */}
       {error && (
         <ErrorState
           title="Failed to load data"
@@ -109,17 +105,14 @@ function HomePage() {
         />
       )}
 
-      {/* Loading State */}
       {isLoading && (
         <div className="space-y-8">
-          {/* Leader Strip Skeleton */}
           <div className="flex gap-4 overflow-hidden">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-40 w-72 flex-shrink-0 rounded-lg" />
             ))}
           </div>
 
-          {/* Main Content Skeleton */}
           <div className="grid gap-6 lg:grid-cols-2">
             <Skeleton className="h-80 rounded-lg" />
             <Skeleton className="h-80 rounded-lg" />
@@ -131,39 +124,33 @@ function HomePage() {
         </div>
       )}
 
-      {/* Data Content */}
       {data && !isLoading && (
         <>
-          {/* Leaderboard Strip */}
           <section>
             <h2 className="text-lg font-semibold mb-3">League Leaders</h2>
             <LeaderStrip leaders={data.leaders} />
           </section>
 
-          {/* Luck vs Skill Section - Full width chart with lists below */}
-          <section className="space-y-4">
-            <LuckChart
-              runningHot={data.outliers.runningHot}
-              runningCold={data.outliers.runningCold}
-            />
-            <OutliersSection
-              runningHot={data.outliers.runningHot}
-              runningCold={data.outliers.runningCold}
-            />
-          </section>
+          {data.outliers && (
+            <section className="space-y-4">
+              <LuckChart
+                runningHot={data.outliers.runningHot}
+                runningCold={data.outliers.runningCold}
+              />
+              <OutliersSection
+                runningHot={data.outliers.runningHot}
+                runningCold={data.outliers.runningCold}
+              />
+            </section>
+          )}
 
-          {/* Secondary Grid */}
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* Top Lines */}
             <TopLinesCard lines={data.topLines} season={effectiveSeason} />
-
-            {/* Team Grid */}
             <TeamGrid />
           </div>
         </>
       )}
 
-      {/* Quick Links */}
       <section>
         <h2 className="text-lg font-semibold mb-3">Explore</h2>
         <div className="grid gap-4 md:grid-cols-3">
@@ -185,7 +172,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Attribution */}
       <p className="text-center text-sm text-muted-foreground pt-8">
         Data sourced from{" "}
         <a
