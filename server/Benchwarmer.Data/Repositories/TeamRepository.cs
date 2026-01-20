@@ -8,7 +8,8 @@ public class TeamRepository(AppDbContext db) : ITeamRepository
     public async Task<IReadOnlyList<Team>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await db.Teams
-            .OrderBy(t => t.Name)
+            .OrderBy(t => t.IsActive ? 0 : 1)  // Active teams first
+            .ThenBy(t => t.Name)
             .ToListAsync(cancellationToken);
     }
 
@@ -34,6 +35,7 @@ public class TeamRepository(AppDbContext db) : ITeamRepository
             existing.Name = team.Name;
             existing.Division = team.Division;
             existing.Conference = team.Conference;
+            existing.IsActive = team.IsActive;
             existing.UpdatedAt = DateTime.UtcNow;
             team = existing;
         }

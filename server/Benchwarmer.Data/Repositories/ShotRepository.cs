@@ -56,7 +56,14 @@ public class ShotRepository(AppDbContext db) : IShotRepository
         return totalUpserted;
     }
 
-    public async Task<IReadOnlyList<Shot>> GetByPlayerAsync(int playerId, int? season = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Shot>> GetByPlayerAsync(
+        int playerId,
+        int? season = null,
+        int? period = null,
+        string? shotType = null,
+        bool? goalsOnly = null,
+        int? limit = null,
+        CancellationToken cancellationToken = default)
     {
         var query = db.Shots.Where(s => s.ShooterPlayerId == playerId);
 
@@ -65,11 +72,32 @@ public class ShotRepository(AppDbContext db) : IShotRepository
             query = query.Where(s => s.Season == season.Value);
         }
 
-        return await query
+        if (period.HasValue)
+        {
+            query = query.Where(s => s.Period == period.Value);
+        }
+
+        if (!string.IsNullOrEmpty(shotType))
+        {
+            query = query.Where(s => s.ShotType == shotType);
+        }
+
+        if (goalsOnly == true)
+        {
+            query = query.Where(s => s.IsGoal);
+        }
+
+        query = query
             .OrderByDescending(s => s.Season)
             .ThenBy(s => s.GameId)
-            .ThenBy(s => s.GameTimeSeconds)
-            .ToListAsync(cancellationToken);
+            .ThenBy(s => s.GameTimeSeconds);
+
+        if (limit.HasValue)
+        {
+            query = query.Take(limit.Value);
+        }
+
+        return await query.ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<Shot>> GetByGameAsync(string gameId, CancellationToken cancellationToken = default)
@@ -84,6 +112,51 @@ public class ShotRepository(AppDbContext db) : IShotRepository
     public async Task<int> GetCountBySeasonAsync(int season, CancellationToken cancellationToken = default)
     {
         return await db.Shots.CountAsync(s => s.Season == season, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Shot>> GetByTeamAsync(
+        string teamCode,
+        int season,
+        bool? isPlayoffs = null,
+        int? period = null,
+        string? shotType = null,
+        int? shooterPlayerId = null,
+        int? limit = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = db.Shots.Where(s => s.TeamCode == teamCode && s.Season == season);
+
+        if (isPlayoffs.HasValue)
+        {
+            query = query.Where(s => s.IsPlayoffGame == isPlayoffs.Value);
+        }
+
+        if (period.HasValue)
+        {
+            query = query.Where(s => s.Period == period.Value);
+        }
+
+        if (!string.IsNullOrEmpty(shotType))
+        {
+            query = query.Where(s => s.ShotType == shotType);
+        }
+
+        if (shooterPlayerId.HasValue)
+        {
+            query = query.Where(s => s.ShooterPlayerId == shooterPlayerId.Value);
+        }
+
+        query = query
+            .OrderBy(s => s.GameId)
+            .ThenBy(s => s.Period)
+            .ThenBy(s => s.GameTimeSeconds);
+
+        if (limit.HasValue)
+        {
+            query = query.Take(limit.Value);
+        }
+
+        return await query.ToListAsync(cancellationToken);
     }
 
     private static void UpdateShotProperties(Shot existing, Shot updated)

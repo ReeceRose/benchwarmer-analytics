@@ -19,6 +19,30 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Player>> GetByTeamAndSeasonAsync(string teamAbbrev, int season, bool? isPlayoffs = null, CancellationToken cancellationToken = default)
+    {
+        // Get player IDs who played for this team during this season from SkaterSeasons
+        var query = db.SkaterSeasons
+            .Where(s => s.Team == teamAbbrev && s.Season == season && s.Situation == "all");
+
+        if (isPlayoffs.HasValue)
+        {
+            query = query.Where(s => s.IsPlayoffs == isPlayoffs.Value);
+        }
+
+        var playerIds = await query
+            .Select(s => s.PlayerId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        // Fetch full player details
+        return await db.Players
+            .Where(p => playerIds.Contains(p.Id))
+            .OrderBy(p => p.Position)
+            .ThenBy(p => p.Name)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<Player> Players, int TotalCount)> SearchAsync(
         string query,
         int? page = null,

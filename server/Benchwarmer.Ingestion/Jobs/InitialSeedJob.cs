@@ -32,7 +32,8 @@ public class InitialSeedJob(
     // MoneyPuck data starts from 2008
     private const int FirstSeason = 2008;
 
-    private static readonly string[] Datasets = ["teams", "skaters", "lines", "shots"];
+    // Datasets that have separate regular/playoff data
+    private static readonly string[] SeasonTypeDatasets = ["teams", "skaters", "lines"];
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
@@ -68,15 +69,15 @@ public class InitialSeedJob(
 
             _logger.LogInformation("Processing season {Season}...", season);
 
-            foreach (var dataset in Datasets)
+            // Import regular season and playoff data for each dataset
+            foreach (var dataset in SeasonTypeDatasets)
             {
-                var result = await DownloadDatasetAsync(dataset, season, cancellationToken);
-                if (result.Success)
-                {
-
-                    totalRecords += result.RecordCount;
-                }
+                totalRecords += await DownloadAndImportAsync(dataset, season, playoffs: false, cancellationToken);
+                totalRecords += await DownloadAndImportAsync(dataset, season, playoffs: true, cancellationToken);
             }
+
+            // Shots don't have separate playoff files
+            totalRecords += await DownloadAndImportShotsAsync(season, cancellationToken);
         }
 
         // Refresh materialized views after import
@@ -90,46 +91,75 @@ public class InitialSeedJob(
             duration.TotalMinutes);
     }
 
-    private async Task<DownloadResult> DownloadDatasetAsync(string dataset, int season, CancellationToken cancellationToken)
+    private async Task<int> DownloadAndImportAsync(string dataset, int season, bool playoffs, CancellationToken cancellationToken)
     {
+        var seasonType = playoffs ? "playoffs" : "regular";
         var result = dataset switch
         {
-            "teams" => await _downloader.DownloadTeamsAsync(season, cancellationToken),
-            "skaters" => await _downloader.DownloadSkatersAsync(season, cancellationToken),
-            "lines" => await _downloader.DownloadLinesAsync(season, cancellationToken),
-            "shots" => await _downloader.DownloadShotsAsync(season, cancellationToken),
+            "teams" => await _downloader.DownloadTeamsAsync(season, playoffs, cancellationToken),
+            "skaters" => await _downloader.DownloadSkatersAsync(season, playoffs, cancellationToken),
+            "lines" => await _downloader.DownloadLinesAsync(season, playoffs, cancellationToken),
             _ => throw new ArgumentException($"Unknown dataset: {dataset}")
         };
 
         if (result.Success && result.Content != null)
         {
-            var importedCount = await ImportDatasetAsync(dataset, result.Content, cancellationToken);
-            _logger.LogInformation("  {Dataset} {Season}: imported {Count} records", dataset, season, importedCount);
-        }
-        else if (!result.Success)
-        {
-            _logger.LogWarning("  {Dataset} {Season}: failed - {Error}", dataset, season, result.ErrorMessage);
+            var importedCount = await ImportDatasetAsync(dataset, result.Content, playoffs);
+            _logger.LogInformation("  {Dataset} {Season} {SeasonType}: imported {Count} records", dataset, season, seasonType, importedCount);
+            return importedCount;
         }
 
-        return result;
+        if (!result.Success)
+        {
+            // Playoff data might not exist for incomplete/future seasons - log as debug
+            if (playoffs)
+            {
+                _logger.LogDebug("  {Dataset} {Season} {SeasonType}: no data available", dataset, season, seasonType);
+            }
+            else
+            {
+                _logger.LogWarning("  {Dataset} {Season} {SeasonType}: failed - {Error}", dataset, season, seasonType, result.ErrorMessage);
+            }
+        }
+
+        return 0;
     }
 
-    private async Task<int> ImportDatasetAsync(string dataset, string content, CancellationToken cancellationToken = default)
+    private async Task<int> DownloadAndImportShotsAsync(int season, CancellationToken cancellationToken)
+    {
+        var result = await _downloader.DownloadShotsAsync(season, cancellationToken);
+
+        if (result.Success && result.Content != null)
+        {
+            var records = CsvParser.Parse<ShotRecord>(result.Content);
+            var importedCount = await _shotImporter.ImportAsync(records, cancellationToken);
+            _logger.LogInformation("  shots {Season}: imported {Count} records", season, importedCount);
+            return importedCount;
+        }
+
+        if (!result.Success)
+        {
+            _logger.LogWarning("  shots {Season}: failed - {Error}", season, result.ErrorMessage);
+        }
+
+        return 0;
+    }
+
+    private async Task<int> ImportDatasetAsync(string dataset, string content, bool playoffs)
     {
         return dataset switch
         {
-            "skaters" => await ImportSkatersAsync(content),
+            "skaters" => await ImportSkatersAsync(content, playoffs),
             "lines" => await ImportLinesAsync(content),
             "teams" => await ImportTeamAsync(content),
-            "shots" => await ImportShotsAsync(content, cancellationToken),
             _ => 0
         };
     }
 
-    private async Task<int> ImportSkatersAsync(string csvContent)
+    private async Task<int> ImportSkatersAsync(string csvContent, bool isPlayoffs)
     {
         var records = CsvParser.Parse<SkaterRecord>(csvContent);
-        return await _skaterImporter.ImportAsync(records);
+        return await _skaterImporter.ImportAsync(records, isPlayoffs);
     }
 
     private async Task<int> ImportLinesAsync(string csvContent)
@@ -142,12 +172,6 @@ public class InitialSeedJob(
     {
         var records = CsvParser.Parse<TeamRecord>(csvContent);
         return await _teamImporter.ImportAsync(records);
-    }
-
-    private async Task<int> ImportShotsAsync(string csvContent, CancellationToken cancellationToken)
-    {
-        var records = CsvParser.Parse<ShotRecord>(csvContent);
-        return await _shotImporter.ImportAsync(records, cancellationToken);
     }
 
     private static int GetCurrentSeason()

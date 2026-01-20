@@ -76,6 +76,23 @@ public static class PlayerEndpoints
             .Produces<LinemateHistoryDto>()
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{id:int}/shots", GetPlayerShots)
+            .WithName("GetPlayerShots")
+            .WithSummary("Get shot data for a player")
+            .WithDescription("""
+                Returns shot location data for rink visualization with summary statistics.
+
+                **Query Parameters:**
+                - `season`: Filter to specific season (e.g., 2024)
+                - `period`: Filter to specific period (1, 2, 3, or 4 for OT)
+                - `shotType`: Filter by shot type (WRIST, SLAP, SNAP, BACKHAND, TIP, WRAP, DEFLECTED)
+                - `goalsOnly`: If true, only return shots that resulted in goals
+                - `limit`: Max shots to return (omit for all shots)
+                """)
+            .Produces<PlayerShotsResponseDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> SearchPlayers(
@@ -168,6 +185,7 @@ public static class PlayerEndpoints
             s.Season,
             s.Team,
             s.Situation,
+            s.IsPlayoffs,
             s.GamesPlayed,
             s.IceTimeSeconds,
             s.Goals,
@@ -219,6 +237,87 @@ public static class PlayerEndpoints
         return Results.Ok(new LinemateHistoryDto(id, player.Name, linemates));
     }
 
+    private static async Task<IResult> GetPlayerShots(
+        int id,
+        int? season,
+        int? period,
+        string? shotType,
+        bool? goalsOnly,
+        int? limit,
+        IPlayerRepository playerRepository,
+        IShotRepository shotRepository,
+        CancellationToken cancellationToken)
+    {
+        var player = await playerRepository.GetByIdAsync(id, cancellationToken);
+        if (player is null)
+        {
+            return Results.NotFound(ApiError.PlayerNotFound);
+        }
+
+        // If no limit specified, return all shots (null passes through to repository)
+        var effectiveLimit = limit;
+
+        var shots = await shotRepository.GetByPlayerAsync(
+            id,
+            season,
+            period,
+            shotType,
+            goalsOnly,
+            effectiveLimit,
+            cancellationToken);
+
+        var limitedShots = shots.ToList();
+
+        var shotDtos = limitedShots.Select(s => new ShotDto(
+            s.ShotId,
+            s.ShooterPlayerId,
+            s.ShooterName,
+            s.ShooterPosition,
+            s.Period,
+            s.GameTimeSeconds,
+            s.ArenaAdjustedXCoord,
+            s.ArenaAdjustedYCoord,
+            s.ShotDistance,
+            s.ShotAngle,
+            s.ShotType,
+            s.IsGoal,
+            s.ShotWasOnGoal,
+            s.ShotOnEmptyNet,
+            s.ShotRebound,
+            s.ShotRush,
+            s.XGoal,
+            s.HomeSkatersOnIce,
+            s.AwaySkatersOnIce,
+            s.GameId
+        )).ToList();
+
+        // Calculate summary statistics
+        var totalShots = limitedShots.Count;
+        var goals = limitedShots.Count(s => s.IsGoal);
+        var shotsOnGoal = limitedShots.Count(s => s.ShotWasOnGoal);
+        var shootingPct = totalShots > 0 ? Math.Round((decimal)goals / totalShots * 100, 1) : 0;
+        var totalXGoal = limitedShots.Sum(s => s.XGoal ?? 0);
+        var goalsAboveExpected = Math.Round(goals - totalXGoal, 2);
+
+        var highDanger = limitedShots.Count(s => s.XGoal > 0.15m);
+        var mediumDanger = limitedShots.Count(s => s.XGoal >= 0.06m && s.XGoal <= 0.15m);
+        var lowDanger = limitedShots.Count(s => s.XGoal < 0.06m);
+
+        var summary = new ShotSummaryDto(
+            totalShots,
+            goals,
+            shotsOnGoal,
+            shootingPct,
+            Math.Round(totalXGoal, 2),
+            goalsAboveExpected,
+            highDanger,
+            mediumDanger,
+            lowDanger
+        );
+
+        return Results.Ok(new PlayerShotsResponseDto(id, player.Name, season, shotDtos, summary));
+    }
+
     private static async Task<IResult> ComparePlayers(
         string ids,
         int? season,
@@ -264,6 +363,7 @@ public static class PlayerEndpoints
                     latestStat.Season,
                     latestStat.Team,
                     latestStat.Situation,
+                    latestStat.IsPlayoffs,
                     latestStat.GamesPlayed,
                     latestStat.IceTimeSeconds,
                     latestStat.Goals,
@@ -312,4 +412,12 @@ public record PlayerComparisonResultDto(
     int? Season,
     string Situation,
     IReadOnlyList<PlayerComparisonDto> Players
+);
+
+public record PlayerShotsResponseDto(
+    int PlayerId,
+    string PlayerName,
+    int? Season,
+    IReadOnlyList<ShotDto> Shots,
+    ShotSummaryDto Summary
 );

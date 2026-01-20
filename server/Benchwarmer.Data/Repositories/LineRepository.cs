@@ -101,6 +101,7 @@ public class LineRepository(AppDbContext db) : ILineRepository
         string teamAbbrev,
         int season,
         string? situation = null,
+        string? positionFilter = null,
         CancellationToken cancellationToken = default)
     {
         var query = db.ChemistryPairs
@@ -109,6 +110,22 @@ public class LineRepository(AppDbContext db) : ILineRepository
         if (!string.IsNullOrEmpty(situation))
         {
             query = query.Where(c => c.Situation == situation);
+        }
+
+        // Apply position filter
+        if (!string.IsNullOrEmpty(positionFilter))
+        {
+            query = positionFilter.ToLowerInvariant() switch
+            {
+                // Forwards: C, LW, RW (both players must be forwards)
+                "forward" or "forwards" => query.Where(c =>
+                    (c.Player1Position == "C" || c.Player1Position == "LW" || c.Player1Position == "RW") &&
+                    (c.Player2Position == "C" || c.Player2Position == "LW" || c.Player2Position == "RW")),
+                // Defense: D (both players must be defensemen)
+                "defense" or "defensemen" => query.Where(c =>
+                    c.Player1Position == "D" && c.Player2Position == "D"),
+                _ => query
+            };
         }
 
         var pairs = await query
@@ -144,8 +161,10 @@ public class LineRepository(AppDbContext db) : ILineRepository
             return new ChemistryPair(
                 isPlayer1 ? c.Player2Id : c.Player1Id,
                 isPlayer1 ? c.Player2Name : c.Player1Name,
+                isPlayer1 ? c.Player2Position : c.Player1Position,
                 playerId,
                 isPlayer1 ? c.Player1Name : c.Player2Name,
+                isPlayer1 ? c.Player1Position : c.Player2Position,
                 (int)c.TotalIceTimeSeconds,
                 c.GamesPlayed,
                 c.GoalsFor,
@@ -169,8 +188,10 @@ public class LineRepository(AppDbContext db) : ILineRepository
         return new ChemistryPair(
             c.Player1Id,
             c.Player1Name,
+            c.Player1Position,
             c.Player2Id,
             c.Player2Name,
+            c.Player2Position,
             (int)c.TotalIceTimeSeconds,
             c.GamesPlayed,
             c.GoalsFor,

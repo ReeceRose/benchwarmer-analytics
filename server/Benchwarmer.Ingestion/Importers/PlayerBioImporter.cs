@@ -24,7 +24,7 @@ public partial class PlayerBioImporter(
                 FirstName = firstName,
                 LastName = lastName,
                 Position = bio.PrimaryPosition ?? bio.Position,
-                CurrentTeamAbbreviation = bio.Team,
+                CurrentTeamAbbreviation = TeamAbbreviationNormalizer.NormalizeOrNull(bio.Team),
                 BirthDate = ParseBirthDate(bio.BirthDate),
                 HeightInches = heightInches,
                 WeightLbs = bio.WeightLbs.HasValue ? (int)bio.WeightLbs.Value : null,

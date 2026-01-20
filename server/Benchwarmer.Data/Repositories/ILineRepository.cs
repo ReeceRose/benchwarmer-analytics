@@ -20,6 +20,7 @@ public interface ILineRepository
         string teamAbbrev,
         int season,
         string? situation = null,
+        string? positionFilter = null,
         CancellationToken cancellationToken = default);
 
     Task UpsertBatchAsync(IEnumerable<LineCombination> lines, CancellationToken cancellationToken = default);
@@ -42,8 +43,10 @@ public interface ILineRepository
 public record ChemistryPair(
     int Player1Id,
     string Player1Name,
+    string? Player1Position,
     int Player2Id,
     string Player2Name,
+    string? Player2Position,
     int TotalIceTimeSeconds,
     int GamesPlayed,
     int GoalsFor,

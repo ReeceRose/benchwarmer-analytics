@@ -10,7 +10,7 @@ public class SkaterImporter(
     ISkaterStatsRepository statsRepository,
     ILogger<SkaterImporter> logger)
 {
-    public async Task<int> ImportAsync(IEnumerable<SkaterRecord> skaters)
+    public async Task<int> ImportAsync(IEnumerable<SkaterRecord> skaters, bool isPlayoffs = false)
     {
         var count = 0;
 
@@ -20,17 +20,19 @@ public class SkaterImporter(
         foreach (var group in playerGroups)
         {
             var first = group.First();
+            var normalizedTeam = TeamAbbreviationNormalizer.Normalize(first.Team);
 
             // Upsert player basic info via repository
-            await playerRepository.UpsertBasicInfoAsync(first.PlayerId, first.Name, first.Team);
+            await playerRepository.UpsertBasicInfoAsync(first.PlayerId, first.Name, normalizedTeam);
 
             // Collect all season stats for this player
             var seasonStats = group.Select(record => new SkaterSeason
             {
                 PlayerId = record.PlayerId,
                 Season = record.Season,
-                Team = record.Team,
+                Team = TeamAbbreviationNormalizer.Normalize(record.Team),
                 Situation = record.Situation,
+                IsPlayoffs = isPlayoffs,
                 GamesPlayed = record.GamesPlayed,
                 IceTimeSeconds = (int)record.IceTime,
                 Goals = (int)record.Goals,
@@ -46,7 +48,7 @@ public class SkaterImporter(
             count += seasonStats.Count;
         }
 
-        logger.LogInformation("Imported {Count} skater season records", count);
+        logger.LogInformation("Imported {Count} skater {SeasonType} records", count, isPlayoffs ? "playoffs" : "regular season");
         return count;
     }
 }

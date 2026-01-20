@@ -1,6 +1,8 @@
 using Benchwarmer.Api.Dtos;
+using Benchwarmer.Data;
 using Benchwarmer.Data.Repositories;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Api.Endpoints;
 
@@ -28,8 +30,14 @@ public static class TeamEndpoints
 
         group.MapGet("/{abbrev}/roster", GetTeamRoster)
             .WithName("GetTeamRoster")
-            .WithSummary("Get current roster for a team")
-            .WithDescription("Returns all players currently on a team's roster with biographical details including position, height, weight, and headshot URL.")
+            .WithSummary("Get roster for a team")
+            .WithDescription("""
+                Returns players on a team's roster with biographical details including position, height, weight, and headshot URL.
+
+                **Query Parameters:**
+                - `season`: Filter by season year (e.g., 2024 for 2024-25 season). If not provided, returns all players who have ever played for the team.
+                - `playoffs`: Filter by season type. true = playoffs only, false = regular season only. If not provided, returns both.
+                """)
             .Produces<RosterDto>()
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
@@ -65,6 +73,14 @@ public static class TeamEndpoints
             .Produces<ChemistryMatrixDto>()
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{abbrev}/seasons", GetTeamSeasons)
+            .WithName("GetTeamSeasons")
+            .WithSummary("Get seasons with data for a team")
+            .WithDescription("Returns all seasons that have player data for this specific team, sorted by most recent first.")
+            .Produces<SeasonListDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetAllTeams(
@@ -72,7 +88,7 @@ public static class TeamEndpoints
         CancellationToken cancellationToken)
     {
         var teams = await repository.GetAllAsync(cancellationToken);
-        var dtos = teams.Select(t => new TeamDto(t.Id, t.Abbreviation, t.Name, t.Division, t.Conference)).ToList();
+        var dtos = teams.Select(t => new TeamDto(t.Id, t.Abbreviation, t.Name, t.Division, t.Conference, t.IsActive)).ToList();
         return Results.Ok(new TeamListDto(dtos));
     }
 
@@ -86,13 +102,16 @@ public static class TeamEndpoints
         {
             return Results.NotFound(ApiError.TeamNotFound);
         }
-        return Results.Ok(new TeamDto(team.Id, team.Abbreviation, team.Name, team.Division, team.Conference));
+        return Results.Ok(new TeamDto(team.Id, team.Abbreviation, team.Name, team.Division, team.Conference, team.IsActive));
     }
 
     private static async Task<IResult> GetTeamRoster(
         string abbrev,
+        int? season,
+        bool? playoffs,
         ITeamRepository teamRepository,
         IPlayerRepository playerRepository,
+        ISkaterStatsRepository statsRepository,
         CancellationToken cancellationToken)
     {
         var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
@@ -101,23 +120,100 @@ public static class TeamEndpoints
             return Results.NotFound(ApiError.TeamNotFound);
         }
 
-        var players = await playerRepository.GetByTeamAsync(abbrev, cancellationToken);
+        IReadOnlyList<RosterPlayerDto> dtos;
 
-        var dtos = players.Select(p => new PlayerDetailDto(
-            p.Id,
-            p.Name,
-            p.FirstName,
-            p.LastName,
-            p.Position,
-            p.CurrentTeamAbbreviation,
-            p.HeadshotUrl,
-            p.BirthDate,
-            p.HeightInches,
-            p.WeightLbs,
-            p.Shoots
-        )).ToList();
+        if (season.HasValue)
+        {
+            // When season is specified, get stats with player info included
+            var stats = await statsRepository.GetByTeamSeasonAsync(abbrev, season.Value, "all", playoffs, cancellationToken);
 
-        return Results.Ok(new RosterDto(abbrev, dtos));
+            // When playoffs is null (Both), we need to aggregate regular season + playoff stats per player
+            if (!playoffs.HasValue)
+            {
+                dtos = stats
+                    .Where(s => s.Player != null)
+                    .GroupBy(s => s.PlayerId)
+                    .Select(g =>
+                    {
+                        var player = g.First().Player!;
+                        var totalToi = g.Sum(s => s.IceTimeSeconds);
+                        // Weight CF% by ice time for proper averaging
+                        decimal? weightedCfPct = totalToi > 0
+                            ? g.Sum(s => (s.CorsiForPct ?? 0m) * s.IceTimeSeconds) / totalToi
+                            : null;
+
+                        return new RosterPlayerDto(
+                            player.Id,
+                            player.Name,
+                            player.FirstName,
+                            player.LastName,
+                            player.Position,
+                            player.CurrentTeamAbbreviation,
+                            player.HeadshotUrl,
+                            player.BirthDate,
+                            player.HeightInches,
+                            player.WeightLbs,
+                            player.Shoots,
+                            g.Sum(s => s.GamesPlayed),
+                            totalToi,
+                            g.Sum(s => s.Goals),
+                            g.Sum(s => s.Assists),
+                            g.Sum(s => s.Goals) + g.Sum(s => s.Assists),
+                            g.Sum(s => s.Shots),
+                            g.Sum(s => s.ExpectedGoals),
+                            weightedCfPct
+                        );
+                    })
+                    .OrderByDescending(p => p.IceTimeSeconds)
+                    .ToList();
+            }
+            else
+            {
+                dtos = stats
+                    .Where(s => s.Player != null)
+                    .Select(s => new RosterPlayerDto(
+                        s.Player!.Id,
+                        s.Player.Name,
+                        s.Player.FirstName,
+                        s.Player.LastName,
+                        s.Player.Position,
+                        s.Player.CurrentTeamAbbreviation,
+                        s.Player.HeadshotUrl,
+                        s.Player.BirthDate,
+                        s.Player.HeightInches,
+                        s.Player.WeightLbs,
+                        s.Player.Shoots,
+                        s.GamesPlayed,
+                        s.IceTimeSeconds,
+                        s.Goals,
+                        s.Assists,
+                        s.Goals + s.Assists,
+                        s.Shots,
+                        s.ExpectedGoals,
+                        s.CorsiForPct
+                    )).ToList();
+            }
+        }
+        else
+        {
+            // Without season, just get player list without stats
+            var players = await playerRepository.GetByTeamAsync(abbrev, cancellationToken);
+            dtos = players.Select(p => new RosterPlayerDto(
+                p.Id,
+                p.Name,
+                p.FirstName,
+                p.LastName,
+                p.Position,
+                p.CurrentTeamAbbreviation,
+                p.HeadshotUrl,
+                p.BirthDate,
+                p.HeightInches,
+                p.WeightLbs,
+                p.Shoots
+            )).ToList();
+        }
+
+        return Results.Ok(new RosterDto(abbrev, dtos, season, playoffs));
     }
 
     private static readonly string[] ValidSituations = ["all", "5on5", "5on4", "4on5", "5on3", "3on5", "4on4", "3on3", "other"];
@@ -220,6 +316,7 @@ public static class TeamEndpoints
         string abbrev,
         int season,
         string? situation,
+        string? position,
         ITeamRepository teamRepository,
         ILineRepository lineRepository,
         CancellationToken cancellationToken)
@@ -230,13 +327,15 @@ public static class TeamEndpoints
             return Results.NotFound(ApiError.TeamNotFound);
         }
 
-        var pairs = await lineRepository.GetChemistryMatrixAsync(abbrev, season, situation, cancellationToken);
+        var pairs = await lineRepository.GetChemistryMatrixAsync(abbrev, season, situation, position, cancellationToken);
 
         var dtos = pairs.Select(p => new ChemistryPairDto(
             p.Player1Id,
             p.Player1Name,
+            p.Player1Position,
             p.Player2Id,
             p.Player2Name,
+            p.Player2Position,
             p.TotalIceTimeSeconds,
             p.GamesPlayed,
             p.GoalsFor,
@@ -246,5 +345,32 @@ public static class TeamEndpoints
         )).ToList();
 
         return Results.Ok(new ChemistryMatrixDto(abbrev, season, situation, dtos));
+    }
+
+    private static async Task<IResult> GetTeamSeasons(
+        string abbrev,
+        ITeamRepository teamRepository,
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+
+        var seasons = await db.SkaterSeasons
+            .Where(s => s.Team == abbrev)
+            .Select(s => s.Season)
+            .Distinct()
+            .OrderByDescending(s => s)
+            .ToListAsync(cancellationToken);
+
+        var dtos = seasons.Select(year => new SeasonDto(
+            year,
+            $"{year}-{(year + 1) % 100:D2}"
+        )).ToList();
+
+        return Results.Ok(new SeasonListDto(dtos));
     }
 }

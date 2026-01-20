@@ -10,22 +10,27 @@ public class MoneyPuckDownloader(HttpClient httpClient, ILogger<MoneyPuckDownloa
 
     private const string BaseUrl = "https://moneypuck.com/moneypuck/playerData";
 
-    public async Task<DownloadResult> DownloadSkatersAsync(int season, CancellationToken cancellationToken = default)
+    private static string GetSeasonType(bool playoffs) => playoffs ? "playoffs" : "regular";
+
+    public async Task<DownloadResult> DownloadSkatersAsync(int season, bool playoffs = false, CancellationToken cancellationToken = default)
     {
-        var url = $"{BaseUrl}/seasonSummary/{season}/regular/skaters.csv";
-        return await DownloadFileAsync("skaters", season, url, cancellationToken);
+        var seasonType = GetSeasonType(playoffs);
+        var url = $"{BaseUrl}/seasonSummary/{season}/{seasonType}/skaters.csv";
+        return await DownloadFileAsync($"skaters_{seasonType}", season, url, cancellationToken);
     }
 
-    public async Task<DownloadResult> DownloadLinesAsync(int season, CancellationToken cancellationToken = default)
+    public async Task<DownloadResult> DownloadLinesAsync(int season, bool playoffs = false, CancellationToken cancellationToken = default)
     {
-        var url = $"{BaseUrl}/seasonSummary/{season}/regular/lines.csv";
-        return await DownloadFileAsync("lines", season, url, cancellationToken);
+        var seasonType = GetSeasonType(playoffs);
+        var url = $"{BaseUrl}/seasonSummary/{season}/{seasonType}/lines.csv";
+        return await DownloadFileAsync($"lines_{seasonType}", season, url, cancellationToken);
     }
 
-    public async Task<DownloadResult> DownloadTeamsAsync(int season, CancellationToken cancellationToken = default)
+    public async Task<DownloadResult> DownloadTeamsAsync(int season, bool playoffs = false, CancellationToken cancellationToken = default)
     {
-        var url = $"{BaseUrl}/seasonSummary/{season}/regular/teams.csv";
-        return await DownloadFileAsync("teams", season, url, cancellationToken);
+        var seasonType = GetSeasonType(playoffs);
+        var url = $"{BaseUrl}/seasonSummary/{season}/{seasonType}/teams.csv";
+        return await DownloadFileAsync($"teams_{seasonType}", season, url, cancellationToken);
     }
 
     public async Task<DownloadResult> DownloadPlayerBiosAsync(CancellationToken cancellationToken = default)

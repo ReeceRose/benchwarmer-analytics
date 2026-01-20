@@ -53,6 +53,10 @@ namespace Benchwarmer.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("player1_name");
 
+                    b.Property<string>("Player1Position")
+                        .HasColumnType("text")
+                        .HasColumnName("player1_position");
+
                     b.Property<int>("Player2Id")
                         .HasColumnType("integer")
                         .HasColumnName("player2_id");
@@ -61,6 +65,10 @@ namespace Benchwarmer.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("player2_name");
+
+                    b.Property<string>("Player2Position")
+                        .HasColumnType("text")
+                        .HasColumnName("player2_position");
 
                     b.Property<int>("Season")
                         .HasColumnType("integer")
@@ -88,9 +96,82 @@ namespace Benchwarmer.Data.Migrations
                         .HasColumnType("numeric")
                         .HasColumnName("x_goals_for");
 
-                    b.ToTable("chemistry_pairs", (string)null);
+                    b.ToTable("chemistry_pairs");
 
                     b.ToView("chemistry_pairs", (string)null);
+                });
+
+            modelBuilder.Entity("Benchwarmer.Data.Entities.Game", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AwayScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("away_score");
+
+                    b.Property<string>("AwayTeamCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("away_team_code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("GameDate")
+                        .HasColumnType("date")
+                        .HasColumnName("game_date");
+
+                    b.Property<string>("GameId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("game_id");
+
+                    b.Property<string>("GameState")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("game_state");
+
+                    b.Property<int>("GameType")
+                        .HasColumnType("integer")
+                        .HasColumnName("game_type");
+
+                    b.Property<int>("HomeScore")
+                        .HasColumnType("integer")
+                        .HasColumnName("home_score");
+
+                    b.Property<string>("HomeTeamCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("home_team_code");
+
+                    b.Property<string>("PeriodType")
+                        .HasColumnType("text")
+                        .HasColumnName("period_type");
+
+                    b.Property<int>("Season")
+                        .HasColumnType("integer")
+                        .HasColumnName("season");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameDate");
+
+                    b.HasIndex("GameId")
+                        .IsUnique();
+
+                    b.HasIndex("GameDate", "GameState");
+
+                    b.ToTable("games");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.LineCombination", b =>
@@ -189,7 +270,7 @@ namespace Benchwarmer.Data.Migrations
                     b.HasIndex("Season", "Team", "Situation", "Player1Id", "Player2Id", "Player3Id")
                         .IsUnique();
 
-                    b.ToTable("line_combinations", (string)null);
+                    b.ToTable("line_combinations");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.Player", b =>
@@ -256,7 +337,7 @@ namespace Benchwarmer.Data.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("players", (string)null);
+                    b.ToTable("players");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.Shot", b =>
@@ -836,7 +917,7 @@ namespace Benchwarmer.Data.Migrations
 
                     b.HasIndex("Season", "TeamCode");
 
-                    b.ToTable("shots", (string)null);
+                    b.ToTable("shots");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.SkaterSeason", b =>
@@ -884,6 +965,10 @@ namespace Benchwarmer.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("ice_time_seconds");
 
+                    b.Property<bool>("IsPlayoffs")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_playoffs");
+
                     b.Property<decimal?>("OnIceSavePct")
                         .HasColumnType("numeric")
                         .HasColumnName("on_ice_save_pct");
@@ -922,10 +1007,10 @@ namespace Benchwarmer.Data.Migrations
 
                     b.HasIndex("Season", "Team");
 
-                    b.HasIndex("PlayerId", "Season", "Team", "Situation")
+                    b.HasIndex("PlayerId", "Season", "Team", "Situation", "IsPlayoffs")
                         .IsUnique();
 
-                    b.ToTable("skater_seasons", (string)null);
+                    b.ToTable("skater_seasons");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.Team", b =>
@@ -954,6 +1039,10 @@ namespace Benchwarmer.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("division");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
@@ -968,7 +1057,7 @@ namespace Benchwarmer.Data.Migrations
                     b.HasIndex("Abbreviation")
                         .IsUnique();
 
-                    b.ToTable("teams", (string)null);
+                    b.ToTable("teams");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.TeamSeason", b =>
@@ -1413,7 +1502,7 @@ namespace Benchwarmer.Data.Migrations
                     b.HasIndex("TeamAbbreviation", "Season", "Situation")
                         .IsUnique();
 
-                    b.ToTable("team_seasons", (string)null);
+                    b.ToTable("team_seasons");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.LineCombination", b =>

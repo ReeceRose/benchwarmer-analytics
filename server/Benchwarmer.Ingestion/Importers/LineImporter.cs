@@ -153,7 +153,8 @@ public class LineImporter(
             int? player3Id = playerIds.Count > 2 ? playerIds[2] : null;
 
             // Skip if we've already processed this combination
-            var key = (record.Season, record.Team, record.Situation, player1Id, player2Id, player3Id);
+            var normalizedTeam = TeamAbbreviationNormalizer.Normalize(record.Team);
+            var key = (record.Season, normalizedTeam, record.Situation, player1Id, player2Id, player3Id);
             if (!processedKeys.Add(key))
             {
                 continue;
@@ -162,7 +163,7 @@ public class LineImporter(
             linesToUpsert.Add(new LineCombination
             {
                 Season = record.Season,
-                Team = record.Team,
+                Team = normalizedTeam,
                 Situation = record.Situation,
                 Player1Id = player1Id,
                 Player2Id = player2Id,

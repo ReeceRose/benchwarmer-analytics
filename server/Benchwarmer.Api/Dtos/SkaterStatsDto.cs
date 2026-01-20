@@ -6,6 +6,7 @@ public record SkaterStatsDto(
     int Season,
     string Team,
     string Situation,
+    bool IsPlayoffs,
     int GamesPlayed,
     int IceTimeSeconds,
     int Goals,

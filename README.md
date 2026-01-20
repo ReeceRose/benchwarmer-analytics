@@ -107,27 +107,34 @@ Benchwarmer Analytics provides interactive tools for analyzing NHL player and li
    cd benchwarmer-analytics
    ```
 
-2. **Start PostgreSQL**
+2. **Configure the database connection**
+
+   Create a `.env.local` file in the project root with your connection string:
+   ```bash
+   ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=benchwarmer;Username=benchwarmer;Password=benchwarmer
+   ```
+
+3. **Start PostgreSQL**
    ```bash
    ./scripts/dev.sh
    ```
 
-3. **Run database migrations** (after creating them in Phase 3)
+4. **Run database migrations** (after creating them in Phase 3)
    ```bash
    ./scripts/dev.sh migrate
    ```
 
-4. **Start the API** (Terminal 1)
+5. **Start the API** (Terminal 1)
    ```bash
-   dotnet watch run --project server/Benchwarmer.Api --no-hot-reload
+   export $(cat .env.local | xargs) && ASPNETCORE_ENVIRONMENT=Development dotnet watch run --project server/Benchwarmer.Api --no-hot-reload
    ```
 
-5. **Start the frontend** (Terminal 2)
+6. **Start the frontend** (Terminal 2)
    ```bash
    cd client && npm run dev
    ```
 
-6. **Access the application**
+7. **Access the application**
    - Frontend: http://localhost:5173
    - API: http://localhost:5000
    - Swagger: http://localhost:5000/swagger

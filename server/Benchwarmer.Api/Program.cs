@@ -78,7 +78,7 @@ try
         options.AddPolicy(CachePolicies.SemiStaticData, b => b.Expire(TimeSpan.FromHours(6)));
         options.AddPolicy(CachePolicies.TeamData, b => b
             .Expire(TimeSpan.FromMinutes(30))
-            .SetVaryByQuery("season", "situation", "lineType", "minToi", "sortBy", "sortDir", "page", "pageSize"));
+            .SetVaryByQuery("season", "situation", "playoffs", "lineType", "minToi", "sortBy", "sortDir", "page", "pageSize", "period", "shotType", "playerId", "goalsOnly", "limit", "position"));
         options.AddPolicy(CachePolicies.SearchResults, b => b
             .Expire(TimeSpan.FromMinutes(5))
             .SetVaryByQuery("q", "page", "pageSize"));
@@ -107,9 +107,13 @@ try
     builder.Services.AddScoped<ILineRepository, LineRepository>();
     builder.Services.AddScoped<ISkaterStatsRepository, SkaterStatsRepository>();
     builder.Services.AddScoped<IShotRepository, ShotRepository>();
+    builder.Services.AddScoped<IStatsRepository, StatsRepository>();
+    builder.Services.AddScoped<IGameRepository, GameRepository>();
+    builder.Services.AddScoped<IGameStatsRepository, GameStatsRepository>();
 
     // Services
     builder.Services.AddHttpClient<MoneyPuckDownloader>();
+    builder.Services.AddHttpClient<NhlScheduleService>();
     builder.Services.AddScoped<IngestionService>();
     builder.Services.AddScoped<LineImporter>();
     builder.Services.AddScoped<SkaterImporter>();
@@ -161,6 +165,9 @@ try
     app.MapTeamEndpoints();
     app.MapPlayerEndpoints();
     app.MapSeasonEndpoints();
+    app.MapStatsEndpoints();
+    app.MapShotEndpoints();
+    app.MapGameEndpoints();
 
     app.MapGet("/api/health", () => new { status = "healthy" })
         .WithName("HealthCheck")

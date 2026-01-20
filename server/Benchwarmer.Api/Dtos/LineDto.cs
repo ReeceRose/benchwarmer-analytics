@@ -33,8 +33,10 @@ public record LineListDto(
 public record ChemistryPairDto(
     int Player1Id,
     string Player1Name,
+    string? Player1Position,
     int Player2Id,
     string Player2Name,
+    string? Player2Position,
     int TotalIceTimeSeconds,
     int GamesPlayed,
     int GoalsFor,

@@ -58,6 +58,11 @@ client/                     # React frontend (not yet created)
 - `Directory.Build.props` sets shared settings: `net10.0`, nullable enabled, warnings as errors
 - Database: PostgreSQL 17
 - Background jobs: Hangfire (for nightly data ingestion)
+- **Database connection string**: Set via environment variable in `.env.local`:
+  ```
+  ConnectionStrings__DefaultConnection=your_connection_string_here
+  ```
+  Load with: `export $(cat .env.local | xargs)` before running the API
 
 ## Data Flow
 

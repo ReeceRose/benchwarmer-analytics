@@ -62,3 +62,4 @@ docs/PRD.md
 docs/TODO.md
 .env.local
 *\\* 
+client/src/routeTree.gen.ts

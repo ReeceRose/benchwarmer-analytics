@@ -10,5 +10,12 @@ public interface ISkaterStatsRepository
         string? situation = null,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<SkaterSeason>> GetByTeamSeasonAsync(
+        string teamAbbrev,
+        int season,
+        string situation = "all",
+        bool? isPlayoffs = null,
+        CancellationToken cancellationToken = default);
+
     Task UpsertBatchAsync(IEnumerable<SkaterSeason> stats, CancellationToken cancellationToken = default);
 }

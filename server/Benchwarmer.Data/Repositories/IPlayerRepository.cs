@@ -6,6 +6,7 @@ public interface IPlayerRepository
 {
     Task<Player?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Player>> GetByTeamAsync(string teamAbbrev, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Player>> GetByTeamAndSeasonAsync(string teamAbbrev, int season, bool? isPlayoffs = null, CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<Player> Players, int TotalCount)> SearchAsync(
         string query,
         int? page = null,

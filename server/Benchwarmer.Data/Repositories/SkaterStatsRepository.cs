@@ -30,14 +30,35 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<SkaterSeason>> GetByTeamSeasonAsync(
+        string teamAbbrev,
+        int season,
+        string situation = "all",
+        bool? isPlayoffs = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = db.SkaterSeasons
+            .Include(s => s.Player)
+            .Where(s => s.Team == teamAbbrev && s.Season == season && s.Situation == situation);
+
+        if (isPlayoffs.HasValue)
+        {
+            query = query.Where(s => s.IsPlayoffs == isPlayoffs.Value);
+        }
+
+        return await query
+            .OrderByDescending(s => s.IceTimeSeconds)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task UpsertBatchAsync(IEnumerable<SkaterSeason> stats, CancellationToken cancellationToken = default)
     {
         var statsList = stats.ToList();
         if (statsList.Count == 0) return;
 
-        // Extract unique keys to batch-fetch existing records
+        // Extract unique keys to batch-fetch existing records (including IsPlayoffs)
         var keys = statsList
-            .Select(s => new { s.PlayerId, s.Season, s.Team, s.Situation })
+            .Select(s => new { s.PlayerId, s.Season, s.Team, s.Situation, s.IsPlayoffs })
             .Distinct()
             .ToList();
 
@@ -46,23 +67,25 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
         var seasons = keys.Select(k => k.Season).Distinct().ToList();
         var teams = keys.Select(k => k.Team).Distinct().ToList();
         var situations = keys.Select(k => k.Situation).Distinct().ToList();
+        var isPlayoffsValues = keys.Select(k => k.IsPlayoffs).Distinct().ToList();
 
         var existingRecords = await db.SkaterSeasons
             .Where(s => playerIds.Contains(s.PlayerId) &&
                        seasons.Contains(s.Season) &&
                        teams.Contains(s.Team) &&
-                       situations.Contains(s.Situation))
+                       situations.Contains(s.Situation) &&
+                       isPlayoffsValues.Contains(s.IsPlayoffs))
             .ToListAsync(cancellationToken);
 
-        // Build dictionary for O(1) lookup
+        // Build dictionary for O(1) lookup (including IsPlayoffs in key)
         var existingLookup = existingRecords
-            .ToDictionary(s => (s.PlayerId, s.Season, s.Team, s.Situation));
+            .ToDictionary(s => (s.PlayerId, s.Season, s.Team, s.Situation, s.IsPlayoffs));
 
         var now = DateTime.UtcNow;
 
         foreach (var stat in statsList)
         {
-            var key = (stat.PlayerId, stat.Season, stat.Team, stat.Situation);
+            var key = (stat.PlayerId, stat.Season, stat.Team, stat.Situation, stat.IsPlayoffs);
 
             if (existingLookup.TryGetValue(key, out var existing))
             {

@@ -30,4 +30,7 @@ public record ApiError(string Error, string Code)
 
     public static ApiError InvalidSortField(IEnumerable<string> validValues) =>
         new($"Invalid sortBy. Valid values: {string.Join(", ", validValues)}", "INVALID_SORT_FIELD");
+
+    public static ApiError InvalidShotType(IEnumerable<string> validValues) =>
+        new($"Invalid shotType. Valid values: {string.Join(", ", validValues)}", "INVALID_SHOT_TYPE");
 }

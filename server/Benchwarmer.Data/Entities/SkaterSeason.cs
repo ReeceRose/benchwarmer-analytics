@@ -7,6 +7,7 @@ public class SkaterSeason
     public int Season { get; set; }                    // 2024 = 2024-25 season
     public required string Team { get; set; }
     public required string Situation { get; set; }     // "all", "5on5", "5on4", etc.
+    public bool IsPlayoffs { get; set; }               // true for playoffs, false for regular season
 
     // Basic stats
     public int GamesPlayed { get; set; }

@@ -31,5 +31,30 @@ public record PlayerSearchResultDto(
 
 public record RosterDto(
     string TeamAbbreviation,
-    IReadOnlyList<PlayerDetailDto> Players
+    IReadOnlyList<RosterPlayerDto> Players,
+    int? Season = null,
+    bool? Playoffs = null
+);
+
+public record RosterPlayerDto(
+    int Id,
+    string Name,
+    string? FirstName,
+    string? LastName,
+    string? Position,
+    string? CurrentTeamAbbreviation,
+    string? HeadshotUrl,
+    DateOnly? BirthDate,
+    int? HeightInches,
+    int? WeightLbs,
+    string? Shoots,
+    // Stats (only populated when season is specified)
+    int? GamesPlayed = null,
+    int? IceTimeSeconds = null,
+    int? Goals = null,
+    int? Assists = null,
+    int? Points = null,
+    int? Shots = null,
+    decimal? ExpectedGoals = null,
+    decimal? CorsiForPct = null
 );

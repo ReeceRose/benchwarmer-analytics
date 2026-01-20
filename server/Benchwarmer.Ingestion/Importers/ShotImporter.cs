@@ -46,11 +46,11 @@ public class ShotImporter(
             Season = record.Season,
             IsPlayoffGame = record.IsPlayoffGame != 0,
 
-            // Teams
-            HomeTeamCode = record.HomeTeamCode,
-            AwayTeamCode = record.AwayTeamCode,
-            Team = record.Team,
-            TeamCode = record.TeamCode,
+            // Teams (normalized)
+            HomeTeamCode = TeamAbbreviationNormalizer.NormalizeOrNull(record.HomeTeamCode)!,
+            AwayTeamCode = TeamAbbreviationNormalizer.NormalizeOrNull(record.AwayTeamCode)!,
+            Team = TeamAbbreviationNormalizer.NormalizeOrNull(record.Team)!,
+            TeamCode = TeamAbbreviationNormalizer.NormalizeOrNull(record.TeamCode)!,
             IsHomeTeam = record.IsHomeTeam != 0,
             HomeTeamWon = record.HomeTeamWon != 0,
 

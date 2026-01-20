@@ -10,6 +10,8 @@ public class ChemistryPairView
     public int Player2Id { get; set; }
     public string Player1Name { get; set; } = "";
     public string Player2Name { get; set; } = "";
+    public string? Player1Position { get; set; }
+    public string? Player2Position { get; set; }
     public string Team { get; set; } = "";
     public int Season { get; set; }
     public string Situation { get; set; } = "";

@@ -12,28 +12,97 @@ public class TeamImporter(
     ITeamRepository teamRepository,
     ILogger<TeamImporter> logger)
 {
+    // Current NHL team divisions and conferences (2024-25 season)
+    // All abbreviations use standard NHL format (LAK, NJD, SJS, TBL)
+    // MoneyPuck format (L.A, N.J, S.J, T.B) is normalized before lookup
+    private static readonly Dictionary<string, (string Division, string Conference)> TeamDivisions = new()
+    {
+        // Atlantic Division (Eastern Conference)
+        ["BOS"] = ("Atlantic", "Eastern"),
+        ["BUF"] = ("Atlantic", "Eastern"),
+        ["DET"] = ("Atlantic", "Eastern"),
+        ["FLA"] = ("Atlantic", "Eastern"),
+        ["MTL"] = ("Atlantic", "Eastern"),
+        ["OTT"] = ("Atlantic", "Eastern"),
+        ["TBL"] = ("Atlantic", "Eastern"),
+        ["TOR"] = ("Atlantic", "Eastern"),
+
+        // Metropolitan Division (Eastern Conference)
+        ["CAR"] = ("Metropolitan", "Eastern"),
+        ["CBJ"] = ("Metropolitan", "Eastern"),
+        ["NJD"] = ("Metropolitan", "Eastern"),
+        ["NYI"] = ("Metropolitan", "Eastern"),
+        ["NYR"] = ("Metropolitan", "Eastern"),
+        ["PHI"] = ("Metropolitan", "Eastern"),
+        ["PIT"] = ("Metropolitan", "Eastern"),
+        ["WSH"] = ("Metropolitan", "Eastern"),
+
+        // Central Division (Western Conference)
+        ["CHI"] = ("Central", "Western"),
+        ["COL"] = ("Central", "Western"),
+        ["DAL"] = ("Central", "Western"),
+        ["MIN"] = ("Central", "Western"),
+        ["NSH"] = ("Central", "Western"),
+        ["STL"] = ("Central", "Western"),
+        ["UTA"] = ("Central", "Western"),
+        ["WPG"] = ("Central", "Western"),
+
+        // Pacific Division (Western Conference)
+        ["ANA"] = ("Pacific", "Western"),
+        ["CGY"] = ("Pacific", "Western"),
+        ["EDM"] = ("Pacific", "Western"),
+        ["LAK"] = ("Pacific", "Western"),
+        ["SJS"] = ("Pacific", "Western"),
+        ["SEA"] = ("Pacific", "Western"),
+        ["VAN"] = ("Pacific", "Western"),
+        ["VGK"] = ("Pacific", "Western"),
+
+        // Historical teams (use their last division/conference)
+        ["ARI"] = ("Central", "Western"),  // Arizona Coyotes -> Utah Hockey Club (2024)
+        ["ATL"] = ("Southeast", "Eastern"),
+        ["PHX"] = ("Pacific", "Western"),
+        ["HFD"] = ("Northeast", "Eastern"),
+        ["QUE"] = ("Northeast", "Eastern"),
+        ["WIN"] = ("Smythe", "Western"),
+        ["MNS"] = ("Norris", "Western"),
+    };
+
+    // All current NHL teams use standard abbreviations
+    private static readonly HashSet<string> ActiveTeamAbbreviations =
+    [
+        "ANA", "BOS", "BUF", "CAR", "CBJ", "CGY", "CHI", "COL", "DAL",
+        "DET", "EDM", "FLA", "LAK", "MIN", "MTL", "NJD", "NSH",
+        "NYI", "NYR", "OTT", "PHI", "PIT", "SEA", "SJS", "STL", "TBL",
+        "TOR", "UTA", "VAN", "VGK", "WPG", "WSH"
+    ];
+
     public async Task<int> ImportAsync(IEnumerable<TeamRecord> records)
     {
         var recordsList = records.ToList();
         var now = DateTime.UtcNow;
 
-        // Group by team to upsert teams first
-        var teamGroups = recordsList.GroupBy(r => r.Team);
+        // Group by normalized team abbreviation to upsert teams first
+        var teamGroups = recordsList.GroupBy(r => TeamAbbreviationNormalizer.Normalize(r.Team));
 
         foreach (var group in teamGroups)
         {
             var first = group.First();
+            var normalizedAbbrev = group.Key;
 
-            // Upsert team via repository
+            // Upsert team via repository using normalized abbreviation
+            var divisionInfo = TeamDivisions.GetValueOrDefault(normalizedAbbrev);
             await teamRepository.UpsertAsync(new Team
             {
-                Abbreviation = first.Team,
-                Name = first.Name
+                Abbreviation = normalizedAbbrev,
+                Name = first.Name,
+                Division = divisionInfo.Division,
+                Conference = divisionInfo.Conference,
+                IsActive = ActiveTeamAbbreviations.Contains(normalizedAbbrev)
             });
         }
 
-        // Batch fetch all existing TeamSeasons in a single query
-        var teams = recordsList.Select(r => r.Team).Distinct().ToList();
+        // Batch fetch all existing TeamSeasons in a single query (using normalized abbreviations)
+        var teams = recordsList.Select(r => TeamAbbreviationNormalizer.Normalize(r.Team)).Distinct().ToList();
         var seasons = recordsList.Select(r => r.Season).Distinct().ToList();
         var situations = recordsList.Select(r => r.Situation).Distinct().ToList();
 
@@ -47,10 +116,11 @@ public class TeamImporter(
         var existingLookup = existingRecords
             .ToDictionary(t => (t.TeamAbbreviation, t.Season, t.Situation));
 
-        // Upsert each season/situation record using dictionary lookup
+        // Upsert each season/situation record using dictionary lookup (with normalized abbreviations)
         foreach (var record in recordsList)
         {
-            var key = (record.Team, record.Season, record.Situation);
+            var normalizedTeam = TeamAbbreviationNormalizer.Normalize(record.Team);
+            var key = (normalizedTeam, record.Season, record.Situation);
 
             if (existingLookup.TryGetValue(key, out var existing))
             {
@@ -58,7 +128,7 @@ public class TeamImporter(
             }
             else
             {
-                db.TeamSeasons.Add(MapToEntity(record, now));
+                db.TeamSeasons.Add(MapToEntity(record, normalizedTeam, now));
             }
         }
 
@@ -67,11 +137,11 @@ public class TeamImporter(
         return recordsList.Count;
     }
 
-    private static TeamSeason MapToEntity(TeamRecord r, DateTime now)
+    private static TeamSeason MapToEntity(TeamRecord r, string normalizedTeam, DateTime now)
     {
         return new TeamSeason
         {
-            TeamAbbreviation = r.Team,
+            TeamAbbreviation = normalizedTeam,
             Season = r.Season,
             Situation = r.Situation,
             GamesPlayed = r.GamesPlayed,

@@ -5,7 +5,8 @@ public record TeamDto(
     string Abbreviation,
     string Name,
     string? Division,
-    string? Conference
+    string? Conference,
+    bool IsActive
 );
 
 public record TeamListDto(IReadOnlyList<TeamDto> Teams);
