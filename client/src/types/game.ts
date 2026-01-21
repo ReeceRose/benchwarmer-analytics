@@ -54,6 +54,7 @@ export interface GameGoal {
   teamCode: string;
   strength: string | null;
   assists: string[];
+  isGameWinningGoal?: boolean;
 }
 
 export interface GameBoxscoreResponse {

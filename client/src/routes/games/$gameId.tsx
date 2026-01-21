@@ -65,7 +65,7 @@ function GameDetailPage() {
         boxscoreLoading ? (
           <GameBoxscoreTableSkeleton />
         ) : boxscoreData ? (
-          <GameBoxscoreTable boxscoreData={boxscoreData} season={season} />
+          <GameBoxscoreTable boxscoreData={boxscoreData} season={season} goals={game.goals} />
         ) : (
           <div className="text-center py-12 text-muted-foreground">
             Box score not available for this game.

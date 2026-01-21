@@ -42,7 +42,7 @@ export function GoalsList({ goals, awayCode, defaultExpanded = false }: GoalsLis
         <div className="space-y-1 text-xs">
           {displayGoals.map((goal, idx) => (
             <div key={idx} className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[9px] px-1 py-0">
+              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
                 {goal.teamCode === awayCode ? "A" : "H"}
               </Badge>
               <span className="font-medium">{goal.scorerName}</span>
@@ -52,9 +52,14 @@ export function GoalsList({ goals, awayCode, defaultExpanded = false }: GoalsLis
               {goal.strength && goal.strength !== "ev" && (
                 <Badge
                   variant="secondary"
-                  className="text-[9px] px-1 py-0 uppercase"
+                  className="text-xs px-1.5 py-0.5 uppercase"
                 >
                   {goal.strength}
+                </Badge>
+              )}
+              {goal.isGameWinningGoal && (
+                <Badge className="text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                  GWG
                 </Badge>
               )}
             </div>

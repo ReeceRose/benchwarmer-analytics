@@ -121,5 +121,6 @@ public record GameGoalDto(
     int ScorerId,
     string TeamCode,
     string? Strength,
-    IReadOnlyList<string> Assists
+    IReadOnlyList<string> Assists,
+    bool IsGameWinningGoal = false
 );

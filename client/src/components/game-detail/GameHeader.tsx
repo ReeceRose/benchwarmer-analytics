@@ -47,6 +47,11 @@ function DetailedGoalsList({
                 {goal.strength}
               </Badge>
             )}
+            {goal.isGameWinningGoal && (
+              <Badge className="text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                GWG
+              </Badge>
+            )}
             {goal.assists.length > 0 && (
               <span className="text-muted-foreground text-xs">
                 ({goal.assists.join(", ")})
@@ -170,7 +175,7 @@ export function GameHeader({ game }: GameHeaderProps) {
           </div>
         )}
 
-        {isLive && game.goals && game.goals.length > 0 && (
+        {game.goals && game.goals.length > 0 && (
           <DetailedGoalsList goals={game.goals} awayCode={game.away.teamCode} />
         )}
       </div>

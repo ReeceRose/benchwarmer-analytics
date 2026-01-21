@@ -117,6 +117,33 @@ public class NhlScheduleService(HttpClient httpClient, ILogger<NhlScheduleServic
         }
     }
 
+    public async Task<NhlGameLanding?> GetGameLandingAsync(string gameId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{BaseUrl}/gamecenter/{gameId}/landing";
+        logger.LogInformation("Fetching NHL game landing for game {GameId} from {Url}", gameId, url);
+
+        try
+        {
+            var response = await httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("NHL game landing request failed: HTTP {StatusCode}", response.StatusCode);
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var landing = JsonSerializer.Deserialize<NhlGameLanding>(json);
+
+            return landing;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error fetching NHL game landing for game {GameId}", gameId);
+            return null;
+        }
+    }
+
     public async Task<NhlLiveScoresResponse?> GetLiveScoresAsync(CancellationToken cancellationToken = default)
     {
         var url = $"{BaseUrl}/score/now";
@@ -216,7 +243,7 @@ internal class NhlTeam
     public int? Score { get; set; }
 }
 
-internal class NhlPeriodDescriptor
+public class NhlPeriodDescriptor
 {
     [JsonPropertyName("periodType")]
     public string? PeriodType { get; set; }
@@ -552,6 +579,94 @@ public class NhlGoalAssist
 
     [JsonPropertyName("assistsToDate")]
     public int? AssistsToDate { get; set; }
+}
+
+#endregion
+
+#region Game Landing Models
+
+public class NhlGameLanding
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("gameState")]
+    public string GameState { get; set; } = "";
+
+    [JsonPropertyName("gameDate")]
+    public string GameDate { get; set; } = "";
+
+    [JsonPropertyName("awayTeam")]
+    public NhlLandingTeam AwayTeam { get; set; } = new();
+
+    [JsonPropertyName("homeTeam")]
+    public NhlLandingTeam HomeTeam { get; set; } = new();
+
+    [JsonPropertyName("summary")]
+    public NhlGameSummary? Summary { get; set; }
+}
+
+public class NhlLandingTeam
+{
+    [JsonPropertyName("abbrev")]
+    public string Abbrev { get; set; } = "";
+
+    [JsonPropertyName("score")]
+    public int? Score { get; set; }
+}
+
+public class NhlGameSummary
+{
+    [JsonPropertyName("scoring")]
+    public List<NhlPeriodScoring> Scoring { get; set; } = [];
+}
+
+public class NhlPeriodScoring
+{
+    [JsonPropertyName("periodDescriptor")]
+    public NhlPeriodDescriptor? PeriodDescriptor { get; set; }
+
+    [JsonPropertyName("goals")]
+    public List<NhlScoringGoal> Goals { get; set; } = [];
+}
+
+public class NhlScoringGoal
+{
+    [JsonPropertyName("period")]
+    public int Period { get; set; }
+
+    [JsonPropertyName("timeInPeriod")]
+    public string TimeInPeriod { get; set; } = "";
+
+    [JsonPropertyName("playerId")]
+    public int PlayerId { get; set; }
+
+    [JsonPropertyName("name")]
+    public NhlPlayerName? Name { get; set; }
+
+    [JsonPropertyName("firstName")]
+    public NhlPlayerName? FirstName { get; set; }
+
+    [JsonPropertyName("lastName")]
+    public NhlPlayerName? LastName { get; set; }
+
+    [JsonPropertyName("teamAbbrev")]
+    public NhlPlayerName? TeamAbbrev { get; set; }
+
+    [JsonPropertyName("goalsToDate")]
+    public int? GoalsToDate { get; set; }
+
+    [JsonPropertyName("awayScore")]
+    public int AwayScore { get; set; }
+
+    [JsonPropertyName("homeScore")]
+    public int HomeScore { get; set; }
+
+    [JsonPropertyName("strength")]
+    public string? Strength { get; set; }
+
+    [JsonPropertyName("assists")]
+    public List<NhlGoalAssist> Assists { get; set; } = [];
 }
 
 #endregion

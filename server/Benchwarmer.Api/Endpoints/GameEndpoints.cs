@@ -321,7 +321,19 @@ public static class GameEndpoints
         }
 
         var dbStats = await gameStatsRepository.GetGameStatsAsync(gameId, cancellationToken);
-        return Results.Ok(MapToDto(game, dbStats));
+
+        // Fetch goals from landing endpoint for completed games
+        List<GameGoalDto>? goals = null;
+        if (game.GameState == "OFF")
+        {
+            var landing = await nhlScheduleService.GetGameLandingAsync(gameId, cancellationToken);
+            if (landing?.Summary?.Scoring != null)
+            {
+                goals = MapLandingGoalsWithGwg(landing, game.HomeTeamCode);
+            }
+        }
+
+        return Results.Ok(MapToDto(game, dbStats, goals));
     }
 
     private static async Task<IResult> GetGameShots(
@@ -558,15 +570,7 @@ public static class GameEndpoints
             p.AwayXG
         )).ToList() ?? [];
 
-        var goals = game.Goals.Select(g => new GameGoalDto(
-            Period: g.Period,
-            TimeInPeriod: g.TimeInPeriod,
-            ScorerName: g.Name?.Default ?? $"{g.FirstName?.Default} {g.LastName?.Default}".Trim(),
-            ScorerId: g.PlayerId,
-            TeamCode: g.TeamAbbrev ?? "",
-            Strength: g.Strength ?? g.GoalModifier,
-            Assists: g.Assists.Select(a => a.Name?.Default ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList()
-        )).ToList();
+        var goals = MapGoalsWithGwg(game.Goals, game.HomeTeam.Score, game.AwayTeam.Score, game.HomeTeam.Abbrev);
 
         DateOnly.TryParse(game.GameDate, out var gameDate);
 
@@ -595,7 +599,7 @@ public static class GameEndpoints
         return TeamNames.TryGetValue(teamCode, out var name) ? name : null;
     }
 
-    private static GameSummaryDto MapToDto(Game game, GameStats? stats)
+    private static GameSummaryDto MapToDto(Game game, GameStats? stats, List<GameGoalDto>? goals = null)
     {
         var hasShotData = stats != null;
         var isCompleted = game.GameState == "OFF";
@@ -652,7 +656,120 @@ public static class GameEndpoints
             Away: awayDto,
             PeriodType: game.PeriodType == "REG" ? null : game.PeriodType,
             Periods: periods,
-            HasShotData: hasShotData
+            HasShotData: hasShotData,
+            Goals: goals
+        );
+    }
+
+    /// <summary>
+    /// Finds the index of the game-winning goal.
+    /// The GWG is the goal that gave the winning team a lead they never lost
+    /// (i.e., the goal that put them at losingTeamFinalScore + 1).
+    /// </summary>
+    /// <param name="goals">List of goals with their metadata</param>
+    /// <param name="finalHomeScore">Final score for home team</param>
+    /// <param name="finalAwayScore">Final score for away team</param>
+    /// <returns>Index of the GWG, or null if no clear winner</returns>
+    private static int? FindGwgIndex(
+        IReadOnlyList<(bool IsHomeGoal, int HomeScoreAfter, int AwayScoreAfter)> goals,
+        int finalHomeScore,
+        int finalAwayScore)
+    {
+        var homeWins = finalHomeScore > finalAwayScore;
+        var awayWins = finalAwayScore > finalHomeScore;
+
+        // If it's a tie (shouldn't happen in NHL), no GWG
+        if (!homeWins && !awayWins)
+            return null;
+
+        var losingTeamFinalScore = homeWins ? finalAwayScore : finalHomeScore;
+
+        for (int i = 0; i < goals.Count; i++)
+        {
+            var goal = goals[i];
+            var isWinningTeamGoal = (homeWins && goal.IsHomeGoal) || (awayWins && !goal.IsHomeGoal);
+
+            if (isWinningTeamGoal)
+            {
+                var winningTeamScoreAfter = goal.IsHomeGoal ? goal.HomeScoreAfter : goal.AwayScoreAfter;
+                if (winningTeamScoreAfter == losingTeamFinalScore + 1)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Maps goals from live game data and determines which goal is the GWG.
+    /// </summary>
+    private static List<GameGoalDto> MapGoalsWithGwg(
+        List<NhlGameGoal> goals,
+        int? finalHomeScore,
+        int? finalAwayScore,
+        string homeTeamAbbrev)
+    {
+        if (goals.Count == 0 || finalHomeScore == null || finalAwayScore == null)
+            return [];
+
+        var goalData = goals
+            .Select(g => (IsHomeGoal: g.TeamAbbrev == homeTeamAbbrev, HomeScoreAfter: g.HomeScore, AwayScoreAfter: g.AwayScore))
+            .ToList();
+
+        var gwgIndex = FindGwgIndex(goalData, finalHomeScore.Value, finalAwayScore.Value);
+
+        return goals.Select((g, idx) => new GameGoalDto(
+            Period: g.Period,
+            TimeInPeriod: g.TimeInPeriod,
+            ScorerName: g.Name?.Default ?? $"{g.FirstName?.Default} {g.LastName?.Default}".Trim(),
+            ScorerId: g.PlayerId,
+            TeamCode: g.TeamAbbrev ?? "",
+            Strength: g.Strength ?? g.GoalModifier,
+            Assists: g.Assists.Select(a => a.Name?.Default ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList(),
+            IsGameWinningGoal: idx == gwgIndex
+        )).ToList();
+    }
+
+    /// <summary>
+    /// Maps goals from landing endpoint and determines which goal is the GWG.
+    /// </summary>
+    private static List<GameGoalDto> MapLandingGoalsWithGwg(NhlGameLanding landing, string homeTeamCode)
+    {
+        var allGoals = landing.Summary?.Scoring
+            .SelectMany(p => p.Goals)
+            .ToList() ?? [];
+
+        if (allGoals.Count == 0)
+            return [];
+
+        var finalHomeScore = landing.HomeTeam.Score;
+        var finalAwayScore = landing.AwayTeam.Score;
+
+        if (finalHomeScore == null || finalAwayScore == null)
+            return allGoals.Select(g => MapLandingGoalToDto(g, false)).ToList();
+
+        var goalData = allGoals
+            .Select(g => (IsHomeGoal: g.TeamAbbrev?.Default == homeTeamCode, HomeScoreAfter: g.HomeScore, AwayScoreAfter: g.AwayScore))
+            .ToList();
+
+        var gwgIndex = FindGwgIndex(goalData, finalHomeScore.Value, finalAwayScore.Value);
+
+        return allGoals.Select((g, idx) => MapLandingGoalToDto(g, idx == gwgIndex)).ToList();
+    }
+
+    private static GameGoalDto MapLandingGoalToDto(NhlScoringGoal g, bool isGwg)
+    {
+        return new GameGoalDto(
+            Period: g.Period,
+            TimeInPeriod: g.TimeInPeriod,
+            ScorerName: g.Name?.Default ?? $"{g.FirstName?.Default} {g.LastName?.Default}".Trim(),
+            ScorerId: g.PlayerId,
+            TeamCode: g.TeamAbbrev?.Default ?? "",
+            Strength: g.Strength,
+            Assists: g.Assists.Select(a => a.Name?.Default ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList(),
+            IsGameWinningGoal: isGwg
         );
     }
 }

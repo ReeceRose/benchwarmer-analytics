@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,19 +15,23 @@ import type {
   GameBoxscoreResponse,
   BoxscoreSkater,
   BoxscoreGoalie,
+  GameGoal,
 } from "@/types";
 
 interface GameBoxscoreTableProps {
   boxscoreData: GameBoxscoreResponse;
   season: number;
+  goals?: GameGoal[] | null;
 }
 
 function SkaterRow({
   skater,
   season,
+  hasGwg,
 }: {
   skater: BoxscoreSkater;
   season: number;
+  hasGwg?: boolean;
 }) {
   const navigate = useNavigate();
 
@@ -51,6 +56,11 @@ function SkaterRow({
         <span className="ml-2 text-xs text-muted-foreground">
           ({skater.position})
         </span>
+        {hasGwg && (
+          <Badge className="ml-2 text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+            GWG
+          </Badge>
+        )}
       </TableCell>
       <TableCell className="text-center font-mono font-bold">
         {skater.goals}
@@ -148,11 +158,13 @@ function TeamSkatersTable({
   goalies,
   teamCode,
   season,
+  gwgScorerId,
 }: {
   skaters: BoxscoreSkater[];
   goalies: BoxscoreGoalie[];
   teamCode: string;
   season: number;
+  gwgScorerId?: number;
 }) {
   if (skaters.length === 0 && goalies.length === 0) {
     return (
@@ -180,7 +192,12 @@ function TeamSkatersTable({
         </TableHeader>
         <TableBody>
           {skaters.map((skater) => (
-            <SkaterRow key={skater.playerId} skater={skater} season={season} />
+            <SkaterRow
+              key={skater.playerId}
+              skater={skater}
+              season={season}
+              hasGwg={skater.playerId === gwgScorerId}
+            />
           ))}
         </TableBody>
       </Table>
@@ -221,9 +238,14 @@ function TeamSkatersTable({
 export function GameBoxscoreTable({
   boxscoreData,
   season,
+  goals,
 }: GameBoxscoreTableProps) {
   const hasData =
     boxscoreData.homeSkaters.length > 0 || boxscoreData.awaySkaters.length > 0;
+
+  // Find the GWG scorer's player ID
+  const gwgGoal = goals?.find((g) => g.isGameWinningGoal);
+  const gwgScorerId = gwgGoal?.scorerId;
 
   if (!hasData) {
     return (
@@ -257,6 +279,7 @@ export function GameBoxscoreTable({
               goalies={boxscoreData.awayGoalies}
               teamCode={boxscoreData.awayTeamCode}
               season={season}
+              gwgScorerId={gwgScorerId}
             />
           </TabsContent>
           <TabsContent value="home">
@@ -265,6 +288,7 @@ export function GameBoxscoreTable({
               goalies={boxscoreData.homeGoalies}
               teamCode={boxscoreData.homeTeamCode}
               season={season}
+              gwgScorerId={gwgScorerId}
             />
           </TabsContent>
         </Tabs>
