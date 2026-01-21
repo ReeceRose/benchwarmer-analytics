@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Star, Target, TrendingUp, BarChart3, Clock, ChevronRight } from "lucide-react";
+import { Star, Target, TrendingUp, BarChart3, Clock, ChevronRight, Shield, Goal, Sparkles } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { formatToi } from "@/lib/formatters";
-import type { Leaderboards, LeaderEntry } from "@/types";
+import type { Leaderboards, GoalieLeaderboards, LeaderEntry } from "@/types";
 
 interface LeaderCardProps {
   title: string;
@@ -69,10 +69,23 @@ function LeaderCard({ title, icon, leaders, formatValue }: LeaderCardProps) {
 
 interface LeaderStripProps {
   leaders: Leaderboards;
+  goalieLeaders?: GoalieLeaderboards;
 }
 
-export function LeaderStrip({ leaders }: LeaderStripProps) {
-  const categories = [
+function formatSavePct(value: number): string {
+  return value >= 1 ? value.toFixed(3) : `.${(value * 1000).toFixed(0)}`;
+}
+
+function formatGaa(value: number): string {
+  return value.toFixed(2);
+}
+
+function formatGsax(value: number): string {
+  return value >= 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+}
+
+export function LeaderStrip({ leaders, goalieLeaders }: LeaderStripProps) {
+  const skaterCategories = [
     {
       key: "points",
       title: "Points",
@@ -110,10 +123,44 @@ export function LeaderStrip({ leaders }: LeaderStripProps) {
     },
   ];
 
+  const goalieCategories = goalieLeaders ? [
+    {
+      key: "savePct",
+      title: "Save %",
+      icon: <Shield className="h-4 w-4 text-blue-500" />,
+      data: goalieLeaders.savePct,
+      format: formatSavePct,
+    },
+    {
+      key: "gaa",
+      title: "GAA",
+      icon: <Goal className="h-4 w-4 text-red-500" />,
+      data: goalieLeaders.goalsAgainstAvg,
+      format: formatGaa,
+    },
+    {
+      key: "gsax",
+      title: "GSAx",
+      icon: <Sparkles className="h-4 w-4 text-yellow-500" />,
+      data: goalieLeaders.goalsSavedAboveExpected,
+      format: formatGsax,
+    },
+  ] : [];
+
   return (
     <div className="w-full overflow-x-auto pb-2">
       <div className="flex gap-4 min-w-max">
-        {categories.map((cat) => (
+        {skaterCategories.map((cat) => (
+          <LeaderCard
+            key={cat.key}
+            title={cat.title}
+            icon={cat.icon}
+            leaders={cat.data}
+            formatValue={cat.format}
+            statKey={cat.key}
+          />
+        ))}
+        {goalieCategories.map((cat) => (
           <LeaderCard
             key={cat.key}
             title={cat.title}

@@ -105,48 +105,58 @@ function HomePage() {
         />
       )}
 
-      {isLoading && (
-        <div className="space-y-8">
-          <div className="flex gap-4 overflow-hidden">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-40 w-72 flex-shrink-0 rounded-lg" />
-            ))}
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Skeleton className="h-80 rounded-lg" />
-            <Skeleton className="h-80 rounded-lg" />
-          </div>
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Skeleton className="h-64 rounded-lg" />
-            <Skeleton className="h-64 rounded-lg" />
-          </div>
-        </div>
-      )}
-
-      {data && !isLoading && (
+      {!error && (
         <>
           <section>
             <h2 className="text-lg font-semibold mb-3">League Leaders</h2>
-            <LeaderStrip leaders={data.leaders} />
+            {isLoading ? (
+              <div className="flex gap-4 overflow-hidden">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="h-40 w-70 shrink-0 rounded-lg" />
+                ))}
+              </div>
+            ) : data ? (
+              <LeaderStrip leaders={data.leaders} goalieLeaders={data.goalieLeaders} />
+            ) : null}
           </section>
 
-          {data.outliers && (
-            <section className="space-y-4">
-              <LuckChart
-                runningHot={data.outliers.runningHot}
-                runningCold={data.outliers.runningCold}
-              />
-              <OutliersSection
-                runningHot={data.outliers.runningHot}
-                runningCold={data.outliers.runningCold}
-              />
-            </section>
-          )}
+          <section className="space-y-4">
+            {isLoading ? (
+              <>
+                <Skeleton className="h-64 rounded-lg" />
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <Skeleton className="h-80 rounded-lg" />
+                  <Skeleton className="h-80 rounded-lg" />
+                </div>
+              </>
+            ) : data?.outliers ? (
+              <>
+                <LuckChart
+                  runningHot={data.outliers.runningHot}
+                  runningCold={data.outliers.runningCold}
+                />
+                <OutliersSection
+                  runningHot={data.outliers.runningHot}
+                  runningCold={data.outliers.runningCold}
+                  goalieRunningHot={data.goalieOutliers?.runningHot}
+                  goalieRunningCold={data.goalieOutliers?.runningCold}
+                />
+              </>
+            ) : null}
+          </section>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <TopLinesCard lines={data.topLines} season={effectiveSeason} />
-            <TeamGrid />
+            {isLoading ? (
+              <>
+                <Skeleton className="h-64 rounded-lg" />
+                <Skeleton className="h-64 rounded-lg" />
+              </>
+            ) : data ? (
+              <>
+                <TopLinesCard lines={data.topLines} season={effectiveSeason} />
+                <TeamGrid />
+              </>
+            ) : null}
           </div>
         </>
       )}

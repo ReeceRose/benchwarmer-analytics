@@ -45,10 +45,33 @@ export interface Leaderboards {
   iceTime: LeaderEntry[];
 }
 
+/** Goalie leaderboards */
+export interface GoalieLeaderboards {
+  savePct: LeaderEntry[];
+  goalsAgainstAvg: LeaderEntry[];
+  goalsSavedAboveExpected: LeaderEntry[];
+}
+
 /** Outliers grouped by performance direction */
 export interface Outliers {
   runningHot: OutlierEntry[];
   runningCold: OutlierEntry[];
+}
+
+/** Goalie outlier entry showing GA vs xGA differential */
+export interface GoalieOutlierEntry {
+  playerId: number;
+  name: string;
+  team?: string;
+  goalsAgainst: number;
+  expectedGoalsAgainst: number;
+  goalsSavedAboveExpected: number;
+}
+
+/** Goalie outliers grouped by performance direction */
+export interface GoalieOutliers {
+  runningHot: GoalieOutlierEntry[];
+  runningCold: GoalieOutlierEntry[];
 }
 
 /** League-wide averages for comparison */
@@ -65,4 +88,6 @@ export interface HomepageDataResponse {
   outliers: Outliers;
   topLines: TopLine[];
   leagueAverages: LeagueAverages;
+  goalieLeaders: GoalieLeaderboards;
+  goalieOutliers: GoalieOutliers;
 }

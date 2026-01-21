@@ -25,12 +25,19 @@ export interface PlayerDetail {
 export interface RosterPlayer extends PlayerDetail {
   gamesPlayed?: number;
   iceTimeSeconds?: number;
+  // Skater stats
   goals?: number;
   assists?: number;
   points?: number;
   shots?: number;
   expectedGoals?: number;
   corsiForPct?: number;
+  // Goalie stats
+  goalsAgainst?: number;
+  shotsAgainst?: number;
+  savePercentage?: number;
+  goalsAgainstAverage?: number;
+  goalsSavedAboveExpected?: number;
 }
 
 /** Player statistics for a season/situation */
@@ -55,6 +62,30 @@ export interface SkaterStats {
   fenwickForPct?: number;
 }
 
+/** Goalie statistics for a season/situation */
+export interface GoalieStats {
+  id: number;
+  playerId: number;
+  season: number;
+  team: string;
+  situation: string;
+  isPlayoffs: boolean;
+  gamesPlayed: number;
+  iceTimeSeconds: number;
+  goalsAgainst: number;
+  shotsAgainst: number;
+  savePercentage?: number;
+  goalsAgainstAverage?: number;
+  goalsSavedAboveExpected?: number;
+  expectedGoalsAgainst?: number;
+  lowDangerShots: number;
+  mediumDangerShots: number;
+  highDangerShots: number;
+  lowDangerGoals: number;
+  mediumDangerGoals: number;
+  highDangerGoals: number;
+}
+
 /** Response from GET /api/players (search) */
 export interface PlayerSearchResponse {
   players: Player[];
@@ -64,11 +95,18 @@ export interface PlayerSearchResponse {
   totalPages?: number;
 }
 
-/** Response from GET /api/players/:id/stats */
+/** Response from GET /api/players/:id/stats (skaters) */
 export interface PlayerStatsResponse {
   playerId: number;
   playerName: string;
   stats: SkaterStats[];
+}
+
+/** Response from GET /api/players/:id/stats (goalies) */
+export interface GoalieStatsResponse {
+  playerId: number;
+  playerName: string;
+  stats: GoalieStats[];
 }
 
 /** Linemate data for a player */

@@ -21,7 +21,29 @@ public record HomepageStats(
     IReadOnlyList<OutlierEntry> RunningCold,
     IReadOnlyList<TopLine> TopLines,
     decimal AvgCorsiPct,
-    decimal AvgExpectedGoalsPct
+    decimal AvgExpectedGoalsPct,
+    GoalieLeaderboards GoalieLeaders,
+    GoalieOutliers GoalieOutliers
+);
+
+public record GoalieOutliers(
+    IReadOnlyList<GoalieOutlierEntry> RunningHot,
+    IReadOnlyList<GoalieOutlierEntry> RunningCold
+);
+
+public record GoalieOutlierEntry(
+    int PlayerId,
+    string Name,
+    string? Team,
+    int GoalsAgainst,
+    decimal ExpectedGoalsAgainst,
+    decimal GoalsSavedAboveExpected
+);
+
+public record GoalieLeaderboards(
+    IReadOnlyList<LeaderEntry> SavePct,
+    IReadOnlyList<LeaderEntry> GoalsAgainstAvg,
+    IReadOnlyList<LeaderEntry> GoalsSavedAboveExpected
 );
 
 public record LeaderEntry(

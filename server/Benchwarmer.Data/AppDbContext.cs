@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<Team> Teams => Set<Team>();
   public DbSet<Player> Players => Set<Player>();
   public DbSet<SkaterSeason> SkaterSeasons => Set<SkaterSeason>();
+  public DbSet<GoalieSeason> GoalieSeasons => Set<GoalieSeason>();
   public DbSet<TeamSeason> TeamSeasons => Set<TeamSeason>();
   public DbSet<LineCombination> LineCombinations => Set<LineCombination>();
   public DbSet<Shot> Shots => Set<Shot>();
@@ -50,6 +51,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
       e.HasIndex(s => new { s.PlayerId, s.Season, s.Team, s.Situation, s.IsPlayoffs }).IsUnique();
       e.HasIndex(s => new { s.Season, s.Team });
+    });
+
+    // GoalieSeason
+    modelBuilder.Entity<GoalieSeason>(e =>
+    {
+      e.HasOne(g => g.Player)
+              .WithMany()
+              .HasForeignKey(g => g.PlayerId);
+
+      e.HasIndex(g => new { g.PlayerId, g.Season, g.Team, g.Situation, g.IsPlayoffs }).IsUnique();
+      e.HasIndex(g => new { g.Season, g.Team });
     });
 
     // TeamSeason

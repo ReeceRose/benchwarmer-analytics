@@ -168,7 +168,8 @@ public static class PlayerEndpoints
         int? season,
         string? situation,
         IPlayerRepository playerRepository,
-        ISkaterStatsRepository statsRepository,
+        ISkaterStatsRepository skaterStatsRepository,
+        IGoalieStatsRepository goalieStatsRepository,
         CancellationToken cancellationToken)
     {
         var player = await playerRepository.GetByIdAsync(id, cancellationToken);
@@ -177,7 +178,39 @@ public static class PlayerEndpoints
             return Results.NotFound(ApiError.PlayerNotFound);
         }
 
-        var stats = await statsRepository.GetByPlayerAsync(id, season, situation, cancellationToken);
+        // Check if player is a goalie
+        if (player.Position == "G")
+        {
+            var goalieStats = await goalieStatsRepository.GetByPlayerAsync(id, season, situation, cancellationToken);
+
+            var goalieDtos = goalieStats.Select(g => new GoalieStatsDto(
+                g.Id,
+                g.PlayerId,
+                g.Season,
+                g.Team,
+                g.Situation,
+                g.IsPlayoffs,
+                g.GamesPlayed,
+                g.IceTimeSeconds,
+                g.GoalsAgainst,
+                g.ShotsAgainst,
+                g.SavePercentage,
+                g.GoalsAgainstAverage,
+                g.GoalsSavedAboveExpected,
+                g.ExpectedGoalsAgainst,
+                g.LowDangerShots,
+                g.MediumDangerShots,
+                g.HighDangerShots,
+                g.LowDangerGoals,
+                g.MediumDangerGoals,
+                g.HighDangerGoals
+            )).ToList();
+
+            return Results.Ok(new GoaliePlayerStatsDto(id, player.Name, goalieDtos));
+        }
+
+        // Return skater stats for non-goalies
+        var stats = await skaterStatsRepository.GetByPlayerAsync(id, season, situation, cancellationToken);
 
         var dtos = stats.Select(s => new SkaterStatsDto(
             s.Id,

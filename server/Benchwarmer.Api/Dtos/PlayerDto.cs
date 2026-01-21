@@ -51,10 +51,17 @@ public record RosterPlayerDto(
     // Stats (only populated when season is specified)
     int? GamesPlayed = null,
     int? IceTimeSeconds = null,
+    // Skater stats
     int? Goals = null,
     int? Assists = null,
     int? Points = null,
     int? Shots = null,
     decimal? ExpectedGoals = null,
-    decimal? CorsiForPct = null
+    decimal? CorsiForPct = null,
+    // Goalie stats
+    int? GoalsAgainst = null,
+    int? ShotsAgainst = null,
+    decimal? SavePercentage = null,
+    decimal? GoalsAgainstAverage = null,
+    decimal? GoalsSavedAboveExpected = null
 );

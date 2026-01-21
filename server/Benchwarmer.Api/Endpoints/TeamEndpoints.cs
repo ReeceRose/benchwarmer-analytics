@@ -111,7 +111,8 @@ public static class TeamEndpoints
         bool? playoffs,
         ITeamRepository teamRepository,
         IPlayerRepository playerRepository,
-        ISkaterStatsRepository statsRepository,
+        ISkaterStatsRepository skaterStatsRepository,
+        IGoalieStatsRepository goalieStatsRepository,
         CancellationToken cancellationToken)
     {
         var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
@@ -120,24 +121,27 @@ public static class TeamEndpoints
             return Results.NotFound(ApiError.TeamNotFound);
         }
 
-        IReadOnlyList<RosterPlayerDto> dtos;
+        List<RosterPlayerDto> dtos = [];
 
         if (season.HasValue)
         {
-            // When season is specified, get stats with player info included
-            var stats = await statsRepository.GetByTeamSeasonAsync(abbrev, season.Value, "all", playoffs, cancellationToken);
+            // Get skater stats
+            var skaterStats = await skaterStatsRepository.GetByTeamSeasonAsync(abbrev, season.Value, "all", playoffs, cancellationToken);
+
+            // Get goalie stats
+            var goalieStats = await goalieStatsRepository.GetByTeamSeasonAsync(abbrev, season.Value, "all", playoffs, cancellationToken);
 
             // When playoffs is null (Both), we need to aggregate regular season + playoff stats per player
             if (!playoffs.HasValue)
             {
-                dtos = stats
+                // Aggregate skater stats
+                var skaterDtos = skaterStats
                     .Where(s => s.Player != null)
                     .GroupBy(s => s.PlayerId)
                     .Select(g =>
                     {
                         var player = g.First().Player!;
                         var totalToi = g.Sum(s => s.IceTimeSeconds);
-                        // Weight CF% by ice time for proper averaging
                         decimal? weightedCfPct = totalToi > 0
                             ? g.Sum(s => (s.CorsiForPct ?? 0m) * s.IceTimeSeconds) / totalToi
                             : null;
@@ -163,13 +167,56 @@ public static class TeamEndpoints
                             g.Sum(s => s.ExpectedGoals),
                             weightedCfPct
                         );
-                    })
-                    .OrderByDescending(p => p.IceTimeSeconds)
-                    .ToList();
+                    });
+                dtos.AddRange(skaterDtos);
+
+                // Aggregate goalie stats
+                var goalieDtos = goalieStats
+                    .Where(g => g.Player != null)
+                    .GroupBy(g => g.PlayerId)
+                    .Select(g =>
+                    {
+                        var player = g.First().Player!;
+                        var totalToi = g.Sum(s => s.IceTimeSeconds);
+                        var totalShotsAgainst = g.Sum(s => s.ShotsAgainst);
+                        var totalGoalsAgainst = g.Sum(s => s.GoalsAgainst);
+
+                        // Recalculate aggregate stats
+                        decimal? savePct = totalShotsAgainst > 0
+                            ? (decimal)(totalShotsAgainst - totalGoalsAgainst) / totalShotsAgainst
+                            : null;
+                        decimal? gaa = totalToi > 0
+                            ? (decimal)totalGoalsAgainst / ((decimal)totalToi / 3600m)
+                            : null;
+                        decimal? gsax = g.Sum(s => s.GoalsSavedAboveExpected);
+
+                        return new RosterPlayerDto(
+                            player.Id,
+                            player.Name,
+                            player.FirstName,
+                            player.LastName,
+                            player.Position,
+                            player.CurrentTeamAbbreviation,
+                            player.HeadshotUrl,
+                            player.BirthDate,
+                            player.HeightInches,
+                            player.WeightLbs,
+                            player.Shoots,
+                            g.Sum(s => s.GamesPlayed),
+                            totalToi,
+                            GoalsAgainst: totalGoalsAgainst,
+                            ShotsAgainst: totalShotsAgainst,
+                            SavePercentage: savePct,
+                            GoalsAgainstAverage: gaa,
+                            GoalsSavedAboveExpected: gsax
+                        );
+                    });
+                dtos.AddRange(goalieDtos);
             }
             else
             {
-                dtos = stats
+                // Skater stats for specific season type
+                var skaterDtos = skaterStats
                     .Where(s => s.Player != null)
                     .Select(s => new RosterPlayerDto(
                         s.Player!.Id,
@@ -191,8 +238,37 @@ public static class TeamEndpoints
                         s.Shots,
                         s.ExpectedGoals,
                         s.CorsiForPct
-                    )).ToList();
+                    ));
+                dtos.AddRange(skaterDtos);
+
+                // Goalie stats for specific season type
+                var goalieDtos = goalieStats
+                    .Where(g => g.Player != null)
+                    .Select(g => new RosterPlayerDto(
+                        g.Player!.Id,
+                        g.Player.Name,
+                        g.Player.FirstName,
+                        g.Player.LastName,
+                        g.Player.Position,
+                        g.Player.CurrentTeamAbbreviation,
+                        g.Player.HeadshotUrl,
+                        g.Player.BirthDate,
+                        g.Player.HeightInches,
+                        g.Player.WeightLbs,
+                        g.Player.Shoots,
+                        g.GamesPlayed,
+                        g.IceTimeSeconds,
+                        GoalsAgainst: g.GoalsAgainst,
+                        ShotsAgainst: g.ShotsAgainst,
+                        SavePercentage: g.SavePercentage,
+                        GoalsAgainstAverage: g.GoalsAgainstAverage,
+                        GoalsSavedAboveExpected: g.GoalsSavedAboveExpected
+                    ));
+                dtos.AddRange(goalieDtos);
             }
+
+            // Sort by ice time
+            dtos = [.. dtos.OrderByDescending(p => p.IceTimeSeconds)];
         }
         else
         {

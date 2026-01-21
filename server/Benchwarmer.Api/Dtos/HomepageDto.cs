@@ -6,7 +6,9 @@ public record HomepageDataDto(
     LeaderboardsDto Leaders,
     OutliersDto Outliers,
     IReadOnlyList<TopLineDto> TopLines,
-    LeagueAveragesDto LeagueAverages
+    LeagueAveragesDto LeagueAverages,
+    GoalieLeaderboardsDto GoalieLeaders,
+    GoalieOutliersDto GoalieOutliers
 );
 
 public record LeaderboardsDto(
@@ -59,4 +61,24 @@ public record LinePlayerDto(
 public record LeagueAveragesDto(
     decimal CorsiPct,
     decimal ExpectedGoalsPct
+);
+
+public record GoalieLeaderboardsDto(
+    IReadOnlyList<LeaderEntryDto> SavePct,
+    IReadOnlyList<LeaderEntryDto> GoalsAgainstAvg,
+    IReadOnlyList<LeaderEntryDto> GoalsSavedAboveExpected
+);
+
+public record GoalieOutliersDto(
+    IReadOnlyList<GoalieOutlierEntryDto> RunningHot,
+    IReadOnlyList<GoalieOutlierEntryDto> RunningCold
+);
+
+public record GoalieOutlierEntryDto(
+    int PlayerId,
+    string Name,
+    string? Team,
+    int GoalsAgainst,
+    decimal ExpectedGoalsAgainst,
+    decimal GoalsSavedAboveExpected
 );

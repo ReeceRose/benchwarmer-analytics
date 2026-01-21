@@ -106,6 +106,7 @@ try
     builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
     builder.Services.AddScoped<ILineRepository, LineRepository>();
     builder.Services.AddScoped<ISkaterStatsRepository, SkaterStatsRepository>();
+    builder.Services.AddScoped<IGoalieStatsRepository, GoalieStatsRepository>();
     builder.Services.AddScoped<IShotRepository, ShotRepository>();
     builder.Services.AddScoped<IStatsRepository, StatsRepository>();
     builder.Services.AddScoped<IGameRepository, GameRepository>();
@@ -117,6 +118,7 @@ try
     builder.Services.AddScoped<IngestionService>();
     builder.Services.AddScoped<LineImporter>();
     builder.Services.AddScoped<SkaterImporter>();
+    builder.Services.AddScoped<GoalieImporter>();
     builder.Services.AddScoped<PlayerBioImporter>();
     builder.Services.AddScoped<TeamImporter>();
     builder.Services.AddScoped<ShotImporter>();

@@ -33,6 +33,13 @@ public class MoneyPuckDownloader(HttpClient httpClient, ILogger<MoneyPuckDownloa
         return await DownloadFileAsync($"teams_{seasonType}", season, url, cancellationToken);
     }
 
+    public async Task<DownloadResult> DownloadGoaliesAsync(int season, bool playoffs = false, CancellationToken cancellationToken = default)
+    {
+        var seasonType = GetSeasonType(playoffs);
+        var url = $"{BaseUrl}/seasonSummary/{season}/{seasonType}/goalies.csv";
+        return await DownloadFileAsync($"goalies_{seasonType}", season, url, cancellationToken);
+    }
+
     public async Task<DownloadResult> DownloadPlayerBiosAsync(CancellationToken cancellationToken = default)
     {
         var url = $"{BaseUrl}/playerBios/allPlayersLookup.csv";

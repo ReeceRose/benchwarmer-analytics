@@ -75,7 +75,7 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
         return (players, totalCount);
     }
 
-    public async Task UpsertBasicInfoAsync(int playerId, string name, string? teamAbbrev, CancellationToken cancellationToken = default)
+    public async Task UpsertBasicInfoAsync(int playerId, string name, string? teamAbbrev, string? position = null, CancellationToken cancellationToken = default)
     {
         var existing = await db.Players.FindAsync([playerId], cancellationToken);
 
@@ -86,6 +86,7 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
                 Id = playerId,
                 Name = name,
                 CurrentTeamAbbreviation = teamAbbrev,
+                Position = position,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -95,6 +96,11 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
         {
             existing.Name = name;
             existing.CurrentTeamAbbreviation = teamAbbrev;
+            // Only update position if provided (don't overwrite existing position with null)
+            if (position != null)
+            {
+                existing.Position = position;
+            }
             existing.UpdatedAt = DateTime.UtcNow;
         }
 

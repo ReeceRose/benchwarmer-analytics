@@ -14,6 +14,7 @@ public class NightlySyncJob(
     NhlScheduleService nhlScheduleService,
     LineImporter lineImporter,
     SkaterImporter skaterImporter,
+    GoalieImporter goalieImporter,
     TeamImporter teamImporter,
     ShotImporter shotImporter,
     ILineRepository lineRepository,
@@ -23,6 +24,7 @@ public class NightlySyncJob(
     private readonly MoneyPuckDownloader _downloader = downloader;
     private readonly NhlScheduleService _nhlScheduleService = nhlScheduleService;
     private readonly SkaterImporter _skaterImporter = skaterImporter;
+    private readonly GoalieImporter _goalieImporter = goalieImporter;
     private readonly LineImporter _lineImporter = lineImporter;
     private readonly TeamImporter _teamImporter = teamImporter;
     private readonly ShotImporter _shotImporter = shotImporter;
@@ -31,7 +33,7 @@ public class NightlySyncJob(
     private readonly ILogger<NightlySyncJob> _logger = logger;
 
     // Datasets that have separate regular/playoff data
-    private static readonly string[] SeasonTypeDatasets = ["teams", "skaters", "lines"];
+    private static readonly string[] SeasonTypeDatasets = ["teams", "skaters", "goalies", "lines"];
 
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
@@ -78,6 +80,7 @@ public class NightlySyncJob(
         {
             "teams" => await _downloader.DownloadTeamsAsync(season, playoffs, cancellationToken),
             "skaters" => await _downloader.DownloadSkatersAsync(season, playoffs, cancellationToken),
+            "goalies" => await _downloader.DownloadGoaliesAsync(season, playoffs, cancellationToken),
             "lines" => await _downloader.DownloadLinesAsync(season, playoffs, cancellationToken),
             _ => throw new ArgumentException($"Unknown dataset: {dataset}")
         };
@@ -130,6 +133,7 @@ public class NightlySyncJob(
         return dataset switch
         {
             "skaters" => await ImportSkatersAsync(content, playoffs),
+            "goalies" => await ImportGoaliesAsync(content, playoffs),
             "lines" => await ImportLinesAsync(content),
             "teams" => await ImportTeamAsync(content),
             _ => 0
@@ -140,6 +144,12 @@ public class NightlySyncJob(
     {
         var records = CsvParser.Parse<SkaterRecord>(csvContent);
         return await _skaterImporter.ImportAsync(records, isPlayoffs);
+    }
+
+    private async Task<int> ImportGoaliesAsync(string csvContent, bool isPlayoffs)
+    {
+        var records = CsvParser.Parse<GoalieRecord>(csvContent);
+        return await _goalieImporter.ImportAsync(records, isPlayoffs);
     }
 
     private async Task<int> ImportLinesAsync(string csvContent)

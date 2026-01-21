@@ -190,6 +190,89 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
             ? await xgPctQuery.AverageAsync(l => l.ExpectedGoalsPct ?? 50m, cancellationToken)
             : 50m;
 
+        // Goalie leaders - use "all" situation for goalies since they don't have 5on5 splits like skaters
+        var minGoalieGames = 10;
+        var goalieQuery = db.GoalieSeasons
+            .Include(g => g.Player)
+            .Where(g => g.Season == season && g.Situation == "all" && !g.IsPlayoffs)
+            .Where(g => g.Player != null && g.GamesPlayed >= minGoalieGames);
+
+        // Save Percentage leaders (higher is better)
+        var savePctLeaders = await goalieQuery
+            .Where(g => g.SavePercentage.HasValue)
+            .OrderByDescending(g => g.SavePercentage)
+            .Take(leaderCount)
+            .Select(g => new LeaderEntry(
+                g.PlayerId,
+                g.Player!.Name,
+                g.Team,
+                "G",
+                g.SavePercentage ?? 0
+            ))
+            .ToListAsync(cancellationToken);
+
+        // Goals Against Average leaders (lower is better)
+        var gaaLeaders = await goalieQuery
+            .Where(g => g.GoalsAgainstAverage.HasValue)
+            .OrderBy(g => g.GoalsAgainstAverage)
+            .Take(leaderCount)
+            .Select(g => new LeaderEntry(
+                g.PlayerId,
+                g.Player!.Name,
+                g.Team,
+                "G",
+                g.GoalsAgainstAverage ?? 0
+            ))
+            .ToListAsync(cancellationToken);
+
+        // Goals Saved Above Expected leaders (higher is better)
+        var gsaxLeaders = await goalieQuery
+            .Where(g => g.GoalsSavedAboveExpected.HasValue)
+            .OrderByDescending(g => g.GoalsSavedAboveExpected)
+            .Take(leaderCount)
+            .Select(g => new LeaderEntry(
+                g.PlayerId,
+                g.Player!.Name,
+                g.Team,
+                "G",
+                g.GoalsSavedAboveExpected ?? 0
+            ))
+            .ToListAsync(cancellationToken);
+
+        var goalieLeaders = new GoalieLeaderboards(savePctLeaders, gaaLeaders, gsaxLeaders);
+
+        // Goalie outliers - goalies with biggest positive GSAx (running hot / lucky)
+        var goaliesRunningHot = await goalieQuery
+            .Where(g => g.GoalsSavedAboveExpected.HasValue && g.ExpectedGoalsAgainst.HasValue)
+            .OrderByDescending(g => g.GoalsSavedAboveExpected)
+            .Take(outlierCount)
+            .Select(g => new GoalieOutlierEntry(
+                g.PlayerId,
+                g.Player!.Name,
+                g.Team,
+                g.GoalsAgainst,
+                g.ExpectedGoalsAgainst ?? 0,
+                g.GoalsSavedAboveExpected ?? 0
+            ))
+            .ToListAsync(cancellationToken);
+
+        // Goalie outliers - goalies with biggest negative GSAx (running cold / due for regression)
+        var goaliesRunningCold = await goalieQuery
+            .Where(g => g.GoalsSavedAboveExpected.HasValue && g.ExpectedGoalsAgainst.HasValue)
+            .OrderBy(g => g.GoalsSavedAboveExpected)
+            .Take(outlierCount)
+            .Select(g => new GoalieOutlierEntry(
+                g.PlayerId,
+                g.Player!.Name,
+                g.Team,
+                g.GoalsAgainst,
+                g.ExpectedGoalsAgainst ?? 0,
+                g.GoalsSavedAboveExpected ?? 0
+            ))
+            .ToListAsync(cancellationToken);
+
+        var goalieOutliers = new GoalieOutliers(goaliesRunningHot, goaliesRunningCold);
+
         return new HomepageStats(
             pointsLeaders,
             goalsLeaders,
@@ -200,7 +283,9 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
             runningColdEntries,
             topLines,
             avgCorsi,
-            avgXgPct
+            avgXgPct,
+            goalieLeaders,
+            goalieOutliers
         );
     }
 }

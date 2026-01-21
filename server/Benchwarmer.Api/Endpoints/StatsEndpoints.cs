@@ -71,7 +71,16 @@ public static class StatsEndpoints
                 l.GoalsFor,
                 l.GoalsAgainst
             )).ToList(),
-            new LeagueAveragesDto(stats.AvgCorsiPct, stats.AvgExpectedGoalsPct)
+            new LeagueAveragesDto(stats.AvgCorsiPct, stats.AvgExpectedGoalsPct),
+            new GoalieLeaderboardsDto(
+                stats.GoalieLeaders.SavePct.Select(l => new LeaderEntryDto(l.PlayerId, l.Name, l.Team, l.Position, l.Value)).ToList(),
+                stats.GoalieLeaders.GoalsAgainstAvg.Select(l => new LeaderEntryDto(l.PlayerId, l.Name, l.Team, l.Position, l.Value)).ToList(),
+                stats.GoalieLeaders.GoalsSavedAboveExpected.Select(l => new LeaderEntryDto(l.PlayerId, l.Name, l.Team, l.Position, l.Value)).ToList()
+            ),
+            new GoalieOutliersDto(
+                stats.GoalieOutliers.RunningHot.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList(),
+                stats.GoalieOutliers.RunningCold.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList()
+            )
         );
 
         return Results.Ok(response);

@@ -10,6 +10,7 @@ import type {
   PlayerSearchResponse,
   PlayerDetail,
   PlayerStatsResponse,
+  GoalieStatsResponse,
   LinemateHistoryResponse,
   PlayerComparisonResponse,
   SeasonListResponse,
@@ -97,8 +98,8 @@ export async function getPlayerStats(
   id: number,
   season?: number,
   situation?: string
-): Promise<PlayerStatsResponse> {
-  const { data } = await api.get<PlayerStatsResponse>(`/players/${id}/stats`, {
+): Promise<PlayerStatsResponse | GoalieStatsResponse> {
+  const { data } = await api.get<PlayerStatsResponse | GoalieStatsResponse>(`/players/${id}/stats`, {
     params: { season, situation },
   });
   return data;

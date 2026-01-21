@@ -14,10 +14,10 @@ public interface IPlayerRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Upserts basic player info (name, team) without overwriting bio data.
-    /// Used by SkaterImporter when we don't have full bio info.
+    /// Upserts basic player info (name, team, position) without overwriting bio data.
+    /// Used by SkaterImporter and GoalieImporter when we don't have full bio info.
     /// </summary>
-    Task UpsertBasicInfoAsync(int playerId, string name, string? teamAbbrev, CancellationToken cancellationToken = default);
+    Task UpsertBasicInfoAsync(int playerId, string name, string? teamAbbrev, string? position = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Upserts full player data including bio fields.
