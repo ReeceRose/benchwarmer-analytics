@@ -48,6 +48,7 @@ public class NhlScheduleService(HttpClient httpClient, ILogger<NhlScheduleServic
                         Season = ParseSeason(game.Season),
                         GameType = game.GameType,
                         GameDate = gameDate,
+                        StartTimeUtc = ParseStartTime(game.StartTimeUtc),
                         HomeTeamCode = game.HomeTeam.Abbrev,
                         AwayTeamCode = game.AwayTeam.Abbrev,
                         HomeScore = game.HomeTeam.Score ?? 0,
@@ -94,6 +95,18 @@ public class NhlScheduleService(HttpClient httpClient, ILogger<NhlScheduleServic
         // Season code is like 20242025, we want 2024
         return seasonCode / 10000;
     }
+
+    private static DateTime? ParseStartTime(string? startTimeUtc)
+    {
+        if (string.IsNullOrEmpty(startTimeUtc))
+            return null;
+
+        // Parse as UTC using round-trip format to preserve the 'Z' suffix
+        if (DateTime.TryParse(startTimeUtc, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
+            return parsed.ToUniversalTime();
+
+        return null;
+    }
 }
 
 #region NHL API Response Models
@@ -126,6 +139,9 @@ internal class NhlGame
 
     [JsonPropertyName("gameState")]
     public string GameState { get; set; } = "";
+
+    [JsonPropertyName("startTimeUTC")]
+    public string? StartTimeUtc { get; set; }
 
     [JsonPropertyName("homeTeam")]
     public NhlTeam HomeTeam { get; set; } = new();

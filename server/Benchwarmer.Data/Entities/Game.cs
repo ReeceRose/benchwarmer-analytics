@@ -7,6 +7,7 @@ public class Game
     public int Season { get; set; }
     public int GameType { get; set; }
     public DateOnly GameDate { get; set; }
+    public DateTime? StartTimeUtc { get; set; }
     public required string HomeTeamCode { get; set; }
     public required string AwayTeamCode { get; set; }
     public int HomeScore { get; set; }

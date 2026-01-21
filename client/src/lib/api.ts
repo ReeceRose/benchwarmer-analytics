@@ -19,6 +19,7 @@ import type {
   ShotQueryParams,
   ShooterStats,
   PlayerShotsResponse,
+  GamesResponse,
 } from "@/types";
 
 const api = axios.create({
@@ -190,6 +191,25 @@ export async function getPlayerShots(
 ): Promise<PlayerShotsResponse> {
   const { data } = await api.get<PlayerShotsResponse>(`/players/${playerId}/shots`, {
     params,
+  });
+  return data;
+}
+
+// Games
+
+export async function getYesterdaysGames(): Promise<GamesResponse> {
+  const { data } = await api.get<GamesResponse>("/games/yesterday");
+  return data;
+}
+
+export async function getTodaysGames(): Promise<GamesResponse> {
+  const { data } = await api.get<GamesResponse>("/games/today");
+  return data;
+}
+
+export async function getGamesByDate(date: string): Promise<GamesResponse> {
+  const { data } = await api.get<GamesResponse>("/games", {
+    params: { date },
   });
   return data;
 }

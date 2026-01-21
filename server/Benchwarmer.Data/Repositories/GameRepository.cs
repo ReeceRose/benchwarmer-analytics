@@ -43,6 +43,7 @@ public class GameRepository(AppDbContext db) : IGameRepository
             existing.Season = game.Season;
             existing.GameType = game.GameType;
             existing.GameDate = game.GameDate;
+            existing.StartTimeUtc = game.StartTimeUtc;
             existing.HomeTeamCode = game.HomeTeamCode;
             existing.AwayTeamCode = game.AwayTeamCode;
             existing.HomeScore = game.HomeScore;
@@ -74,6 +75,7 @@ public class GameRepository(AppDbContext db) : IGameRepository
                 existing.Season = game.Season;
                 existing.GameType = game.GameType;
                 existing.GameDate = game.GameDate;
+                existing.StartTimeUtc = game.StartTimeUtc;
                 existing.HomeTeamCode = game.HomeTeamCode;
                 existing.AwayTeamCode = game.AwayTeamCode;
                 existing.HomeScore = game.HomeScore;

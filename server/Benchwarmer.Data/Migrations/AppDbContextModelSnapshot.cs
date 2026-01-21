@@ -158,6 +158,10 @@ namespace Benchwarmer.Data.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("season");
 
+                    b.Property<DateTime?>("StartTimeUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_time_utc");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");

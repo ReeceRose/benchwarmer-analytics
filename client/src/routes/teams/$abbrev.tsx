@@ -1,17 +1,8 @@
-import { useState } from "react";
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
+import { Calendar } from "lucide-react";
 import { useTeam, useTeamRoster, useTeamSeasons } from "@/hooks";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -19,11 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState, BackButton } from "@/components/shared";
-import { formatPosition, formatHeight, formatWeight } from "@/lib/formatters";
-import { Calendar } from "lucide-react";
-import type { RosterPlayer } from "@/types/player";
+import {
+  TeamHeader,
+  RosterTable,
+  GoalieRosterTable,
+  RosterSkeleton,
+} from "@/components/team-detail";
 
 const searchSchema = z.object({
   season: z.number().optional(),
@@ -34,40 +27,6 @@ export const Route = createFileRoute("/teams/$abbrev")({
   component: TeamDetailPage,
   validateSearch: searchSchema,
 });
-
-// Map database abbreviations to NHL logo CDN abbreviations
-const TEAM_LOGO_MAP: Record<string, string> = {
-  "L.A": "LAK",
-  "N.J": "NJD",
-  "S.J": "SJS",
-  "T.B": "TBL",
-};
-
-function getTeamLogoUrl(abbrev: string): string {
-  const mapped = TEAM_LOGO_MAP[abbrev] ?? abbrev;
-  return `https://assets.nhle.com/logos/nhl/svg/${mapped}_light.svg`;
-}
-
-function TeamLogo({ abbrev, name }: { abbrev: string; name: string }) {
-  const [hasError, setHasError] = useState(false);
-
-  if (hasError) {
-    return (
-      <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
-        <span className="text-lg font-bold text-muted-foreground">{abbrev}</span>
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={getTeamLogoUrl(abbrev)}
-      alt={`${name} logo`}
-      className="w-20 h-20 object-contain"
-      onError={() => setHasError(true)}
-    />
-  );
-}
 
 type SeasonType = "all" | "regular" | "playoffs";
 
@@ -145,37 +104,7 @@ function TeamDetailPage() {
       <BackButton fallbackPath="/teams" label="Teams" />
 
       <div className="mb-6">
-        {teamLoading ? (
-          <div className="flex items-center gap-6">
-            <Skeleton className="h-20 w-20 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-48" />
-              <Skeleton className="h-5 w-32" />
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-6">
-            <TeamLogo abbrev={abbrev} name={team?.name ?? abbrev} />
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold tracking-tight">{team?.name}</h1>
-                {team?.isActive === false && (
-                  <Badge variant="destructive">Inactive</Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                {team?.division && (
-                  <Badge variant="secondary">{team.division}</Badge>
-                )}
-                {team?.conference && (
-                  <span className="text-muted-foreground">
-                    {team.conference} Conference
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <TeamHeader team={team} abbrev={abbrev} isLoading={teamLoading} />
       </div>
 
       <Tabs value={getActiveTab()} className="mb-8">
@@ -252,11 +181,7 @@ function TeamDetailPage() {
           </div>
 
           {rosterLoading ? (
-            <div className="rounded-md border p-4 space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
+            <RosterSkeleton />
           ) : roster?.players.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-lg">No roster data available{selectedSeason ? ` for ${selectedSeason}-${(selectedSeason + 1).toString().slice(-2)}` : ""}.</p>
@@ -269,210 +194,18 @@ function TeamDetailPage() {
           ) : (
             <>
               {forwards.length > 0 && (
-                <RosterSection title="Forwards" players={forwards} showStats={!!selectedSeason} />
+                <RosterTable title="Forwards" players={forwards} showStats={!!selectedSeason} />
               )}
               {defensemen.length > 0 && (
-                <RosterSection title="Defensemen" players={defensemen} showStats={!!selectedSeason} />
+                <RosterTable title="Defensemen" players={defensemen} showStats={!!selectedSeason} />
               )}
               {goalies.length > 0 && (
-                <GoalieRosterSection title="Goalies" players={goalies} showStats={!!selectedSeason} />
+                <GoalieRosterTable title="Goalies" players={goalies} showStats={!!selectedSeason} />
               )}
             </>
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function formatToi(seconds?: number): string {
-  if (!seconds) return "-";
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${minutes}:${secs.toString().padStart(2, "0")}`;
-}
-
-function formatPct(value?: number): string {
-  if (value === undefined || value === null) return "-";
-  return `${(value * 100).toFixed(1)}%`;
-}
-
-interface RosterSectionProps {
-  title: string;
-  players: RosterPlayer[];
-  showStats?: boolean;
-}
-
-function RosterSection({ title, players, showStats = false }: RosterSectionProps) {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold mb-3">{title}</h2>
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className={showStats ? "w-[25%]" : "w-[40%]"}>Name</TableHead>
-              <TableHead>Pos</TableHead>
-              {showStats ? (
-                <>
-                  <TableHead className="text-right">GP</TableHead>
-                  <TableHead className="text-right">TOI</TableHead>
-                  <TableHead className="text-right">G</TableHead>
-                  <TableHead className="text-right">A</TableHead>
-                  <TableHead className="text-right">P</TableHead>
-                  <TableHead className="text-right">S</TableHead>
-                  <TableHead className="text-right">xG</TableHead>
-                  <TableHead className="text-right">CF%</TableHead>
-                </>
-              ) : (
-                <>
-                  <TableHead>Height</TableHead>
-                  <TableHead>Weight</TableHead>
-                  <TableHead>Shoots</TableHead>
-                </>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {players.map((player) => (
-              <TableRow key={player.id}>
-                <TableCell>
-                  <Link
-                    to="/players/$id"
-                    params={{ id: String(player.id) }}
-                    className="hover:underline font-medium"
-                  >
-                    {player.name}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-normal">
-                    {formatPosition(player.position)}
-                  </Badge>
-                </TableCell>
-                {showStats ? (
-                  <>
-                    <TableCell className="text-right tabular-nums">{player.gamesPlayed ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatToi(player.iceTimeSeconds)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{player.goals ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{player.assists ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{player.points ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{player.shots ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{player.expectedGoals?.toFixed(1) ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatPct(player.corsiForPct)}</TableCell>
-                  </>
-                ) : (
-                  <>
-                    <TableCell className="text-muted-foreground">
-                      {formatHeight(player.heightInches)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatWeight(player.weightLbs)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {player.shoots || "-"}
-                    </TableCell>
-                  </>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
-}
-
-function formatSavePct(value?: number): string {
-  if (value === undefined || value === null) return "-";
-  return `.${(value * 1000).toFixed(0).padStart(3, "0")}`;
-}
-
-function formatGaa(value?: number): string {
-  if (value === undefined || value === null) return "-";
-  return value.toFixed(2);
-}
-
-function formatGsax(value?: number): string {
-  if (value === undefined || value === null) return "-";
-  const sign = value >= 0 ? "+" : "";
-  return `${sign}${value.toFixed(1)}`;
-}
-
-function GoalieRosterSection({ title, players, showStats = false }: RosterSectionProps) {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold mb-3">{title}</h2>
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className={showStats ? "w-[25%]" : "w-[40%]"}>Name</TableHead>
-              <TableHead>Pos</TableHead>
-              {showStats ? (
-                <>
-                  <TableHead className="text-right">GP</TableHead>
-                  <TableHead className="text-right">TOI</TableHead>
-                  <TableHead className="text-right">GA</TableHead>
-                  <TableHead className="text-right">SA</TableHead>
-                  <TableHead className="text-right">SV%</TableHead>
-                  <TableHead className="text-right">GAA</TableHead>
-                  <TableHead className="text-right">GSAx</TableHead>
-                </>
-              ) : (
-                <>
-                  <TableHead>Height</TableHead>
-                  <TableHead>Weight</TableHead>
-                  <TableHead>Catches</TableHead>
-                </>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {players.map((player) => (
-              <TableRow key={player.id}>
-                <TableCell>
-                  <Link
-                    to="/players/$id"
-                    params={{ id: String(player.id) }}
-                    className="hover:underline font-medium"
-                  >
-                    {player.name}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-normal">
-                    {formatPosition(player.position)}
-                  </Badge>
-                </TableCell>
-                {showStats ? (
-                  <>
-                    <TableCell className="text-right tabular-nums">{player.gamesPlayed ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatToi(player.iceTimeSeconds)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{player.goalsAgainst ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{player.shotsAgainst ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{formatSavePct(player.savePercentage)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatGaa(player.goalsAgainstAverage)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatGsax(player.goalsSavedAboveExpected)}</TableCell>
-                  </>
-                ) : (
-                  <>
-                    <TableCell className="text-muted-foreground">
-                      {formatHeight(player.heightInches)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatWeight(player.weightLbs)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {player.shoots || "-"}
-                    </TableCell>
-                  </>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
     </div>
   );
 }

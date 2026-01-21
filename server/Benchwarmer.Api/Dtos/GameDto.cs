@@ -1,6 +1,6 @@
 namespace Benchwarmer.Api.Dtos;
 
-public record YesterdaysGamesDto(
+public record GamesResponseDto(
     DateOnly Date,
     IReadOnlyList<GameSummaryDto> Games
 );
@@ -8,6 +8,8 @@ public record YesterdaysGamesDto(
 public record GameSummaryDto(
     string GameId,
     DateOnly GameDate,
+    string? GameState,
+    string? StartTimeUtc,
     GameTeamDto Home,
     GameTeamDto Away,
     string? PeriodType,
@@ -17,7 +19,8 @@ public record GameSummaryDto(
 
 public record GameTeamDto(
     string TeamCode,
-    int Goals,
+    string? TeamName,
+    int? Goals,
     int? Shots,
     int? ShotsOnGoal,
     decimal? ExpectedGoals,

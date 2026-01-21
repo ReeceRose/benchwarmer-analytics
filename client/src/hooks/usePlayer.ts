@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import {
   getPlayer,
   getPlayerStats,
@@ -61,9 +61,25 @@ export function usePlayerComparison(
   situation?: string
 ) {
   return useQuery({
-    queryKey: ["players", "compare", { ids, season, situation }],
+    // Use the raw ids array length and joined string to ensure refetch on change
+    queryKey: ["players", "compare", ids.length, ids.join(","), season, situation],
     queryFn: () => comparePlayers(ids, season, situation),
     enabled: ids.length >= 2,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0, // Always refetch to ensure fresh data
+  });
+}
+
+export function usePlayers(ids: number[]) {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ["players", id],
+      queryFn: () => getPlayer(id),
+      enabled: !!id,
+      staleTime: 1000 * 60 * 5,
+    })),
+    combine: (results) => ({
+      data: results.map((r) => r.data).filter(Boolean),
+      isLoading: results.some((r) => r.isLoading),
+    }),
   });
 }

@@ -357,6 +357,7 @@ public static class PlayerEndpoints
         string? situation,
         IPlayerRepository playerRepository,
         ISkaterStatsRepository statsRepository,
+        IGoalieStatsRepository goalieStatsRepository,
         CancellationToken cancellationToken)
     {
         var playerIds = ids.Split(',')
@@ -382,35 +383,83 @@ public static class PlayerEndpoints
             var player = await playerRepository.GetByIdAsync(playerId, cancellationToken);
             if (player is null) continue;
 
-            var stats = await statsRepository.GetByPlayerAsync(playerId, season, situation ?? "all", cancellationToken);
-            var latestStat = stats.FirstOrDefault();
+            // Check if player is a goalie
+            if (player.Position == "G")
+            {
+                var goalieStats = await goalieStatsRepository.GetByPlayerAsync(playerId, season, situation ?? "all", cancellationToken);
+                var latestGoalieStat = goalieStats
+                    .Where(s => !s.IsPlayoffs)
+                    .OrderByDescending(s => s.Season)
+                    .FirstOrDefault() ?? goalieStats.FirstOrDefault();
 
-            comparisons.Add(new PlayerComparisonDto(
-                playerId,
-                player.Name,
-                player.Position,
-                player.CurrentTeamAbbreviation,
-                latestStat is not null ? new SkaterStatsDto(
-                    latestStat.Id,
-                    latestStat.PlayerId,
-                    latestStat.Season,
-                    latestStat.Team,
-                    latestStat.Situation,
-                    latestStat.IsPlayoffs,
-                    latestStat.GamesPlayed,
-                    latestStat.IceTimeSeconds,
-                    latestStat.Goals,
-                    latestStat.Assists,
-                    latestStat.Goals + latestStat.Assists,
-                    latestStat.Shots,
-                    latestStat.ExpectedGoals,
-                    latestStat.ExpectedGoalsPer60,
-                    latestStat.OnIceShootingPct,
-                    latestStat.OnIceSavePct,
-                    latestStat.CorsiForPct,
-                    latestStat.FenwickForPct
-                ) : null
-            ));
+                comparisons.Add(new PlayerComparisonDto(
+                    playerId,
+                    player.Name,
+                    player.Position,
+                    player.CurrentTeamAbbreviation,
+                    null,
+                    latestGoalieStat is not null ? new GoalieStatsDto(
+                        latestGoalieStat.Id,
+                        latestGoalieStat.PlayerId,
+                        latestGoalieStat.Season,
+                        latestGoalieStat.Team,
+                        latestGoalieStat.Situation,
+                        latestGoalieStat.IsPlayoffs,
+                        latestGoalieStat.GamesPlayed,
+                        latestGoalieStat.IceTimeSeconds,
+                        latestGoalieStat.GoalsAgainst,
+                        latestGoalieStat.ShotsAgainst,
+                        latestGoalieStat.SavePercentage,
+                        latestGoalieStat.GoalsAgainstAverage,
+                        latestGoalieStat.GoalsSavedAboveExpected,
+                        latestGoalieStat.ExpectedGoalsAgainst,
+                        latestGoalieStat.LowDangerShots,
+                        latestGoalieStat.MediumDangerShots,
+                        latestGoalieStat.HighDangerShots,
+                        latestGoalieStat.LowDangerGoals,
+                        latestGoalieStat.MediumDangerGoals,
+                        latestGoalieStat.HighDangerGoals
+                    ) : null
+                ));
+            }
+            else
+            {
+                var stats = await statsRepository.GetByPlayerAsync(playerId, season, situation ?? "all", cancellationToken);
+                // Prefer regular season stats with expectedGoals data
+                var latestStat = stats
+                    .Where(s => !s.IsPlayoffs)
+                    .OrderByDescending(s => s.ExpectedGoals.HasValue)
+                    .ThenByDescending(s => s.Season)
+                    .FirstOrDefault() ?? stats.FirstOrDefault();
+
+                comparisons.Add(new PlayerComparisonDto(
+                    playerId,
+                    player.Name,
+                    player.Position,
+                    player.CurrentTeamAbbreviation,
+                    latestStat is not null ? new SkaterStatsDto(
+                        latestStat.Id,
+                        latestStat.PlayerId,
+                        latestStat.Season,
+                        latestStat.Team,
+                        latestStat.Situation,
+                        latestStat.IsPlayoffs,
+                        latestStat.GamesPlayed,
+                        latestStat.IceTimeSeconds,
+                        latestStat.Goals,
+                        latestStat.Assists,
+                        latestStat.Goals + latestStat.Assists,
+                        latestStat.Shots,
+                        latestStat.ExpectedGoals,
+                        latestStat.ExpectedGoalsPer60,
+                        latestStat.OnIceShootingPct,
+                        latestStat.OnIceSavePct,
+                        latestStat.CorsiForPct,
+                        latestStat.FenwickForPct
+                    ) : null,
+                    null
+                ));
+            }
         }
 
         return Results.Ok(new PlayerComparisonResultDto(season, situation ?? "all", comparisons));
@@ -438,7 +487,8 @@ public record PlayerComparisonDto(
     string Name,
     string? Position,
     string? Team,
-    SkaterStatsDto? Stats
+    SkaterStatsDto? Stats,
+    GoalieStatsDto? GoalieStats
 );
 
 public record PlayerComparisonResultDto(

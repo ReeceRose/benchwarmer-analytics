@@ -4,7 +4,7 @@ import { Users, UserSearch, GitCompare } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SeasonSelector, SituationSelector, ErrorState } from "@/components/shared";
-import { LeaderStrip, LuckChart, OutliersSection, TopLinesCard, TeamGrid } from "@/components/home";
+import { LeaderStrip, LuckChart, OutliersSection, TopLinesCard, TeamGrid, GamesSection } from "@/components/home";
 import { useHomepageData, useSeasons } from "@/hooks";
 import { formatSeason } from "@/lib/formatters";
 import type { Situation } from "@/types";
@@ -158,6 +158,8 @@ function HomePage() {
               </>
             ) : null}
           </div>
+
+          <GamesSection />
         </>
       )}
 

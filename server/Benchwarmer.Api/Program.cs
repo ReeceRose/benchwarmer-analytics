@@ -78,7 +78,7 @@ try
         options.AddPolicy(CachePolicies.SemiStaticData, b => b.Expire(TimeSpan.FromHours(6)));
         options.AddPolicy(CachePolicies.TeamData, b => b
             .Expire(TimeSpan.FromMinutes(30))
-            .SetVaryByQuery("season", "situation", "playoffs", "lineType", "minToi", "sortBy", "sortDir", "page", "pageSize", "period", "shotType", "playerId", "goalsOnly", "limit", "position"));
+            .SetVaryByQuery("season", "situation", "playoffs", "lineType", "minToi", "sortBy", "sortDir", "page", "pageSize", "period", "shotType", "playerId", "goalsOnly", "limit", "position", "ids"));
         options.AddPolicy(CachePolicies.SearchResults, b => b
             .Expire(TimeSpan.FromMinutes(5))
             .SetVaryByQuery("q", "page", "pageSize"));

@@ -1,6 +1,7 @@
 export { useTeams, useTeam, useTeamRoster } from "@/hooks/useTeams";
 export {
   usePlayer,
+  usePlayers,
   usePlayerStats,
   usePlayerLinemates,
   usePlayerSearch,
@@ -11,3 +12,4 @@ export { useChemistryMatrix } from "@/hooks/useChemistryMatrix";
 export { useSeasons, useTeamSeasons } from "@/hooks/useSeasons";
 export { useHomepageData } from "@/hooks/useHomepageData";
 export { useTeamShots, useShooterStats, usePlayerShots } from "@/hooks/useShots";
+export { useYesterdaysGames, useTodaysGames, useGamesByDate } from "@/hooks/useGames";

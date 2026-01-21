@@ -134,6 +134,7 @@ export interface PlayerComparison {
   position?: string;
   team?: string;
   stats?: SkaterStats;
+  goalieStats?: GoalieStats;
 }
 
 /** Response from GET /api/players/compare */
