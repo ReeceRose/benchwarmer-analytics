@@ -9,3 +9,5 @@ export { LoadingState, LoadingSpinner } from "@/components/shared/LoadingState";
 export { ErrorState } from "@/components/shared/ErrorState";
 export { ThemeToggle } from "@/components/shared/ThemeToggle";
 export { BackButton } from "@/components/shared/BackButton";
+export { LiveIndicator } from "@/components/shared/LiveIndicator";
+export { GoalsList } from "@/components/shared/GoalsList";

@@ -42,7 +42,6 @@ export function LineFilters({
 }: LineFiltersProps) {
   return (
     <div className="flex flex-wrap items-end gap-4">
-      {/* Line Type Toggle */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Line Type</Label>
         <Select value={lineType} onValueChange={(v) => onLineTypeChange(v as LineType)}>
@@ -55,8 +54,6 @@ export function LineFilters({
           </SelectContent>
         </Select>
       </div>
-
-      {/* Min TOI Filter */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground flex items-center gap-1">
           <Clock className="h-3 w-3" />
@@ -72,8 +69,6 @@ export function LineFilters({
           className="w-25"
         />
       </div>
-
-      {/* Sort By */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground flex items-center gap-1">
           <ArrowUpDown className="h-3 w-3" />
@@ -92,8 +87,6 @@ export function LineFilters({
           </SelectContent>
         </Select>
       </div>
-
-      {/* Sort Direction */}
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Order</Label>
         <Select value={sortDir} onValueChange={(v) => onSortDirChange(v as SortDirection)}>

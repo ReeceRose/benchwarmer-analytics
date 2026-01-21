@@ -13,6 +13,11 @@ export interface GameSummary {
   periodType: string | null;
   periods: PeriodStats[];
   hasShotData: boolean;
+  // Live game fields
+  currentPeriod?: number | null;
+  timeRemaining?: string | null;
+  inIntermission?: boolean | null;
+  goals?: GameGoal[] | null;
 }
 
 export interface GameTeam {
@@ -27,6 +32,8 @@ export interface GameTeam {
   mediumDangerChances: number | null;
   lowDangerChances: number | null;
   avgShotDistance: number | null;
+  // Live game fields
+  record?: string | null;
 }
 
 export interface PeriodStats {
@@ -37,4 +44,57 @@ export interface PeriodStats {
   awayGoals: number;
   homeXG: number;
   awayXG: number;
+}
+
+export interface GameGoal {
+  period: number;
+  timeInPeriod: string;
+  scorerName: string;
+  scorerId: number;
+  teamCode: string;
+  strength: string | null;
+  assists: string[];
+}
+
+export interface GameBoxscoreResponse {
+  gameId: string;
+  homeTeamCode: string;
+  awayTeamCode: string;
+  homeSkaters: BoxscoreSkater[];
+  awaySkaters: BoxscoreSkater[];
+  homeGoalies: BoxscoreGoalie[];
+  awayGoalies: BoxscoreGoalie[];
+}
+
+export interface BoxscoreSkater {
+  playerId: number;
+  jerseyNumber: number;
+  name: string;
+  position: string;
+  goals: number;
+  assists: number;
+  points: number;
+  plusMinus: number;
+  penaltyMinutes: number;
+  hits: number;
+  shotsOnGoal: number;
+  blockedShots: number;
+  giveaways: number;
+  takeaways: number;
+  timeOnIce: string;
+  shifts: number;
+  faceoffPct: number;
+}
+
+export interface BoxscoreGoalie {
+  playerId: number;
+  jerseyNumber: number;
+  name: string;
+  shotsAgainst: number;
+  saves: number;
+  goalsAgainst: number;
+  savePct: number | null;
+  timeOnIce: string;
+  starter: boolean;
+  decision: string | null;
 }

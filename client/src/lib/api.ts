@@ -20,6 +20,8 @@ import type {
   ShooterStats,
   PlayerShotsResponse,
   GamesResponse,
+  GameSummary,
+  GameBoxscoreResponse,
 } from "@/types";
 
 const api = axios.create({
@@ -211,5 +213,20 @@ export async function getGamesByDate(date: string): Promise<GamesResponse> {
   const { data } = await api.get<GamesResponse>("/games", {
     params: { date },
   });
+  return data;
+}
+
+export async function getGame(gameId: string): Promise<GameSummary> {
+  const { data } = await api.get<GameSummary>(`/games/${gameId}`);
+  return data;
+}
+
+export async function getGameBoxscore(gameId: string): Promise<GameBoxscoreResponse> {
+  const { data } = await api.get<GameBoxscoreResponse>(`/games/${gameId}/boxscore`);
+  return data;
+}
+
+export async function getLiveScores(): Promise<GamesResponse> {
+  const { data } = await api.get<GamesResponse>("/games/live");
   return data;
 }

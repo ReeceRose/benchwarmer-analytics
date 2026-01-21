@@ -114,7 +114,6 @@ export function ShotExplorer({
           />
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Filters */}
           <ShotFilters
             period={period}
             onPeriodChange={onPeriodChange}
@@ -130,8 +129,6 @@ export function ShotExplorer({
             dangerLevel={dangerLevel}
             onDangerLevelChange={onDangerLevelChange}
           />
-
-          {/* Error State */}
           {error && (
             <ErrorState
               title="Failed to load shot data"
@@ -139,27 +136,19 @@ export function ShotExplorer({
               onRetry={refetch}
             />
           )}
-
-          {/* Loading State */}
           {isLoading && (
             <div className="space-y-4">
               <Skeleton className="h-100 w-full rounded-lg" />
               <Skeleton className="h-20 w-full rounded-lg" />
             </div>
           )}
-
-          {/* Shot Visualization */}
           {!isLoading && !error && data && (
             <>
               <RinkVisualization
                 shots={filteredShots}
                 showLegend
               />
-
-              {/* Summary Stats */}
               <ShotSummaryCard summary={data.summary} />
-
-              {/* Shot Count */}
               <p className="text-sm text-muted-foreground text-center">
                 Showing {filteredShots.length} shots
                 {dangerLevel !== "all" && ` (${dangerLevel} danger)`}

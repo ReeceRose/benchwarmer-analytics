@@ -31,20 +31,20 @@ export function ComparisonTable({ players, positionType }: ComparisonTableProps)
   const statConfigs = isGoalie ? GOALIE_STAT_CONFIGS : SKATER_STAT_CONFIGS;
 
   return (
-    <Card>
+    <Card className="py-0 gap-0">
       <CardContent className="p-0 overflow-x-auto">
-        <Table>
+        <Table className="border-collapse">
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="font-semibold sticky left-0 bg-muted/50 z-10">
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="font-semibold sticky left-0 bg-muted/50 z-10 border-r w-32 pl-4 py-4">
                 Stat
               </TableHead>
               {players.map((player) => (
                 <TableHead
                   key={player.playerId}
-                  className="text-center font-semibold min-w-30"
+                  className="text-center font-semibold min-w-40 px-6 py-4"
                 >
-                  <div className="flex flex-col items-center gap-0.5">
+                  <div className="flex flex-col items-center gap-1">
                     <span>{player.name}</span>
                     {player.position && (
                       <Badge variant="outline" className="text-xs font-normal">
@@ -57,9 +57,12 @@ export function ComparisonTable({ players, positionType }: ComparisonTableProps)
             </TableRow>
           </TableHeader>
           <TableBody>
-            {statConfigs.map((config) => (
-              <TableRow key={config.key}>
-                <TableCell className="font-medium sticky left-0 bg-background z-10">
+            {statConfigs.map((config, index) => (
+              <TableRow
+                key={config.key}
+                className={index % 2 === 0 ? "bg-muted/20" : ""}
+              >
+                <TableCell className="font-medium sticky left-0 bg-inherit z-10 border-r pl-4">
                   {config.label}
                 </TableCell>
                 {players.map((player) => {
@@ -69,7 +72,7 @@ export function ComparisonTable({ players, positionType }: ComparisonTableProps)
                   return (
                     <TableCell
                       key={player.playerId}
-                      className={`text-center tabular-nums ${
+                      className={`text-center tabular-nums px-6 ${
                         isBest
                           ? "text-green-600 dark:text-green-400 font-semibold"
                           : isWorst

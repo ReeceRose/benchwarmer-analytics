@@ -76,7 +76,6 @@ export function PlayerSearchDropdown({
         </Button>
       )}
 
-      {/* Search Results Dropdown */}
       {showSearch && searchQuery.length >= 2 && (
         <div className="absolute top-full left-0 mt-1 w-64 bg-popover border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
           {searchLoading ? (

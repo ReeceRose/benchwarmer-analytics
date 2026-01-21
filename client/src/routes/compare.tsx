@@ -120,8 +120,6 @@ function ComparePage() {
           Compare up to 5 players side-by-side with detailed stats.
         </p>
       </div>
-
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <SeasonSelector
           value={season}
@@ -146,8 +144,6 @@ function ComparePage() {
           </Select>
         </div>
       </div>
-
-      {/* Selected Players */}
       <SelectedPlayersCard
         selectedIds={selectedIds}
         selectedPlayers={selectedPlayers}
@@ -156,8 +152,6 @@ function ComparePage() {
         onAddPlayer={addPlayer}
         onRemovePlayer={removePlayer}
       />
-
-      {/* Error State */}
       {error && selectedIds.length >= 2 && (
         <ErrorState
           title="Comparison failed"
@@ -166,24 +160,18 @@ function ComparePage() {
           variant="inline"
         />
       )}
-
-      {/* Loading State */}
       {isLoading && selectedIds.length >= 2 && (
         <div className="space-y-4">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-96 w-full" />
         </div>
       )}
-
-      {/* Comparison Table */}
       {hasComparisonData && (
         <ComparisonTable
           players={comparisonData.players}
           positionType={selectedPositionType}
         />
       )}
-
-      {/* Radar Chart (skaters only) */}
       {hasComparisonData && selectedPositionType !== "goalie" && (
         <RadarComparison
           players={comparisonData.players.map((p) => ({
@@ -194,8 +182,6 @@ function ComparePage() {
           className="mt-6"
         />
       )}
-
-      {/* Goalie Comparison Chart */}
       {hasComparisonData && selectedPositionType === "goalie" && (
         <GoalieComparison
           players={comparisonData.players.map((p) => ({
@@ -206,8 +192,6 @@ function ComparePage() {
           className="mt-6"
         />
       )}
-
-      {/* Empty State - Need More Players */}
       {selectedIds.length >= 1 && selectedIds.length < 2 && (
         <Card>
           <CardContent className="py-12 text-center">
@@ -219,8 +203,6 @@ function ComparePage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Legend */}
       {hasComparisonData && <ComparisonLegend />}
     </div>
   );

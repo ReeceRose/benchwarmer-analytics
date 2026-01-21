@@ -4,6 +4,7 @@ import { Search, Users } from "lucide-react";
 import { usePlayerSearch } from "@/hooks";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -35,8 +36,6 @@ function PlayersPage() {
           Search for NHL players by name to view stats and performance metrics.
         </p>
       </div>
-
-      {/* Search Input */}
       <div className="mb-8 max-w-md">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -52,8 +51,6 @@ function PlayersPage() {
           Enter at least 2 characters to search
         </p>
       </div>
-
-      {/* Error State */}
       {error && (
         <ErrorState
           title="Search failed"
@@ -62,72 +59,70 @@ function PlayersPage() {
           variant="inline"
         />
       )}
-
-      {/* Results Table */}
       {showResults && !error && (
-        <div className="rounded-md border">
-          {isLoading ? (
-            <div className="p-4 space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : !hasResults ? (
-            <div className="p-12 text-center">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="text-lg font-medium">No players found</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                No results for &ldquo;{query}&rdquo;. Try a different search term.
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[40%]">Name</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Team</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.players.map((player) => (
-                  <TableRow key={player.id}>
-                    <TableCell>
-                      <Link
-                        to="/players/$id"
-                        params={{ id: String(player.id) }}
-                        className="hover:underline font-medium"
-                      >
-                        {player.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-normal">
-                        {formatPosition(player.position)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {player.currentTeamAbbreviation ? (
-                        <Link
-                          to="/teams/$abbrev"
-                          params={{ abbrev: player.currentTeamAbbreviation }}
-                          className="hover:underline text-muted-foreground"
-                        >
-                          {player.currentTeamAbbreviation}
-                        </Link>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
+        <Card className="py-0 gap-0">
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-4 space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
                 ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+              </div>
+            ) : !hasResults ? (
+              <div className="p-12 text-center">
+                <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <p className="text-lg font-medium">No players found</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  No results for &ldquo;{query}&rdquo;. Try a different search term.
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[40%]">Name</TableHead>
+                    <TableHead>Position</TableHead>
+                    <TableHead>Team</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.players.map((player) => (
+                    <TableRow key={player.id}>
+                      <TableCell>
+                        <Link
+                          to="/players/$id"
+                          params={{ id: String(player.id) }}
+                          className="hover:underline font-medium"
+                        >
+                          {player.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-normal">
+                          {formatPosition(player.position)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {player.currentTeamAbbreviation ? (
+                          <Link
+                            to="/teams/$abbrev"
+                            params={{ abbrev: player.currentTeamAbbreviation }}
+                            className="hover:underline text-muted-foreground"
+                          >
+                            {player.currentTeamAbbreviation}
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       )}
-
-      {/* Empty State - Before Search */}
       {!showResults && !error && (
         <div className="text-center py-16">
           <Search className="h-16 w-16 mx-auto text-muted-foreground/30 mb-6" />

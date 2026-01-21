@@ -1,4 +1,5 @@
 import { useState, Fragment } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -43,11 +44,12 @@ export function LineTable({ lines, teamAvgXgPct, teamAvgCfPct }: LineTableProps)
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="min-w-70">Players</TableHead>
+    <Card className="py-0 gap-0">
+      <CardContent className="p-0 overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="min-w-70">Players</TableHead>
             <TableHead className="text-right w-16">GP</TableHead>
             <TableHead className="text-right w-20">TOI</TableHead>
             <TableHead className="text-right w-16">GF</TableHead>
@@ -70,8 +72,9 @@ export function LineTable({ lines, teamAvgXgPct, teamAvgCfPct }: LineTableProps)
               {expandedIds.has(line.id) && <LineDetail line={line} />}
             </Fragment>
           ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

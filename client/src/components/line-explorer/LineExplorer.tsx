@@ -110,7 +110,6 @@ export function LineExplorer({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Filters */}
         <LineFilters
           lineType={lineType}
           onLineTypeChange={onLineTypeChange}
@@ -121,8 +120,6 @@ export function LineExplorer({
           sortDir={sortDir}
           onSortDirChange={onSortDirChange}
         />
-
-        {/* Error State */}
         {error && (
           <ErrorState
             title="Failed to load lines"
@@ -131,8 +128,6 @@ export function LineExplorer({
             variant="inline"
           />
         )}
-
-        {/* Loading State */}
         {isLoading && (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -140,8 +135,6 @@ export function LineExplorer({
             ))}
           </div>
         )}
-
-        {/* Lines Table */}
         {!isLoading && !error && data && (
           <>
             <LineTable
@@ -149,8 +142,6 @@ export function LineExplorer({
               teamAvgXgPct={teamAverages.xgPct}
               teamAvgCfPct={teamAverages.cfPct}
             />
-
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
@@ -178,8 +169,6 @@ export function LineExplorer({
             )}
           </>
         )}
-
-        {/* No Season Selected */}
         {!effectiveSeason && !isLoading && (
           <div className="text-center py-12 text-muted-foreground">
             <p className="font-medium">Select a season to view line combinations</p>

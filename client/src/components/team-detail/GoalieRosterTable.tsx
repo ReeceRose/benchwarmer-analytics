@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -44,76 +45,78 @@ export function GoalieRosterTable({ title, players, showStats = false }: GoalieR
   return (
     <div>
       <h2 className="text-lg font-semibold mb-3">{title}</h2>
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className={showStats ? "w-[25%]" : "w-[40%]"}>Name</TableHead>
-              <TableHead>Pos</TableHead>
-              {showStats ? (
-                <>
-                  <TableHead className="text-right">GP</TableHead>
-                  <TableHead className="text-right">TOI</TableHead>
-                  <TableHead className="text-right">GA</TableHead>
-                  <TableHead className="text-right">SA</TableHead>
-                  <TableHead className="text-right">SV%</TableHead>
-                  <TableHead className="text-right">GAA</TableHead>
-                  <TableHead className="text-right">GSAx</TableHead>
-                </>
-              ) : (
-                <>
-                  <TableHead>Height</TableHead>
-                  <TableHead>Weight</TableHead>
-                  <TableHead>Catches</TableHead>
-                </>
-              )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {players.map((player) => (
-              <TableRow key={player.id}>
-                <TableCell>
-                  <Link
-                    to="/players/$id"
-                    params={{ id: String(player.id) }}
-                    className="hover:underline font-medium"
-                  >
-                    {player.name}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-normal">
-                    {formatPosition(player.position)}
-                  </Badge>
-                </TableCell>
+      <Card className="py-0 gap-0">
+        <CardContent className="p-0 overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className={showStats ? "w-[25%]" : "w-[40%]"}>Name</TableHead>
+                <TableHead>Pos</TableHead>
                 {showStats ? (
                   <>
-                    <TableCell className="text-right tabular-nums">{player.gamesPlayed ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatToi(player.iceTimeSeconds)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{player.goalsAgainst ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{player.shotsAgainst ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{formatSavePct(player.savePercentage)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatGaa(player.goalsAgainstAverage)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatGsax(player.goalsSavedAboveExpected)}</TableCell>
+                    <TableHead className="text-right">GP</TableHead>
+                    <TableHead className="text-right">TOI</TableHead>
+                    <TableHead className="text-right">GA</TableHead>
+                    <TableHead className="text-right">SA</TableHead>
+                    <TableHead className="text-right">SV%</TableHead>
+                    <TableHead className="text-right">GAA</TableHead>
+                    <TableHead className="text-right">GSAx</TableHead>
                   </>
                 ) : (
                   <>
-                    <TableCell className="text-muted-foreground">
-                      {formatHeight(player.heightInches)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatWeight(player.weightLbs)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {player.shoots || "-"}
-                    </TableCell>
+                    <TableHead>Height</TableHead>
+                    <TableHead>Weight</TableHead>
+                    <TableHead>Catches</TableHead>
                   </>
                 )}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {players.map((player) => (
+                <TableRow key={player.id}>
+                  <TableCell>
+                    <Link
+                      to="/players/$id"
+                      params={{ id: String(player.id) }}
+                      className="hover:underline font-medium"
+                    >
+                      {player.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-normal">
+                      {formatPosition(player.position)}
+                    </Badge>
+                  </TableCell>
+                  {showStats ? (
+                    <>
+                      <TableCell className="text-right tabular-nums">{player.gamesPlayed ?? "-"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatToi(player.iceTimeSeconds)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.goalsAgainst ?? "-"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.shotsAgainst ?? "-"}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{formatSavePct(player.savePercentage)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatGaa(player.goalsAgainstAverage)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatGsax(player.goalsSavedAboveExpected)}</TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell className="text-muted-foreground">
+                        {formatHeight(player.heightInches)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatWeight(player.weightLbs)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {player.shoots || "-"}
+                      </TableCell>
+                    </>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

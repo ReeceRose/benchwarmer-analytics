@@ -1,30 +1,25 @@
+import { Link } from "@tanstack/react-router";
 import { Calendar, TrendingUp, TrendingDown } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { LiveIndicator, GoalsList } from "@/components/shared";
 import { useYesterdaysGames, useTodaysGames } from "@/hooks";
+import { formatGameTime, formatGameDate, formatPeriod } from "@/lib/game-formatters";
 import type { GameSummary, GameTeam } from "@/types";
-
-function formatTime(utcTime: string | null): string {
-  if (!utcTime) return "TBD";
-  const date = new Date(utcTime);
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + "T12:00:00");
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function LuckIndicator({ diff }: { diff: number | null }) {
   if (diff === null) return null;
@@ -60,7 +55,17 @@ function LuckIndicator({ diff }: { diff: number | null }) {
   return null;
 }
 
-function TeamScore({ team, isWinner, showStats }: { team: GameTeam; isWinner: boolean; showStats: boolean }) {
+function TeamScore({
+  team,
+  isWinner,
+  showStats,
+  showRecord,
+}: {
+  team: GameTeam;
+  isWinner: boolean;
+  showStats: boolean;
+  showRecord?: boolean;
+}) {
   return (
     <div className="flex items-center gap-3">
       <div className="flex-1">
@@ -71,6 +76,11 @@ function TeamScore({ team, isWinner, showStats }: { team: GameTeam; isWinner: bo
           <span className="text-sm text-muted-foreground truncate hidden sm:inline">
             {team.teamName}
           </span>
+          {showRecord && team.record && (
+            <span className="text-[10px] text-muted-foreground hidden md:inline">
+              ({team.record})
+            </span>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -80,7 +90,9 @@ function TeamScore({ team, isWinner, showStats }: { team: GameTeam; isWinner: bo
           </span>
         )}
         <LuckIndicator diff={team.goalsVsXgDiff} />
-        <span className={`font-mono text-lg font-bold tabular-nums ${isWinner ? "" : "text-muted-foreground"}`}>
+        <span
+          className={`font-mono text-lg font-bold tabular-nums ${isWinner ? "" : "text-muted-foreground"}`}
+        >
           {team.goals ?? "-"}
         </span>
       </div>
@@ -90,47 +102,102 @@ function TeamScore({ team, isWinner, showStats }: { team: GameTeam; isWinner: bo
 
 function GameCard({ game }: { game: GameSummary }) {
   const isCompleted = game.gameState === "OFF";
-  const homeWins = isCompleted && (game.home.goals ?? 0) > (game.away.goals ?? 0);
-  const awayWins = isCompleted && (game.away.goals ?? 0) > (game.home.goals ?? 0);
+  const isLive = game.gameState === "LIVE" || game.gameState === "CRIT";
+  const isFuture = game.gameState === "FUT" || game.gameState === "PRE";
+  const homeWins =
+    isCompleted && (game.home.goals ?? 0) > (game.away.goals ?? 0);
+  const awayWins =
+    isCompleted && (game.away.goals ?? 0) > (game.home.goals ?? 0);
 
   return (
-    <div className="p-3 border rounded-lg space-y-2 hover:bg-muted/30 transition-colors">
+    <Link
+      to="/games/$gameId"
+      params={{ gameId: game.gameId }}
+      className="block p-3 border rounded-lg space-y-2 hover:bg-muted/30 hover:border-primary/50 transition-colors cursor-pointer"
+    >
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          {isCompleted ? "Final" : formatTime(game.startTimeUtc)}
-          {game.periodType && game.periodType !== "REG" && (
-            <Badge variant="secondary" className="ml-2 text-[10px] px-1">
-              {game.periodType}
+        <div className="flex items-center gap-2">
+          {isLive ? (
+            <>
+              <LiveIndicator />
+              <span className="font-medium">
+                {formatPeriod(game.currentPeriod, game.inIntermission)}
+                {!game.inIntermission &&
+                  game.timeRemaining &&
+                  ` ${game.timeRemaining}`}
+              </span>
+            </>
+          ) : isCompleted ? (
+            <span>
+              Final
+              {game.periodType && game.periodType !== "REG" && (
+                <Badge variant="secondary" className="ml-2 text-[10px] px-1">
+                  {game.periodType}
+                </Badge>
+              )}
+            </span>
+          ) : (
+            <span>{formatGameTime(game.startTimeUtc)}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {(isLive || isCompleted) &&
+            game.away.shotsOnGoal !== null &&
+            game.home.shotsOnGoal !== null && (
+              <span className="font-mono text-[10px]">
+                SOG: {game.away.shotsOnGoal}-{game.home.shotsOnGoal}
+              </span>
+            )}
+          {game.hasShotData && !isLive && (
+            <Badge variant="outline" className="text-[10px]">
+              Stats
             </Badge>
           )}
-        </span>
-        {game.hasShotData && (
-          <Badge variant="outline" className="text-[10px]">
-            Stats available
-          </Badge>
-        )}
+        </div>
       </div>
 
-      <TeamScore team={game.away} isWinner={awayWins} showStats={game.hasShotData} />
-      <TeamScore team={game.home} isWinner={homeWins} showStats={game.hasShotData} />
+      <TeamScore
+        team={game.away}
+        isWinner={awayWins}
+        showStats={game.hasShotData && isCompleted}
+        showRecord={isFuture || isLive}
+      />
+      <TeamScore
+        team={game.home}
+        isWinner={homeWins}
+        showStats={game.hasShotData && isCompleted}
+        showRecord={isFuture || isLive}
+      />
 
-      {game.hasShotData && game.periods.length > 0 && (
+      {game.hasShotData && game.periods.length > 0 && isCompleted && (
         <div className="pt-2 border-t">
           <div className="flex gap-2 text-[10px] text-muted-foreground">
             {game.periods.map((p) => (
               <div key={p.period} className="flex flex-col items-center">
                 <span className="font-medium">P{p.period}</span>
-                <span className="font-mono">{p.awayGoals}-{p.homeGoals}</span>
+                <span className="font-mono">
+                  {p.awayGoals}-{p.homeGoals}
+                </span>
               </div>
             ))}
           </div>
         </div>
       )}
-    </div>
+
+      {isLive && game.goals && game.goals.length > 0 && (
+        <GoalsList goals={game.goals} awayCode={game.away.teamCode} />
+      )}
+    </Link>
   );
 }
 
-function GamesGrid({ games, emptyMessage }: { games: GameSummary[]; emptyMessage: string }) {
+function GamesGrid({
+  games,
+  emptyMessage,
+}: {
+  games: GameSummary[];
+  emptyMessage: string;
+}) {
   if (games.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -188,7 +255,8 @@ function LoadingSkeleton() {
 }
 
 export function GamesSection() {
-  const { data: yesterdayData, isLoading: yesterdayLoading } = useYesterdaysGames();
+  const { data: yesterdayData, isLoading: yesterdayLoading } =
+    useYesterdaysGames();
   const { data: todayData, isLoading: todayLoading } = useTodaysGames();
 
   return (
@@ -201,18 +269,8 @@ export function GamesSection() {
         <CardDescription>NHL game scores and analytics</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="yesterday">
+        <Tabs defaultValue="today">
           <TabsList className="mb-4">
-            <TabsTrigger value="yesterday" className="gap-1">
-              Yesterday
-              {yesterdayLoading ? (
-                <Skeleton className="ml-1 h-4 w-5 rounded-full" />
-              ) : yesterdayData ? (
-                <Badge variant="secondary" className="ml-1 text-[10px]">
-                  {yesterdayData.games.length}
-                </Badge>
-              ) : null}
-            </TabsTrigger>
             <TabsTrigger value="today" className="gap-1">
               Today
               {todayLoading ? (
@@ -223,20 +281,17 @@ export function GamesSection() {
                 </Badge>
               ) : null}
             </TabsTrigger>
+            <TabsTrigger value="yesterday" className="gap-1">
+              Yesterday
+              {yesterdayLoading ? (
+                <Skeleton className="ml-1 h-4 w-5 rounded-full" />
+              ) : yesterdayData ? (
+                <Badge variant="secondary" className="ml-1 text-[10px]">
+                  {yesterdayData.games.length}
+                </Badge>
+              ) : null}
+            </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="yesterday">
-            {yesterdayLoading ? (
-              <LoadingSkeleton />
-            ) : yesterdayData ? (
-              <>
-                <p className="text-xs text-muted-foreground mb-3">
-                  {formatDate(yesterdayData.date)}
-                </p>
-                <GamesGrid games={yesterdayData.games} emptyMessage="No games yesterday" />
-              </>
-            ) : null}
-          </TabsContent>
 
           <TabsContent value="today">
             {todayLoading ? (
@@ -244,9 +299,28 @@ export function GamesSection() {
             ) : todayData ? (
               <>
                 <p className="text-xs text-muted-foreground mb-3">
-                  {formatDate(todayData.date)}
+                  {formatGameDate(todayData.date)}
                 </p>
-                <GamesGrid games={todayData.games} emptyMessage="No games scheduled for today" />
+                <GamesGrid
+                  games={todayData.games}
+                  emptyMessage="No games scheduled for today"
+                />
+              </>
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="yesterday">
+            {yesterdayLoading ? (
+              <LoadingSkeleton />
+            ) : yesterdayData ? (
+              <>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {formatGameDate(yesterdayData.date)}
+                </p>
+                <GamesGrid
+                  games={yesterdayData.games}
+                  emptyMessage="No games yesterday"
+                />
               </>
             ) : null}
           </TabsContent>

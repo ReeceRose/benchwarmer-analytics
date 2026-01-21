@@ -21,7 +21,6 @@ function GlossaryPage() {
       </div>
 
       <div className="space-y-8">
-        {/* Quick Overview */}
         <Card>
           <CardHeader>
             <CardTitle>Understanding Modern Hockey Analytics</CardTitle>
@@ -43,8 +42,6 @@ function GlossaryPage() {
             </p>
           </CardContent>
         </Card>
-
-        {/* Metrics by Category */}
         {categoryOrder.map((category) => {
           const info = categoryInfo[category];
           const categoryMetrics = metrics.filter((m) => m.category === category);
@@ -91,8 +88,6 @@ function GlossaryPage() {
             </Card>
           );
         })}
-
-        {/* Data Source */}
         <Card>
           <CardHeader>
             <CardTitle>Data Source</CardTitle>

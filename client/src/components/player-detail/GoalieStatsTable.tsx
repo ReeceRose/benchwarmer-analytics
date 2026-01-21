@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -29,11 +30,12 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead className="font-semibold">Season</TableHead>
+    <Card className="py-0 gap-0">
+      <CardContent className="p-0 overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="font-semibold">Season</TableHead>
             <TableHead className="font-semibold">Team</TableHead>
             <TableHead className="text-right font-semibold">GP</TableHead>
             <TableHead className="text-right font-semibold hidden md:table-cell">TOI</TableHead>
@@ -109,7 +111,8 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
             )}
           </TableRow>
         </TableBody>
-      </Table>
-    </div>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

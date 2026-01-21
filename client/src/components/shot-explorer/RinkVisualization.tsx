@@ -169,7 +169,6 @@ export function RinkVisualization({
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
-            {/* Glow filter for goals */}
             <filter id="goal-glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="2" result="blur" />
               <feMerge>
@@ -178,8 +177,6 @@ export function RinkVisualization({
               </feMerge>
             </filter>
           </defs>
-
-          {/* Rink outline - rounded corners only on left (end boards) */}
           <path
             d={`
               M ${RINK_LENGTH} 0
@@ -196,8 +193,6 @@ export function RinkVisualization({
             strokeWidth="0.5"
             className="text-slate-300 dark:text-slate-700"
           />
-
-          {/* Ice surface background - rounded corners only on left */}
           <path
             d={`
               M ${RINK_LENGTH - 1} 1
@@ -212,8 +207,6 @@ export function RinkVisualization({
             fill="white"
             className="dark:fill-slate-800"
           />
-
-          {/* Goal line (red) - on LEFT side */}
           <line
             x1={GOAL_LINE_X}
             y1="0"
@@ -222,8 +215,6 @@ export function RinkVisualization({
             stroke="#dc2626"
             strokeWidth="0.5"
           />
-
-          {/* Blue line */}
           <line
             x1={BLUE_LINE_X}
             y1="0"
@@ -232,8 +223,6 @@ export function RinkVisualization({
             stroke="#2563eb"
             strokeWidth="1"
           />
-
-          {/* Goal crease - rectangular with rounded front */}
           <rect
             x={GOAL_LINE_X}
             y={RINK_HEIGHT / 2 - CREASE_WIDTH / 2}
@@ -245,8 +234,6 @@ export function RinkVisualization({
             strokeWidth="0.3"
             rx="1"
           />
-
-          {/* Goal - on LEFT side */}
           <rect
             x={GOAL_LINE_X - 4}
             y={RINK_HEIGHT / 2 - 3}
@@ -256,9 +243,6 @@ export function RinkVisualization({
             stroke="#dc2626"
             strokeWidth="0.5"
           />
-
-          {/* Faceoff circles (offensive zone) */}
-          {/* Top circle */}
           <circle
             cx={FACEOFF_X}
             cy={RINK_HEIGHT / 2 - FACEOFF_Y_OFFSET}
@@ -273,8 +257,6 @@ export function RinkVisualization({
             r={FACEOFF_DOT_RADIUS}
             fill="#dc2626"
           />
-
-          {/* Bottom circle */}
           <circle
             cx={FACEOFF_X}
             cy={RINK_HEIGHT / 2 + FACEOFF_Y_OFFSET}
@@ -289,8 +271,6 @@ export function RinkVisualization({
             r={FACEOFF_DOT_RADIUS}
             fill="#dc2626"
           />
-
-          {/* Shot dots - render non-goals first, then goals on top */}
           {transformedShots
             .filter(({ shot }) => !shot.isGoal)
             .map(({ shot, x, y, color, size }) => {
@@ -319,7 +299,6 @@ export function RinkVisualization({
                 </Tooltip>
               );
             })}
-          {/* Goals rendered on top */}
           {transformedShots
             .filter(({ shot }) => shot.isGoal)
             .map(({ shot, x, y, color, size }) => (
@@ -344,8 +323,6 @@ export function RinkVisualization({
           ))}
         </svg>
       </TooltipProvider>
-
-      {/* Legend */}
       {showLegend && (
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">

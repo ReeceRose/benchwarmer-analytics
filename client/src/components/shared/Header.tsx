@@ -13,6 +13,12 @@ export function Header() {
         </Link>
         <nav className="flex items-center gap-4 text-sm flex-1">
           <Link
+            to="/games"
+            className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+          >
+            Games
+          </Link>
+          <Link
             to="/teams"
             className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
           >

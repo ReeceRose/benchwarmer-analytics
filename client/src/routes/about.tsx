@@ -38,7 +38,6 @@ function AboutPage() {
       </div>
 
       <div className="space-y-8">
-        {/* Project Description */}
         <Card>
           <CardHeader>
             <CardTitle>Project</CardTitle>
@@ -52,36 +51,53 @@ function AboutPage() {
             </p>
           </CardContent>
         </Card>
-
-        {/* Data Attribution */}
         <Card>
           <CardHeader>
             <CardTitle>Data Attribution</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground leading-relaxed">
-              All hockey statistics are sourced from{" "}
-              <a
-                href="https://moneypuck.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 underline hover:text-foreground transition-colors"
-              >
-                MoneyPuck
-                <ExternalLink className="h-3 w-3" />
-              </a>
-              , which provides free, publicly available NHL data including
-              expected goals models, shot data, and advanced statistics. Data is
-              available from the 2008-09 season to present.
-            </p>
-            <p className="text-sm text-muted-foreground mt-4">
-              This project would not be possible without their excellent work in
+          <CardContent className="space-y-4">
+            <div>
+              <h4 className="font-medium mb-2">MoneyPuck</h4>
+              <p className="text-muted-foreground leading-relaxed">
+                Advanced hockey statistics are sourced from{" "}
+                <a
+                  href="https://moneypuck.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 underline hover:text-foreground transition-colors"
+                >
+                  MoneyPuck
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                , which provides free, publicly available NHL data including
+                expected goals models, shot data, and advanced statistics. Data is
+                available from the 2008-09 season to present.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">NHL API</h4>
+              <p className="text-muted-foreground leading-relaxed">
+                Game schedules, box scores, player biographical data, and real-time
+                game statistics are sourced from the{" "}
+                <a
+                  href="https://nhl.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 underline hover:text-foreground transition-colors"
+                >
+                  NHL.com
+                  <ExternalLink className="h-3 w-3" />
+                </a>{" "}
+                public API. This includes per-game player stats, goalie statistics,
+                and roster information.
+              </p>
+            </div>
+            <p className="text-sm text-muted-foreground pt-2">
+              This project would not be possible without these excellent data sources
               making hockey analytics accessible to everyone.
             </p>
           </CardContent>
         </Card>
-
-        {/* Tech Stack */}
         <Card>
           <CardHeader>
             <CardTitle>Tech Stack</CardTitle>
@@ -106,8 +122,6 @@ function AboutPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Disclaimer */}
         <Card>
           <CardHeader>
             <CardTitle>Disclaimer</CardTitle>
@@ -115,9 +129,10 @@ function AboutPage() {
           <CardContent>
             <p className="text-sm text-muted-foreground leading-relaxed">
               This is an unofficial, fan-made project and is not affiliated with
-              the NHL, any NHL team, or MoneyPuck. All team names, logos, and
-              related marks are trademarks of their respective owners. This project
-              is for educational and research purposes only.
+              the NHL, NHLPA, any NHL team, or MoneyPuck. All team names, logos, and
+              related marks are trademarks of their respective owners. NHL and the NHL
+              Shield are registered trademarks of the National Hockey League. This
+              project is for educational and research purposes only.
             </p>
           </CardContent>
         </Card>

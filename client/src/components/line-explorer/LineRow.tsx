@@ -34,7 +34,6 @@ export function LineRow({
 
   return (
     <TableRow className="hover:bg-muted/50">
-      {/* Players */}
       <TableCell>
         <div className="flex flex-wrap items-center gap-1.5">
           <PlayerChip
@@ -59,38 +58,24 @@ export function LineRow({
           )}
         </div>
       </TableCell>
-
-      {/* GP */}
       <TableCell className="text-right tabular-nums">
         {line.gamesPlayed}
       </TableCell>
-
-      {/* TOI */}
       <TableCell className="text-right tabular-nums">
         {formatToi(line.iceTimeSeconds)}
       </TableCell>
-
-      {/* GF */}
       <TableCell className="text-right tabular-nums">
         {line.goalsFor}
       </TableCell>
-
-      {/* GA */}
       <TableCell className="text-right tabular-nums">
         {line.goalsAgainst}
       </TableCell>
-
-      {/* xG% */}
       <TableCell className={cn("text-right tabular-nums font-medium", getColorClass(xgPct, teamAvgXgPct))}>
         {xgPct != null ? formatPercent(xgPct, false) : "-"}
       </TableCell>
-
-      {/* CF% */}
       <TableCell className={cn("text-right tabular-nums", getColorClass(cfPct, teamAvgCfPct))}>
         {cfPct != null ? formatPercent(cfPct, false) : "-"}
       </TableCell>
-
-      {/* Expand Button */}
       <TableCell className="w-10">
         <Button
           variant="ghost"

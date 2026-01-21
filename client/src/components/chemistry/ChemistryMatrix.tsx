@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { getHeatColor, type MatrixData } from "@/components/chemistry/chemistry-utils";
+import {
+  getHeatColor,
+  type MatrixData,
+} from "@/components/chemistry/chemistry-utils";
 import { ChemistryTooltip } from "@/components/chemistry/ChemistryTooltip";
 import type { ChemistryPair } from "@/types";
 
@@ -23,7 +26,6 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
         height={headerHeight + matrixData.players.length * cellSize + 10}
         className="text-xs"
       >
-        {/* Row Labels (left side) */}
         {matrixData.players.map((player, i) => (
           <Link
             key={`row-${player.id}`}
@@ -42,8 +44,6 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
             </text>
           </Link>
         ))}
-
-        {/* Column Labels (top, rotated) */}
         {matrixData.players.map((player, i) => {
           const lastName = player.name.split(" ").pop() || player.name;
           return (
@@ -64,8 +64,6 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
             </Link>
           );
         })}
-
-        {/* Matrix Cells */}
         {matrixData.players.map((rowPlayer, i) =>
           matrixData.players.map((colPlayer, j) => {
             if (i === j) {
@@ -93,7 +91,6 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
 
             return (
               <g key={`cell-${i}-${j}`}>
-                {/* Background rect for empty cells */}
                 <rect
                   x={labelWidth + j * cellSize}
                   y={headerHeight + i * cellSize}
@@ -104,7 +101,11 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
                   strokeWidth={hasData ? 0 : 1}
                   strokeDasharray={hasData ? "none" : "2,2"}
                   rx={2}
-                  className={hasData ? "cursor-pointer transition-opacity hover:opacity-80" : ""}
+                  className={
+                    hasData
+                      ? "cursor-pointer transition-opacity hover:opacity-80"
+                      : ""
+                  }
                   onMouseEnter={() => hasData && setHoveredPair(pair || null)}
                   onMouseLeave={() => setHoveredPair(null)}
                 />
@@ -124,8 +125,6 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
           })
         )}
       </svg>
-
-      {/* Hover Tooltip */}
       {hoveredPair && <ChemistryTooltip pair={hoveredPair} />}
     </div>
   );

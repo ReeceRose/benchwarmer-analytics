@@ -116,8 +116,6 @@ function TeamChemistryPage() {
           Player pair performance measured by xG% when playing together.
         </p>
       </div>
-
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <SeasonSelector
           value={season}
@@ -158,8 +156,6 @@ function TeamChemistryPage() {
           </SelectContent>
         </Select>
       </div>
-
-      {/* Error State */}
       {error && (
         <ErrorState
           title="Failed to load chemistry data"
@@ -168,16 +164,12 @@ function TeamChemistryPage() {
           variant="inline"
         />
       )}
-
-      {/* Loading State */}
       {isLoading && (
         <div className="space-y-4">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-125 w-full" />
         </div>
       )}
-
-      {/* No Season Selected */}
       {!season && !isLoading && (
         <Card>
           <CardContent className="py-12 text-center">
@@ -185,8 +177,6 @@ function TeamChemistryPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Chemistry Matrix */}
       {!isLoading && !error && matrixData && matrixData.players.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -215,8 +205,6 @@ function TeamChemistryPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* No Data */}
       {!isLoading &&
         !error &&
         season &&

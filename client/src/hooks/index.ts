@@ -12,4 +12,4 @@ export { useChemistryMatrix } from "@/hooks/useChemistryMatrix";
 export { useSeasons, useTeamSeasons } from "@/hooks/useSeasons";
 export { useHomepageData } from "@/hooks/useHomepageData";
 export { useTeamShots, useShooterStats, usePlayerShots } from "@/hooks/useShots";
-export { useYesterdaysGames, useTodaysGames, useGamesByDate } from "@/hooks/useGames";
+export { useYesterdaysGames, useTodaysGames, useLiveScores, useGamesByDate, useGame, useGameBoxscore } from "@/hooks/useGames";

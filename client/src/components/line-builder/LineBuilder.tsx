@@ -62,7 +62,8 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
   }, [lineState]);
 
   // Get current line slots based on type
-  const currentLine = lineType === "forward" ? lineState.forward : lineState.defense;
+  const currentLine =
+    lineType === "forward" ? lineState.forward : lineState.defense;
 
   // Get player IDs for current line
   const currentLinePlayerIds = useMemo(() => {
@@ -83,47 +84,46 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
   }, [chemistryPairs, currentLinePlayerIds]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    const player = event.active.data.current?.player as RosterPlayer | undefined;
+    const player = event.active.data.current?.player as
+      | RosterPlayer
+      | undefined;
     if (player) {
       setActivePlayer(player);
     }
   }, []);
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      setActivePlayer(null);
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActivePlayer(null);
 
-      const { active, over } = event;
-      if (!over) return;
+    const { active, over } = event;
+    if (!over) return;
 
-      const player = active.data.current?.player as RosterPlayer | undefined;
-      if (!player) return;
+    const player = active.data.current?.player as RosterPlayer | undefined;
+    if (!player) return;
 
-      const slotId = over.id as string;
+    const slotId = over.id as string;
 
-      // Determine which line type and slot
-      if (slotId.startsWith("forward-")) {
-        const slot = slotId.replace("forward-", "") as "lw" | "c" | "rw";
-        setLineState((prev) => ({
-          ...prev,
-          forward: {
-            ...prev.forward,
-            [slot]: player,
-          },
-        }));
-      } else if (slotId.startsWith("defense-")) {
-        const slot = slotId.replace("defense-", "") as "ld" | "rd";
-        setLineState((prev) => ({
-          ...prev,
-          defense: {
-            ...prev.defense,
-            [slot]: player,
-          },
-        }));
-      }
-    },
-    []
-  );
+    // Determine which line type and slot
+    if (slotId.startsWith("forward-")) {
+      const slot = slotId.replace("forward-", "") as "lw" | "c" | "rw";
+      setLineState((prev) => ({
+        ...prev,
+        forward: {
+          ...prev.forward,
+          [slot]: player,
+        },
+      }));
+    } else if (slotId.startsWith("defense-")) {
+      const slot = slotId.replace("defense-", "") as "ld" | "rd";
+      setLineState((prev) => ({
+        ...prev,
+        defense: {
+          ...prev.defense,
+          [slot]: player,
+        },
+      }));
+    }
+  }, []);
 
   const handleRemovePlayer = useCallback((lineType: LineType, slot: string) => {
     if (lineType === "forward") {
@@ -158,14 +158,11 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
       onDragEnd={handleDragEnd}
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Roster Panel */}
         <div className="lg:col-span-1 border rounded-lg p-4 bg-card h-[600px]">
           <RosterPanel players={roster} usedPlayerIds={usedPlayerIds} />
         </div>
 
-        {/* Line Builder Area */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Line Type Tabs + Reset */}
           <div className="flex items-center justify-between">
             <Tabs
               value={lineType}
@@ -189,7 +186,6 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
             </Button>
           </div>
 
-          {/* Line Slots */}
           <div className="border rounded-lg p-6 bg-card">
             {lineType === "forward" ? (
               <div className="grid grid-cols-3 gap-4">
@@ -230,7 +226,6 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
             )}
           </div>
 
-          {/* Stats Panel */}
           <LineStatsPanel
             pairStats={relevantPairs}
             playerCount={playerCount}
@@ -239,7 +234,6 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
         </div>
       </div>
 
-      {/* Drag Overlay */}
       <DragOverlay>
         {activePlayer && (
           <div className="opacity-80">

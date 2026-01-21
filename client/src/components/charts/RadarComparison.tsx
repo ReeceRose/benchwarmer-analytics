@@ -185,7 +185,17 @@ export function RadarComparison({
             <PolarGrid className="stroke-muted" />
             <PolarAngleAxis
               dataKey="stat"
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+              tick={({ x, y, payload, textAnchor }) => (
+                <text
+                  x={x}
+                  y={y}
+                  textAnchor={textAnchor}
+                  fontSize={12}
+                  className="fill-foreground"
+                >
+                  {payload.value}
+                </text>
+              )}
             />
             <PolarRadiusAxis
               angle={30}

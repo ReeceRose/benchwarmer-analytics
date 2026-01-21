@@ -74,7 +74,6 @@ export function ShotFilters({
 }: ShotFiltersProps) {
   return (
     <div className="flex flex-wrap items-end gap-4">
-      {/* Period Filter */}
       <div className="space-y-1.5">
         <Label htmlFor="period-filter" className="text-sm">
           Period
@@ -98,8 +97,6 @@ export function ShotFilters({
           </SelectContent>
         </Select>
       </div>
-
-      {/* Shot Type Filter */}
       <div className="space-y-1.5">
         <Label htmlFor="shot-type-filter" className="text-sm">
           Shot Type
@@ -123,8 +120,6 @@ export function ShotFilters({
           </SelectContent>
         </Select>
       </div>
-
-      {/* Danger Level Filter */}
       <div className="space-y-1.5">
         <Label htmlFor="danger-filter" className="text-sm">
           Danger Level
@@ -145,8 +140,6 @@ export function ShotFilters({
           </SelectContent>
         </Select>
       </div>
-
-      {/* Limit Filter */}
       <div className="space-y-1.5">
         <Label htmlFor="limit-filter" className="text-sm">
           Show
@@ -169,8 +162,6 @@ export function ShotFilters({
           </SelectContent>
         </Select>
       </div>
-
-      {/* Player Filter */}
       {players.length > 0 && (
         <div className="space-y-1.5">
           <Label htmlFor="player-filter" className="text-sm">
@@ -198,8 +189,6 @@ export function ShotFilters({
           </Select>
         </div>
       )}
-
-      {/* Goals Only Toggle */}
       <div className="flex items-center space-x-2 pb-0.5">
         <Switch
           id="goals-only"

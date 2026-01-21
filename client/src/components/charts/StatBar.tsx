@@ -21,10 +21,12 @@ export function StatBar({
 }: StatBarProps) {
   // Calculate percentage position (clamped to 0-100)
   const range = max - min;
-  const valuePercent = range > 0 ? Math.max(0, Math.min(100, ((value - min) / range) * 100)) : 50;
-  const avgPercent = average != null && range > 0
-    ? Math.max(0, Math.min(100, ((average - min) / range) * 100))
-    : null;
+  const valuePercent =
+    range > 0 ? Math.max(0, Math.min(100, ((value - min) / range) * 100)) : 50;
+  const avgPercent =
+    average != null && range > 0
+      ? Math.max(0, Math.min(100, ((average - min) / range) * 100))
+      : null;
 
   // Determine color based on comparison to average
   let barColor = "bg-primary";
@@ -48,12 +50,10 @@ export function StatBar({
         <span className="font-mono font-medium">{format(value)}</span>
       </div>
       <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-        {/* Value bar */}
         <div
           className={`absolute left-0 top-0 h-full rounded-full transition-all ${barColor}`}
           style={{ width: `${valuePercent}%` }}
         />
-        {/* Average marker */}
         {avgPercent != null && (
           <div
             className="absolute top-0 w-0.5 h-full bg-foreground/70"

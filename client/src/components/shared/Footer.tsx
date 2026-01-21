@@ -14,6 +14,15 @@ export function Footer() {
           >
             MoneyPuck
           </a>
+          {" "}and{" "}
+          <a
+            href="https://nhl.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            NHL.com
+          </a>
         </p>
         <Link
           to="/about"

@@ -9,7 +9,13 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
 import type { OutlierEntry } from "@/types";
 
@@ -129,7 +135,10 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
               dataKey="xG"
               name="Expected Goals"
               type="number"
-              domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 2)), (dataMax: number) => Math.ceil(dataMax + 2)]}
+              domain={[
+                (dataMin: number) => Math.max(0, Math.floor(dataMin - 2)),
+                (dataMax: number) => Math.ceil(dataMax + 2),
+              ]}
               tickCount={6}
               tickFormatter={(v: number) => v.toFixed(0)}
               label={{
@@ -144,7 +153,10 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
               dataKey="goals"
               name="Goals"
               type="number"
-              domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 2)), (dataMax: number) => Math.ceil(dataMax + 2)]}
+              domain={[
+                (dataMin: number) => Math.max(0, Math.floor(dataMin - 2)),
+                (dataMax: number) => Math.ceil(dataMax + 2),
+              ]}
               tickCount={6}
               tickFormatter={(v: number) => v.toFixed(0)}
               label={{
@@ -156,7 +168,6 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
               className="text-xs"
             />
             <Tooltip content={<CustomTooltip />} />
-            {/* Diagonal reference line: Goals = xG (y = x) */}
             <ReferenceLine
               ifOverflow="hidden"
               segment={[
@@ -169,8 +180,8 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
             />
             <Scatter
               data={chartData}
-              fill="hsl(var(--primary))"
-              fillOpacity={0.7}
+              fill="#3b82f6"
+              fillOpacity={0.8}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
             />

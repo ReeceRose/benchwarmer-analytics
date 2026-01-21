@@ -67,8 +67,6 @@ function TeamLineBuilderPage() {
           players have played together.
         </p>
       </div>
-
-      {/* Season Selector */}
       <div className="flex items-center gap-3 mb-6">
         <SeasonSelector
           value={season}
@@ -85,8 +83,6 @@ function TeamLineBuilderPage() {
           teamAbbrev={abbrev}
         />
       </div>
-
-      {/* Error State */}
       {error && (
         <ErrorState
           title="Failed to load data"
@@ -98,8 +94,6 @@ function TeamLineBuilderPage() {
           variant="inline"
         />
       )}
-
-      {/* Loading State */}
       {isLoading && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
@@ -112,8 +106,6 @@ function TeamLineBuilderPage() {
           </div>
         </div>
       )}
-
-      {/* No Season Selected */}
       {!season && !isLoading && (
         <Card>
           <CardContent className="py-12 text-center">
@@ -121,8 +113,6 @@ function TeamLineBuilderPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Line Builder */}
       {!isLoading && !error && rosterData && season && (
         <LineBuilder
           roster={rosterData.players}

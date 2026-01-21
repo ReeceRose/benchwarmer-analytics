@@ -82,6 +82,7 @@ try
         options.AddPolicy(CachePolicies.SearchResults, b => b
             .Expire(TimeSpan.FromMinutes(5))
             .SetVaryByQuery("q", "page", "pageSize"));
+        options.AddPolicy(CachePolicies.LiveData, b => b.Expire(TimeSpan.FromSeconds(15)));
     });
 
     builder.Services.AddDbContext<AppDbContext>(options =>
@@ -114,7 +115,11 @@ try
 
     // Services
     builder.Services.AddHttpClient<MoneyPuckDownloader>();
-    builder.Services.AddHttpClient<NhlScheduleService>();
+    builder.Services.AddHttpClient<NhlScheduleService>()
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AllowAutoRedirect = true
+        });
     builder.Services.AddScoped<IngestionService>();
     builder.Services.AddScoped<LineImporter>();
     builder.Services.AddScoped<SkaterImporter>();

@@ -167,10 +167,10 @@ Database and infrastructure tasks are handled by `./scripts/dev.sh`:
 
 | Source | Data Provided | Update Frequency |
 |--------|---------------|------------------|
-| [MoneyPuck](https://moneypuck.com) | Player stats, line combinations, shot data, expected goals | Nightly |
-| [NHL API](https://api-web.nhle.com) | Player biographical data, headshots, rosters | Weekly |
+| [MoneyPuck](https://moneypuck.com) | Advanced stats, line combinations, shot data, expected goals (xG) | Nightly |
+| [NHL API](https://api-web.nhle.com) | Schedules, box scores, game stats, player bios, rosters | Real-time / Weekly |
 
-The ingestion service runs nightly at 4:00 AM EST to pull the latest statistics.
+The ingestion service runs nightly at 4:00 AM EST to pull the latest statistics from MoneyPuck. NHL API data is fetched on-demand for game schedules and box scores.
 
 ---
 
@@ -232,11 +232,11 @@ Infrastructure:
 
 ## Attribution
 
-**Data provided by [MoneyPuck.com](https://moneypuck.com)**
+**Data Sources:**
+- Advanced statistics provided by [MoneyPuck.com](https://moneypuck.com)
+- Game schedules, box scores, and player data from [NHL.com](https://nhl.com) API
 
-Player biographical data from [NHL.com](https://nhl.com)
-
-This is a personal portfolio project and is not affiliated with the NHL, any of its teams, or MoneyPuck.
+This is a personal portfolio project and is not affiliated with the NHL, NHLPA, any of its teams, or MoneyPuck. NHL and the NHL Shield are registered trademarks of the National Hockey League.
 
 ---
 
