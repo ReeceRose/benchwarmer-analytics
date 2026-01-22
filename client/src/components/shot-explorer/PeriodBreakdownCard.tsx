@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HeaderWithTooltip } from "@/components/shared";
 import type { Shot } from "@/types";
 
 interface PeriodBreakdownCardProps {
@@ -105,15 +106,15 @@ export function PeriodBreakdownCard({ shots }: PeriodBreakdownCardProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-16">Period</TableHead>
-                <TableHead className="text-right">Shots</TableHead>
-                <TableHead className="text-right">On Goal</TableHead>
-                <TableHead className="text-right">Goals</TableHead>
-                <TableHead className="text-right">Sh%</TableHead>
-                <TableHead className="text-right">xG</TableHead>
-                <TableHead className="text-right">G-xG</TableHead>
-                <TableHead className="text-right">High</TableHead>
-                <TableHead className="text-right">Med</TableHead>
-                <TableHead className="text-right">Low</TableHead>
+                <HeaderWithTooltip label="Shots" tooltip="Total shot attempts" className="text-right" />
+                <HeaderWithTooltip label="On Goal" tooltip="Shots on goal" className="text-right" />
+                <HeaderWithTooltip label="Goals" tooltip="Goals scored" className="text-right" />
+                <HeaderWithTooltip label="Sh%" tooltip="Shooting percentage" className="text-right" />
+                <HeaderWithTooltip label="xG" tooltip="Expected goals based on shot quality" className="text-right" />
+                <HeaderWithTooltip label="G-xG" tooltip="Goals minus expected goals — positive means lucky" className="text-right" />
+                <HeaderWithTooltip label="High" tooltip="High danger shots (xG > 0.15)" className="text-right" />
+                <HeaderWithTooltip label="Med" tooltip="Medium danger shots (xG 0.06-0.15)" className="text-right" />
+                <HeaderWithTooltip label="Low" tooltip="Low danger shots (xG < 0.06)" className="text-right" />
               </TableRow>
             </TableHeader>
             <TableBody>

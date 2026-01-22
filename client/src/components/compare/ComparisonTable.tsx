@@ -14,21 +14,23 @@ import {
   GOALIE_STAT_CONFIGS,
   getSkaterStatValue,
   getGoalieStatValue,
-  type SkaterStatConfig,
-  type GoalieStatConfig,
+  filterStatsByMode,
+  type StatMode,
 } from "@/components/compare/stat-configs";
 import type { PlayerComparison } from "@/types";
 
 interface ComparisonTableProps {
   players: PlayerComparison[];
   positionType: "goalie" | "skater" | null;
+  statMode?: StatMode;
 }
 
-export function ComparisonTable({ players, positionType }: ComparisonTableProps) {
+export function ComparisonTable({ players, positionType, statMode = "all" }: ComparisonTableProps) {
   if (players.length < 2) return null;
 
   const isGoalie = positionType === "goalie";
-  const statConfigs = isGoalie ? GOALIE_STAT_CONFIGS : SKATER_STAT_CONFIGS;
+  const skaterConfigs = filterStatsByMode(SKATER_STAT_CONFIGS, statMode);
+  const goalieConfigs = filterStatsByMode(GOALIE_STAT_CONFIGS, statMode);
 
   return (
     <Card className="py-0 gap-0">
@@ -57,35 +59,69 @@ export function ComparisonTable({ players, positionType }: ComparisonTableProps)
             </TableRow>
           </TableHeader>
           <TableBody>
-            {statConfigs.map((config, index) => (
-              <TableRow
-                key={config.key}
-                className={index % 2 === 0 ? "bg-muted/20" : ""}
-              >
-                <TableCell className="font-medium sticky left-0 bg-inherit z-10 border-r pl-4">
-                  {config.label}
-                </TableCell>
-                {players.map((player) => {
-                  const { formatted, isBest, isWorst } = isGoalie
-                    ? getGoalieStatValue(config as GoalieStatConfig, player, players)
-                    : getSkaterStatValue(config as SkaterStatConfig, player, players);
-                  return (
-                    <TableCell
-                      key={player.playerId}
-                      className={`text-center tabular-nums px-6 ${
-                        isBest
-                          ? "text-green-600 dark:text-green-400 font-semibold"
-                          : isWorst
-                            ? "text-red-600 dark:text-red-400"
-                            : ""
-                      }`}
-                    >
-                      {formatted}
+            {isGoalie
+              ? goalieConfigs.map((config, index) => (
+                  <TableRow
+                    key={config.key}
+                    className={index % 2 === 0 ? "bg-muted/20" : ""}
+                  >
+                    <TableCell className="font-medium sticky left-0 bg-inherit z-10 border-r pl-4">
+                      {config.label}
                     </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
+                    {players.map((player) => {
+                      const { formatted, isBest, isWorst } = getGoalieStatValue(
+                        config,
+                        player,
+                        players
+                      );
+                      return (
+                        <TableCell
+                          key={player.playerId}
+                          className={`text-center tabular-nums px-6 ${
+                            isBest
+                              ? "text-green-600 dark:text-green-400 font-semibold"
+                              : isWorst
+                                ? "text-red-600 dark:text-red-400"
+                                : ""
+                          }`}
+                        >
+                          {formatted}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))
+              : skaterConfigs.map((config, index) => (
+                  <TableRow
+                    key={config.key}
+                    className={index % 2 === 0 ? "bg-muted/20" : ""}
+                  >
+                    <TableCell className="font-medium sticky left-0 bg-inherit z-10 border-r pl-4">
+                      {config.label}
+                    </TableCell>
+                    {players.map((player) => {
+                      const { formatted, isBest, isWorst } = getSkaterStatValue(
+                        config,
+                        player,
+                        players
+                      );
+                      return (
+                        <TableCell
+                          key={player.playerId}
+                          className={`text-center tabular-nums px-6 ${
+                            isBest
+                              ? "text-green-600 dark:text-green-400 font-semibold"
+                              : isWorst
+                                ? "text-red-600 dark:text-red-400"
+                                : ""
+                          }`}
+                        >
+                          {formatted}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
           </TableBody>
         </Table>
       </CardContent>

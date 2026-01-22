@@ -22,6 +22,29 @@ public interface IShotRepository
         int? period = null,
         string? shotType = null,
         int? shooterPlayerId = null,
+        string? scoreState = null,
         int? limit = null,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Shot>> GetRecentByPlayerAsync(
+        int playerId,
+        int season,
+        int gameLimit = 20,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Shot>> GetAgainstTeamAsync(
+        string teamCode,
+        int season,
+        bool? isPlayoffs = null,
+        int? period = null,
+        string? shotType = null,
+        string? scoreState = null,
+        int? limit = null,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Shot>> GetRecentByGoalieAsync(
+        int goaliePlayerId,
+        int season,
+        int gameLimit = 30,
         CancellationToken cancellationToken = default);
 }

@@ -5,6 +5,7 @@ import {
   type MatrixData,
 } from "@/components/chemistry/chemistry-utils";
 import { ChemistryTooltip } from "@/components/chemistry/ChemistryTooltip";
+import { CHEMISTRY_MATRIX_COLORS } from "@/lib/chart-colors";
 import type { ChemistryPair } from "@/types";
 
 interface ChemistryMatrixProps {
@@ -75,7 +76,7 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
                   y={headerHeight + i * cellSize}
                   width={cellSize - 1}
                   height={cellSize - 1}
-                  fill="hsl(0, 0%, 30%)"
+                  fill={CHEMISTRY_MATRIX_COLORS.diagonal}
                   rx={2}
                 />
               );
@@ -96,8 +97,8 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
                   y={headerHeight + i * cellSize}
                   width={cellSize - 1}
                   height={cellSize - 1}
-                  fill={hasData ? getHeatColor(xgPct, true) : "hsl(0, 0%, 15%)"}
-                  stroke={hasData ? "none" : "hsl(0, 0%, 25%)"}
+                  fill={hasData ? getHeatColor(xgPct, true) : CHEMISTRY_MATRIX_COLORS.empty}
+                  stroke={hasData ? "none" : CHEMISTRY_MATRIX_COLORS.emptyBorder}
                   strokeWidth={hasData ? 0 : 1}
                   strokeDasharray={hasData ? "none" : "2,2"}
                   rx={2}

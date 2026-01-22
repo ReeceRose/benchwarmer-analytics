@@ -6,6 +6,7 @@ public class TeamSeason
     public required string TeamAbbreviation { get; set; }  // "TOR", "MTL", etc.
     public int Season { get; set; }                        // 2025 = 2024-25 season
     public required string Situation { get; set; }         // "all", "5on5", "other", etc.
+    public bool IsPlayoffs { get; set; }                   // true for playoff stats, false for regular season
 
     // Basic stats
     public int GamesPlayed { get; set; }

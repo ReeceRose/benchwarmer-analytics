@@ -13,6 +13,8 @@ import type {
   GoalieStatsResponse,
   LinemateHistoryResponse,
   PlayerComparisonResponse,
+  PlayerRollingStatsResponse,
+  GoalieWorkloadResponse,
   SeasonListResponse,
   HomepageDataResponse,
   TeamShotsResponse,
@@ -22,6 +24,12 @@ import type {
   GamesResponse,
   GameSummary,
   GameBoxscoreResponse,
+  GamePreview,
+  BreakoutCandidatesResponse,
+  AgeCurvesResponse,
+  AgeDistributionResponse,
+  SeasonPercentilesResponse,
+  PowerRankingsResponse,
 } from "@/types";
 
 const api = axios.create({
@@ -179,6 +187,16 @@ export async function getShooterStats(
   return data;
 }
 
+export async function getTeamShotsAgainst(
+  abbrev: string,
+  params: ShotQueryParams
+): Promise<TeamShotsResponse> {
+  const { data } = await api.get<TeamShotsResponse>(`/teams/${abbrev}/shots/against`, {
+    params,
+  });
+  return data;
+}
+
 export interface PlayerShotParams {
   season?: number;
   limit?: number;
@@ -228,5 +246,98 @@ export async function getGameBoxscore(gameId: string): Promise<GameBoxscoreRespo
 
 export async function getLiveScores(): Promise<GamesResponse> {
   const { data } = await api.get<GamesResponse>("/games/live");
+  return data;
+}
+
+export async function getGamePreview(gameId: string): Promise<GamePreview> {
+  const { data } = await api.get<GamePreview>(`/games/${gameId}/preview`);
+  return data;
+}
+
+// Rolling Stats
+
+export async function getPlayerRollingStats(
+  playerId: number,
+  season?: number,
+  games?: number
+): Promise<PlayerRollingStatsResponse> {
+  const { data } = await api.get<PlayerRollingStatsResponse>(
+    `/players/${playerId}/rolling-stats`,
+    { params: { season, games } }
+  );
+  return data;
+}
+
+export async function getGoalieWorkload(
+  playerId: number,
+  season?: number,
+  games?: number
+): Promise<GoalieWorkloadResponse> {
+  const { data } = await api.get<GoalieWorkloadResponse>(
+    `/players/${playerId}/workload`,
+    { params: { season, games } }
+  );
+  return data;
+}
+
+// Analytics
+
+export async function getBreakoutCandidates(
+  season?: number,
+  minGames?: number,
+  limit?: number
+): Promise<BreakoutCandidatesResponse> {
+  const { data } = await api.get<BreakoutCandidatesResponse>(
+    "/stats/breakout-candidates",
+    { params: { season, minGames, limit } }
+  );
+  return data;
+}
+
+export async function getAgeCurves(
+  minGames?: number,
+  playerIds?: number[],
+  useMedian?: boolean
+): Promise<AgeCurvesResponse> {
+  const { data } = await api.get<AgeCurvesResponse>("/stats/age-curves", {
+    params: {
+      minGames,
+      playerIds: playerIds?.length ? playerIds.join(",") : undefined,
+      useMedian: useMedian || undefined,
+    },
+  });
+  return data;
+}
+
+export async function getAgeDistribution(
+  age: number,
+  minGames?: number
+): Promise<AgeDistributionResponse> {
+  const { data } = await api.get<AgeDistributionResponse>(`/stats/age-distribution/${age}`, {
+    params: { minGames },
+  });
+  return data;
+}
+
+export async function getSeasonPercentiles(
+  season: number,
+  minGames?: number
+): Promise<SeasonPercentilesResponse> {
+  const { data } = await api.get<SeasonPercentilesResponse>(
+    `/stats/season-percentiles/${season}`,
+    { params: { minGames } }
+  );
+  return data;
+}
+
+// Standings
+
+export async function getPowerRankings(
+  season?: number
+): Promise<PowerRankingsResponse> {
+  const { data } = await api.get<PowerRankingsResponse>(
+    "/standings/power-rankings",
+    { params: { season } }
+  );
   return data;
 }

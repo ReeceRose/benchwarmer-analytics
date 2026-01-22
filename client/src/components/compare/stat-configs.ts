@@ -1,12 +1,16 @@
 import { formatToi, formatPercent, formatPer60 } from "@/lib/formatters";
 import type { SkaterStats, GoalieStats, PlayerComparison } from "@/types";
 
+// Stat mode for filtering
+export type StatMode = "all" | "counting" | "rate";
+
 // Skater stats configuration
 export interface SkaterStatConfig {
   key: keyof SkaterStats | "pointsPerGame" | "goalsPer60" | "assistsPer60";
   label: string;
   format: (value: number | undefined | null, stats?: SkaterStats) => string;
   higherIsBetter: boolean;
+  mode: "counting" | "rate" | "context"; // context = always shown (GP, TOI)
 }
 
 export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
@@ -15,24 +19,28 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     label: "GP",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: true,
+    mode: "context",
   },
   {
     key: "goals",
     label: "G",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: true,
+    mode: "counting",
   },
   {
     key: "assists",
     label: "A",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: true,
+    mode: "counting",
   },
   {
     key: "points",
     label: "P",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: true,
+    mode: "counting",
   },
   {
     key: "pointsPerGame",
@@ -42,24 +50,28 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
         ? (stats.points / stats.gamesPlayed).toFixed(2)
         : "-",
     higherIsBetter: true,
+    mode: "rate",
   },
   {
     key: "iceTimeSeconds",
     label: "TOI",
     format: (v) => (v != null ? formatToi(v) : "-"),
     higherIsBetter: true,
+    mode: "context",
   },
   {
     key: "shots",
     label: "S",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: true,
+    mode: "counting",
   },
   {
     key: "expectedGoals",
     label: "xG",
     format: (v) => (v != null ? v.toFixed(1) : "-"),
     higherIsBetter: true,
+    mode: "counting",
   },
   {
     key: "goalsPer60",
@@ -69,6 +81,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
         ? formatPer60(stats.goals, stats.iceTimeSeconds)
         : "-",
     higherIsBetter: true,
+    mode: "rate",
   },
   {
     key: "expectedGoalsPer60",
@@ -78,18 +91,21 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
         ? ((stats.expectedGoals / stats.iceTimeSeconds) * 3600).toFixed(2)
         : "-",
     higherIsBetter: true,
+    mode: "rate",
   },
   {
     key: "corsiForPct",
     label: "CF%",
     format: (v) => (v != null ? formatPercent(v) : "-"),
     higherIsBetter: true,
+    mode: "rate",
   },
   {
     key: "fenwickForPct",
     label: "FF%",
     format: (v) => (v != null ? formatPercent(v) : "-"),
     higherIsBetter: true,
+    mode: "rate",
   },
 ];
 
@@ -99,6 +115,7 @@ export interface GoalieStatConfig {
   label: string;
   format: (value: number | undefined | null, stats?: GoalieStats) => string;
   higherIsBetter: boolean;
+  mode: "counting" | "rate" | "context";
 }
 
 export const GOALIE_STAT_CONFIGS: GoalieStatConfig[] = [
@@ -107,24 +124,28 @@ export const GOALIE_STAT_CONFIGS: GoalieStatConfig[] = [
     label: "GP",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: true,
+    mode: "context",
   },
   {
     key: "iceTimeSeconds",
     label: "TOI",
     format: (v) => (v != null ? formatToi(v) : "-"),
     higherIsBetter: true,
+    mode: "context",
   },
   {
     key: "shotsAgainst",
     label: "SA",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: false,
+    mode: "counting",
   },
   {
     key: "goalsAgainst",
     label: "GA",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: false,
+    mode: "counting",
   },
   {
     key: "savePctDisplay",
@@ -134,38 +155,53 @@ export const GOALIE_STAT_CONFIGS: GoalieStatConfig[] = [
         ? (stats.savePercentage * 100).toFixed(2) + "%"
         : "-",
     higherIsBetter: true,
+    mode: "rate",
   },
   {
     key: "goalsAgainstAverage",
     label: "GAA",
     format: (v) => (v != null ? v.toFixed(2) : "-"),
     higherIsBetter: false,
+    mode: "rate",
   },
   {
     key: "goalsSavedAboveExpected",
     label: "GSAE",
     format: (v) => (v != null ? v.toFixed(1) : "-"),
     higherIsBetter: true,
+    mode: "rate",
   },
   {
     key: "expectedGoalsAgainst",
     label: "xGA",
     format: (v) => (v != null ? v.toFixed(1) : "-"),
     higherIsBetter: false,
+    mode: "counting",
   },
   {
     key: "highDangerShots",
     label: "HD SA",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: false,
+    mode: "counting",
   },
   {
     key: "highDangerGoals",
     label: "HD GA",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: false,
+    mode: "counting",
   },
 ];
+
+// Filter stats by mode
+export function filterStatsByMode<T extends { mode: "counting" | "rate" | "context" }>(
+  configs: T[],
+  mode: StatMode
+): T[] {
+  if (mode === "all") return configs;
+  return configs.filter((c) => c.mode === mode || c.mode === "context");
+}
 
 // Stat value result with highlighting info
 export interface StatValueResult {

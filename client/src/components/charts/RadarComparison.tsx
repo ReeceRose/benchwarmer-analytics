@@ -9,6 +9,7 @@ import {
   Tooltip,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CHART_COLORS } from "@/lib/chart-colors";
 import type { SkaterStats } from "@/types";
 
 interface PlayerData {
@@ -22,15 +23,6 @@ interface RadarComparisonProps {
   title?: string;
   className?: string;
 }
-
-// Vibrant, distinguishable colors for up to 5 players
-const COLORS = [
-  "#2563eb", // Blue
-  "#dc2626", // Red
-  "#16a34a", // Green
-  "#9333ea", // Purple
-  "#ea580c", // Orange
-];
 
 // Stat definitions for radar chart
 interface StatDef {
@@ -111,7 +103,7 @@ function RadarChartTooltip({
   const stat = data.stat as string;
 
   return (
-    <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
+    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
       <p className="font-semibold mb-2">{stat}</p>
       <div className="space-y-1">
         {payload.map((entry, i) => (
@@ -208,8 +200,8 @@ export function RadarComparison({
                 key={player.name}
                 name={player.name}
                 dataKey={player.name}
-                stroke={player.color ?? COLORS[i % COLORS.length]}
-                fill={player.color ?? COLORS[i % COLORS.length]}
+                stroke={player.color ?? CHART_COLORS[i % CHART_COLORS.length]}
+                fill={player.color ?? CHART_COLORS[i % CHART_COLORS.length]}
                 fillOpacity={0.15}
                 strokeWidth={2}
               />

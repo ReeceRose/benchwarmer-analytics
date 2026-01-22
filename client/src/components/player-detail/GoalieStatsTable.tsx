@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HeaderWithTooltip } from "@/components/shared";
 import { formatToi, formatSeason } from "@/lib/formatters";
 import { formatSavePct, formatGaa, formatGsax } from "@/components/player-detail/goalie-stats";
 import type { GoalieSeasonRow, GoalieCareerTotals } from "@/components/player-detail/goalie-stats";
@@ -36,23 +37,23 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="font-semibold">Season</TableHead>
-            <TableHead className="font-semibold">Team</TableHead>
-            <TableHead className="text-right font-semibold">GP</TableHead>
-            <TableHead className="text-right font-semibold hidden md:table-cell">TOI</TableHead>
-            <TableHead className="text-right font-semibold">GA</TableHead>
-            <TableHead className="text-right font-semibold">SA</TableHead>
-            <TableHead className="text-right font-semibold">SV%</TableHead>
-            <TableHead className="text-right font-semibold">GAA</TableHead>
-            <TableHead className="text-right font-semibold hidden lg:table-cell">GSAx</TableHead>
-            {hasPlayoffData && (
-              <>
-                <TableHead className="text-right font-semibold border-l">GP</TableHead>
-                <TableHead className="text-right font-semibold">GA</TableHead>
-                <TableHead className="text-right font-semibold">SA</TableHead>
-                <TableHead className="text-right font-semibold">SV%</TableHead>
-              </>
-            )}
-          </TableRow>
+              <TableHead className="font-semibold">Team</TableHead>
+              <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
+              <HeaderWithTooltip label="TOI" tooltip="Total time on ice" className="text-right hidden md:table-cell" />
+              <HeaderWithTooltip label="GA" tooltip="Goals against" className="text-right" />
+              <HeaderWithTooltip label="SA" tooltip="Shots against" className="text-right" />
+              <HeaderWithTooltip label="SV%" tooltip="Save percentage" className="text-right" />
+              <HeaderWithTooltip label="GAA" tooltip="Goals against average per 60 minutes" className="text-right" />
+              <HeaderWithTooltip label="GSAx" tooltip="Goals saved above expected — positive is better" className="text-right hidden lg:table-cell" />
+              {hasPlayoffData && (
+                <>
+                  <HeaderWithTooltip label="GP" tooltip="Playoff games played" className="text-right border-l" />
+                  <HeaderWithTooltip label="GA" tooltip="Playoff goals against" className="text-right" />
+                  <HeaderWithTooltip label="SA" tooltip="Playoff shots against" className="text-right" />
+                  <HeaderWithTooltip label="SV%" tooltip="Playoff save percentage" className="text-right" />
+                </>
+              )}
+            </TableRow>
           {hasPlayoffData && (
             <TableRow className="bg-muted/30">
               <TableHead colSpan={5} className="text-xs text-muted-foreground py-1">Regular Season</TableHead>

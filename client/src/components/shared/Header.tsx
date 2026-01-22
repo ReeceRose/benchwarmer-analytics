@@ -37,6 +37,24 @@ export function Header() {
             Compare
           </Link>
           <Link
+            to="/power-rankings"
+            className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+          >
+            Rankings
+          </Link>
+          <Link
+            to="/breakout-candidates"
+            className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+          >
+            Breakouts
+          </Link>
+          <Link
+            to="/age-curves"
+            className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+          >
+            Age Curves
+          </Link>
+          <Link
             to="/glossary"
             className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
           >

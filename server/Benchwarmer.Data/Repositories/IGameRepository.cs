@@ -9,4 +9,6 @@ public interface IGameRepository
     Task<IReadOnlyList<Game>> GetCompletedByDateAsync(DateOnly date, CancellationToken cancellationToken = default);
     Task<int> UpsertAsync(Game game, CancellationToken cancellationToken = default);
     Task<int> UpsertBatchAsync(IEnumerable<Game> games, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Game>> GetHeadToHeadAsync(string teamA, string teamB, int season, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Game>> GetByGameIdsAsync(IEnumerable<string> gameIds, CancellationToken cancellationToken = default);
 }

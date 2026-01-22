@@ -151,3 +151,83 @@ export interface RosterResponse {
   season?: number;
   playoffs?: boolean;
 }
+
+/** Per-game stats for rolling performance */
+export interface GameStats {
+  gameId: string;
+  goals: number;
+  shots: number;
+  expectedGoals: number;
+  shootingPct: number;
+}
+
+/** Response from GET /api/players/:id/rolling-stats */
+export interface PlayerRollingStatsResponse {
+  playerId: number;
+  playerName: string;
+  season: number;
+  gamesIncluded: number;
+  games: GameStats[];
+  seasonGoalsPerGame: number;
+  seasonShotsPerGame: number;
+  seasonXgPerGame: number;
+  seasonShootingPct: number;
+  rollingGoalsPerGame: number;
+  rollingShotsPerGame: number;
+  rollingXgPerGame: number;
+  rollingShootingPct: number;
+  trend: "hot" | "cold" | "neutral";
+}
+
+/** Per-game stats for goalie workload */
+export interface GoalieGameStats {
+  gameId: string;
+  gameDate: string;
+  opponent: string;
+  isHome: boolean;
+  shotsAgainst: number;
+  goalsAgainst: number;
+  savePercentage: number;
+  expectedGoalsAgainst: number;
+  goalsSavedAboveExpected: number;
+  isBackToBack: boolean;
+  daysSincePreviousGame?: number;
+}
+
+/** Workload stats for a time window */
+export interface WorkloadWindow {
+  days: number;
+  gamesPlayed: number;
+  gamesPerWeek: number;
+  totalShotsAgainst: number;
+  avgShotsAgainstPerGame: number;
+  avgSavePercentage: number;
+  totalGSAx: number;
+  isHighWorkload: boolean;
+}
+
+/** Back-to-back performance comparison */
+export interface BackToBackSplits {
+  backToBackGames: number;
+  nonBackToBackGames: number;
+  backToBackSavePercentage: number;
+  nonBackToBackSavePercentage: number;
+  backToBackGAA: number;
+  nonBackToBackGAA: number;
+  backToBackGSAx: number;
+  nonBackToBackGSAx: number;
+}
+
+/** Response from GET /api/players/:id/workload */
+export interface GoalieWorkloadResponse {
+  playerId: number;
+  playerName: string;
+  season: number;
+  gamesIncluded: number;
+  games: GoalieGameStats[];
+  last7Days: WorkloadWindow;
+  last14Days: WorkloadWindow;
+  last30Days: WorkloadWindow;
+  backToBackSplits: BackToBackSplits;
+  workloadTrend: "heavy" | "moderate" | "light";
+}

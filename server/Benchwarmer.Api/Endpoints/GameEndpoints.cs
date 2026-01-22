@@ -133,6 +133,22 @@ public static class GameEndpoints
             .Produces<GameBoxscoreResponseDto>()
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.SemiStaticData);
+
+        group.MapGet("/{gameId}/preview", GetGamePreview)
+            .WithName("GetGamePreview")
+            .WithSummary("Get pre-game analytics preview")
+            .WithDescription("""
+                Returns pre-game analytics for an upcoming game including:
+                - Head-to-head record and last 5 meetings this season
+                - Team comparison (xG, CF%, PP%, PK%)
+                - Hot/cold players for each team (by goals vs expected goals)
+                - Expected goalie matchup (by games played)
+
+                Best used for FUT (future) or PRE (pre-game) games.
+                """)
+            .Produces<GamePreviewDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetGamesByDate(
@@ -570,7 +586,7 @@ public static class GameEndpoints
             p.AwayXG
         )).ToList() ?? [];
 
-        var goals = MapGoalsWithGwg(game.Goals, game.HomeTeam.Score, game.AwayTeam.Score, game.HomeTeam.Abbrev);
+        var goals = MapGoalsWithGwg(game.Goals, game.HomeTeam.Score, game.AwayTeam.Score, game.HomeTeam.Abbrev, isCompleted);
 
         DateOnly.TryParse(game.GameDate, out var gameDate);
 
@@ -644,8 +660,9 @@ public static class GameEndpoints
             p.AwayXG
         )).ToList() ?? [];
 
-        // If we have scores but state isn't OFF, treat as completed
-        var effectiveGameState = (hasScores && game.GameState != "OFF") ? "OFF" : game.GameState;
+        // Use the actual game state - don't override based on scores
+        // Live games have scores too, so we can't assume scores mean "completed"
+        var effectiveGameState = game.GameState;
 
         return new GameSummaryDto(
             GameId: game.GameId,
@@ -704,21 +721,28 @@ public static class GameEndpoints
 
     /// <summary>
     /// Maps goals from live game data and determines which goal is the GWG.
+    /// GWG is only calculated for completed games.
     /// </summary>
     private static List<GameGoalDto> MapGoalsWithGwg(
         List<NhlGameGoal> goals,
         int? finalHomeScore,
         int? finalAwayScore,
-        string homeTeamAbbrev)
+        string homeTeamAbbrev,
+        bool isGameCompleted)
     {
         if (goals.Count == 0 || finalHomeScore == null || finalAwayScore == null)
             return [];
 
-        var goalData = goals
-            .Select(g => (IsHomeGoal: g.TeamAbbrev == homeTeamAbbrev, HomeScoreAfter: g.HomeScore, AwayScoreAfter: g.AwayScore))
-            .ToList();
+        // Only calculate GWG for completed games
+        int? gwgIndex = null;
+        if (isGameCompleted)
+        {
+            var goalData = goals
+                .Select(g => (IsHomeGoal: g.TeamAbbrev == homeTeamAbbrev, HomeScoreAfter: g.HomeScore, AwayScoreAfter: g.AwayScore))
+                .ToList();
 
-        var gwgIndex = FindGwgIndex(goalData, finalHomeScore.Value, finalAwayScore.Value);
+            gwgIndex = FindGwgIndex(goalData, finalHomeScore.Value, finalAwayScore.Value);
+        }
 
         return goals.Select((g, idx) => new GameGoalDto(
             Period: g.Period,
@@ -770,6 +794,242 @@ public static class GameEndpoints
             Strength: g.Strength,
             Assists: g.Assists.Select(a => a.Name?.Default ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList(),
             IsGameWinningGoal: isGwg
+        );
+    }
+
+    private static async Task<IResult> GetGamePreview(
+        string gameId,
+        IGameRepository gameRepository,
+        ITeamSeasonRepository teamSeasonRepository,
+        ISkaterStatsRepository skaterStatsRepository,
+        IGoalieStatsRepository goalieStatsRepository,
+        NhlScheduleService nhlScheduleService,
+        CancellationToken cancellationToken)
+    {
+        // First get the game info (try live scores, then DB, then NHL API)
+        var game = await gameRepository.GetByGameIdAsync(gameId, cancellationToken);
+
+        if (game == null)
+        {
+            // Try to fetch from NHL API
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var nhlGames = await nhlScheduleService.GetGamesForDateRangeAsync(
+                today.AddDays(-1),
+                today.AddDays(7),
+                cancellationToken);
+
+            game = nhlGames.FirstOrDefault(g => g.GameId == gameId);
+            if (game != null)
+            {
+                await gameRepository.UpsertAsync(game, cancellationToken);
+            }
+        }
+
+        if (game == null)
+        {
+            return Results.NotFound();
+        }
+
+        var homeTeam = game.HomeTeamCode;
+        var awayTeam = game.AwayTeamCode;
+        var season = game.Season;
+
+        // Fetch head-to-head from NHL API (our DB may not have historical games)
+        var homeTeamGames = await nhlScheduleService.GetTeamSeasonGamesAsync(homeTeam, season, cancellationToken);
+        var headToHeadGames = homeTeamGames
+            .Where(g => g.GameState == "OFF" && g.GameType == 2) // Completed regular season games only
+            .Where(g => g.HomeTeam.Abbrev == awayTeam || g.AwayTeam.Abbrev == awayTeam)
+            .OrderByDescending(g => g.GameDate)
+            .ToList();
+
+        // Team stats (all situations needed for comparison)
+        var homeTeamStats = await teamSeasonRepository.GetByTeamSeasonAsync(homeTeam, season, "all", false, cancellationToken);
+        var awayTeamStats = await teamSeasonRepository.GetByTeamSeasonAsync(awayTeam, season, "all", false, cancellationToken);
+
+        // Fetch official NHL standings (streaks, home/away records, L10) and special teams stats (PP%/PK%)
+        var standingsTask = nhlScheduleService.GetStandingsAsync(cancellationToken);
+        var specialTeamsTask = nhlScheduleService.GetTeamSpecialTeamsAsync(season, cancellationToken);
+        await Task.WhenAll(standingsTask, specialTeamsTask);
+
+        var standings = await standingsTask;
+        var specialTeams = await specialTeamsTask;
+
+        standings.TryGetValue(homeTeam, out var homeStandings);
+        standings.TryGetValue(awayTeam, out var awayStandings);
+        specialTeams.TryGetValue(homeTeam, out var homeSpecialTeams);
+        specialTeams.TryGetValue(awayTeam, out var awaySpecialTeams);
+
+        // Hot players
+        var homeHotPlayers = await skaterStatsRepository.GetHotPlayersByTeamAsync(homeTeam, season, 3, cancellationToken);
+        var awayHotPlayers = await skaterStatsRepository.GetHotPlayersByTeamAsync(awayTeam, season, 3, cancellationToken);
+
+        // Goalies
+        var homeGoalies = await goalieStatsRepository.GetByTeamSeasonAsync(homeTeam, season, "all", false, cancellationToken);
+        var awayGoalies = await goalieStatsRepository.GetByTeamSeasonAsync(awayTeam, season, "all", false, cancellationToken);
+
+        // Build head-to-head
+        var h2hRecord = BuildHeadToHeadRecord(headToHeadGames, homeTeam, awayTeam);
+
+        // Build team comparison
+        var homeComparison = BuildTeamPreviewStats(homeTeam, homeTeamStats, homeStandings, homeSpecialTeams);
+        var awayComparison = BuildTeamPreviewStats(awayTeam, awayTeamStats, awayStandings, awaySpecialTeams);
+
+        // Build hot players
+        var homeHotPlayerDtos = homeHotPlayers.Select(MapToHotPlayerDto).ToList();
+        var awayHotPlayerDtos = awayHotPlayers.Select(MapToHotPlayerDto).ToList();
+
+        // Build goalie matchup (all goalies, already sorted by ice time)
+        var homeGoalieDtos = homeGoalies.Select(MapToGoaliePreviewDto).ToList();
+        var awayGoalieDtos = awayGoalies.Select(MapToGoaliePreviewDto).ToList();
+
+        return Results.Ok(new GamePreviewDto(
+            Game: new GamePreviewGameDto(
+                Id: game.GameId,
+                Date: game.GameDate,
+                HomeTeam: homeTeam,
+                AwayTeam: awayTeam,
+                StartTimeUtc: game.StartTimeUtc?.ToString("o")
+            ),
+            HeadToHead: h2hRecord,
+            TeamComparison: new TeamComparisonDto(homeComparison, awayComparison),
+            HotPlayers: new HotPlayersDto(homeHotPlayerDtos, awayHotPlayerDtos),
+            GoalieMatchup: new GoalieMatchupDto(
+                Home: homeGoalieDtos,
+                Away: awayGoalieDtos
+            )
+        ));
+    }
+
+    private static HeadToHeadDto BuildHeadToHeadRecord(
+        IReadOnlyList<NhlClubScheduleGame> games,
+        string homeTeam,
+        string awayTeam)
+    {
+        var homeWins = 0;
+        var awayWins = 0;
+        var otLosses = 0;
+
+        foreach (var g in games)
+        {
+            var gameHomeTeam = g.HomeTeam.Abbrev;
+            var homeScore = g.HomeTeam.Score ?? 0;
+            var awayScore = g.AwayTeam.Score ?? 0;
+            var homeWon = homeScore > awayScore;
+            var isOt = g.PeriodDescriptor?.PeriodType is "OT" or "SO";
+
+            if (gameHomeTeam == homeTeam)
+            {
+                if (homeWon) homeWins++;
+                else if (isOt) otLosses++;
+                else awayWins++;
+            }
+            else // awayTeam was home in this game
+            {
+                if (homeWon) awayWins++;
+                else if (isOt) otLosses++;
+                else homeWins++;
+            }
+        }
+
+        var lastFive = games.Take(5).Select(g =>
+        {
+            var homeScore = g.HomeTeam.Score ?? 0;
+            var awayScore = g.AwayTeam.Score ?? 0;
+            return new PastGameDto(
+                Date: DateOnly.Parse(g.GameDate),
+                Score: $"{g.HomeTeam.Abbrev} {homeScore} - {g.AwayTeam.Abbrev} {awayScore}",
+                Winner: homeScore > awayScore ? g.HomeTeam.Abbrev : g.AwayTeam.Abbrev,
+                OvertimeType: g.PeriodDescriptor?.PeriodType is "OT" or "SO" ? g.PeriodDescriptor.PeriodType : null
+            );
+        }).ToList();
+
+        return new HeadToHeadDto(
+            Season: new SeasonRecordDto(homeWins, awayWins, otLosses),
+            LastFive: lastFive
+        );
+    }
+
+    private static TeamPreviewStatsDto BuildTeamPreviewStats(
+        string teamCode,
+        TeamSeason? allSituation,
+        NhlTeamStandings? standings,
+        NhlTeamSpecialTeams? specialTeams)
+    {
+        if (allSituation == null)
+        {
+            return new TeamPreviewStatsDto(teamCode, 0, 0, 0, null, null, null, null, null, null, null, null);
+        }
+
+        var gp = allSituation.GamesPlayed;
+        var xgfPerGame = gp > 0 ? Math.Round(allSituation.XGoalsFor / gp, 2) : 0;
+        var xgaPerGame = gp > 0 ? Math.Round(allSituation.XGoalsAgainst / gp, 2) : 0;
+
+        // Use official NHL PP% and PK% from NHL Stats API
+        decimal? ppPct = specialTeams?.PowerPlayPct != null
+            ? Math.Round(specialTeams.PowerPlayPct.Value * 100, 1)
+            : null;
+        decimal? pkPct = specialTeams?.PenaltyKillPct != null
+            ? Math.Round(specialTeams.PenaltyKillPct.Value * 100, 1)
+            : null;
+
+        // Build streak string (e.g., "W3", "L2", "OT1")
+        string? streak = standings != null && !string.IsNullOrEmpty(standings.StreakCode)
+            ? $"{standings.StreakCode}{standings.StreakCount}"
+            : null;
+
+        // Build record strings
+        string? homeRecord = standings != null
+            ? $"{standings.HomeWins}-{standings.HomeLosses}-{standings.HomeOtLosses}"
+            : null;
+        string? roadRecord = standings != null
+            ? $"{standings.RoadWins}-{standings.RoadLosses}-{standings.RoadOtLosses}"
+            : null;
+        string? last10 = standings != null
+            ? $"{standings.L10Wins}-{standings.L10Losses}-{standings.L10OtLosses}"
+            : null;
+
+        return new TeamPreviewStatsDto(
+            TeamCode: teamCode,
+            GamesPlayed: gp,
+            XGoalsFor: xgfPerGame,
+            XGoalsAgainst: xgaPerGame,
+            XGoalsPct: allSituation.XGoalsPercentage,
+            CorsiPct: allSituation.CorsiPercentage,
+            PowerPlayPct: ppPct,
+            PenaltyKillPct: pkPct,
+            Streak: streak,
+            HomeRecord: homeRecord,
+            RoadRecord: roadRecord,
+            Last10: last10
+        );
+    }
+
+    private static HotPlayerDto MapToHotPlayerDto(SkaterSeason s)
+    {
+        var differential = s.Goals - (s.ExpectedGoals ?? 0);
+        var trend = differential > 0 ? "hot" : "cold";
+
+        return new HotPlayerDto(
+            PlayerId: s.PlayerId,
+            Name: s.Player?.Name ?? $"Player {s.PlayerId}",
+            Position: s.Player?.Position,
+            Goals: s.Goals,
+            Assists: s.Assists,
+            ExpectedGoals: s.ExpectedGoals ?? 0,
+            Differential: Math.Round(differential, 2),
+            Trend: trend
+        );
+    }
+
+    private static GoaliePreviewDto MapToGoaliePreviewDto(GoalieSeason g)
+    {
+        return new GoaliePreviewDto(
+            PlayerId: g.PlayerId,
+            Name: g.Player?.Name ?? $"Goalie {g.PlayerId}",
+            GamesPlayed: g.GamesPlayed,
+            SavePct: g.SavePercentage,
+            GoalsAgainstAvg: g.GoalsAgainstAverage,
+            GoalsSavedAboveExpected: g.GoalsSavedAboveExpected
         );
     }
 }

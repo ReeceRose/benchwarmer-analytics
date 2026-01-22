@@ -25,6 +25,7 @@ public static class ShotEndpoints
                 - `shotType`: Filter by shot type (WRIST, SLAP, SNAP, BACKHAND, TIP, WRAP, DEFLECTED)
                 - `playerId`: Filter by shooter player ID
                 - `goalsOnly`: Only return goals (true/false)
+                - `scoreState`: Filter by game score state (leading, trailing, tied)
                 - `limit`: Max shots to return (omit for all shots)
                 """)
             .Produces<TeamShotsResponseDto>()
@@ -45,7 +46,30 @@ public static class ShotEndpoints
             .Produces<IReadOnlyList<ShooterStatsDto>>()
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/against", GetShotsAgainst)
+            .WithName("GetShotsAgainst")
+            .WithSummary("Get shots against the team (defensive)")
+            .WithDescription("""
+                Returns shot location data for shots taken AGAINST the team (opponent shots).
+                Used for defensive heat maps showing where teams are allowing shots.
+
+                **Query Parameters:**
+                - `season`: Season year (required, e.g., 2024 for 2024-25 season)
+                - `playoffs`: Filter by season type (true = playoffs, false = regular season)
+                - `period`: Filter by period (1, 2, 3, 4+ for OT)
+                - `shotType`: Filter by shot type (WRIST, SLAP, SNAP, BACKHAND, TIP, WRAP, DEFLECTED)
+                - `goalsOnly`: Only return goals (true/false)
+                - `scoreState`: Filter by game score state (leading, trailing, tied)
+                - `limit`: Max shots to return (omit for all shots)
+                """)
+            .Produces<TeamShotsResponseDto>()
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
     }
+
+    private static readonly string[] ValidScoreStates = ["leading", "trailing", "tied"];
 
     private static async Task<IResult> GetTeamShots(
         string abbrev,
@@ -55,6 +79,7 @@ public static class ShotEndpoints
         string? shotType,
         int? playerId,
         bool? goalsOnly,
+        string? scoreState,
         int? limit,
         ITeamRepository teamRepository,
         IShotRepository shotRepository,
@@ -64,6 +89,12 @@ public static class ShotEndpoints
         if (shotType != null && !ValidShotTypes.Contains(shotType.ToUpperInvariant()))
         {
             return Results.BadRequest(ApiError.InvalidShotType(ValidShotTypes));
+        }
+
+        // Validate score state
+        if (scoreState != null && !ValidScoreStates.Contains(scoreState.ToLowerInvariant()))
+        {
+            return Results.BadRequest(new ApiError("InvalidScoreState", $"Invalid score state. Valid values: {string.Join(", ", ValidScoreStates)}"));
         }
 
         // If no limit specified, return all shots (null passes through to repository)
@@ -82,6 +113,7 @@ public static class ShotEndpoints
             period,
             shotType?.ToUpperInvariant(),
             playerId,
+            scoreState,
             effectiveLimit,
             cancellationToken);
 
@@ -163,6 +195,7 @@ public static class ShotEndpoints
             null, // period
             null, // shotType
             null, // playerId
+            null, // scoreState
             null, // no limit for aggregation
             cancellationToken);
 
@@ -191,5 +224,102 @@ public static class ShotEndpoints
             .ToList();
 
         return Results.Ok(shooterStats);
+    }
+
+    private static async Task<IResult> GetShotsAgainst(
+        string abbrev,
+        int season,
+        bool? playoffs,
+        int? period,
+        string? shotType,
+        bool? goalsOnly,
+        string? scoreState,
+        int? limit,
+        ITeamRepository teamRepository,
+        IShotRepository shotRepository,
+        CancellationToken cancellationToken)
+    {
+        // Validate shot type
+        if (shotType != null && !ValidShotTypes.Contains(shotType.ToUpperInvariant()))
+        {
+            return Results.BadRequest(ApiError.InvalidShotType(ValidShotTypes));
+        }
+
+        // Validate score state
+        if (scoreState != null && !ValidScoreStates.Contains(scoreState.ToLowerInvariant()))
+        {
+            return Results.BadRequest(new ApiError("InvalidScoreState", $"Invalid score state. Valid values: {string.Join(", ", ValidScoreStates)}"));
+        }
+
+        var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+
+        var shots = await shotRepository.GetAgainstTeamAsync(
+            abbrev,
+            season,
+            playoffs,
+            period,
+            shotType?.ToUpperInvariant(),
+            scoreState,
+            limit,
+            cancellationToken);
+
+        // Filter goals only if requested
+        var filteredShots = goalsOnly == true
+            ? shots.Where(s => s.IsGoal).ToList()
+            : shots;
+
+        var shotDtos = filteredShots.Select(s => new ShotDto(
+            s.ShotId,
+            s.ShooterPlayerId,
+            s.ShooterName,
+            s.ShooterPosition,
+            s.Period,
+            s.GameTimeSeconds,
+            s.ArenaAdjustedXCoord,
+            s.ArenaAdjustedYCoord,
+            s.ShotDistance,
+            s.ShotAngle,
+            s.ShotType,
+            s.IsGoal,
+            s.ShotWasOnGoal,
+            s.ShotOnEmptyNet,
+            s.ShotRebound,
+            s.ShotRush,
+            s.XGoal,
+            s.HomeSkatersOnIce,
+            s.AwaySkatersOnIce,
+            s.GameId
+        )).ToList();
+
+        // Calculate summary statistics
+        var totalShots = filteredShots.Count;
+        var goals = filteredShots.Count(s => s.IsGoal);
+        var shotsOnGoal = filteredShots.Count(s => s.ShotWasOnGoal);
+        var shootingPct = totalShots > 0 ? Math.Round((decimal)goals / totalShots * 100, 1) : 0;
+        var totalXGoal = filteredShots.Sum(s => s.XGoal ?? 0);
+        var goalsAboveExpected = Math.Round(goals - totalXGoal, 2);
+
+        // Danger classification based on xG thresholds
+        var highDanger = filteredShots.Count(s => s.XGoal > 0.15m);
+        var mediumDanger = filteredShots.Count(s => s.XGoal >= 0.06m && s.XGoal <= 0.15m);
+        var lowDanger = filteredShots.Count(s => s.XGoal < 0.06m);
+
+        var summary = new ShotSummaryDto(
+            totalShots,
+            goals,
+            shotsOnGoal,
+            shootingPct,
+            Math.Round(totalXGoal, 2),
+            goalsAboveExpected,
+            highDanger,
+            mediumDanger,
+            lowDanger
+        );
+
+        return Results.Ok(new TeamShotsResponseDto(abbrev, season, playoffs, shotDtos, summary));
     }
 }

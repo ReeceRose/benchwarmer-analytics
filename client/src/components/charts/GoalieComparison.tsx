@@ -9,6 +9,7 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CHART_COLORS, CHART_AXIS_COLORS } from "@/lib/chart-colors";
 import type { GoalieStats } from "@/types";
 
 interface GoalieData {
@@ -21,15 +22,6 @@ interface GoalieComparisonProps {
   title?: string;
   className?: string;
 }
-
-// Vibrant, distinguishable colors for up to 5 players
-const COLORS = [
-  "#2563eb", // Blue
-  "#dc2626", // Red
-  "#16a34a", // Green
-  "#9333ea", // Purple
-  "#ea580c", // Orange
-];
 
 // Stat definitions for goalie comparison
 interface GoalieStatDef {
@@ -96,7 +88,7 @@ function GoalieChartTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
+    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
       <p className="font-semibold mb-2">{label}</p>
       <div className="space-y-1">
         {payload.map((entry, i) => (
@@ -168,12 +160,17 @@ export function GoalieComparison({
             layout="vertical"
             margin={{ top: 10, right: 30, left: 60, bottom: 10 }}
           >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <XAxis type="number" className="text-xs" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLORS.grid} strokeOpacity={CHART_AXIS_COLORS.gridOpacity} />
+            <XAxis
+              type="number"
+              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
+              stroke={CHART_AXIS_COLORS.grid}
+              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+            />
             <YAxis
               type="category"
               dataKey="stat"
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
               width={80}
             />
             <Tooltip content={<GoalieChartTooltip />} />
@@ -181,7 +178,7 @@ export function GoalieComparison({
               <Bar
                 key={player.name}
                 dataKey={player.name}
-                fill={COLORS[i % COLORS.length]}
+                fill={CHART_COLORS[i % CHART_COLORS.length]}
                 fillOpacity={0.8}
                 radius={[0, 4, 4, 0]}
               />

@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HeaderWithTooltip } from "@/components/shared";
 import type {
   GameBoxscoreResponse,
   BoxscoreSkater,
@@ -180,14 +181,14 @@ function TeamSkatersTable({
         <TableHeader>
           <TableRow>
             <TableHead>Player</TableHead>
-            <TableHead className="text-center">G</TableHead>
-            <TableHead className="text-center">A</TableHead>
-            <TableHead className="text-center">P</TableHead>
-            <TableHead className="text-center">+/-</TableHead>
-            <TableHead className="text-center">SOG</TableHead>
-            <TableHead className="text-center">HIT</TableHead>
-            <TableHead className="text-center">BLK</TableHead>
-            <TableHead className="text-center">TOI</TableHead>
+            <HeaderWithTooltip label="G" tooltip="Goals" className="text-center" />
+            <HeaderWithTooltip label="A" tooltip="Assists" className="text-center" />
+            <HeaderWithTooltip label="P" tooltip="Points" className="text-center" />
+            <HeaderWithTooltip label="+/-" tooltip="Plus/minus rating" className="text-center" />
+            <HeaderWithTooltip label="SOG" tooltip="Shots on goal" className="text-center" />
+            <HeaderWithTooltip label="HIT" tooltip="Hits" className="text-center" />
+            <HeaderWithTooltip label="BLK" tooltip="Blocked shots" className="text-center" />
+            <HeaderWithTooltip label="TOI" tooltip="Time on ice" className="text-center" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -211,12 +212,12 @@ function TeamSkatersTable({
             <TableHeader>
               <TableRow>
                 <TableHead>Player</TableHead>
-                <TableHead className="text-center">SV</TableHead>
-                <TableHead className="text-center">SA</TableHead>
-                <TableHead className="text-center">GA</TableHead>
-                <TableHead className="text-center">SV%</TableHead>
-                <TableHead className="text-center">TOI</TableHead>
-                <TableHead className="text-center">DEC</TableHead>
+                <HeaderWithTooltip label="SV" tooltip="Saves" className="text-center" />
+                <HeaderWithTooltip label="SA" tooltip="Shots against" className="text-center" />
+                <HeaderWithTooltip label="GA" tooltip="Goals against" className="text-center" />
+                <HeaderWithTooltip label="SV%" tooltip="Save percentage" className="text-center" />
+                <HeaderWithTooltip label="TOI" tooltip="Time on ice" className="text-center" />
+                <HeaderWithTooltip label="DEC" tooltip="Decision (W/L/OTL)" className="text-center" />
               </TableRow>
             </TableHeader>
             <TableBody>

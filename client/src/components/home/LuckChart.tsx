@@ -17,6 +17,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
+import { CHART_COLORS, CHART_AXIS_COLORS } from "@/lib/chart-colors";
 import type { OutlierEntry } from "@/types";
 
 interface LuckChartProps {
@@ -46,7 +47,7 @@ function CustomTooltip({
   const isHot = data.differential > 0;
 
   return (
-    <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
+    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
       <p className="font-semibold">{data.name}</p>
       {data.team && (
         <p className="text-muted-foreground text-xs">{data.team}</p>
@@ -130,7 +131,7 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLORS.grid} strokeOpacity={CHART_AXIS_COLORS.gridOpacity} />
             <XAxis
               dataKey="xG"
               name="Expected Goals"
@@ -141,13 +142,16 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
               ]}
               tickCount={6}
               tickFormatter={(v: number) => v.toFixed(0)}
+              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
               label={{
                 value: "Expected Goals (xG)",
                 position: "bottom",
                 offset: 0,
-                className: "fill-muted-foreground text-xs",
+                fill: CHART_AXIS_COLORS.tick,
+                fontSize: 12,
               }}
-              className="text-xs"
+              stroke={CHART_AXIS_COLORS.grid}
+              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
             />
             <YAxis
               dataKey="goals"
@@ -159,13 +163,16 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
               ]}
               tickCount={6}
               tickFormatter={(v: number) => v.toFixed(0)}
+              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
               label={{
                 value: "Actual Goals",
                 angle: -90,
                 position: "insideLeft",
-                className: "fill-muted-foreground text-xs",
+                fill: CHART_AXIS_COLORS.tick,
+                fontSize: 12,
               }}
-              className="text-xs"
+              stroke={CHART_AXIS_COLORS.grid}
+              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
             />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine
@@ -174,13 +181,13 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
                 { x: 0, y: 0 },
                 { x: 100, y: 100 },
               ]}
-              stroke="#888888"
+              stroke={CHART_AXIS_COLORS.reference}
               strokeDasharray="5 5"
               strokeWidth={2}
             />
             <Scatter
               data={chartData}
-              fill="#3b82f6"
+              fill={CHART_COLORS[0]}
               fillOpacity={0.8}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}

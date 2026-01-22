@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HeaderWithTooltip } from "@/components/shared";
 import { formatPosition, formatHeight, formatWeight } from "@/lib/formatters";
 import type { RosterPlayer } from "@/types/player";
 
@@ -51,16 +52,16 @@ export function GoalieRosterTable({ title, players, showStats = false }: GoalieR
             <TableHeader>
               <TableRow>
                 <TableHead className={showStats ? "w-[25%]" : "w-[40%]"}>Name</TableHead>
-                <TableHead>Pos</TableHead>
+                <HeaderWithTooltip label="Pos" tooltip="Position" />
                 {showStats ? (
                   <>
-                    <TableHead className="text-right">GP</TableHead>
-                    <TableHead className="text-right">TOI</TableHead>
-                    <TableHead className="text-right">GA</TableHead>
-                    <TableHead className="text-right">SA</TableHead>
-                    <TableHead className="text-right">SV%</TableHead>
-                    <TableHead className="text-right">GAA</TableHead>
-                    <TableHead className="text-right">GSAx</TableHead>
+                    <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
+                    <HeaderWithTooltip label="TOI" tooltip="Total time on ice" className="text-right" />
+                    <HeaderWithTooltip label="GA" tooltip="Goals against" className="text-right" />
+                    <HeaderWithTooltip label="SA" tooltip="Shots against" className="text-right" />
+                    <HeaderWithTooltip label="SV%" tooltip="Save percentage" className="text-right" />
+                    <HeaderWithTooltip label="GAA" tooltip="Goals against average per 60 minutes" className="text-right" />
+                    <HeaderWithTooltip label="GSAx" tooltip="Goals saved above expected — positive is better" className="text-right" />
                   </>
                 ) : (
                   <>

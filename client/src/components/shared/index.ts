@@ -11,3 +11,5 @@ export { ThemeToggle } from "@/components/shared/ThemeToggle";
 export { BackButton } from "@/components/shared/BackButton";
 export { LiveIndicator } from "@/components/shared/LiveIndicator";
 export { GoalsList } from "@/components/shared/GoalsList";
+export { Sparkline } from "@/components/shared/Sparkline";
+export { HeaderWithTooltip } from "@/components/shared/HeaderWithTooltip";

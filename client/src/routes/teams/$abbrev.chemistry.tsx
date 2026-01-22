@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
+  
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { BackButton, SeasonSelector, ErrorState } from "@/components/shared";
@@ -183,7 +183,7 @@ function TeamChemistryPage() {
             <CardTitle className="flex items-center gap-2 text-lg">
               <Grid3X3 className="h-5 w-5" />
               Player Pair xG%
-              <TooltipProvider>
+              
                 <Tooltip>
                   <TooltipTrigger>
                     <Info className="h-4 w-4 text-muted-foreground" />
@@ -196,7 +196,7 @@ function TeamChemistryPage() {
                     </p>
                   </TooltipContent>
                 </Tooltip>
-              </TooltipProvider>
+              
             </CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">

@@ -1302,6 +1302,10 @@ namespace Benchwarmer.Data.Migrations
                         .HasColumnType("numeric")
                         .HasColumnName("ice_time");
 
+                    b.Property<bool>("IsPlayoffs")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_playoffs");
+
                     b.Property<int>("LowDangerGoalsAgainst")
                         .HasColumnType("integer")
                         .HasColumnName("low_danger_goals_against");
@@ -1616,7 +1620,7 @@ namespace Benchwarmer.Data.Migrations
 
                     b.HasIndex("Season");
 
-                    b.HasIndex("TeamAbbreviation", "Season", "Situation")
+                    b.HasIndex("TeamAbbreviation", "Season", "Situation", "IsPlayoffs")
                         .IsUnique();
 
                     b.ToTable("team_seasons");

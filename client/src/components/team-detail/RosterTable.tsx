@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HeaderWithTooltip } from "@/components/shared";
 import { formatPosition, formatHeight, formatWeight } from "@/lib/formatters";
 import type { RosterPlayer } from "@/types/player";
 
@@ -40,17 +41,17 @@ export function RosterTable({ title, players, showStats = false }: RosterTablePr
             <TableHeader>
               <TableRow>
                 <TableHead className={showStats ? "w-[25%]" : "w-[40%]"}>Name</TableHead>
-                <TableHead>Pos</TableHead>
+                <HeaderWithTooltip label="Pos" tooltip="Position" />
                 {showStats ? (
                   <>
-                    <TableHead className="text-right">GP</TableHead>
-                    <TableHead className="text-right">TOI</TableHead>
-                    <TableHead className="text-right">G</TableHead>
-                    <TableHead className="text-right">A</TableHead>
-                    <TableHead className="text-right">P</TableHead>
-                    <TableHead className="text-right">S</TableHead>
-                    <TableHead className="text-right">xG</TableHead>
-                    <TableHead className="text-right">CF%</TableHead>
+                    <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
+                    <HeaderWithTooltip label="TOI" tooltip="Total time on ice" className="text-right" />
+                    <HeaderWithTooltip label="G" tooltip="Goals" className="text-right" />
+                    <HeaderWithTooltip label="A" tooltip="Assists" className="text-right" />
+                    <HeaderWithTooltip label="P" tooltip="Points (Goals + Assists)" className="text-right" />
+                    <HeaderWithTooltip label="S" tooltip="Shots on goal" className="text-right" />
+                    <HeaderWithTooltip label="xG" tooltip="Expected goals based on shot quality" className="text-right" />
+                    <HeaderWithTooltip label="CF%" tooltip="Corsi For % — shot attempt share while on ice" className="text-right" />
                   </>
                 ) : (
                   <>

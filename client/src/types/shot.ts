@@ -56,6 +56,9 @@ export interface PlayerShotsResponse {
 /** Danger level filter options */
 export type DangerLevel = "all" | "high" | "medium-high" | "low";
 
+/** Score state filter options (leading, trailing, tied from team's perspective) */
+export type ScoreState = "all" | "leading" | "trailing" | "tied";
+
 /** Query parameters for shots endpoint */
 export interface ShotQueryParams {
   season: number;
@@ -64,6 +67,7 @@ export interface ShotQueryParams {
   shotType?: string;
   playerId?: number;
   goalsOnly?: boolean;
+  scoreState?: ScoreState;
   limit?: number;
   dangerLevel?: DangerLevel;
 }

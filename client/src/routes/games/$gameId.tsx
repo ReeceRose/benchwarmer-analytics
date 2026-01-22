@@ -7,7 +7,8 @@ import {
   GameBoxscoreTable,
   GameBoxscoreTableSkeleton,
 } from "@/components/game-detail";
-import { useGame, useGameBoxscore } from "@/hooks";
+import { GamePreviewCard, GamePreviewSkeleton } from "@/components/game-preview";
+import { useGame, useGameBoxscore, useGamePreview } from "@/hooks";
 
 export const Route = createFileRoute("/games/$gameId")({
   component: GameDetailPage,
@@ -24,7 +25,20 @@ function GameDetailPage() {
   const router = useRouter();
   const { gameId } = Route.useParams();
   const { data: game, isLoading: gameLoading, error: gameError, refetch } = useGame(gameId);
-  const { data: boxscoreData, isLoading: boxscoreLoading } = useGameBoxscore(gameId);
+
+  // Determine if this is a future game (show preview) or completed/live (show boxscore)
+  const isFutureGame = game?.gameState === "FUT" || game?.gameState === "PRE";
+  const isCompletedOrLive = game && !isFutureGame;
+
+  // Only fetch boxscore for completed/live games
+  const { data: boxscoreData, isLoading: boxscoreLoading } = useGameBoxscore(
+    isCompletedOrLive ? gameId : undefined
+  );
+
+  // Only fetch preview for future games
+  const { data: previewData, isLoading: previewLoading, error: previewError } = useGamePreview(
+    isFutureGame ? gameId : undefined
+  );
 
   const season = game ? getSeasonFromDate(game.gameDate) : new Date().getFullYear();
 
@@ -60,18 +74,40 @@ function GameDetailPage() {
         <ChevronLeft className="h-4 w-4" />
         Back to Games
       </button>
-      {gameLoading ? <GameHeaderSkeleton /> : game ? <GameHeader game={game} /> : null}
-      {game && (
-        boxscoreLoading ? (
-          <GameBoxscoreTableSkeleton />
-        ) : boxscoreData ? (
-          <GameBoxscoreTable boxscoreData={boxscoreData} season={season} goals={game.goals} />
-        ) : (
-          <div className="text-center py-12 text-muted-foreground">
-            Box score not available for this game.
-          </div>
-        )
+
+      {/* Future Game: Show Preview */}
+      {isFutureGame && (
+        gameLoading || previewLoading ? (
+          <GamePreviewSkeleton />
+        ) : previewData ? (
+          <GamePreviewCard preview={previewData} />
+        ) : previewError ? (
+          <ErrorState
+            title="Failed to load preview"
+            message="Could not fetch game preview data."
+            onRetry={() => refetch()}
+          />
+        ) : null
       )}
+
+      {/* Completed/Live Game: Show Boxscore */}
+      {isCompletedOrLive && (
+        <>
+          {gameLoading ? <GameHeaderSkeleton /> : <GameHeader game={game} />}
+          {boxscoreLoading ? (
+            <GameBoxscoreTableSkeleton />
+          ) : boxscoreData ? (
+            <GameBoxscoreTable boxscoreData={boxscoreData} season={season} goals={game.goals} />
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              Box score not available for this game.
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Loading state when we don't know the game state yet */}
+      {gameLoading && !game && <GameHeaderSkeleton />}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatSeason } from "@/lib/formatters";
+import { CHART_COLORS_CSS, CHART_AXIS_COLORS } from "@/lib/chart-colors";
 
 interface SeasonData {
   season: number;
@@ -30,15 +31,6 @@ interface PerformanceTrendProps {
   className?: string;
 }
 
-// Default colors for metrics
-const COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-];
-
 // Tooltip props interface for PerformanceTrend
 interface TrendTooltipProps {
   active?: boolean;
@@ -57,7 +49,7 @@ function TrendChartTooltip({ active, payload, label, metrics }: TrendTooltipProp
   if (!active || !payload?.length || label == null) return null;
 
   return (
-    <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
+    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
       <p className="font-semibold mb-2">{formatSeason(label)}</p>
       <div className="space-y-1">
         {payload.map((entry, i) => {
@@ -117,16 +109,16 @@ export function PerformanceTrend({
             data={sortedData}
             margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLORS.grid} strokeOpacity={CHART_AXIS_COLORS.gridOpacity} />
             <XAxis
               dataKey="season"
               tickFormatter={(v: number) => formatSeason(v)}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-              axisLine={{ stroke: "hsl(var(--border))" }}
+              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 11 }}
+              axisLine={{ stroke: CHART_AXIS_COLORS.grid, strokeOpacity: CHART_AXIS_COLORS.gridOpacity }}
             />
             <YAxis
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-              axisLine={{ stroke: "hsl(var(--border))" }}
+              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 11 }}
+              axisLine={{ stroke: CHART_AXIS_COLORS.grid, strokeOpacity: CHART_AXIS_COLORS.gridOpacity }}
               width={40}
             />
             <Tooltip content={<TrendChartTooltip metrics={metrics} />} />
@@ -149,9 +141,9 @@ export function PerformanceTrend({
                 type="monotone"
                 dataKey={metric.key}
                 name={metric.label}
-                stroke={metric.color ?? COLORS[i % COLORS.length]}
+                stroke={metric.color ?? CHART_COLORS_CSS[i % CHART_COLORS_CSS.length]}
                 strokeWidth={2}
-                dot={{ r: 4, fill: metric.color ?? COLORS[i % COLORS.length] }}
+                dot={{ r: 4, fill: metric.color ?? CHART_COLORS_CSS[i % CHART_COLORS_CSS.length] }}
                 activeDot={{ r: 6 }}
                 connectNulls
               />

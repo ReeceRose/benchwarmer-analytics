@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { GitCompare, Filter } from "lucide-react";
@@ -18,7 +18,9 @@ import {
   SelectedPlayersCard,
   ComparisonTable,
   ComparisonLegend,
+  type StatMode,
 } from "@/components/compare";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Player, Situation } from "@/types";
 
 const searchSchema = z.object({
@@ -108,6 +110,8 @@ function ComparePage() {
   const hasComparisonData =
     !isLoading && !error && comparisonData && comparisonData.players.length >= 2;
 
+  const [statMode, setStatMode] = useState<StatMode>("all");
+
   return (
     <div className="container py-8">
       <BackButton />
@@ -143,6 +147,22 @@ function ComparePage() {
             </SelectContent>
           </Select>
         </div>
+        <Tabs
+          value={statMode}
+          onValueChange={(v) => setStatMode(v as StatMode)}
+        >
+          <TabsList className="h-9">
+            <TabsTrigger value="all" className="text-xs px-3">
+              All
+            </TabsTrigger>
+            <TabsTrigger value="counting" className="text-xs px-3">
+              Counting
+            </TabsTrigger>
+            <TabsTrigger value="rate" className="text-xs px-3">
+              Rate
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
       <SelectedPlayersCard
         selectedIds={selectedIds}
@@ -170,8 +190,10 @@ function ComparePage() {
         <ComparisonTable
           players={comparisonData.players}
           positionType={selectedPositionType}
+          statMode={statMode}
         />
       )}
+      {hasComparisonData && <ComparisonLegend />}
       {hasComparisonData && selectedPositionType !== "goalie" && (
         <RadarComparison
           players={comparisonData.players.map((p) => ({
@@ -203,7 +225,6 @@ function ComparePage() {
           </CardContent>
         </Card>
       )}
-      {hasComparisonData && <ComparisonLegend />}
     </div>
   );
 }

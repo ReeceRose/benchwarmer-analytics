@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
+  
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatToi, formatPercent } from "@/lib/formatters";
@@ -40,7 +40,7 @@ function StatRow({ icon, label, value, tooltip, highlight }: StatRowProps) {
         {icon}
         <span className="text-sm">{label}</span>
         {tooltip && (
-          <TooltipProvider>
+          
             <Tooltip>
               <TooltipTrigger>
                 <HelpCircle className="h-3.5 w-3.5" />
@@ -49,7 +49,7 @@ function StatRow({ icon, label, value, tooltip, highlight }: StatRowProps) {
                 <p>{tooltip}</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
+          
         )}
       </div>
       <span className={`font-mono font-medium ${colorClass}`}>{value}</span>

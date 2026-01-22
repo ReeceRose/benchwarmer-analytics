@@ -7,7 +7,7 @@ interface ChemistryTooltipProps {
 
 export function ChemistryTooltip({ pair }: ChemistryTooltipProps) {
   return (
-    <div className="absolute top-4 right-4 bg-popover border rounded-lg shadow-lg p-3 min-w-50 z-10">
+    <div className="absolute top-4 right-4 bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 min-w-50 z-10">
       <div className="font-medium mb-2">
         {pair.player1Name} + {pair.player2Name}
       </div>

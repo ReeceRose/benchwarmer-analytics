@@ -1,19 +1,8 @@
 import type { ChemistryPair } from "@/types";
+import { getChemistryHeatColor } from "@/lib/chart-colors";
 
-// Color scale for xG% (50% is neutral)
-export function getHeatColor(xgPct: number | undefined | null, hasData: boolean): string {
-  // No data - show empty/transparent cell
-  if (!hasData || xgPct == null) return "transparent";
-
-  // Clamp to 35-65 range for color scaling (tighter range for better contrast)
-  const clamped = Math.max(35, Math.min(65, xgPct));
-  const normalized = (clamped - 35) / 30; // 0 to 1
-
-  // Red (bad) -> Yellow (neutral) -> Green (good)
-  // Using HSL: 0 = red, 60 = yellow, 120 = green
-  const hue = normalized * 120; // 0 to 120
-  return `hsl(${hue}, 75%, 45%)`;
-}
+// Re-export for backwards compatibility
+export const getHeatColor = getChemistryHeatColor;
 
 export interface MatrixPlayer {
   id: number;

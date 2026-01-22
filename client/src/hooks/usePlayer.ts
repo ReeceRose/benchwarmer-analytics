@@ -1,10 +1,12 @@
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery, useQueries, keepPreviousData } from "@tanstack/react-query";
 import {
   getPlayer,
   getPlayerStats,
   getPlayerLinemates,
   searchPlayers,
   comparePlayers,
+  getPlayerRollingStats,
+  getGoalieWorkload,
 } from "@/lib/api";
 
 export function usePlayer(id: number) {
@@ -52,6 +54,7 @@ export function usePlayerSearch(
     queryFn: () => searchPlayers(query, page, pageSize),
     enabled: query.length >= 2, // Only search when query is at least 2 chars
     staleTime: 1000 * 60 * 2,
+    placeholderData: keepPreviousData, // Keep showing previous results while fetching
   });
 }
 
@@ -81,5 +84,31 @@ export function usePlayers(ids: number[]) {
       data: results.map((r) => r.data).filter(Boolean),
       isLoading: results.some((r) => r.isLoading),
     }),
+  });
+}
+
+export function usePlayerRollingStats(
+  id: number,
+  season?: number,
+  games?: number
+) {
+  return useQuery({
+    queryKey: ["players", id, "rolling-stats", { season, games }],
+    queryFn: () => getPlayerRollingStats(id, season, games),
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useGoalieWorkload(
+  id: number,
+  season?: number,
+  games?: number
+) {
+  return useQuery({
+    queryKey: ["players", id, "workload", { season, games }],
+    queryFn: () => getGoalieWorkload(id, season, games),
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
   });
 }

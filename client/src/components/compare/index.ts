@@ -10,4 +10,5 @@ export {
   type SkaterStatConfig,
   type GoalieStatConfig,
   type StatValueResult,
+  type StatMode,
 } from "@/components/compare/stat-configs";

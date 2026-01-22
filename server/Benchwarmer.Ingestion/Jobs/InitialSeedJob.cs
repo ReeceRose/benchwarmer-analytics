@@ -155,7 +155,7 @@ public class InitialSeedJob(
             "skaters" => await ImportSkatersAsync(content, playoffs),
             "goalies" => await ImportGoaliesAsync(content, playoffs),
             "lines" => await ImportLinesAsync(content),
-            "teams" => await ImportTeamAsync(content),
+            "teams" => await ImportTeamAsync(content, playoffs),
             _ => 0
         };
     }
@@ -178,10 +178,10 @@ public class InitialSeedJob(
         return await _lineImporter.ImportAsync(records);
     }
 
-    private async Task<int> ImportTeamAsync(string csvContent)
+    private async Task<int> ImportTeamAsync(string csvContent, bool isPlayoffs)
     {
         var records = CsvParser.Parse<TeamRecord>(csvContent);
-        return await _teamImporter.ImportAsync(records);
+        return await _teamImporter.ImportAsync(records, isPlayoffs);
     }
 
     private static int GetCurrentSeason()

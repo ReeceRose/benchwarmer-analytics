@@ -8,6 +8,7 @@ namespace Benchwarmer.Ingestion.Services;
 public class NhlScheduleService(HttpClient httpClient, ILogger<NhlScheduleService> logger)
 {
     private const string BaseUrl = "https://api-web.nhle.com/v1";
+    private const string StatsApiUrl = "https://api.nhle.com/stats/rest/en";
 
     public async Task<IReadOnlyList<Game>> GetGamesForDateAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
@@ -144,6 +145,38 @@ public class NhlScheduleService(HttpClient httpClient, ILogger<NhlScheduleServic
         }
     }
 
+    public async Task<IReadOnlyList<NhlClubScheduleGame>> GetTeamSeasonGamesAsync(
+        string teamAbbrev,
+        int season,
+        CancellationToken cancellationToken = default)
+    {
+        // Season format: 20252026 for the 2025-26 season
+        var seasonCode = $"{season}{season + 1}";
+        var url = $"{BaseUrl}/club-schedule-season/{teamAbbrev}/{seasonCode}";
+        logger.LogInformation("Fetching NHL club schedule for {Team} season {Season} from {Url}", teamAbbrev, season, url);
+
+        try
+        {
+            var response = await httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("NHL club schedule request failed: HTTP {StatusCode}", response.StatusCode);
+                return [];
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var schedule = JsonSerializer.Deserialize<NhlClubScheduleResponse>(json);
+
+            return schedule?.Games ?? [];
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error fetching NHL club schedule for {Team} season {Season}", teamAbbrev, season);
+            return [];
+        }
+    }
+
     public async Task<NhlLiveScoresResponse?> GetLiveScoresAsync(CancellationToken cancellationToken = default)
     {
         var url = $"{BaseUrl}/score/now";
@@ -170,6 +203,123 @@ public class NhlScheduleService(HttpClient httpClient, ILogger<NhlScheduleServic
             return null;
         }
     }
+
+    public async Task<IReadOnlyDictionary<string, NhlTeamStandings>> GetStandingsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var url = $"{BaseUrl}/standings/now";
+        logger.LogInformation("Fetching NHL standings from {Url}", url);
+
+        try
+        {
+            var response = await httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("NHL standings request failed: HTTP {StatusCode}", response.StatusCode);
+                return new Dictionary<string, NhlTeamStandings>();
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var standingsResponse = JsonSerializer.Deserialize<NhlStandingsResponse>(json);
+
+            if (standingsResponse?.Standings == null)
+            {
+                return new Dictionary<string, NhlTeamStandings>();
+            }
+
+            return standingsResponse.Standings
+                .Where(t => t.TeamAbbrev?.Default != null)
+                .ToDictionary(t => t.TeamAbbrev!.Default!, t => t);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error fetching NHL standings");
+            return new Dictionary<string, NhlTeamStandings>();
+        }
+    }
+
+    public async Task<IReadOnlyDictionary<string, NhlTeamSpecialTeams>> GetTeamSpecialTeamsAsync(
+        int season,
+        CancellationToken cancellationToken = default)
+    {
+        var seasonId = $"{season}{season + 1}";
+        var url = $"{StatsApiUrl}/team/summary?cayenneExp=seasonId={seasonId}&cayenneExp=gameTypeId=2";
+        logger.LogInformation("Fetching NHL team special teams stats for season {Season} from {Url}", season, url);
+
+        try
+        {
+            var response = await httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("NHL team special teams stats request failed: HTTP {StatusCode}", response.StatusCode);
+                return new Dictionary<string, NhlTeamSpecialTeams>();
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var statsResponse = JsonSerializer.Deserialize<NhlTeamStatsResponse>(json);
+
+            if (statsResponse?.Data == null)
+            {
+                return new Dictionary<string, NhlTeamSpecialTeams>();
+            }
+
+            // Map team full names to abbreviations
+            return statsResponse.Data
+                .Where(t => !string.IsNullOrEmpty(t.TeamFullName))
+                .ToDictionary(
+                    t => TeamNameToAbbrev(t.TeamFullName!),
+                    t => new NhlTeamSpecialTeams
+                    {
+                        PowerPlayPct = t.PowerPlayPct,
+                        PenaltyKillPct = t.PenaltyKillPct,
+                        FaceoffWinPct = t.FaceoffWinPct
+                    });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error fetching NHL team special teams stats for season {Season}", season);
+            return new Dictionary<string, NhlTeamSpecialTeams>();
+        }
+    }
+
+    private static string TeamNameToAbbrev(string teamFullName) => teamFullName switch
+    {
+        "Anaheim Ducks" => "ANA",
+        "Boston Bruins" => "BOS",
+        "Buffalo Sabres" => "BUF",
+        "Calgary Flames" => "CGY",
+        "Carolina Hurricanes" => "CAR",
+        "Chicago Blackhawks" => "CHI",
+        "Colorado Avalanche" => "COL",
+        "Columbus Blue Jackets" => "CBJ",
+        "Dallas Stars" => "DAL",
+        "Detroit Red Wings" => "DET",
+        "Edmonton Oilers" => "EDM",
+        "Florida Panthers" => "FLA",
+        "Los Angeles Kings" => "LAK",
+        "Minnesota Wild" => "MIN",
+        "Montréal Canadiens" => "MTL",
+        "Nashville Predators" => "NSH",
+        "New Jersey Devils" => "NJD",
+        "New York Islanders" => "NYI",
+        "New York Rangers" => "NYR",
+        "Ottawa Senators" => "OTT",
+        "Philadelphia Flyers" => "PHI",
+        "Pittsburgh Penguins" => "PIT",
+        "San Jose Sharks" => "SJS",
+        "Seattle Kraken" => "SEA",
+        "St. Louis Blues" => "STL",
+        "Tampa Bay Lightning" => "TBL",
+        "Toronto Maple Leafs" => "TOR",
+        "Utah Hockey Club" => "UTA",
+        "Vancouver Canucks" => "VAN",
+        "Vegas Golden Knights" => "VGK",
+        "Washington Capitals" => "WSH",
+        "Winnipeg Jets" => "WPG",
+        _ => teamFullName[..3].ToUpperInvariant() // Fallback
+    };
 
     private static int ParseSeason(int seasonCode)
     {
@@ -247,6 +397,52 @@ public class NhlPeriodDescriptor
 {
     [JsonPropertyName("periodType")]
     public string? PeriodType { get; set; }
+}
+
+#endregion
+
+#region NHL Club Schedule Response Models
+
+public class NhlClubScheduleResponse
+{
+    [JsonPropertyName("games")]
+    public List<NhlClubScheduleGame> Games { get; set; } = [];
+}
+
+public class NhlClubScheduleGame
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("season")]
+    public int Season { get; set; }
+
+    [JsonPropertyName("gameType")]
+    public int GameType { get; set; }
+
+    [JsonPropertyName("gameDate")]
+    public string GameDate { get; set; } = "";
+
+    [JsonPropertyName("gameState")]
+    public string GameState { get; set; } = "";
+
+    [JsonPropertyName("homeTeam")]
+    public NhlClubScheduleTeam HomeTeam { get; set; } = new();
+
+    [JsonPropertyName("awayTeam")]
+    public NhlClubScheduleTeam AwayTeam { get; set; } = new();
+
+    [JsonPropertyName("periodDescriptor")]
+    public NhlPeriodDescriptor? PeriodDescriptor { get; set; }
+}
+
+public class NhlClubScheduleTeam
+{
+    [JsonPropertyName("abbrev")]
+    public string Abbrev { get; set; } = "";
+
+    [JsonPropertyName("score")]
+    public int? Score { get; set; }
 }
 
 #endregion
@@ -667,6 +863,152 @@ public class NhlScoringGoal
 
     [JsonPropertyName("assists")]
     public List<NhlGoalAssist> Assists { get; set; } = [];
+}
+
+#endregion
+
+#region NHL Standings Models
+
+public class NhlStandingsResponse
+{
+    [JsonPropertyName("standings")]
+    public List<NhlTeamStandings> Standings { get; set; } = [];
+}
+
+public class NhlTeamStandings
+{
+    [JsonPropertyName("teamAbbrev")]
+    public NhlLocalizedString? TeamAbbrev { get; set; }
+
+    [JsonPropertyName("teamName")]
+    public NhlLocalizedString? TeamName { get; set; }
+
+    [JsonPropertyName("gamesPlayed")]
+    public int GamesPlayed { get; set; }
+
+    [JsonPropertyName("wins")]
+    public int Wins { get; set; }
+
+    [JsonPropertyName("losses")]
+    public int Losses { get; set; }
+
+    [JsonPropertyName("otLosses")]
+    public int OtLosses { get; set; }
+
+    [JsonPropertyName("points")]
+    public int Points { get; set; }
+
+    [JsonPropertyName("pointPctg")]
+    public decimal? PointPctg { get; set; }
+
+    [JsonPropertyName("goalFor")]
+    public int GoalFor { get; set; }
+
+    [JsonPropertyName("goalAgainst")]
+    public int GoalAgainst { get; set; }
+
+    [JsonPropertyName("goalDifferential")]
+    public int GoalDifferential { get; set; }
+
+    // Streak
+    [JsonPropertyName("streakCode")]
+    public string? StreakCode { get; set; }
+
+    [JsonPropertyName("streakCount")]
+    public int StreakCount { get; set; }
+
+    // Home record
+    [JsonPropertyName("homeWins")]
+    public int HomeWins { get; set; }
+
+    [JsonPropertyName("homeLosses")]
+    public int HomeLosses { get; set; }
+
+    [JsonPropertyName("homeOtLosses")]
+    public int HomeOtLosses { get; set; }
+
+    [JsonPropertyName("homeGamesPlayed")]
+    public int HomeGamesPlayed { get; set; }
+
+    // Road record
+    [JsonPropertyName("roadWins")]
+    public int RoadWins { get; set; }
+
+    [JsonPropertyName("roadLosses")]
+    public int RoadLosses { get; set; }
+
+    [JsonPropertyName("roadOtLosses")]
+    public int RoadOtLosses { get; set; }
+
+    [JsonPropertyName("roadGamesPlayed")]
+    public int RoadGamesPlayed { get; set; }
+
+    // Last 10 games
+    [JsonPropertyName("l10Wins")]
+    public int L10Wins { get; set; }
+
+    [JsonPropertyName("l10Losses")]
+    public int L10Losses { get; set; }
+
+    [JsonPropertyName("l10OtLosses")]
+    public int L10OtLosses { get; set; }
+
+    // Division/Conference
+    [JsonPropertyName("divisionName")]
+    public string? DivisionName { get; set; }
+
+    [JsonPropertyName("divisionSequence")]
+    public int DivisionSequence { get; set; }
+
+    [JsonPropertyName("conferenceName")]
+    public string? ConferenceName { get; set; }
+
+    [JsonPropertyName("conferenceSequence")]
+    public int ConferenceSequence { get; set; }
+
+    [JsonPropertyName("leagueSequence")]
+    public int LeagueSequence { get; set; }
+
+    [JsonPropertyName("wildcardSequence")]
+    public int WildcardSequence { get; set; }
+}
+
+public class NhlLocalizedString
+{
+    [JsonPropertyName("default")]
+    public string? Default { get; set; }
+}
+
+#endregion
+
+#region NHL Team Stats Models
+
+public class NhlTeamStatsResponse
+{
+    [JsonPropertyName("data")]
+    public List<NhlTeamStatsData> Data { get; set; } = [];
+}
+
+public class NhlTeamStatsData
+{
+    [JsonPropertyName("teamFullName")]
+    public string? TeamFullName { get; set; }
+
+    [JsonPropertyName("powerPlayPct")]
+    public decimal? PowerPlayPct { get; set; }
+
+    [JsonPropertyName("penaltyKillPct")]
+    public decimal? PenaltyKillPct { get; set; }
+
+    [JsonPropertyName("faceoffWinPct")]
+    public decimal? FaceoffWinPct { get; set; }
+}
+
+public class NhlTeamSpecialTeams
+{
+    public decimal? PowerPlayPct { get; set; }
+    public decimal? PenaltyKillPct { get; set; }
+    public decimal? FaceoffWinPct { get; set; }
 }
 
 #endregion

@@ -94,4 +94,30 @@ public class GameRepository(AppDbContext db) : IGameRepository
 
         return await db.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Game>> GetHeadToHeadAsync(
+        string teamA,
+        string teamB,
+        int season,
+        CancellationToken cancellationToken = default)
+    {
+        return await db.Games
+            .Where(g => g.Season == season && g.GameState == "OFF")
+            .Where(g =>
+                (g.HomeTeamCode == teamA && g.AwayTeamCode == teamB) ||
+                (g.HomeTeamCode == teamB && g.AwayTeamCode == teamA))
+            .OrderByDescending(g => g.GameDate)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Game>> GetByGameIdsAsync(
+        IEnumerable<string> gameIds,
+        CancellationToken cancellationToken = default)
+    {
+        var idList = gameIds.ToList();
+        return await db.Games
+            .Where(g => idList.Contains(g.GameId))
+            .OrderByDescending(g => g.GameDate)
+            .ToListAsync(cancellationToken);
+    }
 }

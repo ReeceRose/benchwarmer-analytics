@@ -93,6 +93,36 @@ public static class PlayerEndpoints
             .Produces<PlayerShotsResponseDto>()
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{id:int}/rolling-stats", GetPlayerRollingStats)
+            .WithName("GetPlayerRollingStats")
+            .WithSummary("Get rolling performance stats for a player")
+            .WithDescription("""
+                Returns per-game performance data for the last N games, useful for trend analysis.
+
+                **Query Parameters:**
+                - `season`: Season to get data from (e.g., 2024)
+                - `games`: Number of games to include (default: 20, max: 50)
+                """)
+            .Produces<PlayerRollingStatsDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{id:int}/workload", GetGoalieWorkload)
+            .WithName("GetGoalieWorkload")
+            .WithSummary("Get workload statistics for a goalie")
+            .WithDescription("""
+                Returns goalie workload analysis including games per time window,
+                shots against trends, and back-to-back performance splits.
+
+                **Query Parameters:**
+                - `season`: Season to analyze (e.g., 2024)
+                - `games`: Number of recent games to include (default: 30, max: 50)
+                """)
+            .Produces<GoalieWorkloadResponseDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest)
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> SearchPlayers(
@@ -351,6 +381,358 @@ public static class PlayerEndpoints
         return Results.Ok(new PlayerShotsResponseDto(id, player.Name, season, shotDtos, summary));
     }
 
+    private static async Task<IResult> GetPlayerRollingStats(
+        int id,
+        int? season,
+        int? games,
+        IPlayerRepository playerRepository,
+        IShotRepository shotRepository,
+        ISkaterStatsRepository skaterStatsRepository,
+        CancellationToken cancellationToken)
+    {
+        var player = await playerRepository.GetByIdAsync(id, cancellationToken);
+        if (player is null)
+        {
+            return Results.NotFound(ApiError.PlayerNotFound);
+        }
+
+        // Default to current season
+        var effectiveSeason = season ?? DateTime.Now.Year;
+        var gameLimit = Math.Clamp(games ?? 20, 1, 50);
+
+        // Get recent shots grouped by game
+        var recentShots = await shotRepository.GetRecentByPlayerAsync(
+            id, effectiveSeason, gameLimit, cancellationToken);
+
+        if (recentShots.Count == 0)
+        {
+            return Results.Ok(new PlayerRollingStatsDto(
+                id, player.Name, effectiveSeason, 0, [],
+                0, 0, 0, 0, 0, 0, 0, 0, "neutral"));
+        }
+
+        // Group shots by game
+        var gameGroups = recentShots
+            .GroupBy(s => s.GameId)
+            .OrderByDescending(g => g.Key)
+            .Select(g => new GameStatsDto(
+                g.Key,
+                g.Count(s => s.IsGoal),
+                g.Count(),
+                Math.Round(g.Sum(s => s.XGoal ?? 0), 2),
+                g.Count() > 0 ? Math.Round((decimal)g.Count(s => s.IsGoal) / g.Count() * 100, 1) : 0
+            ))
+            .ToList();
+
+        var gamesIncluded = gameGroups.Count;
+
+        // Calculate rolling totals
+        var rollingGoals = gameGroups.Sum(g => g.Goals);
+        var rollingShots = gameGroups.Sum(g => g.Shots);
+        var rollingXg = gameGroups.Sum(g => g.ExpectedGoals);
+
+        var rollingGoalsPerGame = gamesIncluded > 0 ? Math.Round((decimal)rollingGoals / gamesIncluded, 2) : 0;
+        var rollingShotsPerGame = gamesIncluded > 0 ? Math.Round((decimal)rollingShots / gamesIncluded, 2) : 0;
+        var rollingXgPerGame = gamesIncluded > 0 ? Math.Round(rollingXg / gamesIncluded, 2) : 0;
+        var rollingShootingPct = rollingShots > 0 ? Math.Round((decimal)rollingGoals / rollingShots * 100, 1) : 0;
+
+        // Get season stats for comparison
+        var seasonStats = await skaterStatsRepository.GetByPlayerAsync(
+            id, effectiveSeason, "all", cancellationToken);
+        var seasonStat = seasonStats.FirstOrDefault(s => !s.IsPlayoffs);
+
+        decimal seasonGoalsPerGame = 0, seasonShotsPerGame = 0, seasonXgPerGame = 0, seasonShootingPct = 0;
+        if (seasonStat?.GamesPlayed > 0)
+        {
+            seasonGoalsPerGame = Math.Round((decimal)seasonStat.Goals / seasonStat.GamesPlayed, 2);
+            seasonShotsPerGame = Math.Round((decimal)seasonStat.Shots / seasonStat.GamesPlayed, 2);
+            seasonXgPerGame = seasonStat.ExpectedGoals.HasValue
+                ? Math.Round(seasonStat.ExpectedGoals.Value / seasonStat.GamesPlayed, 2)
+                : 0;
+            seasonShootingPct = seasonStat.Shots > 0
+                ? Math.Round((decimal)seasonStat.Goals / seasonStat.Shots * 100, 1)
+                : 0;
+        }
+
+        // Determine trend
+        var trend = "neutral";
+        if (seasonGoalsPerGame > 0)
+        {
+            var ratio = rollingGoalsPerGame / seasonGoalsPerGame;
+            if (ratio > 1.2m) trend = "hot";
+            else if (ratio < 0.8m) trend = "cold";
+        }
+
+        return Results.Ok(new PlayerRollingStatsDto(
+            id,
+            player.Name,
+            effectiveSeason,
+            gamesIncluded,
+            gameGroups,
+            seasonGoalsPerGame,
+            seasonShotsPerGame,
+            seasonXgPerGame,
+            seasonShootingPct,
+            rollingGoalsPerGame,
+            rollingShotsPerGame,
+            rollingXgPerGame,
+            rollingShootingPct,
+            trend
+        ));
+    }
+
+    private static async Task<IResult> GetGoalieWorkload(
+        int id,
+        int? season,
+        int? games,
+        IPlayerRepository playerRepository,
+        IShotRepository shotRepository,
+        IGameRepository gameRepository,
+        CancellationToken cancellationToken)
+    {
+        var player = await playerRepository.GetByIdAsync(id, cancellationToken);
+        if (player is null)
+        {
+            return Results.NotFound(ApiError.PlayerNotFound);
+        }
+
+        if (player.Position != "G")
+        {
+            return Results.BadRequest(new { error = "Player is not a goalie" });
+        }
+
+        var effectiveSeason = season ?? DateTime.Now.Year;
+        var gameLimit = Math.Clamp(games ?? 30, 1, 50);
+
+        // Get recent shots faced by this goalie
+        var recentShots = await shotRepository.GetRecentByGoalieAsync(
+            id, effectiveSeason, gameLimit, cancellationToken);
+
+        if (recentShots.Count == 0)
+        {
+            return Results.Ok(new GoalieWorkloadResponseDto(
+                id, player.Name, effectiveSeason, 0, [],
+                EmptyWorkloadWindow(7), EmptyWorkloadWindow(14), EmptyWorkloadWindow(30),
+                EmptyBackToBackSplits(), "light"));
+        }
+
+        // Get game dates for back-to-back detection
+        var gameIds = recentShots.Select(s => s.GameId).Distinct().ToList();
+        var gamesData = await gameRepository.GetByGameIdsAsync(gameIds, cancellationToken);
+        var gameDateMap = gamesData.ToDictionary(g => g.GameId, g => g);
+
+        // If we're missing game date data, try to estimate from game ordering
+        // Game IDs can be either full NHL format (YYYYTTNNNN) or short format (just the game number)
+        // We can estimate approximate dates based on game progression
+        if (gameDateMap.Count < gameIds.Count)
+        {
+            // Fall back to estimating dates based on current season schedule
+            // Assume ~180 game days in a season (Oct 1 - Apr 15), ~1300 games total
+            // Game number / total games * season days gives rough date estimate
+            var seasonStart = new DateOnly(effectiveSeason, 10, 1);
+            foreach (var gameId in gameIds.Where(id => !gameDateMap.ContainsKey(id)))
+            {
+                int? gameNum = null;
+
+                // Try to parse game number - handle both full and short formats
+                if (gameId.Length >= 10 && int.TryParse(gameId[6..], out var fullFormatNum))
+                {
+                    // Full NHL format: YYYYTTNNNN (e.g., 2025020752)
+                    gameNum = fullFormatNum;
+                }
+                else if (int.TryParse(gameId, out var shortFormatNum))
+                {
+                    // Short format: just the game number (e.g., 20752)
+                    // The first digit(s) indicate game type: 2 = regular season
+                    // Extract just the game sequence number (last 4 digits typically)
+                    gameNum = shortFormatNum % 10000;
+                }
+
+                if (gameNum.HasValue)
+                {
+                    // Estimate: game 1 = Oct 1, game 1312 = Apr 15 (197 days)
+                    var estimatedDays = (int)(gameNum.Value / 1312.0 * 197);
+                    var estimatedDate = seasonStart.AddDays(estimatedDays);
+                    // Create a synthetic game entry for date lookup
+                    gameDateMap[gameId] = new Data.Entities.Game
+                    {
+                        GameId = gameId,
+                        GameDate = estimatedDate,
+                        Season = effectiveSeason,
+                        HomeTeamCode = "",
+                        AwayTeamCode = "",
+                        GameState = "EST" // Mark as estimated
+                    };
+                }
+            }
+        }
+
+        // Group shots by game and calculate per-game stats
+        var gameStats = CalculateGoaliePerGameStats(recentShots, gameDateMap);
+
+        // Detect back-to-backs
+        MarkBackToBackGames(gameStats);
+
+        // Calculate window stats - use the most recent game date as reference
+        // (handles historical seasons where "today" would make all games >30 days old)
+        var referenceDate = gameStats.Count > 0 && gameStats[0].GameDate != DateOnly.MinValue
+            ? gameStats[0].GameDate
+            : DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var last7Days = CalculateWindowStats(gameStats, referenceDate, 7);
+        var last14Days = CalculateWindowStats(gameStats, referenceDate, 14);
+        var last30Days = CalculateWindowStats(gameStats, referenceDate, 30);
+
+        // Calculate B2B splits
+        var b2bSplits = CalculateBackToBackSplits(gameStats);
+
+        // Determine trend
+        var trend = DetermineWorkloadTrend(last7Days);
+
+        return Results.Ok(new GoalieWorkloadResponseDto(
+            id, player.Name, effectiveSeason, gameStats.Count, gameStats,
+            last7Days, last14Days, last30Days, b2bSplits, trend));
+    }
+
+    private static List<GoalieGameStatsDto> CalculateGoaliePerGameStats(
+        IReadOnlyList<Data.Entities.Shot> shots,
+        Dictionary<string, Data.Entities.Game> gameDateMap)
+    {
+        return shots
+            .GroupBy(s => s.GameId)
+            .Select(g =>
+            {
+                var game = gameDateMap.GetValueOrDefault(g.Key);
+                // Only count shots that were on goal (not blocked/missed)
+                var shotsOnGoal = g.Where(s => s.ShotWasOnGoal).ToList();
+                var shotsAgainst = shotsOnGoal.Count;
+                var goalsAgainst = shotsOnGoal.Count(s => s.IsGoal);
+                var xGA = shotsOnGoal.Sum(s => s.XGoal ?? 0);
+                var svPct = shotsAgainst > 0
+                    ? Math.Round((decimal)(shotsAgainst - goalsAgainst) / shotsAgainst, 4)
+                    : 0;
+
+                // Determine opponent - shots are from shooter's perspective
+                // IsHomeTeam = true means the shooter is on the home team, so goalie is away
+                // The opponent (from goalie's view) is the team that's shooting at them
+                var firstShot = g.First(); // Use any shot from the game for team info
+                var goalieIsHome = !firstShot.IsHomeTeam;
+                var opponent = goalieIsHome
+                    ? firstShot.AwayTeamCode   // Goalie is home, opponent is away team
+                    : firstShot.HomeTeamCode;  // Goalie is away, opponent is home team
+
+                return new GoalieGameStatsDto(
+                    g.Key,
+                    game?.GameDate ?? DateOnly.MinValue,
+                    opponent,
+                    goalieIsHome,
+                    shotsAgainst,
+                    goalsAgainst,
+                    svPct,
+                    Math.Round(xGA, 2),
+                    Math.Round(xGA - goalsAgainst, 2),
+                    false,
+                    null
+                );
+            })
+            .OrderByDescending(g => g.GameDate)
+            .ToList();
+    }
+
+    private static void MarkBackToBackGames(List<GoalieGameStatsDto> gameStats)
+    {
+        for (int i = 0; i < gameStats.Count; i++)
+        {
+            if (i < gameStats.Count - 1)
+            {
+                var daysDiff = gameStats[i].GameDate.DayNumber - gameStats[i + 1].GameDate.DayNumber;
+                gameStats[i] = gameStats[i] with
+                {
+                    IsBackToBack = daysDiff == 1,
+                    DaysSincePreviousGame = daysDiff
+                };
+            }
+        }
+    }
+
+    private static WorkloadWindowDto CalculateWindowStats(
+        List<GoalieGameStatsDto> gameStats,
+        DateOnly referenceDate,
+        int days)
+    {
+        var cutoff = referenceDate.AddDays(-days);
+        // Only include games with valid dates (exclude DateOnly.MinValue from missing game lookups)
+        // Games must be AFTER cutoff and ON OR BEFORE reference date
+        var windowGames = gameStats
+            .Where(g => g.GameDate != DateOnly.MinValue && g.GameDate >= cutoff && g.GameDate <= referenceDate)
+            .ToList();
+
+        if (windowGames.Count == 0)
+            return EmptyWorkloadWindow(days);
+
+        var totalSA = windowGames.Sum(g => g.ShotsAgainst);
+        var totalGA = windowGames.Sum(g => g.GoalsAgainst);
+        var gamesPerWeek = Math.Round((decimal)windowGames.Count / days * 7, 2);
+        var avgSA = Math.Round((decimal)totalSA / windowGames.Count, 1);
+        var avgSvPct = totalSA > 0
+            ? Math.Round((decimal)(totalSA - totalGA) / totalSA, 4)
+            : 0;
+        var totalGSAx = windowGames.Sum(g => g.GoalsSavedAboveExpected);
+
+        var isHighWorkload = gamesPerWeek > 4 || avgSA > 30;
+
+        return new WorkloadWindowDto(
+            days, windowGames.Count, gamesPerWeek, totalSA,
+            avgSA, avgSvPct, Math.Round(totalGSAx, 2), isHighWorkload);
+    }
+
+    private static BackToBackSplitsDto CalculateBackToBackSplits(List<GoalieGameStatsDto> gameStats)
+    {
+        var b2bGames = gameStats.Where(g => g.IsBackToBack).ToList();
+        var nonB2bGames = gameStats.Where(g => !g.IsBackToBack).ToList();
+
+        return new BackToBackSplitsDto(
+            b2bGames.Count,
+            nonB2bGames.Count,
+            CalculateAvgSvPct(b2bGames),
+            CalculateAvgSvPct(nonB2bGames),
+            CalculateGAA(b2bGames),
+            CalculateGAA(nonB2bGames),
+            Math.Round(b2bGames.Sum(g => g.GoalsSavedAboveExpected), 2),
+            Math.Round(nonB2bGames.Sum(g => g.GoalsSavedAboveExpected), 2)
+        );
+    }
+
+    private static decimal CalculateAvgSvPct(List<GoalieGameStatsDto> gameStats)
+    {
+        if (gameStats.Count == 0) return 0;
+        var totalSA = gameStats.Sum(g => g.ShotsAgainst);
+        var totalGA = gameStats.Sum(g => g.GoalsAgainst);
+        return totalSA > 0 ? Math.Round((decimal)(totalSA - totalGA) / totalSA, 4) : 0;
+    }
+
+    private static decimal CalculateGAA(List<GoalieGameStatsDto> gameStats)
+    {
+        if (gameStats.Count == 0) return 0;
+        var totalGA = gameStats.Sum(g => g.GoalsAgainst);
+        return Math.Round((decimal)totalGA / gameStats.Count, 2);
+    }
+
+    private static string DetermineWorkloadTrend(WorkloadWindowDto last7Days)
+    {
+        // Need both high frequency AND high shot volume to be "heavy"
+        // Just high SA with few games isn't heavy workload
+        if (last7Days.GamesPerWeek >= 3 && last7Days.AvgShotsAgainstPerGame > 30) return "heavy";
+        if (last7Days.GamesPerWeek >= 3) return "moderate";
+        return "light";
+    }
+
+    private static WorkloadWindowDto EmptyWorkloadWindow(int days) =>
+        new(days, 0, 0, 0, 0, 0, 0, false);
+
+    private static BackToBackSplitsDto EmptyBackToBackSplits() =>
+        new(0, 0, 0, 0, 0, 0, 0, 0);
+
     private static async Task<IResult> ComparePlayers(
         string ids,
         int? season,
@@ -503,4 +885,29 @@ public record PlayerShotsResponseDto(
     int? Season,
     IReadOnlyList<ShotDto> Shots,
     ShotSummaryDto Summary
+);
+
+public record GameStatsDto(
+    string GameId,
+    int Goals,
+    int Shots,
+    decimal ExpectedGoals,
+    decimal ShootingPct
+);
+
+public record PlayerRollingStatsDto(
+    int PlayerId,
+    string PlayerName,
+    int Season,
+    int GamesIncluded,
+    IReadOnlyList<GameStatsDto> Games,
+    decimal SeasonGoalsPerGame,
+    decimal SeasonShotsPerGame,
+    decimal SeasonXgPerGame,
+    decimal SeasonShootingPct,
+    decimal RollingGoalsPerGame,
+    decimal RollingShotsPerGame,
+    decimal RollingXgPerGame,
+    decimal RollingShootingPct,
+    string Trend // "hot", "cold", "neutral"
 );

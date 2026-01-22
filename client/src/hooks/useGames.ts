@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getYesterdaysGames, getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getLiveScores } from "@/lib/api";
+import { getYesterdaysGames, getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getLiveScores, getGamePreview } from "@/lib/api";
 import type { GamesResponse, GameSummary } from "@/types";
 
 export function useYesterdaysGames() {
@@ -16,10 +16,12 @@ export function useTodaysGames() {
     queryFn: getTodaysGames,
     staleTime: 1000 * 60 * 1, // 1 minute - frequent for live games
     refetchInterval: (query) => {
-      // Auto-refresh every 30 seconds if there are live games
       const data = query.state.data as GamesResponse | undefined;
       const hasLiveGames = data?.games.some(g => g.gameState === "LIVE" || g.gameState === "CRIT");
-      return hasLiveGames ? 30000 : false;
+      // If live games, refresh every 30s. Otherwise refresh every 2 minutes
+      // to catch games that transition from FUT/PRE to LIVE
+      const hasPendingGames = data?.games.some(g => g.gameState === "FUT" || g.gameState === "PRE");
+      return hasLiveGames ? 30000 : hasPendingGames ? 120000 : false;
     },
   });
 }
@@ -68,5 +70,14 @@ export function useGameBoxscore(gameId: string | undefined) {
     queryFn: () => getGameBoxscore(gameId!),
     enabled: !!gameId,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useGamePreview(gameId: string | undefined) {
+  return useQuery({
+    queryKey: ["games", gameId, "preview"],
+    queryFn: () => getGamePreview(gameId!),
+    enabled: !!gameId,
+    staleTime: 1000 * 60 * 30, // 30 minutes - preview data is stable
   });
 }

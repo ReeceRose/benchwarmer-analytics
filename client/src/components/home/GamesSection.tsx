@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, TrendingUp, TrendingDown } from "lucide-react";
+import { Calendar, TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -8,16 +8,15 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { LiveIndicator, GoalsList } from "@/components/shared";
-import { useYesterdaysGames, useTodaysGames } from "@/hooks";
+import { useTodaysGames } from "@/hooks";
 import { formatGameTime, formatGameDate, formatPeriod } from "@/lib/game-formatters";
 import type { GameSummary, GameTeam } from "@/types";
 
@@ -26,29 +25,25 @@ function LuckIndicator({ diff }: { diff: number | null }) {
 
   if (diff >= 0.5) {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <TrendingUp className="h-3 w-3 text-green-500" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Outscored xG by {diff.toFixed(1)}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <TrendingUp className="h-3 w-3 text-green-500" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Outscored xG by {diff.toFixed(1)}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   } else if (diff <= -0.5) {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <TrendingDown className="h-3 w-3 text-red-500" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Underperformed xG by {Math.abs(diff).toFixed(1)}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <TrendingDown className="h-3 w-3 text-red-500" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Underperformed xG by {Math.abs(diff).toFixed(1)}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
@@ -255,76 +250,48 @@ function LoadingSkeleton() {
 }
 
 export function GamesSection() {
-  const { data: yesterdayData, isLoading: yesterdayLoading } =
-    useYesterdaysGames();
   const { data: todayData, isLoading: todayLoading } = useTodaysGames();
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-orange-500" />
-          Games
-        </CardTitle>
-        <CardDescription>NHL game scores and analytics</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="today">
-          <TabsList className="mb-4">
-            <TabsTrigger value="today" className="gap-1">
-              Today
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-orange-500" />
+              Today's Games
               {todayLoading ? (
-                <Skeleton className="ml-1 h-4 w-5 rounded-full" />
+                <Skeleton className="ml-1 h-5 w-6 rounded-full" />
               ) : todayData ? (
-                <Badge variant="secondary" className="ml-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1">
                   {todayData.games.length}
                 </Badge>
               ) : null}
-            </TabsTrigger>
-            <TabsTrigger value="yesterday" className="gap-1">
-              Yesterday
-              {yesterdayLoading ? (
-                <Skeleton className="ml-1 h-4 w-5 rounded-full" />
-              ) : yesterdayData ? (
-                <Badge variant="secondary" className="ml-1 text-[10px]">
-                  {yesterdayData.games.length}
-                </Badge>
-              ) : null}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="today">
-            {todayLoading ? (
-              <LoadingSkeleton />
-            ) : todayData ? (
-              <>
-                <p className="text-xs text-muted-foreground mb-3">
-                  {formatGameDate(todayData.date)}
-                </p>
-                <GamesGrid
-                  games={todayData.games}
-                  emptyMessage="No games scheduled for today"
-                />
-              </>
-            ) : null}
-          </TabsContent>
-
-          <TabsContent value="yesterday">
-            {yesterdayLoading ? (
-              <LoadingSkeleton />
-            ) : yesterdayData ? (
-              <>
-                <p className="text-xs text-muted-foreground mb-3">
-                  {formatGameDate(yesterdayData.date)}
-                </p>
-                <GamesGrid
-                  games={yesterdayData.games}
-                  emptyMessage="No games yesterday"
-                />
-              </>
-            ) : null}
-          </TabsContent>
-        </Tabs>
+            </CardTitle>
+            <CardDescription>NHL game scores and analytics</CardDescription>
+          </div>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/games" className="text-muted-foreground hover:text-foreground">
+              See more
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {todayLoading ? (
+          <LoadingSkeleton />
+        ) : todayData ? (
+          <>
+            <p className="text-xs text-muted-foreground mb-3">
+              {formatGameDate(todayData.date)}
+            </p>
+            <GamesGrid
+              games={todayData.games}
+              emptyMessage="No games scheduled for today"
+            />
+          </>
+        ) : null}
       </CardContent>
     </Card>
   );

@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Search, Users } from "lucide-react";
 import { usePlayerSearch } from "@/hooks";
 import { Input } from "@/components/ui/input";
@@ -17,13 +16,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared";
 import { formatPosition } from "@/lib/formatters";
 
+type PlayersSearch = {
+  q?: string;
+};
+
 export const Route = createFileRoute("/players/")({
   component: PlayersPage,
+  validateSearch: (search: Record<string, unknown>): PlayersSearch => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+  }),
 });
 
 function PlayersPage() {
-  const [query, setQuery] = useState("");
-  const { data, isLoading, error, refetch } = usePlayerSearch(query, 1, 50);
+  const { q: query = "" } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const { data, isLoading, isPlaceholderData, error, refetch } = usePlayerSearch(query, 1, 50);
+
+  const setQuery = (value: string) => {
+    navigate({
+      search: value ? { q: value } : {},
+      replace: true,
+    });
+  };
 
   const showResults = query.length >= 2;
   const hasResults = data?.players && data.players.length > 0;
@@ -43,7 +57,7 @@ function PlayersPage() {
             type="search"
             placeholder="Search players..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.currentTarget.value)}
             className="pl-9"
           />
         </div>
@@ -61,7 +75,7 @@ function PlayersPage() {
       )}
       {showResults && !error && (
         <Card className="py-0 gap-0">
-          <CardContent className="p-0">
+          <CardContent className={`p-0 transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}>
             {isLoading ? (
               <div className="p-4 space-y-3">
                 {[1, 2, 3, 4, 5].map((i) => (

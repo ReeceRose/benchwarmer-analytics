@@ -99,3 +99,84 @@ export interface BoxscoreGoalie {
   starter: boolean;
   decision: string | null;
 }
+
+// Game Preview types
+export interface GamePreview {
+  game: GamePreviewGame;
+  headToHead: HeadToHead;
+  teamComparison: TeamComparison;
+  hotPlayers: HotPlayers;
+  goalieMatchup: GoalieMatchup;
+}
+
+export interface GamePreviewGame {
+  id: string;
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  startTimeUtc: string | null;
+}
+
+export interface HeadToHead {
+  season: SeasonRecord;
+  lastFive: PastGame[];
+}
+
+export interface SeasonRecord {
+  homeWins: number;
+  awayWins: number;
+  overtimeLosses: number;
+}
+
+export interface PastGame {
+  date: string;
+  score: string;
+  winner: string;
+  overtimeType: string | null;
+}
+
+export interface TeamComparison {
+  home: TeamPreviewStats;
+  away: TeamPreviewStats;
+}
+
+export interface TeamPreviewStats {
+  teamCode: string;
+  gamesPlayed: number;
+  xGoalsFor: number;
+  xGoalsAgainst: number;
+  xGoalsPct: number | null;
+  corsiPct: number | null;
+  powerPlayPct: number | null;
+  penaltyKillPct: number | null;
+}
+
+export interface HotPlayers {
+  home: HotPlayer[];
+  away: HotPlayer[];
+}
+
+export interface HotPlayer {
+  playerId: number;
+  name: string;
+  position: string | null;
+  goals: number;
+  assists: number;
+  expectedGoals: number;
+  differential: number;
+  trend: "hot" | "cold";
+}
+
+export interface GoalieMatchup {
+  home: GoaliePreview[];
+  away: GoaliePreview[];
+}
+
+export interface GoaliePreview {
+  playerId: number;
+  name: string;
+  gamesPlayed: number;
+  savePct: number | null;
+  goalsAgainstAvg: number | null;
+  goalsSavedAboveExpected: number | null;
+}

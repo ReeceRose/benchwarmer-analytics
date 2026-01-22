@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
+  
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -73,7 +73,7 @@ export function StatCell({
 
   if (tooltip) {
     return (
-      <TooltipProvider>
+      
         <Tooltip>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
           <TooltipContent>
@@ -85,7 +85,7 @@ export function StatCell({
             )}
           </TooltipContent>
         </Tooltip>
-      </TooltipProvider>
+      
     );
   }
 

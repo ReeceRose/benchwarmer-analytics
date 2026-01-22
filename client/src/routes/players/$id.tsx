@@ -10,6 +10,9 @@ import {
   GoalieStatsTable,
   StatsTableSkeleton,
   PlayerShotMap,
+  CareerTrajectory,
+  RollingPerformance,
+  GoalieWorkloadMonitor,
   buildSkaterSeasonRows,
   calculateSkaterTotals,
   buildGoalieSeasonRows,
@@ -105,7 +108,16 @@ function PlayerDetailPage() {
       {playerLoading ? (
         <PlayerHeaderSkeleton />
       ) : player ? (
-        <PlayerHeader player={player} teams={teams} isGoalie={isGoalie} />
+        <PlayerHeader
+          player={player}
+          teams={teams}
+          isGoalie={isGoalie}
+          luckStats={!isGoalie && skaterTotals.xg > 0 ? {
+            goals: skaterTotals.g,
+            expectedGoals: skaterTotals.xg,
+            shots: skaterTotals.shots,
+          } : undefined}
+        />
       ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -132,9 +144,22 @@ function PlayerDetailPage() {
       {statsLoading ? (
         <StatsTableSkeleton />
       ) : isGoalie ? (
-        <GoalieStatsTable rows={goalieSeasonRows} totals={goalieTotals} />
+        <>
+          <GoalieStatsTable rows={goalieSeasonRows} totals={goalieTotals} />
+          {availableSeasons.length > 0 && (
+            <GoalieWorkloadMonitor playerId={playerId} season={availableSeasons[0]} />
+          )}
+        </>
       ) : (
         <SkaterStatsTable rows={skaterSeasonRows} totals={skaterTotals} />
+      )}
+
+      {!isGoalie && !statsLoading && allStats.length > 0 && player && (
+        <CareerTrajectory stats={allStats as SkaterStats[]} />
+      )}
+
+      {!isGoalie && availableSeasons.length > 0 && (
+        <RollingPerformance playerId={playerId} season={availableSeasons[0]} />
       )}
 
       {!isGoalie && availableSeasons.length > 0 && (

@@ -243,9 +243,9 @@ function GamesPage() {
 
   const handleTabChange = (tab: string) => {
     if (tab === "yesterday") {
-      navigate({ search: { date: undefined } });
+      navigate({ search: { date: yesterdayDate } });
     } else if (tab === "today") {
-      navigate({ search: { date: todayDate } });
+      navigate({ search: { date: undefined } });
     } else if (tab === "tomorrow") {
       navigate({ search: { date: tomorrowDate } });
     }

@@ -72,7 +72,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
               .HasForeignKey(t => t.TeamAbbreviation)
               .HasPrincipalKey(t => t.Abbreviation);
 
-      e.HasIndex(t => new { t.TeamAbbreviation, t.Season, t.Situation }).IsUnique();
+      e.HasIndex(t => new { t.TeamAbbreviation, t.Season, t.Situation, t.IsPlayoffs }).IsUnique();
       e.HasIndex(t => t.Season);
     });
 

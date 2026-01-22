@@ -3,9 +3,10 @@ import type { Shot } from "@/types";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
+  
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { RINK_COLORS, getShotColor as getShotColorFromLib } from "@/lib/chart-colors";
 
 interface RinkVisualizationProps {
   shots: Shot[];
@@ -33,17 +34,7 @@ const FACEOFF_X = 31; // 20ft from goal line = 31ft from boards
 const FACEOFF_Y_OFFSET = 22; // 22ft from center
 
 function getShotColor(shot: Shot): string {
-  if (shot.isGoal) {
-    return "#22c55e"; // green-500
-  }
-  const xg = shot.xGoal ?? 0;
-  if (xg > 0.15) {
-    return "#f97316"; // orange-500 (high danger)
-  }
-  if (xg >= 0.06) {
-    return "#eab308"; // yellow-500 (medium danger)
-  }
-  return "#3b82f6"; // blue-500 (low danger)
+  return getShotColorFromLib(shot.isGoal, shot.xGoal ?? 0);
 }
 
 function getShotSize(shot: Shot, totalShots: number): number {
@@ -160,7 +151,7 @@ export function RinkVisualization({
 
   return (
     <div className="relative">
-      <TooltipProvider>
+      
         <svg
           viewBox={`0 0 ${RINK_LENGTH} ${RINK_HEIGHT}`}
           width={width}
@@ -212,7 +203,7 @@ export function RinkVisualization({
             y1="0"
             x2={GOAL_LINE_X}
             y2={RINK_HEIGHT}
-            stroke="#dc2626"
+            stroke={RINK_COLORS.goalLine}
             strokeWidth="0.5"
           />
           <line
@@ -220,7 +211,7 @@ export function RinkVisualization({
             y1="0"
             x2={BLUE_LINE_X}
             y2={RINK_HEIGHT}
-            stroke="#2563eb"
+            stroke={RINK_COLORS.blueLine}
             strokeWidth="1"
           />
           <rect
@@ -228,9 +219,9 @@ export function RinkVisualization({
             y={RINK_HEIGHT / 2 - CREASE_WIDTH / 2}
             width={CREASE_DEPTH}
             height={CREASE_WIDTH}
-            fill="#93c5fd"
+            fill={RINK_COLORS.creaseFill}
             fillOpacity="0.3"
-            stroke="#dc2626"
+            stroke={RINK_COLORS.goalLine}
             strokeWidth="0.3"
             rx="1"
           />
@@ -240,7 +231,7 @@ export function RinkVisualization({
             width="4"
             height="6"
             fill="none"
-            stroke="#dc2626"
+            stroke={RINK_COLORS.goalLine}
             strokeWidth="0.5"
           />
           <circle
@@ -248,28 +239,28 @@ export function RinkVisualization({
             cy={RINK_HEIGHT / 2 - FACEOFF_Y_OFFSET}
             r={FACEOFF_CIRCLE_RADIUS}
             fill="none"
-            stroke="#dc2626"
+            stroke={RINK_COLORS.goalLine}
             strokeWidth="0.3"
           />
           <circle
             cx={FACEOFF_X}
             cy={RINK_HEIGHT / 2 - FACEOFF_Y_OFFSET}
             r={FACEOFF_DOT_RADIUS}
-            fill="#dc2626"
+            fill={RINK_COLORS.goalLine}
           />
           <circle
             cx={FACEOFF_X}
             cy={RINK_HEIGHT / 2 + FACEOFF_Y_OFFSET}
             r={FACEOFF_CIRCLE_RADIUS}
             fill="none"
-            stroke="#dc2626"
+            stroke={RINK_COLORS.goalLine}
             strokeWidth="0.3"
           />
           <circle
             cx={FACEOFF_X}
             cy={RINK_HEIGHT / 2 + FACEOFF_Y_OFFSET}
             r={FACEOFF_DOT_RADIUS}
-            fill="#dc2626"
+            fill={RINK_COLORS.goalLine}
           />
           {transformedShots
             .filter(({ shot }) => !shot.isGoal)
@@ -322,7 +313,7 @@ export function RinkVisualization({
             </Tooltip>
           ))}
         </svg>
-      </TooltipProvider>
+      
       {showLegend && (
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">

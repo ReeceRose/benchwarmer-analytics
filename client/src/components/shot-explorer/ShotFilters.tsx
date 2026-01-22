@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import type { RosterPlayer, DangerLevel } from "@/types";
+import type { RosterPlayer, DangerLevel, ScoreState } from "@/types";
 
 interface ShotFiltersProps {
   period?: number;
@@ -23,6 +23,8 @@ interface ShotFiltersProps {
   onLimitChange: (limit: number | undefined) => void;
   dangerLevel: DangerLevel;
   onDangerLevelChange: (level: DangerLevel) => void;
+  scoreState: ScoreState;
+  onScoreStateChange: (state: ScoreState) => void;
 }
 
 const SHOT_TYPES = [
@@ -57,6 +59,13 @@ const DANGER_LEVELS = [
   { value: "low", label: "Low Danger (xG < 6%)" },
 ];
 
+const SCORE_STATES = [
+  { value: "all", label: "All Game States" },
+  { value: "leading", label: "Leading" },
+  { value: "trailing", label: "Trailing" },
+  { value: "tied", label: "Tied" },
+];
+
 export function ShotFilters({
   period,
   onPeriodChange,
@@ -71,6 +80,8 @@ export function ShotFilters({
   onLimitChange,
   dangerLevel,
   onDangerLevelChange,
+  scoreState,
+  onScoreStateChange,
 }: ShotFiltersProps) {
   return (
     <div className="flex flex-wrap items-end gap-4">
@@ -135,6 +146,26 @@ export function ShotFilters({
             {DANGER_LEVELS.map((d) => (
               <SelectItem key={d.value} value={d.value}>
                 {d.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="score-state-filter" className="text-sm">
+          Game State
+        </Label>
+        <Select
+          value={scoreState}
+          onValueChange={(value) => onScoreStateChange(value as ScoreState)}
+        >
+          <SelectTrigger id="score-state-filter" className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SCORE_STATES.map((s) => (
+              <SelectItem key={s.value} value={s.value}>
+                {s.label}
               </SelectItem>
             ))}
           </SelectContent>

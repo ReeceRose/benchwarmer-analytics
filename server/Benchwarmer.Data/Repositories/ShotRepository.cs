@@ -121,6 +121,7 @@ public class ShotRepository(AppDbContext db) : IShotRepository
         int? period = null,
         string? shotType = null,
         int? shooterPlayerId = null,
+        string? scoreState = null,
         int? limit = null,
         CancellationToken cancellationToken = default)
     {
@@ -146,6 +147,10 @@ public class ShotRepository(AppDbContext db) : IShotRepository
             query = query.Where(s => s.ShooterPlayerId == shooterPlayerId.Value);
         }
 
+        // Filter by score state (leading, trailing, tied)
+        // Score state is from the shooting team's perspective
+        query = ApplyScoreStateFilter(query, scoreState);
+
         query = query
             .OrderBy(s => s.GameId)
             .ThenBy(s => s.Period)
@@ -157,6 +162,21 @@ public class ShotRepository(AppDbContext db) : IShotRepository
         }
 
         return await query.ToListAsync(cancellationToken);
+    }
+
+    private static IQueryable<Shot> ApplyScoreStateFilter(IQueryable<Shot> query, string? scoreState)
+    {
+        return scoreState?.ToLowerInvariant() switch
+        {
+            "leading" => query.Where(s =>
+                (s.IsHomeTeam && s.HomeTeamGoals > s.AwayTeamGoals) ||
+                (!s.IsHomeTeam && s.AwayTeamGoals > s.HomeTeamGoals)),
+            "trailing" => query.Where(s =>
+                (s.IsHomeTeam && s.HomeTeamGoals < s.AwayTeamGoals) ||
+                (!s.IsHomeTeam && s.AwayTeamGoals < s.HomeTeamGoals)),
+            "tied" => query.Where(s => s.HomeTeamGoals == s.AwayTeamGoals),
+            _ => query
+        };
     }
 
     private static void UpdateShotProperties(Shot existing, Shot updated)
@@ -334,5 +354,135 @@ public class ShotRepository(AppDbContext db) : IShotRepository
         existing.ShotAnglePlusRebound = updated.ShotAnglePlusRebound;
         existing.ShotAnglePlusReboundSpeed = updated.ShotAnglePlusReboundSpeed;
         existing.ShotAngleReboundRoyalRoad = updated.ShotAngleReboundRoyalRoad;
+    }
+
+    public async Task<IReadOnlyList<Shot>> GetRecentByPlayerAsync(
+        int playerId,
+        int season,
+        int gameLimit = 20,
+        CancellationToken cancellationToken = default)
+    {
+        // First, get the most recent N distinct game IDs for this player
+        var recentGameIds = await db.Shots
+            .Where(s => s.ShooterPlayerId == playerId && s.Season == season && !s.IsPlayoffGame)
+            .Select(s => s.GameId)
+            .Distinct()
+            .OrderByDescending(g => g) // GameId format: 2024020501 - higher = more recent
+            .Take(gameLimit)
+            .ToListAsync(cancellationToken);
+
+        if (recentGameIds.Count == 0)
+            return [];
+
+        // Then fetch all shots from those games for this player
+        return await db.Shots
+            .Where(s => s.ShooterPlayerId == playerId && recentGameIds.Contains(s.GameId))
+            .OrderByDescending(s => s.GameId)
+            .ThenBy(s => s.Period)
+            .ThenBy(s => s.GameTimeSeconds)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Shot>> GetAgainstTeamAsync(
+        string teamCode,
+        int season,
+        bool? isPlayoffs = null,
+        int? period = null,
+        string? shotType = null,
+        string? scoreState = null,
+        int? limit = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Get shots where this team was defending (opponent's shots against us)
+        // Shot.TeamCode is the shooting team, so we want shots where:
+        // - HomeTeamCode == teamCode AND TeamCode != teamCode (we're home, opponent shooting)
+        // - OR AwayTeamCode == teamCode AND TeamCode != teamCode (we're away, opponent shooting)
+        var query = db.Shots.Where(s =>
+            s.Season == season &&
+            s.TeamCode != teamCode &&
+            (s.HomeTeamCode == teamCode || s.AwayTeamCode == teamCode));
+
+        if (isPlayoffs.HasValue)
+        {
+            query = query.Where(s => s.IsPlayoffGame == isPlayoffs.Value);
+        }
+
+        if (period.HasValue)
+        {
+            query = query.Where(s => s.Period == period.Value);
+        }
+
+        if (!string.IsNullOrEmpty(shotType))
+        {
+            query = query.Where(s => s.ShotType == shotType);
+        }
+
+        // Filter by score state - note: for "against" shots, the score state
+        // is inverted from the defending team's perspective
+        query = ApplyScoreStateFilterForDefending(query, scoreState, teamCode);
+
+        query = query
+            .OrderBy(s => s.GameId)
+            .ThenBy(s => s.Period)
+            .ThenBy(s => s.GameTimeSeconds);
+
+        if (limit.HasValue)
+        {
+            query = query.Take(limit.Value);
+        }
+
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    private static IQueryable<Shot> ApplyScoreStateFilterForDefending(
+        IQueryable<Shot> query,
+        string? scoreState,
+        string defendingTeamCode)
+    {
+        // For "against" shots, we filter based on the DEFENDING team's perspective
+        // e.g., "leading" means the defending team was leading when the shot was taken against them
+        return scoreState?.ToLowerInvariant() switch
+        {
+            "leading" => query.Where(s =>
+                (s.HomeTeamCode == defendingTeamCode && s.HomeTeamGoals > s.AwayTeamGoals) ||
+                (s.AwayTeamCode == defendingTeamCode && s.HomeTeamCode != defendingTeamCode && s.AwayTeamGoals > s.HomeTeamGoals)),
+            "trailing" => query.Where(s =>
+                (s.HomeTeamCode == defendingTeamCode && s.HomeTeamGoals < s.AwayTeamGoals) ||
+                (s.AwayTeamCode == defendingTeamCode && s.HomeTeamCode != defendingTeamCode && s.AwayTeamGoals < s.HomeTeamGoals)),
+            "tied" => query.Where(s => s.HomeTeamGoals == s.AwayTeamGoals),
+            _ => query
+        };
+    }
+
+    public async Task<IReadOnlyList<Shot>> GetRecentByGoalieAsync(
+        int goaliePlayerId,
+        int season,
+        int gameLimit = 30,
+        CancellationToken cancellationToken = default)
+    {
+        // Get distinct game IDs where this goalie faced shots (excluding empty net)
+        var recentGameIds = await db.Shots
+            .Where(s => s.GoaliePlayerId == goaliePlayerId
+                        && s.Season == season
+                        && !s.IsPlayoffGame
+                        && !s.ShotOnEmptyNet)
+            .Select(s => s.GameId)
+            .Distinct()
+            .OrderByDescending(g => g) // GameId format: 2024020501 - higher = more recent
+            .Take(gameLimit)
+            .ToListAsync(cancellationToken);
+
+        if (recentGameIds.Count == 0)
+            return [];
+
+        // Fetch all shots faced in those games (excluding empty net)
+        return await db.Shots
+            .Where(s => s.GoaliePlayerId == goaliePlayerId
+                        && recentGameIds.Contains(s.GameId)
+                        && !s.ShotOnEmptyNet)
+            .OrderByDescending(s => s.GameId)
+            .ThenBy(s => s.Period)
+            .ThenBy(s => s.GameTimeSeconds)
+            .ToListAsync(cancellationToken);
     }
 }

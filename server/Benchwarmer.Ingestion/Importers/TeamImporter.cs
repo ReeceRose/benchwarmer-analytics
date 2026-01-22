@@ -76,9 +76,11 @@ public class TeamImporter(
         "TOR", "UTA", "VAN", "VGK", "WPG", "WSH"
     ];
 
-    public async Task<int> ImportAsync(IEnumerable<TeamRecord> records)
+    public async Task<int> ImportAsync(IEnumerable<TeamRecord> records, bool isPlayoffs = false)
     {
-        var recordsList = records.ToList();
+        // Filter for only "Team Level" records - the teams CSV contains both team-level
+        // aggregations and individual player-level data. We only want the team totals.
+        var recordsList = records.Where(r => r.Position == "Team Level").ToList();
         var now = DateTime.UtcNow;
 
         // Group by normalized team abbreviation to upsert teams first
@@ -109,18 +111,19 @@ public class TeamImporter(
         var existingRecords = await db.TeamSeasons
             .Where(t => teams.Contains(t.TeamAbbreviation) &&
                         seasons.Contains(t.Season) &&
-                        situations.Contains(t.Situation))
+                        situations.Contains(t.Situation) &&
+                        t.IsPlayoffs == isPlayoffs)
             .ToListAsync();
 
-        // Build O(1) lookup dictionary with composite key
+        // Build O(1) lookup dictionary with composite key (now includes IsPlayoffs)
         var existingLookup = existingRecords
-            .ToDictionary(t => (t.TeamAbbreviation, t.Season, t.Situation));
+            .ToDictionary(t => (t.TeamAbbreviation, t.Season, t.Situation, t.IsPlayoffs));
 
         // Upsert each season/situation record using dictionary lookup (with normalized abbreviations)
         foreach (var record in recordsList)
         {
             var normalizedTeam = TeamAbbreviationNormalizer.Normalize(record.Team);
-            var key = (normalizedTeam, record.Season, record.Situation);
+            var key = (normalizedTeam, record.Season, record.Situation, isPlayoffs);
 
             if (existingLookup.TryGetValue(key, out var existing))
             {
@@ -128,7 +131,7 @@ public class TeamImporter(
             }
             else
             {
-                db.TeamSeasons.Add(MapToEntity(record, normalizedTeam, now));
+                db.TeamSeasons.Add(MapToEntity(record, normalizedTeam, isPlayoffs, now));
             }
         }
 
@@ -137,13 +140,14 @@ public class TeamImporter(
         return recordsList.Count;
     }
 
-    private static TeamSeason MapToEntity(TeamRecord r, string normalizedTeam, DateTime now)
+    private static TeamSeason MapToEntity(TeamRecord r, string normalizedTeam, bool isPlayoffs, DateTime now)
     {
         return new TeamSeason
         {
             TeamAbbreviation = normalizedTeam,
             Season = r.Season,
             Situation = r.Situation,
+            IsPlayoffs = isPlayoffs,
             GamesPlayed = r.GamesPlayed,
             IceTime = r.IceTime,
             XGoalsPercentage = r.XGoalsPercentage,

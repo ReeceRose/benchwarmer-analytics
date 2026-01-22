@@ -78,7 +78,7 @@ try
         options.AddPolicy(CachePolicies.SemiStaticData, b => b.Expire(TimeSpan.FromHours(6)));
         options.AddPolicy(CachePolicies.TeamData, b => b
             .Expire(TimeSpan.FromMinutes(30))
-            .SetVaryByQuery("season", "situation", "playoffs", "lineType", "minToi", "sortBy", "sortDir", "page", "pageSize", "period", "shotType", "playerId", "goalsOnly", "limit", "position", "ids"));
+            .SetVaryByQuery("season", "situation", "playoffs", "lineType", "minToi", "sortBy", "sortDir", "page", "pageSize", "period", "shotType", "playerId", "playerIds", "goalsOnly", "scoreState", "limit", "position", "ids", "minGames", "useMedian"));
         options.AddPolicy(CachePolicies.SearchResults, b => b
             .Expire(TimeSpan.FromMinutes(5))
             .SetVaryByQuery("q", "page", "pageSize"));
@@ -112,6 +112,7 @@ try
     builder.Services.AddScoped<IStatsRepository, StatsRepository>();
     builder.Services.AddScoped<IGameRepository, GameRepository>();
     builder.Services.AddScoped<IGameStatsRepository, GameStatsRepository>();
+    builder.Services.AddScoped<ITeamSeasonRepository, TeamSeasonRepository>();
 
     // Services
     builder.Services.AddHttpClient<MoneyPuckDownloader>();
@@ -175,6 +176,7 @@ try
     app.MapStatsEndpoints();
     app.MapShotEndpoints();
     app.MapGameEndpoints();
+    app.MapStandingsEndpoints();
 
     app.MapGet("/api/health", () => new { status = "healthy" })
         .WithName("HealthCheck")

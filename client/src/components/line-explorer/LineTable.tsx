@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HeaderWithTooltip } from "@/components/shared";
 import { LineRow } from "@/components/line-explorer/LineRow";
 import { LineDetail } from "@/components/line-explorer/LineDetail";
 import type { LineCombination } from "@/types";
@@ -50,14 +51,14 @@ export function LineTable({ lines, teamAvgXgPct, teamAvgCfPct }: LineTableProps)
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="min-w-70">Players</TableHead>
-            <TableHead className="text-right w-16">GP</TableHead>
-            <TableHead className="text-right w-20">TOI</TableHead>
-            <TableHead className="text-right w-16">GF</TableHead>
-            <TableHead className="text-right w-16">GA</TableHead>
-            <TableHead className="text-right w-20">xG%</TableHead>
-            <TableHead className="text-right w-20">CF%</TableHead>
-            <TableHead className="w-10"></TableHead>
-          </TableRow>
+              <HeaderWithTooltip label="GP" tooltip="Games played together" className="text-right w-16" />
+              <HeaderWithTooltip label="TOI" tooltip="Total time on ice together" className="text-right w-20" />
+              <HeaderWithTooltip label="GF" tooltip="Goals for while on ice together" className="text-right w-16" />
+              <HeaderWithTooltip label="GA" tooltip="Goals against while on ice together" className="text-right w-16" />
+              <HeaderWithTooltip label="xG%" tooltip="Expected goals percentage — share of expected goals while on ice" className="text-right w-20" />
+              <HeaderWithTooltip label="CF%" tooltip="Corsi For % — shot attempt share while on ice together" className="text-right w-20" />
+              <TableHead className="w-10"></TableHead>
+            </TableRow>
         </TableHeader>
         <TableBody>
           {lines.map((line) => (
