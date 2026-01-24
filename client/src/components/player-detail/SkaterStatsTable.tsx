@@ -206,6 +206,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
                   <Link
                     to="/teams/$abbrev"
                     params={{ abbrev: row.team }}
+                    search={{ season: row.season }}
                     className="hover:underline"
                   >
                     {row.team}
