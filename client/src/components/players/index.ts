@@ -1,1 +1,1 @@
-export { FeaturedPlayers, PlayerCard, GoalieCard } from "./FeaturedPlayers";
+export { FeaturedPlayers, PlayerCard, GoalieCard } from "@/components/players/FeaturedPlayers";

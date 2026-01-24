@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
 import { Trophy, Info, Filter } from "lucide-react";
 import { usePowerRankings, useSeasons } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
@@ -71,7 +70,7 @@ function PowerRankingsPage() {
   const sortDesc = urlSortDir ? urlSortDir === "desc" : true;
 
   // Sort teams client-side based on URL params
-  const sortedTeams = useMemo(() => {
+  const sortedTeams = (() => {
     if (!data?.teams) return [];
     const teams = [...data.teams];
     teams.sort((a, b) => {
@@ -80,7 +79,7 @@ function PowerRankingsPage() {
       return sortDesc ? bVal - aVal : aVal - bVal;
     });
     return teams;
-  }, [data?.teams, sortKey, sortDesc]);
+  })();
 
   const updateSearch = (updates: Partial<{ season: number; sortKey: SortKey; sortDir: "asc" | "desc" }>) => {
     navigate({ search: (prev) => ({ ...prev, ...updates }) });
