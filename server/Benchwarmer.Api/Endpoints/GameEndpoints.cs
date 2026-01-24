@@ -203,17 +203,18 @@ public static class GameEndpoints
         var scheduleGames = await scheduleTask;
         var standings = await standingsTask;
 
+        // Filter live scores to only include today's games (NHL scoreboard may include yesterday's late games)
+        var todayStr = today.ToString("yyyy-MM-dd");
+        var todaysLiveGames = liveScores?.Games.Where(g => g.GameDate == todayStr).ToList() ?? [];
+
         var liveGameIds = new HashSet<string>(
-            liveScores?.Games.Select(g => g.Id.ToString()) ?? []);
+            todaysLiveGames.Select(g => g.Id.ToString()));
 
         var allMatchups = new List<(string HomeTeam, string AwayTeam, int Season)>();
-        if (liveScores?.Games != null)
+        foreach (var g in todaysLiveGames)
         {
-            foreach (var g in liveScores.Games)
-            {
-                var season = GetSeasonFromGameId(g.Id.ToString());
-                allMatchups.Add((g.HomeTeam.Abbrev, g.AwayTeam.Abbrev, season));
-            }
+            var season = GetSeasonFromGameId(g.Id.ToString());
+            allMatchups.Add((g.HomeTeam.Abbrev, g.AwayTeam.Abbrev, season));
         }
         foreach (var g in scheduleGames.Where(g => g.GameDate == today && !liveGameIds.Contains(g.GameId)))
         {
@@ -223,9 +224,9 @@ public static class GameEndpoints
 
         var resultDtos = new List<GameSummaryDto>();
 
-        if (liveScores?.Games.Count > 0)
+        if (todaysLiveGames.Count > 0)
         {
-            var liveDtos = await EnrichLiveGamesWithStats(liveScores.Games, gameStatsRepository, standings, h2hData, cancellationToken);
+            var liveDtos = await EnrichLiveGamesWithStats(todaysLiveGames, gameStatsRepository, standings, h2hData, cancellationToken);
             resultDtos.AddRange(liveDtos);
         }
 
