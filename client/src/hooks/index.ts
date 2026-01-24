@@ -19,3 +19,4 @@ export { useBreakoutCandidates, useAgeCurves, useAgeDistribution, useSeasonPerce
 export { usePowerRankings } from "@/hooks/useStandings";
 export { useTeamSpecialTeams, useSpecialTeamsPlayers } from "@/hooks/useSpecialTeams";
 export { useLeaderboard } from "@/hooks/useLeaderboard";
+export { useSortableTable } from "@/hooks/useSortableTable";

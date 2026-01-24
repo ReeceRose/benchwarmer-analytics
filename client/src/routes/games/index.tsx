@@ -1,18 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LiveIndicator, GoalsList } from "@/components/shared";
+import { GamesGrid } from "@/components/games";
 import { useTodaysGames, useGamesByDate } from "@/hooks";
+import { formatGameDateLong } from "@/lib/game-formatters";
 import {
-  formatGameDateLong,
-  formatGameTimeShort,
-  formatPeriod,
-} from "@/lib/game-formatters";
+  getYesterdayDate,
+  getTodayDate,
+  getTomorrowDate,
+} from "@/lib/date-utils";
 import type { GameSummary } from "@/types";
 
 const searchSchema = z.object({
@@ -23,206 +21,6 @@ export const Route = createFileRoute("/games/")({
   component: GamesPage,
   validateSearch: searchSchema,
 });
-
-// Format date as YYYY-MM-DD in local timezone
-function formatLocalDate(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function getYesterdayDate(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return formatLocalDate(d);
-}
-
-function getTodayDate(): string {
-  return formatLocalDate(new Date());
-}
-
-function getTomorrowDate(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return formatLocalDate(d);
-}
-
-function GameCard({ game }: { game: GameSummary }) {
-  const isCompleted = game.gameState === "OFF";
-  const isLive = game.gameState === "LIVE" || game.gameState === "CRIT";
-  const homeWins = isCompleted && (game.home.goals ?? 0) > (game.away.goals ?? 0);
-  const awayWins = isCompleted && (game.away.goals ?? 0) > (game.home.goals ?? 0);
-
-  // Get the appropriate record based on home/away context
-  const awayDisplayRecord = game.away.roadRecord || game.away.record;
-  const homeDisplayRecord = game.home.homeRecord || game.home.record;
-
-  return (
-    <Link to="/games/$gameId" params={{ gameId: game.gameId }}>
-      <Card className="h-full hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              {isLive ? (
-                <>
-                  <LiveIndicator />
-                  <span className="font-medium">
-                    {formatPeriod(game.currentPeriod, game.inIntermission)}
-                    {!game.inIntermission && game.timeRemaining && ` ${game.timeRemaining}`}
-                  </span>
-                </>
-              ) : isCompleted ? (
-                <span>
-                  Final
-                  {game.periodType && game.periodType !== "REG" && (
-                    <Badge variant="secondary" className="ml-2 text-[10px] px-1">
-                      {game.periodType}
-                    </Badge>
-                  )}
-                </span>
-              ) : (
-                <span>{formatGameTimeShort(game.startTimeUtc)}</span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {(isLive || isCompleted) && game.away.shotsOnGoal !== null && game.home.shotsOnGoal !== null && (
-                <span className="font-mono text-[10px]">
-                  SOG: {game.away.shotsOnGoal}-{game.home.shotsOnGoal}
-                </span>
-              )}
-              {game.hasShotData && !isLive && (
-                <Badge variant="outline" className="text-[10px]">
-                  Stats
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className={`flex items-center justify-between ${awayWins ? "" : isCompleted ? "opacity-70" : ""}`}>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="font-mono text-xs">
-                  {game.away.teamCode}
-                </Badge>
-                <span className="text-sm truncate">{game.away.teamName}</span>
-                {awayDisplayRecord && (
-                  <span className="text-[10px] text-muted-foreground">
-                    ({awayDisplayRecord}{game.away.roadRecord ? " away" : ""})
-                  </span>
-                )}
-              </div>
-              <span className={`font-mono text-lg font-bold ${awayWins ? "" : isCompleted ? "text-muted-foreground" : ""}`}>
-                {game.away.goals ?? "-"}
-              </span>
-            </div>
-            <div className={`flex items-center justify-between ${homeWins ? "" : isCompleted ? "opacity-70" : ""}`}>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="font-mono text-xs">
-                  {game.home.teamCode}
-                </Badge>
-                <span className="text-sm truncate">{game.home.teamName}</span>
-                {homeDisplayRecord && (
-                  <span className="text-[10px] text-muted-foreground">
-                    ({homeDisplayRecord}{game.home.homeRecord ? " home" : ""})
-                  </span>
-                )}
-              </div>
-              <span className={`font-mono text-lg font-bold ${homeWins ? "" : isCompleted ? "text-muted-foreground" : ""}`}>
-                {game.home.goals ?? "-"}
-              </span>
-            </div>
-          </div>
-          {/* Season Series & Streaks */}
-          {(game.seasonSeries || game.away.streak || game.home.streak) && (
-            <div className="text-[10px] text-muted-foreground text-center space-y-0.5">
-              {game.seasonSeries && (
-                <div>{game.seasonSeries}</div>
-              )}
-              {(game.away.streak || game.home.streak) && (
-                <div>
-                  {game.away.teamCode}: {game.away.streak || "-"}
-                  {game.away.last10 && <span className="opacity-70 ml-1">L10: {game.away.last10}</span>}
-                  <span className="mx-2 opacity-30">|</span>
-                  {game.home.teamCode}: {game.home.streak || "-"}
-                  {game.home.last10 && <span className="opacity-70 ml-1">L10: {game.home.last10}</span>}
-                </div>
-              )}
-            </div>
-          )}
-          {game.hasShotData && isCompleted && game.away.expectedGoals !== null && game.home.expectedGoals !== null && (
-            <div className="pt-2 border-t text-xs text-muted-foreground">
-              <div className="flex justify-between">
-                <span>xG: {game.away.expectedGoals.toFixed(1)}</span>
-                <span>xG: {game.home.expectedGoals.toFixed(1)}</span>
-              </div>
-            </div>
-          )}
-          {isLive && game.goals && game.goals.length > 0 && (
-            <GoalsList goals={game.goals} awayCode={game.away.teamCode} />
-          )}
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
-
-function GameCardSkeleton() {
-  return (
-    <Card>
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 w-12" />
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-5 w-10" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-            <Skeleton className="h-6 w-6" />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-5 w-10" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-            <Skeleton className="h-6 w-6" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function GamesGrid({ games, isLoading, emptyMessage }: { games: GameSummary[]; isLoading: boolean; emptyMessage: string }) {
-  if (isLoading) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <GameCardSkeleton key={i} />
-        ))}
-      </div>
-    );
-  }
-
-  if (games.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>{emptyMessage}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {games.map((game) => (
-        <GameCard key={game.gameId} game={game} />
-      ))}
-    </div>
-  );
-}
 
 function GamesPage() {
   const search = Route.useSearch();

@@ -1,9 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { Trophy, Filter, ArrowUpDown } from "lucide-react";
+import { Trophy, Filter } from "lucide-react";
 import { useLeaderboard, useSeasons } from "@/hooks";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -15,24 +14,18 @@ import {
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { ErrorState } from "@/components/shared";
-import { formatPosition, formatToi, formatPercent, formatSavePct } from "@/lib/formatters";
+import { ErrorState, SortableTableHeader } from "@/components/shared";
+import { LeaderboardRow } from "@/components/leaderboard";
 import {
   isGoalieCategory,
   getDefaultSortDir,
 } from "@/lib/leaderboard-categories";
-import type { LeaderboardCategory, LeaderboardEntry } from "@/types";
+import type { LeaderboardCategory } from "@/types";
 
 const categorySchema = z.enum([
   "points",
@@ -59,59 +52,6 @@ export const Route = createFileRoute("/leaderboards")({
   component: LeaderboardsPage,
   validateSearch: searchSchema,
 });
-
-interface SortableHeaderProps {
-  label: string;
-  tooltip: string;
-  sortKey: string;
-  currentSort: string;
-  sortDesc: boolean;
-  onSort: (key: string) => void;
-  isHighlighted?: boolean;
-  className?: string;
-  /** If true, the arrow direction is inverted to indicate "lower is better" semantics */
-  lowerIsBetter?: boolean;
-}
-
-function SortableHeader({
-  label,
-  tooltip,
-  sortKey,
-  currentSort,
-  sortDesc,
-  onSort,
-  isHighlighted,
-  className,
-  lowerIsBetter = false,
-}: SortableHeaderProps) {
-  const isActive = currentSort === sortKey;
-  // For "lower is better" stats like GAA, invert the arrow direction
-  // so ascending (best values first) shows the down arrow
-  const showDescArrow = lowerIsBetter ? !sortDesc : sortDesc;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <TableHead
-          className={`text-right cursor-pointer hover:bg-muted/50 transition-colors ${
-            isHighlighted ? "bg-muted/30 font-semibold" : ""
-          } ${className ?? ""}`}
-          onClick={() => onSort(sortKey)}
-        >
-          <span className="flex items-center justify-end gap-1 whitespace-nowrap">
-            {label}
-            {isActive && (
-              <ArrowUpDown className={`h-3 w-3 shrink-0 ${showDescArrow ? "" : "rotate-180"}`} />
-            )}
-          </span>
-        </TableHead>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p className="text-xs">{tooltip}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
 
 function LeaderboardsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
@@ -145,7 +85,14 @@ function LeaderboardsPage() {
   // Use server-sorted entries directly (no client-side re-sorting needed)
   const sortedEntries = data?.entries ?? [];
 
-  const updateSearch = (updates: Partial<{ category: LeaderboardCategory; season: number; situation: string; sortDir: "asc" | "desc" }>) => {
+  const updateSearch = (
+    updates: Partial<{
+      category: LeaderboardCategory;
+      season: number;
+      situation: string;
+      sortDir: "asc" | "desc";
+    }>
+  ) => {
     navigate({
       search: (prev) => ({
         ...prev,
@@ -167,7 +114,10 @@ function LeaderboardsPage() {
   const handlePlayerTypeChange = (type: string) => {
     // Switch to default category for that player type
     const newCategory = type === "goalies" ? "savePct" : "points";
-    updateSearch({ category: newCategory as LeaderboardCategory, sortDir: undefined });
+    updateSearch({
+      category: newCategory as LeaderboardCategory,
+      sortDir: undefined,
+    });
   };
 
   return (
@@ -178,7 +128,8 @@ function LeaderboardsPage() {
           <h1 className="text-3xl font-bold tracking-tight">League Leaders</h1>
         </div>
         <p className="text-muted-foreground max-w-2xl">
-          Top performers across key statistical categories. Click column headers to sort.
+          Top performers across key statistical categories. Click column headers
+          to sort.
         </p>
       </div>
 
@@ -259,7 +210,9 @@ function LeaderboardsPage() {
           </CardContent>
         </Card>
       ) : sortedEntries.length > 0 ? (
-        <Card className={`py-0 gap-0 ${isPlaceholderData ? "opacity-60" : ""}`}>
+        <Card
+          className={`py-0 gap-0 ${isPlaceholderData ? "opacity-60" : ""}`}
+        >
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table className="table-fixed min-w-175">
@@ -269,7 +222,7 @@ function LeaderboardsPage() {
                     <TableHead className="w-44">Player</TableHead>
                     <TableHead className="w-20">Pos</TableHead>
                     <TableHead className="w-16">Team</TableHead>
-                    <SortableHeader
+                    <SortableTableHeader
                       label="GP"
                       tooltip="Games played"
                       sortKey="gamesPlayed"
@@ -281,7 +234,7 @@ function LeaderboardsPage() {
                     />
                     {!isGoalieView ? (
                       <>
-                        <SortableHeader
+                        <SortableTableHeader
                           label="P"
                           tooltip="Total points (goals + assists)"
                           sortKey="points"
@@ -291,7 +244,7 @@ function LeaderboardsPage() {
                           isHighlighted={sortKey === "points"}
                           className="w-14"
                         />
-                        <SortableHeader
+                        <SortableTableHeader
                           label="G"
                           tooltip="Goals scored"
                           sortKey="goals"
@@ -301,7 +254,7 @@ function LeaderboardsPage() {
                           isHighlighted={sortKey === "goals"}
                           className="w-14"
                         />
-                        <SortableHeader
+                        <SortableTableHeader
                           label="A"
                           tooltip="Assists"
                           sortKey="assists"
@@ -311,7 +264,7 @@ function LeaderboardsPage() {
                           isHighlighted={sortKey === "assists"}
                           className="w-14"
                         />
-                        <SortableHeader
+                        <SortableTableHeader
                           label="xG"
                           tooltip="Expected goals based on shot quality"
                           sortKey="expectedGoals"
@@ -321,7 +274,7 @@ function LeaderboardsPage() {
                           isHighlighted={sortKey === "expectedGoals"}
                           className="w-16"
                         />
-                        <SortableHeader
+                        <SortableTableHeader
                           label="CF%"
                           tooltip="Corsi for % - shot attempt share when on ice"
                           sortKey="corsiPct"
@@ -331,7 +284,7 @@ function LeaderboardsPage() {
                           isHighlighted={sortKey === "corsiPct"}
                           className="w-18"
                         />
-                        <SortableHeader
+                        <SortableTableHeader
                           label="TOI"
                           tooltip="Total time on ice"
                           sortKey="iceTime"
@@ -344,7 +297,7 @@ function LeaderboardsPage() {
                       </>
                     ) : (
                       <>
-                        <SortableHeader
+                        <SortableTableHeader
                           label="Sv%"
                           tooltip="Save percentage"
                           sortKey="savePct"
@@ -354,7 +307,7 @@ function LeaderboardsPage() {
                           isHighlighted={sortKey === "savePct"}
                           className="w-16"
                         />
-                        <SortableHeader
+                        <SortableTableHeader
                           label="GAA"
                           tooltip="Goals against average (lower is better)"
                           sortKey="gaa"
@@ -365,7 +318,7 @@ function LeaderboardsPage() {
                           lowerIsBetter
                           className="w-16"
                         />
-                        <SortableHeader
+                        <SortableTableHeader
                           label="GSAx"
                           tooltip="Goals saved above expected"
                           sortKey="gsax"
@@ -375,7 +328,7 @@ function LeaderboardsPage() {
                           isHighlighted={sortKey === "gsax"}
                           className="w-18"
                         />
-                        <SortableHeader
+                        <SortableTableHeader
                           label="SA"
                           tooltip="Shots against"
                           sortKey="shotsAgainst"
@@ -416,91 +369,5 @@ function LeaderboardsPage() {
         </Card>
       )}
     </div>
-  );
-}
-
-function LeaderboardRow({
-  entry,
-  rank,
-  isGoalie,
-  highlightedColumn,
-}: {
-  entry: LeaderboardEntry;
-  rank: number;
-  isGoalie: boolean;
-  highlightedColumn: string;
-}) {
-  const cellClass = (col: string) =>
-    `text-right tabular-nums ${highlightedColumn === col ? "bg-muted/30 font-semibold" : ""}`;
-
-  return (
-    <TableRow>
-      <TableCell className="font-medium text-muted-foreground tabular-nums">{rank}</TableCell>
-      <TableCell>
-        <Link
-          to="/players/$id"
-          params={{ id: String(entry.playerId) }}
-          className="hover:underline font-medium"
-        >
-          {entry.name}
-        </Link>
-      </TableCell>
-      <TableCell>
-        <Badge variant="outline" className="font-normal">
-          {formatPosition(entry.position)}
-        </Badge>
-      </TableCell>
-      <TableCell>
-        {entry.team ? (
-          <Link
-            to="/teams/$abbrev"
-            params={{ abbrev: entry.team }}
-            className="hover:underline text-muted-foreground"
-          >
-            {entry.team}
-          </Link>
-        ) : (
-          "-"
-        )}
-      </TableCell>
-      <TableCell className={cellClass("gamesPlayed")}>{entry.gamesPlayed}</TableCell>
-      {!isGoalie ? (
-        <>
-          <TableCell className={cellClass("points")}>
-            {(entry.goals ?? 0) + (entry.assists ?? 0)}
-          </TableCell>
-          <TableCell className={cellClass("goals")}>{entry.goals ?? "-"}</TableCell>
-          <TableCell className={cellClass("assists")}>{entry.assists ?? "-"}</TableCell>
-          <TableCell className={cellClass("expectedGoals")}>
-            {entry.expectedGoals != null ? entry.expectedGoals.toFixed(1) : "-"}
-          </TableCell>
-          <TableCell className={cellClass("corsiPct")}>
-            {entry.corsiForPct != null ? formatPercent(entry.corsiForPct, false) : "-"}
-          </TableCell>
-          <TableCell className={cellClass("iceTime")}>
-            {entry.iceTimeSeconds != null ? formatToi(entry.iceTimeSeconds) : "-"}
-          </TableCell>
-        </>
-      ) : (
-        <>
-          <TableCell className={cellClass("savePct")}>
-            {entry.savePercentage != null ? formatSavePct(entry.savePercentage) : "-"}
-          </TableCell>
-          <TableCell className={cellClass("gaa")}>
-            {entry.goalsAgainstAverage != null ? entry.goalsAgainstAverage.toFixed(2) : "-"}
-          </TableCell>
-          <TableCell className={cellClass("gsax")}>
-            {entry.goalsSavedAboveExpected != null
-              ? entry.goalsSavedAboveExpected >= 0
-                ? `+${entry.goalsSavedAboveExpected.toFixed(1)}`
-                : entry.goalsSavedAboveExpected.toFixed(1)
-              : "-"}
-          </TableCell>
-          <TableCell className={cellClass("shotsAgainst")}>
-            {entry.shotsAgainst ?? "-"}
-          </TableCell>
-        </>
-      )}
-    </TableRow>
   );
 }

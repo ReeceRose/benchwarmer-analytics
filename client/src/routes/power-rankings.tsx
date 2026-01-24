@@ -1,14 +1,6 @@
-import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  Trophy,
-  TrendingUp,
-  TrendingDown,
-  Info,
-  Filter,
-  ArrowUpDown,
-} from "lucide-react";
-import { usePowerRankings, useSeasons } from "@/hooks";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Trophy, Info, Filter } from "lucide-react";
+import { usePowerRankings, useSeasons, useSortableTable } from "@/hooks";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -20,21 +12,18 @@ import {
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState, HeaderWithTooltip } from "@/components/shared";
-import { formatPercent } from "@/lib/formatters";
-import type { TeamPowerRanking, RegressionCandidate } from "@/types";
+import {
+  ErrorState,
+  HeaderWithTooltip,
+  SortableTableHeader,
+} from "@/components/shared";
+import { TeamRow, RegressionCard } from "@/components/power-rankings";
+import type { TeamPowerRanking } from "@/types";
 import { z } from "zod";
 
 const searchSchema = z.object({
@@ -48,74 +37,23 @@ export const Route = createFileRoute("/power-rankings")({
 
 type SortKey = "points" | "xGoalsPct" | "pdo" | "pointsDiff" | "corsiPct";
 
-function SortHeader({
-  label,
-  sortKeyName,
-  tooltip,
-  sortKey,
-  sortDesc,
-  onSort,
-}: {
-  label: string;
-  sortKeyName: SortKey;
-  tooltip?: string;
-  sortKey: SortKey;
-  sortDesc: boolean;
-  onSort: (key: SortKey) => void;
-}) {
-  return (
-    
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <TableHead className="text-right font-semibold cursor-pointer">
-            <button
-              onClick={() => onSort(sortKeyName)}
-              className="flex items-center gap-1 hover:text-foreground transition-colors ml-auto"
-            >
-              {label}
-              {sortKey === sortKeyName && (
-                <ArrowUpDown
-                  className={`h-3 w-3 ${sortDesc ? "" : "rotate-180"}`}
-                />
-              )}
-            </button>
-          </TableHead>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p className="text-xs">{tooltip || label}</p>
-        </TooltipContent>
-      </Tooltip>
-    
-  );
-}
-
 function PowerRankingsPage() {
   const { data: seasonsData } = useSeasons();
   const currentSeason = seasonsData?.seasons?.[0]?.year;
   const navigate = useNavigate({ from: Route.fullPath });
   const { season } = Route.useSearch();
 
-  const [sortKey, setSortKey] = useState<SortKey>("points");
-  const [sortDesc, setSortDesc] = useState(true);
-
   const effectiveSeason = season ?? currentSeason;
   const isCurrentSeason = effectiveSeason === currentSeason;
   const { data, isLoading, error, refetch } = usePowerRankings(effectiveSeason);
 
-  const sortedTeams = [...(data?.teams ?? [])].sort((a, b) => {
-    const aVal = a[sortKey] ?? 0;
-    const bVal = b[sortKey] ?? 0;
-    return sortDesc ? bVal - aVal : aVal - bVal;
-  });
-
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDesc(!sortDesc);
-    } else {
-      setSortKey(key);
-      setSortDesc(true);
-    }
-  };
+  const { sortedData: sortedTeams, sortKey, sortDesc, handleSort } =
+    useSortableTable<TeamPowerRanking, SortKey>({
+      data: data?.teams ?? [],
+      defaultSortKey: "points",
+      defaultSortDesc: true,
+      getValue: (team, key) => team[key] ?? 0,
+    });
 
   return (
     <div className="container py-8">
@@ -170,44 +108,18 @@ function PowerRankingsPage() {
         (data.insights.likelyToImprove.length > 0 ||
           data.insights.likelyToRegress.length > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {data.insights.likelyToImprove.length > 0 && (
-              <Card className="py-3">
-                <CardContent className="py-0">
-                  <div className="flex items-center gap-2 font-medium mb-2">
-                    <TrendingUp className="h-4 w-4 text-green-500" />
-                    Likely to Improve
-                  </div>
-                  <ul className="space-y-1">
-                    {data.insights.likelyToImprove.map((candidate) => (
-                      <RegressionItem
-                        key={candidate.abbreviation}
-                        candidate={candidate}
-                        season={effectiveSeason}
-                      />
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
-            {data.insights.likelyToRegress.length > 0 && (
-              <Card className="py-3">
-                <CardContent className="py-0">
-                  <div className="flex items-center gap-2 font-medium mb-2">
-                    <TrendingDown className="h-4 w-4 text-red-500" />
-                    Likely to Regress
-                  </div>
-                  <ul className="space-y-1">
-                    {data.insights.likelyToRegress.map((candidate) => (
-                      <RegressionItem
-                        key={candidate.abbreviation}
-                        candidate={candidate}
-                        season={effectiveSeason}
-                      />
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+            <RegressionCard
+              title="Likely to Improve"
+              icon="up"
+              candidates={data.insights.likelyToImprove}
+              season={effectiveSeason}
+            />
+            <RegressionCard
+              title="Likely to Regress"
+              icon="down"
+              candidates={data.insights.likelyToRegress}
+              season={effectiveSeason}
+            />
           </div>
         )}
 
@@ -231,114 +143,120 @@ function PowerRankingsPage() {
         </Card>
       ) : data?.teams && data.teams.length > 0 ? (
         <>
-        <Card className="py-0 gap-0">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Team</TableHead>
-                    <HeaderWithTooltip
-                      label="GP"
-                      tooltip="Games played"
-                      className="text-right"
-                    />
-                    <HeaderWithTooltip
-                      label="W"
-                      tooltip="Wins"
-                      className="text-right"
-                    />
-                    <HeaderWithTooltip
-                      label="L"
-                      tooltip="Losses"
-                      className="text-right"
-                    />
-                    <HeaderWithTooltip
-                      label="OTL"
-                      tooltip="Overtime losses"
-                      className="text-right"
-                    />
-                    <SortHeader
-                      label="Pts"
-                      sortKeyName="points"
-                      tooltip="Points (W×2 + OTL)"
-                      sortKey={sortKey}
-                      sortDesc={sortDesc}
-                      onSort={handleSort}
-                    />
-                    <HeaderWithTooltip
-                      label="GF"
-                      tooltip="Goals for"
-                      className="text-right"
-                    />
-                    <HeaderWithTooltip
-                      label="GA"
-                      tooltip="Goals against"
-                      className="text-right"
-                    />
-                    <SortHeader
-                      label="xG%"
-                      sortKeyName="xGoalsPct"
-                      tooltip="Expected goals percentage (share of expected goals)"
-                      sortKey={sortKey}
-                      sortDesc={sortDesc}
-                      onSort={handleSort}
-                    />
-                    <SortHeader
-                      label="CF%"
-                      sortKeyName="corsiPct"
-                      tooltip="Corsi percentage (shot attempt share)"
-                      sortKey={sortKey}
-                      sortDesc={sortDesc}
-                      onSort={handleSort}
-                    />
-                    <SortHeader
-                      label="PDO"
-                      sortKeyName="pdo"
-                      tooltip="Shooting% + Save% (values near 100 are sustainable)"
-                      sortKey={sortKey}
-                      sortDesc={sortDesc}
-                      onSort={handleSort}
-                    />
-                    <SortHeader
-                      label="Pts±"
-                      sortKeyName="pointsDiff"
-                      tooltip="Points above/below expected (positive = overperforming)"
-                      sortKey={sortKey}
-                      sortDesc={sortDesc}
-                      onSort={handleSort}
-                    />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedTeams.map((team, index) => (
-                    <TeamRow
-                      key={team.abbreviation}
-                      team={team}
-                      rank={index + 1}
-                      season={effectiveSeason}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
+          <Card className="py-0 gap-0">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Team</TableHead>
+                      <HeaderWithTooltip
+                        label="GP"
+                        tooltip="Games played"
+                        className="text-right"
+                      />
+                      <HeaderWithTooltip
+                        label="W"
+                        tooltip="Wins"
+                        className="text-right"
+                      />
+                      <HeaderWithTooltip
+                        label="L"
+                        tooltip="Losses"
+                        className="text-right"
+                      />
+                      <HeaderWithTooltip
+                        label="OTL"
+                        tooltip="Overtime losses"
+                        className="text-right"
+                      />
+                      <SortableTableHeader
+                        label="Pts"
+                        tooltip="Points (W×2 + OTL)"
+                        sortKey="points"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                      />
+                      <HeaderWithTooltip
+                        label="GF"
+                        tooltip="Goals for"
+                        className="text-right"
+                      />
+                      <HeaderWithTooltip
+                        label="GA"
+                        tooltip="Goals against"
+                        className="text-right"
+                      />
+                      <SortableTableHeader
+                        label="xG%"
+                        tooltip="Expected goals percentage (share of expected goals)"
+                        sortKey="xGoalsPct"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                      />
+                      <SortableTableHeader
+                        label="CF%"
+                        tooltip="Corsi percentage (shot attempt share)"
+                        sortKey="corsiPct"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                      />
+                      <SortableTableHeader
+                        label="PDO"
+                        tooltip="Shooting% + Save% (values near 100 are sustainable)"
+                        sortKey="pdo"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                      />
+                      <SortableTableHeader
+                        label="Pts±"
+                        tooltip="Points above/below expected (positive = overperforming)"
+                        sortKey="pointsDiff"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                      />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedTeams.map((team, index) => (
+                      <TeamRow
+                        key={team.abbreviation}
+                        team={team}
+                        rank={index + 1}
+                        season={effectiveSeason}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+          <div className="flex items-center gap-6 mt-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded bg-green-600 dark:bg-green-400" />
+              <span className="text-muted-foreground">
+                Strong / Underperforming (room to improve)
+              </span>
             </div>
-          </CardContent>
-        </Card>
-        <div className="flex items-center gap-6 mt-4 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-green-600 dark:bg-green-400" />
-            <span className="text-muted-foreground">Strong / Underperforming (room to improve)</span>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded bg-muted-foreground" />
+              <span className="text-muted-foreground">
+                Average / Sustainable
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded bg-red-600 dark:bg-red-400" />
+              <span className="text-muted-foreground">
+                Weak / Overperforming (likely to regress)
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-muted-foreground" />
-            <span className="text-muted-foreground">Average / Sustainable</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-red-600 dark:bg-red-400" />
-            <span className="text-muted-foreground">Weak / Overperforming (likely to regress)</span>
-          </div>
-        </div>
         </>
       ) : (
         <Card>
@@ -352,109 +270,5 @@ function PowerRankingsPage() {
         </Card>
       )}
     </div>
-  );
-}
-
-function TeamRow({
-  team,
-  rank,
-  season,
-}: {
-  team: TeamPowerRanking;
-  rank: number;
-  season?: number;
-}) {
-  const pdoColor = team.pdo
-    ? team.pdo > 102
-      ? "text-red-500"
-      : team.pdo < 98
-        ? "text-green-500"
-        : "text-foreground"
-    : "text-muted-foreground";
-
-  const pointsDiffColor =
-    team.pointsDiff > 5
-      ? "text-red-500"
-      : team.pointsDiff < -5
-        ? "text-green-500"
-        : "text-muted-foreground";
-
-  const xgPctColor = team.xGoalsPct
-    ? team.xGoalsPct > 52
-      ? "text-green-500"
-      : team.xGoalsPct < 48
-        ? "text-red-500"
-        : "text-foreground"
-    : "text-muted-foreground";
-
-  const corsiColor = team.corsiPct
-    ? team.corsiPct > 52
-      ? "text-green-500"
-      : team.corsiPct < 48
-        ? "text-red-500"
-        : "text-foreground"
-    : "text-muted-foreground";
-
-  return (
-    <TableRow>
-      <TableCell className="font-medium text-muted-foreground">
-        {rank}
-      </TableCell>
-      <TableCell>
-        <Link
-          to="/teams/$abbrev"
-          params={{ abbrev: team.abbreviation }}
-          search={{ season }}
-          className="hover:underline font-medium"
-        >
-          {team.name}
-        </Link>
-        <span className="text-muted-foreground text-xs ml-2">
-          {team.abbreviation}
-        </span>
-      </TableCell>
-      <TableCell className="text-right">{team.gamesPlayed}</TableCell>
-      <TableCell className="text-right">{team.wins}</TableCell>
-      <TableCell className="text-right">{team.losses}</TableCell>
-      <TableCell className="text-right">{team.otLosses}</TableCell>
-      <TableCell className="text-right font-semibold">{team.points}</TableCell>
-      <TableCell className="text-right">{team.goalsFor}</TableCell>
-      <TableCell className="text-right">{team.goalsAgainst}</TableCell>
-      <TableCell className={`text-right ${xgPctColor}`}>
-        {team.xGoalsPct != null ? formatPercent(team.xGoalsPct, false) : "-"}
-      </TableCell>
-      <TableCell className={`text-right ${corsiColor}`}>
-        {team.corsiPct != null ? formatPercent(team.corsiPct, false) : "-"}
-      </TableCell>
-      <TableCell className={`text-right font-medium ${pdoColor}`}>
-        {team.pdo != null ? team.pdo.toFixed(1) : "-"}
-      </TableCell>
-      <TableCell className={`text-right font-medium ${pointsDiffColor}`}>
-        {team.pointsDiff > 0 ? "+" : ""}
-        {team.pointsDiff}
-      </TableCell>
-    </TableRow>
-  );
-}
-
-function RegressionItem({
-  candidate,
-  season,
-}: {
-  candidate: RegressionCandidate;
-  season?: number;
-}) {
-  return (
-    <li className="text-sm">
-      <Link
-        to="/teams/$abbrev"
-        params={{ abbrev: candidate.abbreviation }}
-        search={{ season }}
-        className="font-medium hover:underline"
-      >
-        {candidate.abbreviation}
-      </Link>
-      <span className="text-muted-foreground">: {candidate.reason}</span>
-    </li>
   );
 }
