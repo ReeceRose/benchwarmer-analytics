@@ -24,12 +24,20 @@ export function Footer() {
             NHL.com
           </a>
         </p>
-        <Link
-          to="/about"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          About
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/glossary"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Glossary
+          </Link>
+          <Link
+            to="/about"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            About
+          </Link>
+        </div>
       </div>
     </footer>
   );
