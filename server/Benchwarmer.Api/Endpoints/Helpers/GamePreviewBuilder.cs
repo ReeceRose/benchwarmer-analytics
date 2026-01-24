@@ -23,21 +23,20 @@ public static class GamePreviewBuilder
             var gameHomeTeam = g.HomeTeam.Abbrev;
             var homeScore = g.HomeTeam.Score ?? 0;
             var awayScore = g.AwayTeam.Score ?? 0;
-            var homeWon = homeScore > awayScore;
+            var gameHomeWon = homeScore > awayScore;
             var isOt = g.PeriodDescriptor?.PeriodType is "OT" or "SO";
 
-            if (gameHomeTeam == homeTeam)
-            {
-                if (homeWon) homeWins++;
-                else if (isOt) otLosses++;
-                else awayWins++;
-            }
+            // Determine if today's home team won this historical game
+            var todayHomeTeamWon = (gameHomeTeam == homeTeam && gameHomeWon) ||
+                                   (gameHomeTeam == awayTeam && !gameHomeWon);
+
+            if (todayHomeTeamWon)
+                homeWins++;
             else
-            {
-                if (homeWon) awayWins++;
-                else if (isOt) otLosses++;
-                else homeWins++;
-            }
+                awayWins++;
+
+            if (isOt)
+                otLosses++;
         }
 
         var lastFive = games.Take(5).Select(g =>

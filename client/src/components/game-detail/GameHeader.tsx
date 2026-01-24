@@ -92,15 +92,13 @@ export function GameHeader({ game, preview }: GameHeaderProps) {
     } = preview.headToHead.season;
     const totalGames = hWins + aWins + overtimeLosses;
     if (totalGames > 0) {
+      const otlSuffix = overtimeLosses > 0 ? `-${overtimeLosses}` : "";
       if (hWins > aWins) {
-        seriesSummary = `${game.home.teamCode} leads ${hWins}-${aWins}`;
+        seriesSummary = `${game.home.teamCode} leads ${hWins}-${aWins}${otlSuffix}`;
       } else if (aWins > hWins) {
-        seriesSummary = `${game.away.teamCode} leads ${aWins}-${hWins}`;
+        seriesSummary = `${game.away.teamCode} leads ${aWins}-${hWins}${otlSuffix}`;
       } else {
-        seriesSummary = `Series tied ${hWins}-${aWins}`;
-      }
-      if (overtimeLosses > 0) {
-        seriesSummary += ` (${overtimeLosses} OT)`;
+        seriesSummary = `Series tied ${hWins}-${aWins}${otlSuffix}`;
       }
     }
   }
