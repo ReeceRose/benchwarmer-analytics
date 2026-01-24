@@ -272,7 +272,7 @@ export function GamesSection() {
           </div>
           <Button variant="ghost" size="sm" asChild>
             <Link to="/games" className="text-muted-foreground hover:text-foreground">
-              See more
+              View all games
               <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </Button>

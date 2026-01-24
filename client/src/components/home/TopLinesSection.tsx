@@ -2,15 +2,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared";
 import { TopLinesCard } from "@/components/home/TopLinesCard";
 import { useTopLines } from "@/hooks";
-import type { Situation } from "@/types";
 
 interface TopLinesSectionProps {
   season?: number;
-  situation?: Situation;
 }
 
-export function TopLinesSection({ season, situation }: TopLinesSectionProps) {
-  const { data, isLoading, error, refetch } = useTopLines(season, situation);
+export function TopLinesSection({ season }: TopLinesSectionProps) {
+  const { data, isLoading, error, refetch } = useTopLines(season, "5on5");
 
   if (error) {
     return (

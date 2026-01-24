@@ -89,7 +89,7 @@ function HomePage() {
       <OutliersSectionWrapper season={effectiveSeason} situation={situation} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <TopLinesSection season={effectiveSeason} situation={situation} />
+        <TopLinesSection season={effectiveSeason} />
         <TeamGrid />
       </div>
     </div>
