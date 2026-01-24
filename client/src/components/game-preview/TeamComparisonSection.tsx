@@ -1,3 +1,4 @@
+import { formatPercent } from "@/lib/formatters";
 import type { TeamComparison } from "@/types";
 
 interface TeamComparisonSectionProps {
@@ -24,7 +25,7 @@ function ComparisonBar({
 
   const formatValue = (val: number | null) => {
     if (val === null) return "-";
-    if (format === "percent") return `${val.toFixed(1)}%`;
+    if (format === "percent") return formatPercent(val, false);
     return val.toFixed(2);
   };
 

@@ -9,10 +9,11 @@ import {
   formatPeriod,
   getSeasonFromDate,
 } from "@/lib/game-formatters";
-import type { GameSummary, GameGoal } from "@/types";
+import type { GameSummary, GameGoal, GamePreview } from "@/types";
 
 interface GameHeaderProps {
   game: GameSummary;
+  preview?: GamePreview;
 }
 
 function DetailedGoalsList({
@@ -64,7 +65,7 @@ function DetailedGoalsList({
   );
 }
 
-export function GameHeader({ game }: GameHeaderProps) {
+export function GameHeader({ game, preview }: GameHeaderProps) {
   const isCompleted = game.gameState === "OFF";
   const isLive = game.gameState === "LIVE" || game.gameState === "CRIT";
   const homeWins =
@@ -72,6 +73,37 @@ export function GameHeader({ game }: GameHeaderProps) {
   const awayWins =
     isCompleted && (game.away.goals ?? 0) > (game.home.goals ?? 0);
   const season = getSeasonFromDate(game.gameDate);
+
+  // Get streak/L10/record data from game data (preferred) or preview (fallback)
+  const homeStreak = game.home.streak ?? preview?.teamComparison.home.streak;
+  const awayStreak = game.away.streak ?? preview?.teamComparison.away.streak;
+  const homeLast10 = game.home.last10 ?? preview?.teamComparison.home.last10;
+  const awayLast10 = game.away.last10 ?? preview?.teamComparison.away.last10;
+  const homeRecord = game.home.homeRecord ?? preview?.teamComparison.home.homeRecord;
+  const awayRoadRecord = game.away.roadRecord ?? preview?.teamComparison.away.roadRecord;
+
+  // Build series summary from game data or preview head-to-head
+  let seriesSummary = game.seasonSeries ?? "";
+  if (!seriesSummary && preview?.headToHead.season) {
+    const {
+      homeWins: hWins,
+      awayWins: aWins,
+      overtimeLosses,
+    } = preview.headToHead.season;
+    const totalGames = hWins + aWins + overtimeLosses;
+    if (totalGames > 0) {
+      if (hWins > aWins) {
+        seriesSummary = `${game.home.teamCode} leads ${hWins}-${aWins}`;
+      } else if (aWins > hWins) {
+        seriesSummary = `${game.away.teamCode} leads ${aWins}-${hWins}`;
+      } else {
+        seriesSummary = `Series tied ${hWins}-${aWins}`;
+      }
+      if (overtimeLosses > 0) {
+        seriesSummary += ` (${overtimeLosses} OT)`;
+      }
+    }
+  }
 
   return (
     <Card className="p-6">
@@ -120,6 +152,11 @@ export function GameHeader({ game }: GameHeaderProps) {
             <div className="text-sm text-muted-foreground">
               {game.away.teamName}
             </div>
+            {(awayRoadRecord || game.away.record) && (
+              <div className="text-xs text-muted-foreground">
+                ({awayRoadRecord ? `${awayRoadRecord} away` : game.away.record})
+              </div>
+            )}
           </Link>
 
           <div className="flex items-center gap-4">
@@ -148,6 +185,11 @@ export function GameHeader({ game }: GameHeaderProps) {
             <div className="text-sm text-muted-foreground">
               {game.home.teamName}
             </div>
+            {(homeRecord || game.home.record) && (
+              <div className="text-xs text-muted-foreground">
+                ({homeRecord ? `${homeRecord} home` : game.home.record})
+              </div>
+            )}
           </Link>
         </div>
 
@@ -155,6 +197,32 @@ export function GameHeader({ game }: GameHeaderProps) {
           {formatGameDateLong(game.gameDate)}
           {game.startTimeUtc && ` • ${formatGameTime(game.startTimeUtc)}`}
         </div>
+
+        {seriesSummary && (
+          <div className="text-sm text-muted-foreground">{seriesSummary}</div>
+        )}
+
+        {(awayStreak || homeStreak) && (
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <span>
+              {game.away.teamCode}: {awayStreak}
+              {awayLast10 && (
+                <span className="text-muted-foreground/70 ml-2">
+                  L10: {awayLast10}
+                </span>
+              )}
+            </span>
+            <span className="text-muted-foreground/30">|</span>
+            <span>
+              {game.home.teamCode}: {homeStreak}
+              {homeLast10 && (
+                <span className="text-muted-foreground/70 ml-2">
+                  L10: {homeLast10}
+                </span>
+              )}
+            </span>
+          </div>
+        )}
 
         {game.periods.length > 0 && (
           <div className="flex items-center justify-center gap-4 pt-2 border-t">

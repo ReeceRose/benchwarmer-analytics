@@ -178,6 +178,102 @@ namespace Benchwarmer.Data.Migrations
                     b.ToTable("games");
                 });
 
+            modelBuilder.Entity("Benchwarmer.Data.Entities.GoalieGame", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Decision")
+                        .HasColumnType("text")
+                        .HasColumnName("decision");
+
+                    b.Property<decimal?>("ExpectedGoalsAgainst")
+                        .HasColumnType("numeric")
+                        .HasColumnName("expected_goals_against");
+
+                    b.Property<DateOnly>("GameDate")
+                        .HasColumnType("date")
+                        .HasColumnName("game_date");
+
+                    b.Property<string>("GameId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("game_id");
+
+                    b.Property<int>("GoalsAgainst")
+                        .HasColumnType("integer")
+                        .HasColumnName("goals_against");
+
+                    b.Property<decimal?>("GoalsSavedAboveExpected")
+                        .HasColumnType("numeric")
+                        .HasColumnName("goals_saved_above_expected");
+
+                    b.Property<int>("IceTimeSeconds")
+                        .HasColumnType("integer")
+                        .HasColumnName("ice_time_seconds");
+
+                    b.Property<bool>("IsHome")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_home");
+
+                    b.Property<bool>("IsStarter")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_starter");
+
+                    b.Property<string>("Opponent")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("opponent");
+
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("integer")
+                        .HasColumnName("player_id");
+
+                    b.Property<decimal?>("SavePercentage")
+                        .HasColumnType("numeric")
+                        .HasColumnName("save_percentage");
+
+                    b.Property<int>("Saves")
+                        .HasColumnType("integer")
+                        .HasColumnName("saves");
+
+                    b.Property<int>("Season")
+                        .HasColumnType("integer")
+                        .HasColumnName("season");
+
+                    b.Property<int>("ShotsAgainst")
+                        .HasColumnType("integer")
+                        .HasColumnName("shots_against");
+
+                    b.Property<string>("Team")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("team");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId", "GameId")
+                        .IsUnique();
+
+                    b.HasIndex("PlayerId", "Season", "GameDate");
+
+                    b.HasIndex("Team", "Season", "GameDate");
+
+                    b.ToTable("goalie_games");
+                });
+
             modelBuilder.Entity("Benchwarmer.Data.Entities.GoalieSeason", b =>
                 {
                     b.Property<int>("Id")
@@ -1624,6 +1720,17 @@ namespace Benchwarmer.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("team_seasons");
+                });
+
+            modelBuilder.Entity("Benchwarmer.Data.Entities.GoalieGame", b =>
+                {
+                    b.HasOne("Benchwarmer.Data.Entities.Player", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
                 });
 
             modelBuilder.Entity("Benchwarmer.Data.Entities.GoalieSeason", b =>

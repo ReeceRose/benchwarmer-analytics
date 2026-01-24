@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Star, Target, TrendingUp, BarChart3, Clock, ChevronRight, Shield, Goal, Sparkles } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { formatToi } from "@/lib/formatters";
+import { formatToi, formatSavePct, formatPercent } from "@/lib/formatters";
 import type { Leaderboards, GoalieLeaderboards, LeaderEntry } from "@/types";
 
 interface LeaderCardProps {
@@ -44,20 +44,20 @@ function LeaderCard({ title, icon, leaders, formatValue }: LeaderCardProps) {
             key={player.playerId}
             to="/players/$id"
             params={{ id: player.playerId.toString() }}
-            className="flex items-center justify-between py-1 hover:bg-muted/50 rounded px-1 -mx-1 transition-colors"
+            className="flex items-center justify-between gap-3 py-1 hover:bg-muted/50 rounded px-1 -mx-1 transition-colors"
           >
-            <span className="flex items-center gap-2">
-              <span className="text-muted-foreground font-mono text-xs w-4">
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="text-muted-foreground font-mono text-xs w-4 shrink-0">
                 {index + 1}.
               </span>
-              <span className="font-medium text-sm">{player.name}</span>
+              <span className="font-medium text-sm truncate">{player.name}</span>
               {player.team && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground shrink-0">
                   ({player.team})
                 </span>
               )}
             </span>
-            <span className="font-mono text-sm tabular-nums">
+            <span className="font-mono text-sm tabular-nums shrink-0">
               {formatValue(player.value)}
             </span>
           </Link>
@@ -70,10 +70,6 @@ function LeaderCard({ title, icon, leaders, formatValue }: LeaderCardProps) {
 interface LeaderStripProps {
   leaders: Leaderboards;
   goalieLeaders?: GoalieLeaderboards;
-}
-
-function formatSavePct(value: number): string {
-  return value >= 1 ? value.toFixed(3) : `.${(value * 1000).toFixed(0)}`;
 }
 
 function formatGaa(value: number): string {
@@ -112,7 +108,7 @@ export function LeaderStrip({ leaders, goalieLeaders }: LeaderStripProps) {
       title: "Corsi %",
       icon: <BarChart3 className="h-4 w-4 text-muted-foreground" />,
       data: leaders.corsiPct,
-      format: (v: number) => `${v.toFixed(1)}%`,
+      format: (v: number) => formatPercent(v, true),
     },
     {
       key: "iceTime",

@@ -37,7 +37,7 @@ function HomePage() {
 
   // Derive state from URL params with defaults
   const season = search.season;
-  const situation = (search.situation as Situation) || "5on5";
+  const situation = (search.situation as Situation) || "all";
 
   // Use default season from API if not set
   const effectiveSeason = season ?? defaultSeason;
@@ -99,6 +99,7 @@ function HomePage() {
 
       {!error && (
         <>
+          {effectiveSeason === defaultSeason && <GamesSection />}
           <section>
             <h2 className="text-lg font-semibold mb-3">League Leaders</h2>
             {isLoading ? (
@@ -114,8 +115,6 @@ function HomePage() {
               />
             ) : null}
           </section>
-
-          <GamesSection />
 
           <section className="space-y-4">
             {isLoading ? (

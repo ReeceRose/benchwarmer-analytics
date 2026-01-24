@@ -7,8 +7,16 @@ import {
   GameBoxscoreTable,
   GameBoxscoreTableSkeleton,
 } from "@/components/game-detail";
-import { GamePreviewCard, GamePreviewSkeleton } from "@/components/game-preview";
-import { useGame, useGameBoxscore, useGamePreview } from "@/hooks";
+import {
+  GamePreviewCard,
+  GamePreviewSkeleton,
+} from "@/components/game-preview";
+import {
+  useGame,
+  useGameBoxscore,
+  useGamePreview,
+  useGoalieRecentForm,
+} from "@/hooks";
 
 export const Route = createFileRoute("/games/$gameId")({
   component: GameDetailPage,
@@ -24,10 +32,16 @@ function getSeasonFromDate(dateStr: string): number {
 function GameDetailPage() {
   const router = useRouter();
   const { gameId } = Route.useParams();
-  const { data: game, isLoading: gameLoading, error: gameError, refetch } = useGame(gameId);
+  const {
+    data: game,
+    isLoading: gameLoading,
+    error: gameError,
+    refetch,
+  } = useGame(gameId);
 
   // Determine if this is a future game (show preview) or completed/live (show boxscore)
   const isFutureGame = game?.gameState === "FUT" || game?.gameState === "PRE";
+  const isLive = game?.gameState === "LIVE" || game?.gameState === "CRIT";
   const isCompletedOrLive = game && !isFutureGame;
 
   // Only fetch boxscore for completed/live games
@@ -35,12 +49,21 @@ function GameDetailPage() {
     isCompletedOrLive ? gameId : undefined
   );
 
-  // Only fetch preview for future games
-  const { data: previewData, isLoading: previewLoading, error: previewError } = useGamePreview(
+  // Fetch preview for future games AND live games (for series/streak data)
+  const {
+    data: previewData,
+    isLoading: previewLoading,
+    error: previewError,
+  } = useGamePreview(isFutureGame || isLive ? gameId : undefined);
+
+  // Fetch goalie recent form separately (allows preview to load faster)
+  const { data: goalieFormData } = useGoalieRecentForm(
     isFutureGame ? gameId : undefined
   );
 
-  const season = game ? getSeasonFromDate(game.gameDate) : new Date().getFullYear();
+  const season = game
+    ? getSeasonFromDate(game.gameDate)
+    : new Date().getFullYear();
 
   const handleBack = () => {
     router.history.back();
@@ -75,29 +98,37 @@ function GameDetailPage() {
         Back to Games
       </button>
 
-      {/* Future Game: Show Preview */}
-      {isFutureGame && (
-        gameLoading || previewLoading ? (
+      {isFutureGame &&
+        (gameLoading || previewLoading ? (
           <GamePreviewSkeleton />
         ) : previewData ? (
-          <GamePreviewCard preview={previewData} />
+          <GamePreviewCard
+            preview={previewData}
+            goalieRecentForm={goalieFormData}
+          />
         ) : previewError ? (
           <ErrorState
             title="Failed to load preview"
             message="Could not fetch game preview data."
             onRetry={() => refetch()}
           />
-        ) : null
-      )}
+        ) : null)}
 
-      {/* Completed/Live Game: Show Boxscore */}
       {isCompletedOrLive && (
         <>
-          {gameLoading ? <GameHeaderSkeleton /> : <GameHeader game={game} />}
+          {gameLoading ? (
+            <GameHeaderSkeleton />
+          ) : (
+            <GameHeader game={game} preview={previewData} />
+          )}
           {boxscoreLoading ? (
             <GameBoxscoreTableSkeleton />
           ) : boxscoreData ? (
-            <GameBoxscoreTable boxscoreData={boxscoreData} season={season} goals={game.goals} />
+            <GameBoxscoreTable
+              boxscoreData={boxscoreData}
+              season={season}
+              goals={game.goals}
+            />
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               Box score not available for this game.
@@ -106,7 +137,6 @@ function GameDetailPage() {
         </>
       )}
 
-      {/* Loading state when we don't know the game state yet */}
       {gameLoading && !game && <GameHeaderSkeleton />}
     </div>
   );

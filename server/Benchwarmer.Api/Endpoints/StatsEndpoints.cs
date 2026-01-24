@@ -1,4 +1,5 @@
 using Benchwarmer.Api.Dtos;
+using Benchwarmer.Api.Endpoints.Helpers;
 using Benchwarmer.Data.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -100,10 +101,7 @@ public static class StatsEndpoints
         IStatsRepository statsRepository,
         CancellationToken cancellationToken)
     {
-        // Default to current season (year of current date, or previous year if before October)
-        var now = DateTime.Now;
-        var defaultSeason = now.Month >= 10 ? now.Year : now.Year - 1;
-        var effectiveSeason = season ?? defaultSeason;
+        var effectiveSeason = season ?? StatsMappers.GetDefaultSeason();
         var effectiveSituation = situation ?? "5on5";
 
         var stats = await statsRepository.GetHomepageStatsAsync(
@@ -159,9 +157,7 @@ public static class StatsEndpoints
         ISkaterStatsRepository statsRepository,
         CancellationToken cancellationToken)
     {
-        var now = DateTime.Now;
-        var defaultSeason = now.Month >= 10 ? now.Year : now.Year - 1;
-        var effectiveSeason = season ?? defaultSeason;
+        var effectiveSeason = season ?? StatsMappers.GetDefaultSeason();
         var effectiveMinGames = minGames ?? 20;
         var effectiveLimit = Math.Clamp(limit ?? 50, 1, 100);
 
@@ -187,7 +183,7 @@ public static class StatsEndpoints
             c.IceTimeSeconds > 0
                 ? Math.Round((decimal)c.Shots / c.IceTimeSeconds * 3600, 2)
                 : 0, // Shots per 60
-            CalculateBreakoutScore(c)
+            StatsMappers.CalculateBreakoutScore(c)
         )).ToList();
 
         return Results.Ok(new BreakoutCandidatesDto(
@@ -195,20 +191,6 @@ public static class StatsEndpoints
             effectiveMinGames,
             candidateDtos
         ));
-    }
-
-    private static decimal CalculateBreakoutScore(Data.Entities.SkaterSeason stats)
-    {
-        // Breakout score: combination of xG differential, CF%, and shot rate
-        // Higher score = more likely to break out
-        var xgDiff = (stats.ExpectedGoals ?? 0) - stats.Goals;
-        var corsiBonus = ((stats.CorsiForPct ?? 50) - 50) / 10; // +/- based on CF%
-        var shotRate = stats.IceTimeSeconds > 0
-            ? (decimal)stats.Shots / stats.IceTimeSeconds * 3600
-            : 0;
-        var shotBonus = (shotRate - 7) / 3; // Average shot rate ~7/60, bonus/penalty
-
-        return Math.Round(xgDiff + corsiBonus + shotBonus, 2);
     }
 
     private static async Task<IResult> GetAgeCurves(

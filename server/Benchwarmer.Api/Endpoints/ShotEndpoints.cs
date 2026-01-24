@@ -1,11 +1,11 @@
 using Benchwarmer.Api.Dtos;
+using Benchwarmer.Api.Endpoints.Helpers;
 using Benchwarmer.Data.Repositories;
 
 namespace Benchwarmer.Api.Endpoints;
 
 public static class ShotEndpoints
 {
-    private static readonly string[] ValidShotTypes = ["WRIST", "SLAP", "SNAP", "BACKHAND", "TIP", "WRAP", "DEFLECTED"];
 
     public static void MapShotEndpoints(this IEndpointRouteBuilder app)
     {
@@ -69,8 +69,6 @@ public static class ShotEndpoints
             .CacheOutput(CachePolicies.TeamData);
     }
 
-    private static readonly string[] ValidScoreStates = ["leading", "trailing", "tied"];
-
     private static async Task<IResult> GetTeamShots(
         string abbrev,
         int season,
@@ -86,15 +84,15 @@ public static class ShotEndpoints
         CancellationToken cancellationToken)
     {
         // Validate shot type
-        if (shotType != null && !ValidShotTypes.Contains(shotType.ToUpperInvariant()))
+        if (shotType != null && !ShotMappers.ValidShotTypes.Contains(shotType.ToUpperInvariant()))
         {
-            return Results.BadRequest(ApiError.InvalidShotType(ValidShotTypes));
+            return Results.BadRequest(ApiError.InvalidShotType(ShotMappers.ValidShotTypes));
         }
 
         // Validate score state
-        if (scoreState != null && !ValidScoreStates.Contains(scoreState.ToLowerInvariant()))
+        if (scoreState != null && !ShotMappers.ValidScoreStates.Contains(scoreState.ToLowerInvariant()))
         {
-            return Results.BadRequest(new ApiError("InvalidScoreState", $"Invalid score state. Valid values: {string.Join(", ", ValidScoreStates)}"));
+            return Results.BadRequest(new ApiError("InvalidScoreState", $"Invalid score state. Valid values: {string.Join(", ", ShotMappers.ValidScoreStates)}"));
         }
 
         // If no limit specified, return all shots (null passes through to repository)
@@ -120,55 +118,10 @@ public static class ShotEndpoints
         // Filter goals only if requested (done in memory since repo doesn't support this filter)
         var filteredShots = goalsOnly == true
             ? shots.Where(s => s.IsGoal).ToList()
-            : shots;
+            : shots.ToList();
 
-        var shotDtos = filteredShots.Select(s => new ShotDto(
-            s.ShotId,
-            s.ShooterPlayerId,
-            s.ShooterName,
-            s.ShooterPosition,
-            s.Period,
-            s.GameTimeSeconds,
-            s.ArenaAdjustedXCoord,
-            s.ArenaAdjustedYCoord,
-            s.ShotDistance,
-            s.ShotAngle,
-            s.ShotType,
-            s.IsGoal,
-            s.ShotWasOnGoal,
-            s.ShotOnEmptyNet,
-            s.ShotRebound,
-            s.ShotRush,
-            s.XGoal,
-            s.HomeSkatersOnIce,
-            s.AwaySkatersOnIce,
-            s.GameId
-        )).ToList();
-
-        // Calculate summary statistics
-        var totalShots = filteredShots.Count;
-        var goals = filteredShots.Count(s => s.IsGoal);
-        var shotsOnGoal = filteredShots.Count(s => s.ShotWasOnGoal);
-        var shootingPct = totalShots > 0 ? Math.Round((decimal)goals / totalShots * 100, 1) : 0;
-        var totalXGoal = filteredShots.Sum(s => s.XGoal ?? 0);
-        var goalsAboveExpected = Math.Round(goals - totalXGoal, 2);
-
-        // Danger classification based on xG thresholds
-        var highDanger = filteredShots.Count(s => s.XGoal > 0.15m);
-        var mediumDanger = filteredShots.Count(s => s.XGoal >= 0.06m && s.XGoal <= 0.15m);
-        var lowDanger = filteredShots.Count(s => s.XGoal < 0.06m);
-
-        var summary = new ShotSummaryDto(
-            totalShots,
-            goals,
-            shotsOnGoal,
-            shootingPct,
-            Math.Round(totalXGoal, 2),
-            goalsAboveExpected,
-            highDanger,
-            mediumDanger,
-            lowDanger
-        );
+        var shotDtos = ShotMappers.MapToDto(filteredShots);
+        var summary = ShotMappers.CalculateSummary(filteredShots);
 
         return Results.Ok(new TeamShotsResponseDto(abbrev, season, playoffs, shotDtos, summary));
     }
@@ -203,23 +156,11 @@ public static class ShotEndpoints
         var shooterStats = shots
             .Where(s => s.ShooterPlayerId.HasValue)
             .GroupBy(s => new { s.ShooterPlayerId, s.ShooterName, s.ShooterPosition })
-            .Select(g =>
-            {
-                var shotCount = g.Count();
-                var goalCount = g.Count(s => s.IsGoal);
-                var totalXGoal = g.Sum(s => s.XGoal ?? 0);
-
-                return new ShooterStatsDto(
-                    g.Key.ShooterPlayerId!.Value,
-                    g.Key.ShooterName ?? "Unknown",
-                    g.Key.ShooterPosition,
-                    shotCount,
-                    goalCount,
-                    shotCount > 0 ? Math.Round((decimal)goalCount / shotCount * 100, 1) : 0,
-                    Math.Round(totalXGoal, 2),
-                    Math.Round(goalCount - totalXGoal, 2)
-                );
-            })
+            .Select(g => ShotMappers.CalculateShooterStats(
+                g.Key.ShooterPlayerId!.Value,
+                g.Key.ShooterName ?? "Unknown",
+                g.Key.ShooterPosition,
+                g))
             .OrderByDescending(s => s.Shots)
             .ToList();
 
@@ -240,15 +181,15 @@ public static class ShotEndpoints
         CancellationToken cancellationToken)
     {
         // Validate shot type
-        if (shotType != null && !ValidShotTypes.Contains(shotType.ToUpperInvariant()))
+        if (shotType != null && !ShotMappers.ValidShotTypes.Contains(shotType.ToUpperInvariant()))
         {
-            return Results.BadRequest(ApiError.InvalidShotType(ValidShotTypes));
+            return Results.BadRequest(ApiError.InvalidShotType(ShotMappers.ValidShotTypes));
         }
 
         // Validate score state
-        if (scoreState != null && !ValidScoreStates.Contains(scoreState.ToLowerInvariant()))
+        if (scoreState != null && !ShotMappers.ValidScoreStates.Contains(scoreState.ToLowerInvariant()))
         {
-            return Results.BadRequest(new ApiError("InvalidScoreState", $"Invalid score state. Valid values: {string.Join(", ", ValidScoreStates)}"));
+            return Results.BadRequest(new ApiError("InvalidScoreState", $"Invalid score state. Valid values: {string.Join(", ", ShotMappers.ValidScoreStates)}"));
         }
 
         var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
@@ -270,55 +211,10 @@ public static class ShotEndpoints
         // Filter goals only if requested
         var filteredShots = goalsOnly == true
             ? shots.Where(s => s.IsGoal).ToList()
-            : shots;
+            : shots.ToList();
 
-        var shotDtos = filteredShots.Select(s => new ShotDto(
-            s.ShotId,
-            s.ShooterPlayerId,
-            s.ShooterName,
-            s.ShooterPosition,
-            s.Period,
-            s.GameTimeSeconds,
-            s.ArenaAdjustedXCoord,
-            s.ArenaAdjustedYCoord,
-            s.ShotDistance,
-            s.ShotAngle,
-            s.ShotType,
-            s.IsGoal,
-            s.ShotWasOnGoal,
-            s.ShotOnEmptyNet,
-            s.ShotRebound,
-            s.ShotRush,
-            s.XGoal,
-            s.HomeSkatersOnIce,
-            s.AwaySkatersOnIce,
-            s.GameId
-        )).ToList();
-
-        // Calculate summary statistics
-        var totalShots = filteredShots.Count;
-        var goals = filteredShots.Count(s => s.IsGoal);
-        var shotsOnGoal = filteredShots.Count(s => s.ShotWasOnGoal);
-        var shootingPct = totalShots > 0 ? Math.Round((decimal)goals / totalShots * 100, 1) : 0;
-        var totalXGoal = filteredShots.Sum(s => s.XGoal ?? 0);
-        var goalsAboveExpected = Math.Round(goals - totalXGoal, 2);
-
-        // Danger classification based on xG thresholds
-        var highDanger = filteredShots.Count(s => s.XGoal > 0.15m);
-        var mediumDanger = filteredShots.Count(s => s.XGoal >= 0.06m && s.XGoal <= 0.15m);
-        var lowDanger = filteredShots.Count(s => s.XGoal < 0.06m);
-
-        var summary = new ShotSummaryDto(
-            totalShots,
-            goals,
-            shotsOnGoal,
-            shootingPct,
-            Math.Round(totalXGoal, 2),
-            goalsAboveExpected,
-            highDanger,
-            mediumDanger,
-            lowDanger
-        );
+        var shotDtos = ShotMappers.MapToDto(filteredShots);
+        var summary = ShotMappers.CalculateSummary(filteredShots);
 
         return Results.Ok(new TeamShotsResponseDto(abbrev, season, playoffs, shotDtos, summary));
     }

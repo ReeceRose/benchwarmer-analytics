@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import {
   AreaChart,
   Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -21,7 +23,12 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Activity, TrendingDown, Calendar } from "lucide-react";
 import { useGoalieWorkload } from "@/hooks";
 import { CHART_AXIS_COLORS, CHART_GRADIENT_COLORS } from "@/lib/chart-colors";
-import type { GoalieGameStats, WorkloadWindow, BackToBackSplits } from "@/types";
+import { formatSavePct } from "@/lib/formatters";
+import type {
+  GoalieGameStats,
+  WorkloadWindow,
+  BackToBackSplits,
+} from "@/types";
 
 interface GoalieWorkloadMonitorProps {
   playerId: number;
@@ -56,7 +63,7 @@ export function GoalieWorkloadMonitor({
       date: game.gameDate,
       opponent: game.opponent,
       shotsAgainst: game.shotsAgainst,
-      savePercentage: game.savePercentage * 100,
+      savePercentage: game.savePercentage,
       gsax: game.goalsSavedAboveExpected,
       isB2B: game.isBackToBack,
     }));
@@ -134,14 +141,12 @@ export function GoalieWorkloadMonitor({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Workload Windows Summary */}
         <div className="grid grid-cols-3 gap-4">
           <WorkloadWindowCard window={data.last7Days} />
           <WorkloadWindowCard window={data.last14Days} />
           <WorkloadWindowCard window={data.last30Days} />
         </div>
 
-        {/* Shots Against Trend Chart */}
         <div>
           <h4 className="text-sm font-medium mb-2">Shots Against Trend</h4>
           <div className="h-40">
@@ -152,8 +157,16 @@ export function GoalieWorkloadMonitor({
               >
                 <defs>
                   <linearGradient id="saGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={CHART_GRADIENT_COLORS.danger} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={CHART_GRADIENT_COLORS.danger} stopOpacity={0} />
+                    <stop
+                      offset="5%"
+                      stopColor={CHART_GRADIENT_COLORS.danger}
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={CHART_GRADIENT_COLORS.danger}
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
@@ -187,7 +200,7 @@ export function GoalieWorkloadMonitor({
                           <span className="text-muted-foreground">SA:</span>
                           <span>{d.shotsAgainst}</span>
                           <span className="text-muted-foreground">SV%:</span>
-                          <span>{d.savePercentage.toFixed(1)}%</span>
+                          <span>{formatSavePct(d.savePercentage)}</span>
                           <span className="text-muted-foreground">GSAx:</span>
                           <span>{d.gsax.toFixed(2)}</span>
                         </div>
@@ -218,7 +231,105 @@ export function GoalieWorkloadMonitor({
           </div>
         </div>
 
-        {/* Back-to-Back Splits */}
+        <div>
+          <h4 className="text-sm font-medium mb-2">Save Percentage Trend</h4>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient
+                    id="svPctGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor={CHART_GRADIENT_COLORS.primary}
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={CHART_GRADIENT_COLORS.primary}
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={CHART_AXIS_COLORS.grid}
+                  strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                />
+                <XAxis
+                  dataKey="game"
+                  tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 10 }}
+                  tickFormatter={(v) => `G${v}`}
+                  stroke={CHART_AXIS_COLORS.grid}
+                  strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                />
+                <YAxis
+                  tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 10 }}
+                  width={45}
+                  domain={[0.85, 1.0]}
+                  tickFormatter={(v) => v.toFixed(3)}
+                  stroke={CHART_AXIS_COLORS.grid}
+                  strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+                        <p className="font-semibold">
+                          vs {d.opponent} {d.isB2B && "(B2B)"}
+                        </p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-xs">
+                          <span className="text-muted-foreground">SV%:</span>
+                          <span className="font-medium">
+                            {formatSavePct(d.savePercentage)}
+                          </span>
+                          <span className="text-muted-foreground">SA:</span>
+                          <span>{d.shotsAgainst}</span>
+                          <span className="text-muted-foreground">GSAx:</span>
+                          <span>{d.gsax.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <ReferenceLine
+                  y={0.91}
+                  stroke={CHART_AXIS_COLORS.tick}
+                  strokeDasharray="5 5"
+                  label={{
+                    value: "Avg (.910)",
+                    position: "right",
+                    fontSize: 9,
+                    fill: CHART_AXIS_COLORS.tick,
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="savePercentage"
+                  stroke={CHART_GRADIENT_COLORS.primary}
+                  strokeWidth={2}
+                  dot={{
+                    fill: CHART_GRADIENT_COLORS.primary,
+                    strokeWidth: 0,
+                    r: 3,
+                  }}
+                  activeDot={{ r: 5, strokeWidth: 0 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         {data.backToBackSplits.backToBackGames > 0 && (
           <div>
             <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
@@ -257,14 +368,16 @@ function WorkloadWindowCard({ window }: { window: WorkloadWindow }) {
       <div className="mt-2 text-xs">
         <span className="text-muted-foreground">Avg SA: </span>
         <span
-          className={window.avgShotsAgainstPerGame > 30 ? "text-orange-500" : ""}
+          className={
+            window.avgShotsAgainstPerGame > 30 ? "text-orange-500" : ""
+          }
         >
           {window.avgShotsAgainstPerGame.toFixed(1)}
         </span>
       </div>
       <div className="text-xs">
         <span className="text-muted-foreground">SV%: </span>
-        <span>{(window.avgSavePercentage * 100).toFixed(1)}%</span>
+        <span>{formatSavePct(window.avgSavePercentage)}</span>
       </div>
     </div>
   );
@@ -282,7 +395,7 @@ function BackToBackSplitsDisplay({ splits }: { splits: BackToBackSplits }) {
           Back-to-Back ({splits.backToBackGames} games)
         </div>
         <div className="text-lg font-semibold">
-          {(splits.backToBackSavePercentage * 100).toFixed(1)}% SV%
+          {formatSavePct(splits.backToBackSavePercentage)} SV%
         </div>
         <div className="text-xs text-muted-foreground">
           {splits.backToBackGAA.toFixed(2)} GAA
@@ -294,7 +407,7 @@ function BackToBackSplitsDisplay({ splits }: { splits: BackToBackSplits }) {
           With Rest ({splits.nonBackToBackGames} games)
         </div>
         <div className="text-lg font-semibold">
-          {(splits.nonBackToBackSavePercentage * 100).toFixed(1)}% SV%
+          {formatSavePct(splits.nonBackToBackSavePercentage)} SV%
         </div>
         <div className="text-xs text-muted-foreground">
           {splits.nonBackToBackGAA.toFixed(2)} GAA

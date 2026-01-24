@@ -18,6 +18,8 @@ export interface GameSummary {
   timeRemaining?: string | null;
   inIntermission?: boolean | null;
   goals?: GameGoal[] | null;
+  // Head-to-head context
+  seasonSeries?: string | null;
 }
 
 export interface GameTeam {
@@ -34,6 +36,11 @@ export interface GameTeam {
   avgShotDistance: number | null;
   // Live game fields
   record?: string | null;
+  // Standings context fields
+  streak?: string | null;
+  homeRecord?: string | null;
+  roadRecord?: string | null;
+  last10?: string | null;
 }
 
 export interface PeriodStats {
@@ -149,6 +156,11 @@ export interface TeamPreviewStats {
   corsiPct: number | null;
   powerPlayPct: number | null;
   penaltyKillPct: number | null;
+  // Team record fields from NHL standings
+  streak: string | null;
+  homeRecord: string | null;
+  roadRecord: string | null;
+  last10: string | null;
 }
 
 export interface HotPlayers {
@@ -179,4 +191,19 @@ export interface GoaliePreview {
   savePct: number | null;
   goalsAgainstAvg: number | null;
   goalsSavedAboveExpected: number | null;
+}
+
+// Separate type for goalie recent form (fetched on-demand)
+export interface GoalieRecentForm {
+  playerId: number;
+  name: string;
+  gamesPlayed: number;
+  savePct: number | null;
+  shotsAgainst: number;
+  goalsAgainst: number;
+}
+
+export interface GoalieRecentFormResponse {
+  home: GoalieRecentForm[];
+  away: GoalieRecentForm[];
 }

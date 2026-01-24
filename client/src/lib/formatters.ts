@@ -2,7 +2,8 @@
  * Format ice time seconds to MM:SS format
  * @example formatToi(754) => "12:34"
  */
-export function formatToi(seconds: number): string {
+export function formatToi(seconds: number | null | undefined): string {
+  if (seconds == null) return "-";
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -125,4 +126,31 @@ export function formatPer60(
   if (stat == null || iceTimeSeconds == null || iceTimeSeconds === 0) return "-";
   const per60 = (stat / iceTimeSeconds) * 3600;
   return per60.toFixed(2);
+}
+
+/**
+ * Format save percentage in hockey style notation
+ * @example formatSavePct(0.915) => ".915"
+ * @example formatSavePct(0.8912) => ".891"
+ * @example formatSavePct(1.0) => "1.000"
+ */
+export function formatSavePct(value: number | null | undefined): string {
+  if (value == null) return "-";
+  if (value >= 1) return value.toFixed(3);
+  return `.${(value * 1000).toFixed(0).padStart(3, "0")}`;
+}
+
+/**
+ * Format ice time seconds to human-readable long format (hours/minutes)
+ * @example formatIceTimeLong(7200) => "2h 0m"
+ * @example formatIceTimeLong(1800) => "30m"
+ */
+export function formatIceTimeLong(seconds: number | null | undefined): string {
+  if (seconds == null) return "-";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
 }

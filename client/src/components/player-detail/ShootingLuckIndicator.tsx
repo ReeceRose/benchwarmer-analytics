@@ -4,6 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatPercent } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 interface ShootingLuckIndicatorProps {
@@ -104,10 +105,10 @@ export function ShootingLuckIndicator({
                 {diff.toFixed(1)} goals
               </span>
               <span className="text-muted-foreground">Shooting %:</span>
-              <span className="font-medium">{shootingPct.toFixed(1)}%</span>
+              <span className="font-medium">{formatPercent(shootingPct, false)}</span>
               <span className="text-muted-foreground">Expected Sh%:</span>
               <span className="font-medium">
-                {expectedShootingPct.toFixed(1)}%
+                {formatPercent(expectedShootingPct, false)}
               </span>
             </div>
             <p className="text-xs text-muted-foreground pt-1 border-t">

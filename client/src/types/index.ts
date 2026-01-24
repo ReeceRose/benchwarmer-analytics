@@ -8,3 +8,4 @@ export * from "@/types/shot";
 export * from "@/types/game";
 export * from "@/types/analytics";
 export * from "@/types/standings";
+export * from "@/types/special-teams";

@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Flame, Snowflake, Minus } from "lucide-react";
 import { usePlayerRollingStats } from "@/hooks";
 import { CHART_AXIS_COLORS, CHART_GRADIENT_COLORS } from "@/lib/chart-colors";
+import { formatPercent } from "@/lib/formatters";
 import type { GameStats } from "@/types";
 
 interface RollingPerformanceProps {
@@ -41,7 +42,7 @@ const METRICS: {
   {
     key: "shootingPct",
     label: "Sh%",
-    format: (v) => v.toFixed(1) + "%",
+    format: (v) => formatPercent(v, false),
   },
 ];
 
@@ -228,7 +229,7 @@ export function RollingPerformance({
                         <span className="text-muted-foreground">xG:</span>
                         <span>{d.expectedGoals.toFixed(2)}</span>
                         <span className="text-muted-foreground">Sh%:</span>
-                        <span>{d.shootingPct.toFixed(1)}%</span>
+                        <span>{formatPercent(d.shootingPct, false)}</span>
                       </div>
                     </div>
                   );

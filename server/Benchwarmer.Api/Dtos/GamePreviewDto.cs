@@ -86,3 +86,18 @@ public record GoaliePreviewDto(
     decimal? GoalsAgainstAvg,
     decimal? GoalsSavedAboveExpected
 );
+
+// Separate DTO for goalie recent form (fetched on-demand from boxscores)
+public record GoalieRecentFormDto(
+    int PlayerId,
+    string Name,
+    int GamesPlayed,
+    decimal? SavePct,
+    int ShotsAgainst,
+    int GoalsAgainst
+);
+
+public record GoalieRecentFormResponseDto(
+    IReadOnlyList<GoalieRecentFormDto> Home,
+    IReadOnlyList<GoalieRecentFormDto> Away
+);

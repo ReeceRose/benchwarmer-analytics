@@ -119,11 +119,6 @@ export function calculateGoalieTotals(rows: GoalieSeasonRow[]): GoalieCareerTota
   };
 }
 
-export function formatSavePct(value: number | null): string {
-  if (value === null) return "-";
-  return `.${(value * 1000).toFixed(0).padStart(3, "0")}`;
-}
-
 export function formatGaa(value: number | null): string {
   if (value === null) return "-";
   return value.toFixed(2);

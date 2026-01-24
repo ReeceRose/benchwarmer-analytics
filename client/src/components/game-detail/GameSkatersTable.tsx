@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HeaderWithTooltip } from "@/components/shared";
+import { formatSavePct } from "@/lib/formatters";
 import type {
   GameBoxscoreResponse,
   BoxscoreSkater,
@@ -128,9 +129,7 @@ function GoalieRow({
         {goalie.goalsAgainst}
       </TableCell>
       <TableCell className="text-center font-mono font-semibold">
-        {goalie.savePct !== null
-          ? (goalie.savePct * 100).toFixed(1) + "%"
-          : "-"}
+        {formatSavePct(goalie.savePct)}
       </TableCell>
       <TableCell className="text-center font-mono text-muted-foreground">
         {goalie.timeOnIce}

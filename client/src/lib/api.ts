@@ -25,11 +25,15 @@ import type {
   GameSummary,
   GameBoxscoreResponse,
   GamePreview,
+  GoalieRecentFormResponse,
   BreakoutCandidatesResponse,
   AgeCurvesResponse,
   AgeDistributionResponse,
   SeasonPercentilesResponse,
   PowerRankingsResponse,
+  SpecialTeamsOverview,
+  SpecialTeamsPlayersResponse,
+  SpecialTeamsSituation,
 } from "@/types";
 
 const api = axios.create({
@@ -254,6 +258,11 @@ export async function getGamePreview(gameId: string): Promise<GamePreview> {
   return data;
 }
 
+export async function getGoalieRecentForm(gameId: string): Promise<GoalieRecentFormResponse> {
+  const { data } = await api.get<GoalieRecentFormResponse>(`/games/${gameId}/goalie-form`);
+  return data;
+}
+
 // Rolling Stats
 
 export async function getPlayerRollingStats(
@@ -338,6 +347,41 @@ export async function getPowerRankings(
   const { data } = await api.get<PowerRankingsResponse>(
     "/standings/power-rankings",
     { params: { season } }
+  );
+  return data;
+}
+
+// Special Teams
+
+export async function getTeamSpecialTeams(
+  abbrev: string,
+  season?: number,
+  playoffs?: boolean
+): Promise<SpecialTeamsOverview> {
+  const params: Record<string, unknown> = {};
+  if (season !== undefined) params.season = season;
+  if (playoffs !== undefined) params.playoffs = playoffs;
+
+  const { data } = await api.get<SpecialTeamsOverview>(
+    `/teams/${abbrev}/special-teams`,
+    { params: Object.keys(params).length > 0 ? params : undefined }
+  );
+  return data;
+}
+
+export async function getSpecialTeamsPlayers(
+  abbrev: string,
+  situation: SpecialTeamsSituation,
+  season?: number,
+  playoffs?: boolean
+): Promise<SpecialTeamsPlayersResponse> {
+  const params: Record<string, unknown> = { situation };
+  if (season !== undefined) params.season = season;
+  if (playoffs !== undefined) params.playoffs = playoffs;
+
+  const { data } = await api.get<SpecialTeamsPlayersResponse>(
+    `/teams/${abbrev}/special-teams/players`,
+    { params }
   );
   return data;
 }

@@ -1,4 +1,5 @@
 using Benchwarmer.Api.Dtos;
+using Benchwarmer.Api.Endpoints.Helpers;
 using Benchwarmer.Data;
 using Benchwarmer.Data.Repositories;
 using Microsoft.AspNetCore.Http;
@@ -79,6 +80,36 @@ public static class TeamEndpoints
             .WithSummary("Get seasons with data for a team")
             .WithDescription("Returns all seasons that have player data for this specific team, sorted by most recent first.")
             .Produces<SeasonListDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{abbrev}/special-teams", GetSpecialTeams)
+            .WithName("GetTeamSpecialTeams")
+            .WithSummary("Get special teams stats for a team")
+            .WithDescription("""
+                Returns power play and penalty kill statistics for a team including league rankings.
+
+                **Query Parameters:**
+                - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
+                - `playoffs`: Filter by season type. true = playoffs only, false = regular season only. Defaults to false.
+                """)
+            .Produces<SpecialTeamsOverviewDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{abbrev}/special-teams/players", GetSpecialTeamsPlayers)
+            .WithName("GetTeamSpecialTeamsPlayers")
+            .WithSummary("Get player stats for special teams situations")
+            .WithDescription("""
+                Returns player stats for power play (5on4) or penalty kill (4on5) situations.
+
+                **Query Parameters:**
+                - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
+                - `situation`: 5on4 (power play) or 4on5 (penalty kill). Defaults to 5on4.
+                - `playoffs`: Filter by season type. true = playoffs only, false = regular season only. Defaults to false.
+                """)
+            .Produces<SpecialTeamsPlayersDto>()
+            .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
     }
@@ -448,5 +479,109 @@ public static class TeamEndpoints
         )).ToList();
 
         return Results.Ok(new SeasonListDto(dtos));
+    }
+
+    private static readonly string[] ValidSpecialTeamsSituations = ["5on4", "4on5"];
+
+    private static async Task<IResult> GetSpecialTeams(
+        string abbrev,
+        int? season,
+        bool? playoffs,
+        ITeamRepository teamRepository,
+        ITeamSeasonRepository teamSeasonRepository,
+        CancellationToken cancellationToken)
+    {
+        var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+
+        var seasonYear = season ?? DateTime.Now.Year;
+        var isPlayoffs = playoffs ?? false;
+
+        // Get power play stats (5on4)
+        var ppStats = await teamSeasonRepository.GetByTeamSeasonAsync(abbrev, seasonYear, "5on4", isPlayoffs, cancellationToken);
+
+        // Get penalty kill stats (4on5)
+        var pkStats = await teamSeasonRepository.GetByTeamSeasonAsync(abbrev, seasonYear, "4on5", isPlayoffs, cancellationToken);
+
+        // Get all teams for league rankings
+        var allPpStats = await teamSeasonRepository.GetBySeasonAsync(seasonYear, "5on4", isPlayoffs, cancellationToken);
+        var allPkStats = await teamSeasonRepository.GetBySeasonAsync(seasonYear, "4on5", isPlayoffs, cancellationToken);
+
+        // Calculate PP rankings (higher PP% is better)
+        var ppRankings = allPpStats
+            .Select(t => new { t.TeamAbbreviation, PPPct = TeamMappers.CalculatePPPercentage(t) })
+            .OrderByDescending(t => t.PPPct)
+            .Select((t, i) => new { t.TeamAbbreviation, Rank = i + 1 })
+            .ToDictionary(t => t.TeamAbbreviation, t => t.Rank);
+
+        // Calculate PK rankings (higher PK% is better)
+        var pkRankings = allPkStats
+            .Select(t => new { t.TeamAbbreviation, PKPct = TeamMappers.CalculatePKPercentage(t) })
+            .OrderByDescending(t => t.PKPct)
+            .Select((t, i) => new { t.TeamAbbreviation, Rank = i + 1 })
+            .ToDictionary(t => t.TeamAbbreviation, t => t.Rank);
+
+        var ppSummary = TeamMappers.CreatePowerPlaySummary(ppStats, ppRankings.GetValueOrDefault(abbrev));
+        var pkSummary = TeamMappers.CreatePenaltyKillSummary(pkStats, pkRankings.GetValueOrDefault(abbrev));
+
+        return Results.Ok(new SpecialTeamsOverviewDto(abbrev, seasonYear, ppSummary, pkSummary));
+    }
+
+    private static async Task<IResult> GetSpecialTeamsPlayers(
+        string abbrev,
+        int? season,
+        string? situation,
+        bool? playoffs,
+        ITeamRepository teamRepository,
+        ISkaterStatsRepository skaterStatsRepository,
+        CancellationToken cancellationToken)
+    {
+        var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+
+        var sit = situation?.ToLowerInvariant() ?? "5on4";
+        if (!ValidSpecialTeamsSituations.Contains(sit))
+        {
+            return Results.BadRequest(ApiError.InvalidSituation(ValidSpecialTeamsSituations));
+        }
+
+        var seasonYear = season ?? DateTime.Now.Year;
+        var isPlayoffs = playoffs ?? false;
+
+        var stats = await skaterStatsRepository.GetByTeamSeasonAsync(abbrev, seasonYear, sit, isPlayoffs, cancellationToken);
+
+        var players = stats
+            .Where(s => s.Player != null && s.IceTimeSeconds > 0)
+            .OrderByDescending(s => s.IceTimeSeconds)
+            .Select(s =>
+            {
+                var iceTimeMinutes = s.IceTimeSeconds / 60m;
+                var points = s.Goals + s.Assists;
+                decimal? pointsPer60 = iceTimeMinutes > 0 ? points / iceTimeMinutes * 60 : null;
+
+                return new SpecialTeamsPlayerDto(
+                    s.PlayerId,
+                    s.Player!.Name,
+                    s.Player.Position,
+                    s.IceTimeSeconds,
+                    s.Goals,
+                    s.Assists,
+                    points,
+                    s.Shots,
+                    s.ExpectedGoals,
+                    s.ExpectedGoalsPer60,
+                    pointsPer60,
+                    s.GamesPlayed
+                );
+            })
+            .ToList();
+
+        return Results.Ok(new SpecialTeamsPlayersDto(abbrev, seasonYear, sit, players));
     }
 }

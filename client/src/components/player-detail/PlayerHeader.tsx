@@ -12,6 +12,7 @@ import {
   formatHeight,
   formatWeight,
   formatDate,
+  formatPercent,
 } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { PlayerDetail, Team } from "@/types";
@@ -131,13 +132,13 @@ export function PlayerHeader({ player, teams, isGoalie, luckStats }: PlayerHeade
                     {shootingPct !== null && (
                       <>
                         <span className="text-muted-foreground">Sh%:</span>
-                        <span className="font-medium">{shootingPct.toFixed(1)}%</span>
+                        <span className="font-medium">{formatPercent(shootingPct, false)}</span>
                       </>
                     )}
                     {expectedShootingPct !== null && (
                       <>
                         <span className="text-muted-foreground">xSh%:</span>
-                        <span className="font-medium">{expectedShootingPct.toFixed(1)}%</span>
+                        <span className="font-medium">{formatPercent(expectedShootingPct, false)}</span>
                       </>
                     )}
                   </div>

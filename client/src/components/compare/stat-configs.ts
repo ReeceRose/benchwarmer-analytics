@@ -1,4 +1,4 @@
-import { formatToi, formatPercent, formatPer60 } from "@/lib/formatters";
+import { formatToi, formatPercent, formatPer60, formatSavePct } from "@/lib/formatters";
 import type { SkaterStats, GoalieStats, PlayerComparison } from "@/types";
 
 // Stat mode for filtering
@@ -150,10 +150,7 @@ export const GOALIE_STAT_CONFIGS: GoalieStatConfig[] = [
   {
     key: "savePctDisplay",
     label: "SV%",
-    format: (_, stats) =>
-      stats?.savePercentage != null
-        ? (stats.savePercentage * 100).toFixed(2) + "%"
-        : "-",
+    format: (_, stats) => formatSavePct(stats?.savePercentage),
     higherIsBetter: true,
     mode: "rate",
   },

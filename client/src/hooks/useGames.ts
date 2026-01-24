@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getYesterdaysGames, getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getLiveScores, getGamePreview } from "@/lib/api";
+import { getYesterdaysGames, getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getLiveScores, getGamePreview, getGoalieRecentForm } from "@/lib/api";
 import type { GamesResponse, GameSummary } from "@/types";
 
 export function useYesterdaysGames() {
@@ -79,5 +79,14 @@ export function useGamePreview(gameId: string | undefined) {
     queryFn: () => getGamePreview(gameId!),
     enabled: !!gameId,
     staleTime: 1000 * 60 * 30, // 30 minutes - preview data is stable
+  });
+}
+
+export function useGoalieRecentForm(gameId: string | undefined) {
+  return useQuery({
+    queryKey: ["games", gameId, "goalie-form"],
+    queryFn: () => getGoalieRecentForm(gameId!),
+    enabled: !!gameId,
+    staleTime: 1000 * 60 * 30, // 30 minutes - recent form is relatively stable
   });
 }

@@ -9,8 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { HeaderWithTooltip } from "@/components/shared";
-import { formatToi, formatSeason } from "@/lib/formatters";
-import { formatSavePct, formatGaa, formatGsax } from "@/components/player-detail/goalie-stats";
+import { formatToi, formatSeason, formatSavePct } from "@/lib/formatters";
+import { formatGaa, formatGsax } from "@/components/player-detail/goalie-stats";
 import type { GoalieSeasonRow, GoalieCareerTotals } from "@/components/player-detail/goalie-stats";
 
 interface GoalieStatsTableProps {

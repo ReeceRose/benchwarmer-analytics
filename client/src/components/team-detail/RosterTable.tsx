@@ -10,20 +10,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { HeaderWithTooltip } from "@/components/shared";
-import { formatPosition, formatHeight, formatWeight } from "@/lib/formatters";
+import { formatPosition, formatHeight, formatWeight, formatToi, formatPercent } from "@/lib/formatters";
 import type { RosterPlayer } from "@/types/player";
-
-function formatToi(seconds?: number): string {
-  if (!seconds) return "-";
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${minutes}:${secs.toString().padStart(2, "0")}`;
-}
-
-function formatPct(value?: number): string {
-  if (value === undefined || value === null) return "-";
-  return `${(value * 100).toFixed(1)}%`;
-}
 
 interface RosterTableProps {
   title: string;
@@ -88,7 +76,7 @@ export function RosterTable({ title, players, showStats = false }: RosterTablePr
                       <TableCell className="text-right tabular-nums font-medium">{player.points ?? "-"}</TableCell>
                       <TableCell className="text-right tabular-nums">{player.shots ?? "-"}</TableCell>
                       <TableCell className="text-right tabular-nums">{player.expectedGoals?.toFixed(1) ?? "-"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatPct(player.corsiForPct)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatPercent(player.corsiForPct)}</TableCell>
                     </>
                   ) : (
                     <>

@@ -51,9 +51,12 @@ function getTomorrowDate(): string {
 function GameCard({ game }: { game: GameSummary }) {
   const isCompleted = game.gameState === "OFF";
   const isLive = game.gameState === "LIVE" || game.gameState === "CRIT";
-  const isFuture = game.gameState === "FUT" || game.gameState === "PRE";
   const homeWins = isCompleted && (game.home.goals ?? 0) > (game.away.goals ?? 0);
   const awayWins = isCompleted && (game.away.goals ?? 0) > (game.home.goals ?? 0);
+
+  // Get the appropriate record based on home/away context
+  const awayDisplayRecord = game.away.roadRecord || game.away.record;
+  const homeDisplayRecord = game.home.homeRecord || game.home.record;
 
   return (
     <Link to="/games/$gameId" params={{ gameId: game.gameId }}>
@@ -102,8 +105,10 @@ function GameCard({ game }: { game: GameSummary }) {
                   {game.away.teamCode}
                 </Badge>
                 <span className="text-sm truncate">{game.away.teamName}</span>
-                {(isFuture || isLive) && game.away.record && (
-                  <span className="text-[10px] text-muted-foreground">({game.away.record})</span>
+                {awayDisplayRecord && (
+                  <span className="text-[10px] text-muted-foreground">
+                    ({awayDisplayRecord}{game.away.roadRecord ? " away" : ""})
+                  </span>
                 )}
               </div>
               <span className={`font-mono text-lg font-bold ${awayWins ? "" : isCompleted ? "text-muted-foreground" : ""}`}>
@@ -116,8 +121,10 @@ function GameCard({ game }: { game: GameSummary }) {
                   {game.home.teamCode}
                 </Badge>
                 <span className="text-sm truncate">{game.home.teamName}</span>
-                {(isFuture || isLive) && game.home.record && (
-                  <span className="text-[10px] text-muted-foreground">({game.home.record})</span>
+                {homeDisplayRecord && (
+                  <span className="text-[10px] text-muted-foreground">
+                    ({homeDisplayRecord}{game.home.homeRecord ? " home" : ""})
+                  </span>
                 )}
               </div>
               <span className={`font-mono text-lg font-bold ${homeWins ? "" : isCompleted ? "text-muted-foreground" : ""}`}>
@@ -125,6 +132,23 @@ function GameCard({ game }: { game: GameSummary }) {
               </span>
             </div>
           </div>
+          {/* Season Series & Streaks */}
+          {(game.seasonSeries || game.away.streak || game.home.streak) && (
+            <div className="text-[10px] text-muted-foreground text-center space-y-0.5">
+              {game.seasonSeries && (
+                <div>{game.seasonSeries}</div>
+              )}
+              {(game.away.streak || game.home.streak) && (
+                <div>
+                  {game.away.teamCode}: {game.away.streak || "-"}
+                  {game.away.last10 && <span className="opacity-70 ml-1">L10: {game.away.last10}</span>}
+                  <span className="mx-2 opacity-30">|</span>
+                  {game.home.teamCode}: {game.home.streak || "-"}
+                  {game.home.last10 && <span className="opacity-70 ml-1">L10: {game.home.last10}</span>}
+                </div>
+              )}
+            </div>
+          )}
           {game.hasShotData && isCompleted && game.away.expectedGoals !== null && game.home.expectedGoals !== null && (
             <div className="pt-2 border-t text-xs text-muted-foreground">
               <div className="flex justify-between">

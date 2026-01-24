@@ -19,7 +19,9 @@ public record GameSummaryDto(
     int? CurrentPeriod = null,
     string? TimeRemaining = null,
     bool? InIntermission = null,
-    IReadOnlyList<GameGoalDto>? Goals = null
+    IReadOnlyList<GameGoalDto>? Goals = null,
+    // Head-to-head context
+    string? SeasonSeries = null
 );
 
 public record GameTeamDto(
@@ -35,7 +37,12 @@ public record GameTeamDto(
     int? LowDangerChances,
     decimal? AvgShotDistance,
     // Live game fields
-    string? Record = null
+    string? Record = null,
+    // Standings context fields
+    string? Streak = null,
+    string? HomeRecord = null,
+    string? RoadRecord = null,
+    string? Last10 = null
 );
 
 public record GamePeriodStatsDto(

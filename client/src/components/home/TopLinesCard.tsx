@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Users, ChevronRight } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatToi } from "@/lib/formatters";
+import { formatToi, formatPercent } from "@/lib/formatters";
 import type { TopLine } from "@/types";
 
 interface TopLinesCardProps {
@@ -71,7 +71,7 @@ export function TopLinesCard({ lines, season }: TopLinesCardProps) {
                 <div className="flex flex-col">
                   <span className="text-xs text-muted-foreground">xG%</span>
                   <span className="font-mono text-sm font-medium">
-                    {line.expectedGoalsPct?.toFixed(1) ?? "—"}%
+                    {line.expectedGoalsPct != null ? formatPercent(line.expectedGoalsPct, false) : "—"}
                   </span>
                 </div>
                 <div className="flex flex-col">

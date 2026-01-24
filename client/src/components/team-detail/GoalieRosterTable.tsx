@@ -10,20 +10,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { HeaderWithTooltip } from "@/components/shared";
-import { formatPosition, formatHeight, formatWeight } from "@/lib/formatters";
+import { formatPosition, formatHeight, formatWeight, formatToi, formatSavePct } from "@/lib/formatters";
 import type { RosterPlayer } from "@/types/player";
-
-function formatToi(seconds?: number): string {
-  if (!seconds) return "-";
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${minutes}:${secs.toString().padStart(2, "0")}`;
-}
-
-function formatSavePct(value?: number): string {
-  if (value === undefined || value === null) return "-";
-  return `.${(value * 1000).toFixed(0).padStart(3, "0")}`;
-}
 
 function formatGaa(value?: number): string {
   if (value === undefined || value === null) return "-";

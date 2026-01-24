@@ -36,8 +36,8 @@ const GOALIE_STAT_DEFS: GoalieStatDef[] = [
   {
     key: "svPct",
     label: "Save %",
-    getValue: (s) => (s.savePercentage != null ? s.savePercentage * 100 : null),
-    format: (v) => v.toFixed(2) + "%",
+    getValue: (s) => s.savePercentage ?? null,
+    format: (v) => (v == null ? "-" : v >= 1 ? v.toFixed(3) : `.${(v * 1000).toFixed(0).padStart(3, "0")}`),
     higherIsBetter: true,
   },
   {
@@ -61,9 +61,9 @@ const GOALIE_STAT_DEFS: GoalieStatDef[] = [
       const hdShots = s.highDangerShots;
       const hdGoals = s.highDangerGoals;
       if (hdShots == null || hdShots === 0) return null;
-      return ((hdShots - hdGoals) / hdShots) * 100;
+      return (hdShots - hdGoals) / hdShots;
     },
-    format: (v) => v.toFixed(1) + "%",
+    format: (v) => (v == null ? "-" : v >= 1 ? v.toFixed(3) : `.${(v * 1000).toFixed(0).padStart(3, "0")}`),
     higherIsBetter: true,
   },
 ];

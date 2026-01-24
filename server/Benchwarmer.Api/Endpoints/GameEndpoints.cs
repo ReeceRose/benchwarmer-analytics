@@ -1,4 +1,5 @@
 using Benchwarmer.Api.Dtos;
+using Benchwarmer.Api.Endpoints.Helpers;
 using Benchwarmer.Data.Entities;
 using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Services;
@@ -7,44 +8,6 @@ namespace Benchwarmer.Api.Endpoints;
 
 public static class GameEndpoints
 {
-    // Team code to name mapping
-    private static readonly Dictionary<string, string> TeamNames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["ANA"] = "Anaheim Ducks",
-        ["ARI"] = "Arizona Coyotes",
-        ["BOS"] = "Boston Bruins",
-        ["BUF"] = "Buffalo Sabres",
-        ["CAR"] = "Carolina Hurricanes",
-        ["CBJ"] = "Columbus Blue Jackets",
-        ["CGY"] = "Calgary Flames",
-        ["CHI"] = "Chicago Blackhawks",
-        ["COL"] = "Colorado Avalanche",
-        ["DAL"] = "Dallas Stars",
-        ["DET"] = "Detroit Red Wings",
-        ["EDM"] = "Edmonton Oilers",
-        ["FLA"] = "Florida Panthers",
-        ["LAK"] = "Los Angeles Kings",
-        ["MIN"] = "Minnesota Wild",
-        ["MTL"] = "Montreal Canadiens",
-        ["NJD"] = "New Jersey Devils",
-        ["NSH"] = "Nashville Predators",
-        ["NYI"] = "New York Islanders",
-        ["NYR"] = "New York Rangers",
-        ["OTT"] = "Ottawa Senators",
-        ["PHI"] = "Philadelphia Flyers",
-        ["PIT"] = "Pittsburgh Penguins",
-        ["SEA"] = "Seattle Kraken",
-        ["SJS"] = "San Jose Sharks",
-        ["STL"] = "St. Louis Blues",
-        ["TBL"] = "Tampa Bay Lightning",
-        ["TOR"] = "Toronto Maple Leafs",
-        ["UTA"] = "Utah Hockey Club",
-        ["VAN"] = "Vancouver Canucks",
-        ["VGK"] = "Vegas Golden Knights",
-        ["WPG"] = "Winnipeg Jets",
-        ["WSH"] = "Washington Capitals"
-    };
-
     public static void MapGameEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/games")
@@ -149,6 +112,19 @@ public static class GameEndpoints
             .Produces<GamePreviewDto>()
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{gameId}/goalie-form", GetGoalieRecentForm)
+            .WithName("GetGoalieRecentForm")
+            .WithSummary("Get recent goalie form for game preview")
+            .WithDescription("""
+                Returns aggregated stats from the last 5 games for each team's goalies.
+                Fetched on-demand from NHL boxscores for recent performance data.
+
+                Intended to be called separately from /preview to allow main preview to load faster.
+                """)
+            .Produces<GoalieRecentFormResponseDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetGamesByDate(
@@ -158,7 +134,6 @@ public static class GameEndpoints
         NhlScheduleService nhlScheduleService,
         CancellationToken cancellationToken)
     {
-        // Parse date or default to today in ET
         DateOnly targetDate;
         if (!string.IsNullOrEmpty(date) && DateOnly.TryParse(date, out var parsedDate))
         {
@@ -171,8 +146,15 @@ public static class GameEndpoints
             targetDate = DateOnly.FromDateTime(nowEt);
         }
 
-        var games = await GetGamesForDate(targetDate, gameRepository, nhlScheduleService, cancellationToken);
-        var gameDtos = await EnrichGamesWithStats(games, gameStatsRepository, cancellationToken);
+        var gamesTask = GetGamesForDate(targetDate, gameRepository, nhlScheduleService, cancellationToken);
+        var standingsTask = nhlScheduleService.GetStandingsAsync(cancellationToken);
+        await Task.WhenAll(gamesTask, standingsTask);
+
+        var games = await gamesTask;
+        var standings = await standingsTask;
+
+        var h2hData = await ComputeHeadToHeadForGames(games, gameRepository, cancellationToken);
+        var gameDtos = await EnrichGamesWithStats(games, gameStatsRepository, standings, h2hData, cancellationToken);
 
         return Results.Ok(new GamesResponseDto(targetDate, gameDtos));
     }
@@ -187,10 +169,15 @@ public static class GameEndpoints
         var nowEt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, etZone);
         var yesterday = DateOnly.FromDateTime(nowEt.AddDays(-1));
 
-        var games = await GetGamesForDate(yesterday, gameRepository, nhlScheduleService, cancellationToken);
-        // Filter to only completed games for yesterday endpoint
-        games = games.Where(g => g.GameState == "OFF").ToList();
-        var gameDtos = await EnrichGamesWithStats(games, gameStatsRepository, cancellationToken);
+        var gamesTask = GetGamesForDate(yesterday, gameRepository, nhlScheduleService, cancellationToken);
+        var standingsTask = nhlScheduleService.GetStandingsAsync(cancellationToken);
+        await Task.WhenAll(gamesTask, standingsTask);
+
+        var games = (await gamesTask).Where(g => g.GameState == "OFF").ToList();
+        var standings = await standingsTask;
+
+        var h2hData = await ComputeHeadToHeadForGames(games, gameRepository, cancellationToken);
+        var gameDtos = await EnrichGamesWithStats(games, gameStatsRepository, standings, h2hData, cancellationToken);
 
         return Results.Ok(new GamesResponseDto(yesterday, gameDtos));
     }
@@ -206,43 +193,54 @@ public static class GameEndpoints
         var nowEt = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, etZone);
         var today = DateOnly.FromDateTime(nowEt);
 
-        // Fetch both live scores and schedule in parallel
         var liveScoresTask = nhlScheduleService.GetLiveScoresAsync(cancellationToken);
         var scheduleTask = nhlScheduleService.GetGamesForDateAsync(today, cancellationToken);
+        var standingsTask = nhlScheduleService.GetStandingsAsync(cancellationToken);
 
-        await Task.WhenAll(liveScoresTask, scheduleTask);
+        await Task.WhenAll(liveScoresTask, scheduleTask, standingsTask);
 
         var liveScores = await liveScoresTask;
         var scheduleGames = await scheduleTask;
+        var standings = await standingsTask;
 
-        // Build a set of game IDs from live scores
         var liveGameIds = new HashSet<string>(
             liveScores?.Games.Select(g => g.Id.ToString()) ?? []);
 
-        // Start with live games (these have real-time data)
+        var allMatchups = new List<(string HomeTeam, string AwayTeam, int Season)>();
+        if (liveScores?.Games != null)
+        {
+            foreach (var g in liveScores.Games)
+            {
+                var season = GetSeasonFromGameId(g.Id.ToString());
+                allMatchups.Add((g.HomeTeam.Abbrev, g.AwayTeam.Abbrev, season));
+            }
+        }
+        foreach (var g in scheduleGames.Where(g => g.GameDate == today && !liveGameIds.Contains(g.GameId)))
+        {
+            allMatchups.Add((g.HomeTeamCode, g.AwayTeamCode, g.Season));
+        }
+        var h2hData = await ComputeHeadToHeadForMatchups(allMatchups, gameRepository, cancellationToken);
+
         var resultDtos = new List<GameSummaryDto>();
 
         if (liveScores?.Games.Count > 0)
         {
-            var liveDtos = await EnrichLiveGamesWithStats(liveScores.Games, gameStatsRepository, cancellationToken);
+            var liveDtos = await EnrichLiveGamesWithStats(liveScores.Games, gameStatsRepository, standings, h2hData, cancellationToken);
             resultDtos.AddRange(liveDtos);
         }
 
-        // Add games from schedule that aren't in live scores (completed games that dropped off)
         var missingGames = scheduleGames
             .Where(g => g.GameDate == today && !liveGameIds.Contains(g.GameId))
             .ToList();
 
         if (missingGames.Count > 0)
         {
-            // For games that have started but aren't in live scores, fetch boxscores in parallel
             var gamesNeedingScores = missingGames
                 .Where(g => g.StartTimeUtc.HasValue && g.StartTimeUtc.Value < nowUtc)
                 .ToList();
 
             if (gamesNeedingScores.Count > 0)
             {
-                // Fetch all boxscores in parallel
                 var boxscoreTasks = gamesNeedingScores.Select(async game =>
                 {
                     var boxscore = await nhlScheduleService.GetBoxscoreAsync(game.GameId, cancellationToken);
@@ -262,13 +260,11 @@ public static class GameEndpoints
                 }
             }
 
-            // Upsert to DB to ensure we have latest state
             await gameRepository.UpsertBatchAsync(missingGames, cancellationToken);
-            var missingDtos = await EnrichGamesWithStats(missingGames, gameStatsRepository, cancellationToken);
+            var missingDtos = await EnrichGamesWithStats(missingGames, gameStatsRepository, standings, h2hData, cancellationToken);
             resultDtos.AddRange(missingDtos);
         }
 
-        // Sort by start time
         resultDtos = resultDtos.OrderBy(g => g.StartTimeUtc ?? "").ToList();
 
         return Results.Ok(new GamesResponseDto(today, resultDtos));
@@ -288,7 +284,7 @@ public static class GameEndpoints
         }
 
         DateOnly.TryParse(liveScores.CurrentDate, out var currentDate);
-        var gameDtos = liveScores.Games.Select(g => MapLiveGameToDto(g)).ToList();
+        var gameDtos = liveScores.Games.Select(g => GameMappers.MapLiveGameToDto(g)).ToList();
 
         return Results.Ok(new GamesResponseDto(currentDate, gameDtos));
     }
@@ -300,24 +296,36 @@ public static class GameEndpoints
         NhlScheduleService nhlScheduleService,
         CancellationToken cancellationToken)
     {
-        // First check live scores for real-time data
+        var standingsTask = nhlScheduleService.GetStandingsAsync(cancellationToken);
+
         var liveScores = await nhlScheduleService.GetLiveScoresAsync(cancellationToken);
         var liveGame = liveScores?.Games.FirstOrDefault(g => g.Id.ToString() == gameId);
 
         if (liveGame != null)
         {
-            // Found in live scores - return live data
-            var stats = await gameStatsRepository.GetGameStatsAsync(gameId, cancellationToken);
-            return Results.Ok(MapLiveGameToDto(liveGame, stats));
+            var statsTask = gameStatsRepository.GetGameStatsAsync(gameId, cancellationToken);
+            await Task.WhenAll(statsTask, standingsTask);
+
+            var stats = await statsTask;
+            var standings = await standingsTask;
+
+            var season = GetSeasonFromGameId(gameId);
+            var h2hData = await ComputeHeadToHeadForMatchups(
+                [(liveGame.HomeTeam.Abbrev, liveGame.AwayTeam.Abbrev, season)],
+                gameRepository, cancellationToken);
+            var h2hKey = $"{liveGame.HomeTeam.Abbrev}-{liveGame.AwayTeam.Abbrev}";
+            h2hData.TryGetValue(h2hKey, out var seasonSeries);
+
+            standings.TryGetValue(liveGame.HomeTeam.Abbrev, out var homeStandings);
+            standings.TryGetValue(liveGame.AwayTeam.Abbrev, out var awayStandings);
+
+            return Results.Ok(GameMappers.MapLiveGameToDto(liveGame, stats, homeStandings, awayStandings, seasonSeries));
         }
 
-        // Not in live scores, check database
         var game = await gameRepository.GetByGameIdAsync(gameId, cancellationToken);
 
-        // If not in DB, try to fetch from NHL API schedule
         if (game == null)
         {
-            // Fetch a week around current date to try to find the game
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var nhlGames = await nhlScheduleService.GetGamesForDateRangeAsync(
                 today.AddDays(-7),
@@ -336,20 +344,33 @@ public static class GameEndpoints
             return Results.NotFound();
         }
 
-        var dbStats = await gameStatsRepository.GetGameStatsAsync(gameId, cancellationToken);
+        var dbStatsTask = gameStatsRepository.GetGameStatsAsync(gameId, cancellationToken);
+        var h2hTask = ComputeHeadToHeadForMatchups(
+            [(game.HomeTeamCode, game.AwayTeamCode, game.Season)],
+            gameRepository, cancellationToken);
 
-        // Fetch goals from landing endpoint for completed games
+        await Task.WhenAll(dbStatsTask, standingsTask, h2hTask);
+
+        var dbStats = await dbStatsTask;
+        var dbStandings = await standingsTask;
+        var dbH2hData = await h2hTask;
+
+        dbStandings.TryGetValue(game.HomeTeamCode, out var dbHomeStandings);
+        dbStandings.TryGetValue(game.AwayTeamCode, out var dbAwayStandings);
+        var dbH2hKey = $"{game.HomeTeamCode}-{game.AwayTeamCode}";
+        dbH2hData.TryGetValue(dbH2hKey, out var dbSeasonSeries);
+
         List<GameGoalDto>? goals = null;
         if (game.GameState == "OFF")
         {
             var landing = await nhlScheduleService.GetGameLandingAsync(gameId, cancellationToken);
             if (landing?.Summary?.Scoring != null)
             {
-                goals = MapLandingGoalsWithGwg(landing, game.HomeTeamCode);
+                goals = GameMappers.MapLandingGoalsWithGwg(landing, game.HomeTeamCode);
             }
         }
 
-        return Results.Ok(MapToDto(game, dbStats, goals));
+        return Results.Ok(GameMappers.MapToDto(game, dbStats, dbHomeStandings, dbAwayStandings, dbSeasonSeries, goals));
     }
 
     private static async Task<IResult> GetGameShots(
@@ -368,12 +389,12 @@ public static class GameEndpoints
 
         var homeShots = shots
             .Where(s => s.IsHomeTeam)
-            .Select(MapToShotDto)
+            .Select(GameMappers.MapToShotDto)
             .ToList();
 
         var awayShots = shots
             .Where(s => !s.IsHomeTeam)
-            .Select(MapToShotDto)
+            .Select(GameMappers.MapToShotDto)
             .ToList();
 
         return Results.Ok(new GameShotsResponseDto(
@@ -383,24 +404,6 @@ public static class GameEndpoints
             homeShots,
             awayShots
         ));
-    }
-
-    private static GameShotDto MapToShotDto(Shot shot)
-    {
-        return new GameShotDto(
-            Period: shot.Period,
-            GameSeconds: shot.GameTimeSeconds,
-            ShooterName: shot.ShooterName,
-            ShooterPlayerId: shot.ShooterPlayerId,
-            XCoord: shot.ArenaAdjustedXCoord ?? shot.XCoord ?? 0,
-            YCoord: shot.ArenaAdjustedYCoord ?? shot.YCoord ?? 0,
-            XGoal: shot.XGoal ?? 0,
-            IsGoal: shot.IsGoal,
-            ShotWasOnGoal: shot.ShotWasOnGoal,
-            ShotType: shot.ShotType,
-            ShotDistance: shot.ShotDistance ?? 0,
-            ShotAngle: shot.ShotAngle ?? 0
-        );
     }
 
     private static async Task<IResult> GetGameBoxscore(
@@ -414,10 +417,10 @@ public static class GameEndpoints
             return Results.NotFound();
         }
 
-        var homeSkaters = MapSkaters(boxscore.PlayerByGameStats.HomeTeam);
-        var awaySkaters = MapSkaters(boxscore.PlayerByGameStats.AwayTeam);
-        var homeGoalies = MapGoalies(boxscore.PlayerByGameStats.HomeTeam);
-        var awayGoalies = MapGoalies(boxscore.PlayerByGameStats.AwayTeam);
+        var homeSkaters = GameMappers.MapSkaters(boxscore.PlayerByGameStats.HomeTeam);
+        var awaySkaters = GameMappers.MapSkaters(boxscore.PlayerByGameStats.AwayTeam);
+        var homeGoalies = GameMappers.MapGoalies(boxscore.PlayerByGameStats.HomeTeam);
+        var awayGoalies = GameMappers.MapGoalies(boxscore.PlayerByGameStats.AwayTeam);
 
         return Results.Ok(new GameBoxscoreResponseDto(
             gameId,
@@ -430,373 +433,6 @@ public static class GameEndpoints
         ));
     }
 
-    private static List<BoxscoreSkaterDto> MapSkaters(NhlTeamPlayerStats teamStats)
-    {
-        var allSkaters = teamStats.Forwards.Concat(teamStats.Defense);
-        return allSkaters
-            .OrderByDescending(s => s.Points)
-            .ThenByDescending(s => s.Goals)
-            .ThenByDescending(s => s.ShotsOnGoal)
-            .Select(s => new BoxscoreSkaterDto(
-                PlayerId: s.PlayerId,
-                JerseyNumber: s.SweaterNumber,
-                Name: s.Name.Default,
-                Position: s.Position,
-                Goals: s.Goals,
-                Assists: s.Assists,
-                Points: s.Points,
-                PlusMinus: s.PlusMinus,
-                PenaltyMinutes: s.PenaltyMinutes,
-                Hits: s.Hits,
-                ShotsOnGoal: s.ShotsOnGoal,
-                BlockedShots: s.BlockedShots,
-                Giveaways: s.Giveaways,
-                Takeaways: s.Takeaways,
-                TimeOnIce: s.TimeOnIce,
-                Shifts: s.Shifts,
-                FaceoffPct: s.FaceoffWinningPct * 100
-            ))
-            .ToList();
-    }
-
-    private static List<BoxscoreGoalieDto> MapGoalies(NhlTeamPlayerStats teamStats)
-    {
-        return teamStats.Goalies
-            .OrderByDescending(g => g.Starter)
-            .Select(g => new BoxscoreGoalieDto(
-                PlayerId: g.PlayerId,
-                JerseyNumber: g.SweaterNumber,
-                Name: g.Name.Default,
-                ShotsAgainst: g.ShotsAgainst,
-                Saves: g.Saves,
-                GoalsAgainst: g.GoalsAgainst,
-                SavePct: g.SavePct,
-                TimeOnIce: g.TimeOnIce,
-                Starter: g.Starter,
-                Decision: g.Decision
-            ))
-            .ToList();
-    }
-
-    private static async Task<List<Game>> GetGamesForDate(
-        DateOnly date,
-        IGameRepository gameRepository,
-        NhlScheduleService nhlScheduleService,
-        CancellationToken cancellationToken)
-    {
-        // First try to get games from our database
-        var games = (await gameRepository.GetByDateAsync(date, cancellationToken)).ToList();
-
-        // Determine if we should refresh from NHL API
-        // Always refresh for today/tomorrow (games may update), or if no games found
-        var etZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
-        var nowEt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, etZone);
-        var today = DateOnly.FromDateTime(nowEt);
-        var shouldRefresh = games.Count == 0 || date >= today;
-
-        if (shouldRefresh)
-        {
-            var nhlGames = await nhlScheduleService.GetGamesForDateAsync(date, cancellationToken);
-            var dateGames = nhlGames.Where(g => g.GameDate == date).ToList();
-
-            if (dateGames.Count > 0)
-            {
-                await gameRepository.UpsertBatchAsync(dateGames, cancellationToken);
-                games = dateGames;
-            }
-        }
-
-        return games;
-    }
-
-    private static async Task<List<GameSummaryDto>> EnrichGamesWithStats(
-        List<Game> games,
-        IGameStatsRepository gameStatsRepository,
-        CancellationToken cancellationToken)
-    {
-        if (games.Count == 0)
-            return [];
-
-        var gameIds = games.Select(g => g.GameId).ToList();
-        var allStats = await gameStatsRepository.GetGameStatsBatchAsync(gameIds, cancellationToken);
-        var statsByGameId = allStats.ToDictionary(s => s.GameId);
-
-        return games.Select(g => MapToDto(g, statsByGameId.GetValueOrDefault(g.GameId))).ToList();
-    }
-
-    private static async Task<List<GameSummaryDto>> EnrichLiveGamesWithStats(
-        List<NhlLiveGame> games,
-        IGameStatsRepository gameStatsRepository,
-        CancellationToken cancellationToken)
-    {
-        if (games.Count == 0)
-            return [];
-
-        var gameIds = games.Select(g => g.Id.ToString()).ToList();
-        var allStats = await gameStatsRepository.GetGameStatsBatchAsync(gameIds, cancellationToken);
-        var statsByGameId = allStats.ToDictionary(s => s.GameId);
-
-        return games.Select(g => MapLiveGameToDto(g, statsByGameId.GetValueOrDefault(g.Id.ToString()))).ToList();
-    }
-
-    private static GameSummaryDto MapLiveGameToDto(NhlLiveGame game, GameStats? stats = null)
-    {
-        var hasShotData = stats != null;
-        var isLive = game.GameState is "LIVE" or "CRIT";
-        // NHL API returns "FINAL" for completed games, we normalize to "OFF"
-        var isCompleted = game.GameState is "OFF" or "FINAL";
-
-        var homeDto = new GameTeamDto(
-            TeamCode: game.HomeTeam.Abbrev,
-            TeamName: game.HomeTeam.Name?.Default ?? GetTeamName(game.HomeTeam.Abbrev),
-            Goals: isLive || isCompleted ? game.HomeTeam.Score : null,
-            Shots: stats?.HomeStats.TotalShots,
-            ShotsOnGoal: isLive ? game.HomeTeam.ShotsOnGoal : stats?.HomeStats.ShotsOnGoal,
-            ExpectedGoals: stats?.HomeStats.ExpectedGoals,
-            GoalsVsXgDiff: stats?.HomeStats.GoalsVsXgDiff,
-            HighDangerChances: stats?.HomeStats.HighDangerChances,
-            MediumDangerChances: stats?.HomeStats.MediumDangerChances,
-            LowDangerChances: stats?.HomeStats.LowDangerChances,
-            AvgShotDistance: stats?.HomeStats.AvgShotDistance,
-            Record: game.HomeTeam.Record
-        );
-
-        var awayDto = new GameTeamDto(
-            TeamCode: game.AwayTeam.Abbrev,
-            TeamName: game.AwayTeam.Name?.Default ?? GetTeamName(game.AwayTeam.Abbrev),
-            Goals: isLive || isCompleted ? game.AwayTeam.Score : null,
-            Shots: stats?.AwayStats.TotalShots,
-            ShotsOnGoal: isLive ? game.AwayTeam.ShotsOnGoal : stats?.AwayStats.ShotsOnGoal,
-            ExpectedGoals: stats?.AwayStats.ExpectedGoals,
-            GoalsVsXgDiff: stats?.AwayStats.GoalsVsXgDiff,
-            HighDangerChances: stats?.AwayStats.HighDangerChances,
-            MediumDangerChances: stats?.AwayStats.MediumDangerChances,
-            LowDangerChances: stats?.AwayStats.LowDangerChances,
-            AvgShotDistance: stats?.AwayStats.AvgShotDistance,
-            Record: game.AwayTeam.Record
-        );
-
-        var periods = stats?.Periods.Select(p => new GamePeriodStatsDto(
-            p.Period,
-            p.HomeShots,
-            p.AwayShots,
-            p.HomeGoals,
-            p.AwayGoals,
-            p.HomeXG,
-            p.AwayXG
-        )).ToList() ?? [];
-
-        var goals = MapGoalsWithGwg(game.Goals, game.HomeTeam.Score, game.AwayTeam.Score, game.HomeTeam.Abbrev, isCompleted);
-
-        DateOnly.TryParse(game.GameDate, out var gameDate);
-
-        // Normalize "FINAL" to "OFF" for frontend consistency
-        var normalizedGameState = game.GameState == "FINAL" ? "OFF" : game.GameState;
-
-        return new GameSummaryDto(
-            GameId: game.Id.ToString(),
-            GameDate: gameDate,
-            GameState: normalizedGameState,
-            StartTimeUtc: game.StartTimeUtc,
-            Home: homeDto,
-            Away: awayDto,
-            PeriodType: game.PeriodDescriptor?.PeriodType == "REG" ? null : game.PeriodDescriptor?.PeriodType,
-            Periods: periods,
-            HasShotData: hasShotData,
-            CurrentPeriod: game.Period,
-            TimeRemaining: game.Clock?.TimeRemaining,
-            InIntermission: game.Clock?.InIntermission,
-            Goals: goals
-        );
-    }
-
-    private static string? GetTeamName(string teamCode)
-    {
-        return TeamNames.TryGetValue(teamCode, out var name) ? name : null;
-    }
-
-    private static GameSummaryDto MapToDto(Game game, GameStats? stats, List<GameGoalDto>? goals = null)
-    {
-        var hasShotData = stats != null;
-        var isCompleted = game.GameState == "OFF";
-        // Show scores if game is completed OR if scores exist (game might have stale state)
-        var hasScores = game.HomeScore > 0 || game.AwayScore > 0;
-
-        var homeDto = new GameTeamDto(
-            TeamCode: game.HomeTeamCode,
-            TeamName: GetTeamName(game.HomeTeamCode),
-            Goals: (isCompleted || hasScores) ? game.HomeScore : null,
-            Shots: stats?.HomeStats.TotalShots,
-            ShotsOnGoal: stats?.HomeStats.ShotsOnGoal,
-            ExpectedGoals: stats?.HomeStats.ExpectedGoals,
-            GoalsVsXgDiff: stats?.HomeStats.GoalsVsXgDiff,
-            HighDangerChances: stats?.HomeStats.HighDangerChances,
-            MediumDangerChances: stats?.HomeStats.MediumDangerChances,
-            LowDangerChances: stats?.HomeStats.LowDangerChances,
-            AvgShotDistance: stats?.HomeStats.AvgShotDistance
-        );
-
-        var awayDto = new GameTeamDto(
-            TeamCode: game.AwayTeamCode,
-            TeamName: GetTeamName(game.AwayTeamCode),
-            Goals: (isCompleted || hasScores) ? game.AwayScore : null,
-            Shots: stats?.AwayStats.TotalShots,
-            ShotsOnGoal: stats?.AwayStats.ShotsOnGoal,
-            ExpectedGoals: stats?.AwayStats.ExpectedGoals,
-            GoalsVsXgDiff: stats?.AwayStats.GoalsVsXgDiff,
-            HighDangerChances: stats?.AwayStats.HighDangerChances,
-            MediumDangerChances: stats?.AwayStats.MediumDangerChances,
-            LowDangerChances: stats?.AwayStats.LowDangerChances,
-            AvgShotDistance: stats?.AwayStats.AvgShotDistance
-        );
-
-        var periods = stats?.Periods.Select(p => new GamePeriodStatsDto(
-            p.Period,
-            p.HomeShots,
-            p.AwayShots,
-            p.HomeGoals,
-            p.AwayGoals,
-            p.HomeXG,
-            p.AwayXG
-        )).ToList() ?? [];
-
-        // Use the actual game state - don't override based on scores
-        // Live games have scores too, so we can't assume scores mean "completed"
-        var effectiveGameState = game.GameState;
-
-        return new GameSummaryDto(
-            GameId: game.GameId,
-            GameDate: game.GameDate,
-            GameState: effectiveGameState,
-            StartTimeUtc: game.StartTimeUtc?.ToString("o"),
-            Home: homeDto,
-            Away: awayDto,
-            PeriodType: game.PeriodType == "REG" ? null : game.PeriodType,
-            Periods: periods,
-            HasShotData: hasShotData,
-            Goals: goals
-        );
-    }
-
-    /// <summary>
-    /// Finds the index of the game-winning goal.
-    /// The GWG is the goal that gave the winning team a lead they never lost
-    /// (i.e., the goal that put them at losingTeamFinalScore + 1).
-    /// </summary>
-    /// <param name="goals">List of goals with their metadata</param>
-    /// <param name="finalHomeScore">Final score for home team</param>
-    /// <param name="finalAwayScore">Final score for away team</param>
-    /// <returns>Index of the GWG, or null if no clear winner</returns>
-    private static int? FindGwgIndex(
-        IReadOnlyList<(bool IsHomeGoal, int HomeScoreAfter, int AwayScoreAfter)> goals,
-        int finalHomeScore,
-        int finalAwayScore)
-    {
-        var homeWins = finalHomeScore > finalAwayScore;
-        var awayWins = finalAwayScore > finalHomeScore;
-
-        // If it's a tie (shouldn't happen in NHL), no GWG
-        if (!homeWins && !awayWins)
-            return null;
-
-        var losingTeamFinalScore = homeWins ? finalAwayScore : finalHomeScore;
-
-        for (int i = 0; i < goals.Count; i++)
-        {
-            var goal = goals[i];
-            var isWinningTeamGoal = (homeWins && goal.IsHomeGoal) || (awayWins && !goal.IsHomeGoal);
-
-            if (isWinningTeamGoal)
-            {
-                var winningTeamScoreAfter = goal.IsHomeGoal ? goal.HomeScoreAfter : goal.AwayScoreAfter;
-                if (winningTeamScoreAfter == losingTeamFinalScore + 1)
-                {
-                    return i;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Maps goals from live game data and determines which goal is the GWG.
-    /// GWG is only calculated for completed games.
-    /// </summary>
-    private static List<GameGoalDto> MapGoalsWithGwg(
-        List<NhlGameGoal> goals,
-        int? finalHomeScore,
-        int? finalAwayScore,
-        string homeTeamAbbrev,
-        bool isGameCompleted)
-    {
-        if (goals.Count == 0 || finalHomeScore == null || finalAwayScore == null)
-            return [];
-
-        // Only calculate GWG for completed games
-        int? gwgIndex = null;
-        if (isGameCompleted)
-        {
-            var goalData = goals
-                .Select(g => (IsHomeGoal: g.TeamAbbrev == homeTeamAbbrev, HomeScoreAfter: g.HomeScore, AwayScoreAfter: g.AwayScore))
-                .ToList();
-
-            gwgIndex = FindGwgIndex(goalData, finalHomeScore.Value, finalAwayScore.Value);
-        }
-
-        return goals.Select((g, idx) => new GameGoalDto(
-            Period: g.Period,
-            TimeInPeriod: g.TimeInPeriod,
-            ScorerName: g.Name?.Default ?? $"{g.FirstName?.Default} {g.LastName?.Default}".Trim(),
-            ScorerId: g.PlayerId,
-            TeamCode: g.TeamAbbrev ?? "",
-            Strength: g.Strength ?? g.GoalModifier,
-            Assists: g.Assists.Select(a => a.Name?.Default ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList(),
-            IsGameWinningGoal: idx == gwgIndex
-        )).ToList();
-    }
-
-    /// <summary>
-    /// Maps goals from landing endpoint and determines which goal is the GWG.
-    /// </summary>
-    private static List<GameGoalDto> MapLandingGoalsWithGwg(NhlGameLanding landing, string homeTeamCode)
-    {
-        var allGoals = landing.Summary?.Scoring
-            .SelectMany(p => p.Goals)
-            .ToList() ?? [];
-
-        if (allGoals.Count == 0)
-            return [];
-
-        var finalHomeScore = landing.HomeTeam.Score;
-        var finalAwayScore = landing.AwayTeam.Score;
-
-        if (finalHomeScore == null || finalAwayScore == null)
-            return allGoals.Select(g => MapLandingGoalToDto(g, false)).ToList();
-
-        var goalData = allGoals
-            .Select(g => (IsHomeGoal: g.TeamAbbrev?.Default == homeTeamCode, HomeScoreAfter: g.HomeScore, AwayScoreAfter: g.AwayScore))
-            .ToList();
-
-        var gwgIndex = FindGwgIndex(goalData, finalHomeScore.Value, finalAwayScore.Value);
-
-        return allGoals.Select((g, idx) => MapLandingGoalToDto(g, idx == gwgIndex)).ToList();
-    }
-
-    private static GameGoalDto MapLandingGoalToDto(NhlScoringGoal g, bool isGwg)
-    {
-        return new GameGoalDto(
-            Period: g.Period,
-            TimeInPeriod: g.TimeInPeriod,
-            ScorerName: g.Name?.Default ?? $"{g.FirstName?.Default} {g.LastName?.Default}".Trim(),
-            ScorerId: g.PlayerId,
-            TeamCode: g.TeamAbbrev?.Default ?? "",
-            Strength: g.Strength,
-            Assists: g.Assists.Select(a => a.Name?.Default ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList(),
-            IsGameWinningGoal: isGwg
-        );
-    }
-
     private static async Task<IResult> GetGamePreview(
         string gameId,
         IGameRepository gameRepository,
@@ -806,12 +442,10 @@ public static class GameEndpoints
         NhlScheduleService nhlScheduleService,
         CancellationToken cancellationToken)
     {
-        // First get the game info (try live scores, then DB, then NHL API)
         var game = await gameRepository.GetByGameIdAsync(gameId, cancellationToken);
 
         if (game == null)
         {
-            // Try to fetch from NHL API
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var nhlGames = await nhlScheduleService.GetGamesForDateRangeAsync(
                 today.AddDays(-1),
@@ -834,19 +468,16 @@ public static class GameEndpoints
         var awayTeam = game.AwayTeamCode;
         var season = game.Season;
 
-        // Fetch head-to-head from NHL API (our DB may not have historical games)
         var homeTeamGames = await nhlScheduleService.GetTeamSeasonGamesAsync(homeTeam, season, cancellationToken);
         var headToHeadGames = homeTeamGames
-            .Where(g => g.GameState == "OFF" && g.GameType == 2) // Completed regular season games only
+            .Where(g => g.GameState == "OFF" && g.GameType == 2)
             .Where(g => g.HomeTeam.Abbrev == awayTeam || g.AwayTeam.Abbrev == awayTeam)
             .OrderByDescending(g => g.GameDate)
             .ToList();
 
-        // Team stats (all situations needed for comparison)
         var homeTeamStats = await teamSeasonRepository.GetByTeamSeasonAsync(homeTeam, season, "all", false, cancellationToken);
         var awayTeamStats = await teamSeasonRepository.GetByTeamSeasonAsync(awayTeam, season, "all", false, cancellationToken);
 
-        // Fetch official NHL standings (streaks, home/away records, L10) and special teams stats (PP%/PK%)
         var standingsTask = nhlScheduleService.GetStandingsAsync(cancellationToken);
         var specialTeamsTask = nhlScheduleService.GetTeamSpecialTeamsAsync(season, cancellationToken);
         await Task.WhenAll(standingsTask, specialTeamsTask);
@@ -859,28 +490,21 @@ public static class GameEndpoints
         specialTeams.TryGetValue(homeTeam, out var homeSpecialTeams);
         specialTeams.TryGetValue(awayTeam, out var awaySpecialTeams);
 
-        // Hot players
         var homeHotPlayers = await skaterStatsRepository.GetHotPlayersByTeamAsync(homeTeam, season, 3, cancellationToken);
         var awayHotPlayers = await skaterStatsRepository.GetHotPlayersByTeamAsync(awayTeam, season, 3, cancellationToken);
 
-        // Goalies
         var homeGoalies = await goalieStatsRepository.GetByTeamSeasonAsync(homeTeam, season, "all", false, cancellationToken);
         var awayGoalies = await goalieStatsRepository.GetByTeamSeasonAsync(awayTeam, season, "all", false, cancellationToken);
 
-        // Build head-to-head
-        var h2hRecord = BuildHeadToHeadRecord(headToHeadGames, homeTeam, awayTeam);
+        var h2hRecord = GamePreviewBuilder.BuildHeadToHeadRecord(headToHeadGames, homeTeam, awayTeam);
+        var homeComparison = GamePreviewBuilder.BuildTeamPreviewStats(homeTeam, homeTeamStats, homeStandings, homeSpecialTeams);
+        var awayComparison = GamePreviewBuilder.BuildTeamPreviewStats(awayTeam, awayTeamStats, awayStandings, awaySpecialTeams);
 
-        // Build team comparison
-        var homeComparison = BuildTeamPreviewStats(homeTeam, homeTeamStats, homeStandings, homeSpecialTeams);
-        var awayComparison = BuildTeamPreviewStats(awayTeam, awayTeamStats, awayStandings, awaySpecialTeams);
+        var homeHotPlayerDtos = homeHotPlayers.Select(GameMappers.MapToHotPlayerDto).ToList();
+        var awayHotPlayerDtos = awayHotPlayers.Select(GameMappers.MapToHotPlayerDto).ToList();
 
-        // Build hot players
-        var homeHotPlayerDtos = homeHotPlayers.Select(MapToHotPlayerDto).ToList();
-        var awayHotPlayerDtos = awayHotPlayers.Select(MapToHotPlayerDto).ToList();
-
-        // Build goalie matchup (all goalies, already sorted by ice time)
-        var homeGoalieDtos = homeGoalies.Select(MapToGoaliePreviewDto).ToList();
-        var awayGoalieDtos = awayGoalies.Select(MapToGoaliePreviewDto).ToList();
+        var homeGoalieDtos = homeGoalies.Select(GameMappers.MapToGoaliePreviewDto).ToList();
+        var awayGoalieDtos = awayGoalies.Select(GameMappers.MapToGoaliePreviewDto).ToList();
 
         return Results.Ok(new GamePreviewDto(
             Game: new GamePreviewGameDto(
@@ -900,136 +524,224 @@ public static class GameEndpoints
         ));
     }
 
-    private static HeadToHeadDto BuildHeadToHeadRecord(
-        IReadOnlyList<NhlClubScheduleGame> games,
-        string homeTeam,
-        string awayTeam)
+    private static async Task<IResult> GetGoalieRecentForm(
+        string gameId,
+        IGameRepository gameRepository,
+        NhlScheduleService nhlScheduleService,
+        CancellationToken cancellationToken)
     {
-        var homeWins = 0;
-        var awayWins = 0;
-        var otLosses = 0;
-
-        foreach (var g in games)
+        var game = await gameRepository.GetByGameIdAsync(gameId, cancellationToken);
+        if (game == null)
         {
-            var gameHomeTeam = g.HomeTeam.Abbrev;
-            var homeScore = g.HomeTeam.Score ?? 0;
-            var awayScore = g.AwayTeam.Score ?? 0;
-            var homeWon = homeScore > awayScore;
-            var isOt = g.PeriodDescriptor?.PeriodType is "OT" or "SO";
+            return Results.NotFound();
+        }
 
-            if (gameHomeTeam == homeTeam)
+        var homeTeam = game.HomeTeamCode;
+        var awayTeam = game.AwayTeamCode;
+        var season = game.Season;
+
+        var homeGamesTask = nhlScheduleService.GetTeamSeasonGamesAsync(homeTeam, season, cancellationToken);
+        var awayGamesTask = nhlScheduleService.GetTeamSeasonGamesAsync(awayTeam, season, cancellationToken);
+        await Task.WhenAll(homeGamesTask, awayGamesTask);
+
+        var homeGames = (await homeGamesTask)
+            .Where(g => g.GameState == "OFF" && g.GameType == 2)
+            .OrderByDescending(g => g.GameDate)
+            .Take(5)
+            .ToList();
+
+        var awayGames = (await awayGamesTask)
+            .Where(g => g.GameState == "OFF" && g.GameType == 2)
+            .OrderByDescending(g => g.GameDate)
+            .Take(5)
+            .ToList();
+
+        var allGameIds = homeGames.Select(g => g.Id.ToString()).Concat(awayGames.Select(g => g.Id.ToString())).Distinct().ToList();
+        var boxscoreTasks = allGameIds.Select(id => nhlScheduleService.GetBoxscoreAsync(id, cancellationToken));
+        var boxscores = (await Task.WhenAll(boxscoreTasks))
+            .Where(b => b != null)
+            .ToDictionary(b => b!.Id.ToString(), b => b!);
+
+        var homeGoalieStats = GamePreviewBuilder.AggregateGoalieStatsFromBoxscores(homeTeam, homeGames, boxscores);
+        var awayGoalieStats = GamePreviewBuilder.AggregateGoalieStatsFromBoxscores(awayTeam, awayGames, boxscores);
+
+        return Results.Ok(new GoalieRecentFormResponseDto(
+            Home: homeGoalieStats,
+            Away: awayGoalieStats
+        ));
+    }
+
+    #region Helper Methods
+
+    private static async Task<List<Game>> GetGamesForDate(
+        DateOnly date,
+        IGameRepository gameRepository,
+        NhlScheduleService nhlScheduleService,
+        CancellationToken cancellationToken)
+    {
+        var games = (await gameRepository.GetByDateAsync(date, cancellationToken)).ToList();
+
+        var etZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+        var nowEt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, etZone);
+        var today = DateOnly.FromDateTime(nowEt);
+        var shouldRefresh = games.Count == 0 || date >= today;
+
+        if (shouldRefresh)
+        {
+            var nhlGames = await nhlScheduleService.GetGamesForDateAsync(date, cancellationToken);
+            var dateGames = nhlGames.Where(g => g.GameDate == date).ToList();
+
+            if (dateGames.Count > 0)
             {
-                if (homeWon) homeWins++;
-                else if (isOt) otLosses++;
-                else awayWins++;
-            }
-            else // awayTeam was home in this game
-            {
-                if (homeWon) awayWins++;
-                else if (isOt) otLosses++;
-                else homeWins++;
+                await gameRepository.UpsertBatchAsync(dateGames, cancellationToken);
+                games = dateGames;
             }
         }
 
-        var lastFive = games.Take(5).Select(g =>
+        return games;
+    }
+
+    private static int GetSeasonFromGameId(string gameId)
+    {
+        if (gameId.Length >= 4 && int.TryParse(gameId[..4], out var year))
+            return year;
+        var now = DateTime.UtcNow;
+        return now.Month < 9 ? now.Year - 1 : now.Year;
+    }
+
+    private static async Task<Dictionary<string, string>> ComputeHeadToHeadForGames(
+        List<Game> games,
+        IGameRepository gameRepository,
+        CancellationToken cancellationToken)
+    {
+        var matchups = games.Select(g => (g.HomeTeamCode, g.AwayTeamCode, g.Season)).ToList();
+        return await ComputeHeadToHeadForMatchups(matchups, gameRepository, cancellationToken);
+    }
+
+    private static async Task<Dictionary<string, string>> ComputeHeadToHeadForMatchups(
+        List<(string HomeTeam, string AwayTeam, int Season)> matchups,
+        IGameRepository gameRepository,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, string>();
+        if (matchups.Count == 0) return result;
+
+        var uniqueMatchups = matchups
+            .Select(m => (
+                TeamA: string.Compare(m.HomeTeam, m.AwayTeam, StringComparison.Ordinal) < 0 ? m.HomeTeam : m.AwayTeam,
+                TeamB: string.Compare(m.HomeTeam, m.AwayTeam, StringComparison.Ordinal) < 0 ? m.AwayTeam : m.HomeTeam,
+                m.Season))
+            .Distinct()
+            .ToList();
+
+        var h2hResults = new List<(string TeamA, string TeamB, IReadOnlyList<Game> Games)>();
+        foreach (var m in uniqueMatchups)
         {
-            var homeScore = g.HomeTeam.Score ?? 0;
-            var awayScore = g.AwayTeam.Score ?? 0;
-            return new PastGameDto(
-                Date: DateOnly.Parse(g.GameDate),
-                Score: $"{g.HomeTeam.Abbrev} {homeScore} - {g.AwayTeam.Abbrev} {awayScore}",
-                Winner: homeScore > awayScore ? g.HomeTeam.Abbrev : g.AwayTeam.Abbrev,
-                OvertimeType: g.PeriodDescriptor?.PeriodType is "OT" or "SO" ? g.PeriodDescriptor.PeriodType : null
-            );
+            var h2hGames = await gameRepository.GetHeadToHeadAsync(m.TeamA, m.TeamB, m.Season, cancellationToken);
+            h2hResults.Add((m.TeamA, m.TeamB, h2hGames));
+        }
+
+        foreach (var matchup in matchups)
+        {
+            var key = $"{matchup.HomeTeam}-{matchup.AwayTeam}";
+            if (result.ContainsKey(key)) continue;
+
+            var teamA = string.Compare(matchup.HomeTeam, matchup.AwayTeam, StringComparison.Ordinal) < 0 ? matchup.HomeTeam : matchup.AwayTeam;
+            var teamB = string.Compare(matchup.HomeTeam, matchup.AwayTeam, StringComparison.Ordinal) < 0 ? matchup.AwayTeam : matchup.HomeTeam;
+
+            var h2h = h2hResults.FirstOrDefault(r => r.TeamA == teamA && r.TeamB == teamB);
+            if (h2h.Games == null || h2h.Games.Count == 0)
+            {
+                result[key] = "";
+                continue;
+            }
+
+            var completedGames = h2h.Games.Where(g => g.GameState == "OFF").ToList();
+            if (completedGames.Count == 0)
+            {
+                result[key] = "";
+                continue;
+            }
+
+            var homeWins = 0;
+            var awayWins = 0;
+
+            foreach (var game in completedGames)
+            {
+                var homeScore = game.HomeScore;
+                var awayScore = game.AwayScore;
+                var gameHomeWon = homeScore > awayScore;
+
+                if (game.HomeTeamCode == matchup.HomeTeam)
+                {
+                    if (gameHomeWon) homeWins++;
+                    else awayWins++;
+                }
+                else
+                {
+                    if (gameHomeWon) awayWins++;
+                    else homeWins++;
+                }
+            }
+
+            if (homeWins > awayWins)
+                result[key] = $"{matchup.HomeTeam} leads {homeWins}-{awayWins}";
+            else if (awayWins > homeWins)
+                result[key] = $"{matchup.AwayTeam} leads {awayWins}-{homeWins}";
+            else
+                result[key] = $"Series tied {homeWins}-{awayWins}";
+        }
+
+        return result;
+    }
+
+    private static async Task<List<GameSummaryDto>> EnrichGamesWithStats(
+        List<Game> games,
+        IGameStatsRepository gameStatsRepository,
+        IReadOnlyDictionary<string, NhlTeamStandings> standings,
+        Dictionary<string, string> h2hData,
+        CancellationToken cancellationToken)
+    {
+        if (games.Count == 0)
+            return [];
+
+        var gameIds = games.Select(g => g.GameId).ToList();
+        var allStats = await gameStatsRepository.GetGameStatsBatchAsync(gameIds, cancellationToken);
+        var statsByGameId = allStats.ToDictionary(s => s.GameId);
+
+        return games.Select(g =>
+        {
+            var h2hKey = $"{g.HomeTeamCode}-{g.AwayTeamCode}";
+            h2hData.TryGetValue(h2hKey, out var seasonSeries);
+            standings.TryGetValue(g.HomeTeamCode, out var homeStandings);
+            standings.TryGetValue(g.AwayTeamCode, out var awayStandings);
+            return GameMappers.MapToDto(g, statsByGameId.GetValueOrDefault(g.GameId), homeStandings, awayStandings, seasonSeries);
         }).ToList();
-
-        return new HeadToHeadDto(
-            Season: new SeasonRecordDto(homeWins, awayWins, otLosses),
-            LastFive: lastFive
-        );
     }
 
-    private static TeamPreviewStatsDto BuildTeamPreviewStats(
-        string teamCode,
-        TeamSeason? allSituation,
-        NhlTeamStandings? standings,
-        NhlTeamSpecialTeams? specialTeams)
+    private static async Task<List<GameSummaryDto>> EnrichLiveGamesWithStats(
+        List<NhlLiveGame> games,
+        IGameStatsRepository gameStatsRepository,
+        IReadOnlyDictionary<string, NhlTeamStandings> standings,
+        Dictionary<string, string> h2hData,
+        CancellationToken cancellationToken)
     {
-        if (allSituation == null)
+        if (games.Count == 0)
+            return [];
+
+        var gameIds = games.Select(g => g.Id.ToString()).ToList();
+        var allStats = await gameStatsRepository.GetGameStatsBatchAsync(gameIds, cancellationToken);
+        var statsByGameId = allStats.ToDictionary(s => s.GameId);
+
+        return games.Select(g =>
         {
-            return new TeamPreviewStatsDto(teamCode, 0, 0, 0, null, null, null, null, null, null, null, null);
-        }
-
-        var gp = allSituation.GamesPlayed;
-        var xgfPerGame = gp > 0 ? Math.Round(allSituation.XGoalsFor / gp, 2) : 0;
-        var xgaPerGame = gp > 0 ? Math.Round(allSituation.XGoalsAgainst / gp, 2) : 0;
-
-        // Use official NHL PP% and PK% from NHL Stats API
-        decimal? ppPct = specialTeams?.PowerPlayPct != null
-            ? Math.Round(specialTeams.PowerPlayPct.Value * 100, 1)
-            : null;
-        decimal? pkPct = specialTeams?.PenaltyKillPct != null
-            ? Math.Round(specialTeams.PenaltyKillPct.Value * 100, 1)
-            : null;
-
-        // Build streak string (e.g., "W3", "L2", "OT1")
-        string? streak = standings != null && !string.IsNullOrEmpty(standings.StreakCode)
-            ? $"{standings.StreakCode}{standings.StreakCount}"
-            : null;
-
-        // Build record strings
-        string? homeRecord = standings != null
-            ? $"{standings.HomeWins}-{standings.HomeLosses}-{standings.HomeOtLosses}"
-            : null;
-        string? roadRecord = standings != null
-            ? $"{standings.RoadWins}-{standings.RoadLosses}-{standings.RoadOtLosses}"
-            : null;
-        string? last10 = standings != null
-            ? $"{standings.L10Wins}-{standings.L10Losses}-{standings.L10OtLosses}"
-            : null;
-
-        return new TeamPreviewStatsDto(
-            TeamCode: teamCode,
-            GamesPlayed: gp,
-            XGoalsFor: xgfPerGame,
-            XGoalsAgainst: xgaPerGame,
-            XGoalsPct: allSituation.XGoalsPercentage,
-            CorsiPct: allSituation.CorsiPercentage,
-            PowerPlayPct: ppPct,
-            PenaltyKillPct: pkPct,
-            Streak: streak,
-            HomeRecord: homeRecord,
-            RoadRecord: roadRecord,
-            Last10: last10
-        );
+            var h2hKey = $"{g.HomeTeam.Abbrev}-{g.AwayTeam.Abbrev}";
+            h2hData.TryGetValue(h2hKey, out var seasonSeries);
+            standings.TryGetValue(g.HomeTeam.Abbrev, out var homeStandings);
+            standings.TryGetValue(g.AwayTeam.Abbrev, out var awayStandings);
+            return GameMappers.MapLiveGameToDto(g, statsByGameId.GetValueOrDefault(g.Id.ToString()), homeStandings, awayStandings, seasonSeries);
+        }).ToList();
     }
 
-    private static HotPlayerDto MapToHotPlayerDto(SkaterSeason s)
-    {
-        var differential = s.Goals - (s.ExpectedGoals ?? 0);
-        var trend = differential > 0 ? "hot" : "cold";
-
-        return new HotPlayerDto(
-            PlayerId: s.PlayerId,
-            Name: s.Player?.Name ?? $"Player {s.PlayerId}",
-            Position: s.Player?.Position,
-            Goals: s.Goals,
-            Assists: s.Assists,
-            ExpectedGoals: s.ExpectedGoals ?? 0,
-            Differential: Math.Round(differential, 2),
-            Trend: trend
-        );
-    }
-
-    private static GoaliePreviewDto MapToGoaliePreviewDto(GoalieSeason g)
-    {
-        return new GoaliePreviewDto(
-            PlayerId: g.PlayerId,
-            Name: g.Player?.Name ?? $"Goalie {g.PlayerId}",
-            GamesPlayed: g.GamesPlayed,
-            SavePct: g.SavePercentage,
-            GoalsAgainstAvg: g.GoalsAgainstAverage,
-            GoalsSavedAboveExpected: g.GoalsSavedAboveExpected
-        );
-    }
+    #endregion
 }
