@@ -120,7 +120,9 @@ export interface GamePreviewGame {
   id: string;
   date: string;
   homeTeam: string;
+  homeTeamName: string | null;
   awayTeam: string;
+  awayTeamName: string | null;
   startTimeUtc: string | null;
 }
 

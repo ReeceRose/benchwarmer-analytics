@@ -29,8 +29,8 @@ export function LineRow({
   teamAvgXgPct,
   teamAvgCfPct,
 }: LineRowProps) {
-  const xgPct = line.expectedGoalsPct != null ? line.expectedGoalsPct * 100 : undefined;
-  const cfPct = line.corsiPct != null ? line.corsiPct * 100 : undefined;
+  const xgPct = line.expectedGoalsPct ?? undefined;
+  const cfPct = line.corsiPct ?? undefined;
 
   return (
     <TableRow className="hover:bg-muted/50">

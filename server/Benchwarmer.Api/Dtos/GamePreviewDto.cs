@@ -12,7 +12,9 @@ public record GamePreviewGameDto(
     string Id,
     DateOnly Date,
     string HomeTeam,
+    string? HomeTeamName,
     string AwayTeam,
+    string? AwayTeamName,
     string? StartTimeUtc
 );
 

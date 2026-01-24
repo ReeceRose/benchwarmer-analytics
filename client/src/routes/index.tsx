@@ -112,6 +112,8 @@ function HomePage() {
               <LeaderStrip
                 leaders={data.leaders}
                 goalieLeaders={data.goalieLeaders}
+                season={effectiveSeason}
+                situation={situation}
               />
             ) : null}
           </section>

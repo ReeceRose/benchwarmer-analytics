@@ -9,6 +9,14 @@ public interface IStatsRepository
         int outlierCount = 5,
         int topLinesCount = 5,
         CancellationToken cancellationToken = default);
+
+    Task<LeaderboardResult> GetLeaderboardAsync(
+        string category,
+        int season,
+        string situation,
+        int limit = 50,
+        bool ascending = false,
+        CancellationToken cancellationToken = default);
 }
 
 public record HomepageStats(
@@ -78,4 +86,31 @@ public record LinePlayer(
     int PlayerId,
     string Name,
     string? Position
+);
+
+public record LeaderboardResult(
+    string Category,
+    int TotalCount,
+    IReadOnlyList<LeaderboardResultEntry> Entries
+);
+
+public record LeaderboardResultEntry(
+    int Rank,
+    int PlayerId,
+    string Name,
+    string? Team,
+    string? Position,
+    decimal PrimaryValue,
+    int GamesPlayed,
+    // Skater stats
+    int? Goals,
+    int? Assists,
+    decimal? ExpectedGoals,
+    decimal? CorsiForPct,
+    int? IceTimeSeconds,
+    // Goalie stats
+    decimal? SavePercentage,
+    decimal? GoalsAgainstAverage,
+    decimal? GoalsSavedAboveExpected,
+    int? ShotsAgainst
 );

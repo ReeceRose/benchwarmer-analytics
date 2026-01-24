@@ -31,6 +31,12 @@ export function Header() {
             Players
           </Link>
           <Link
+            to="/leaderboards"
+            className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+          >
+            Leaders
+          </Link>
+          <Link
             to="/compare"
             className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
           >

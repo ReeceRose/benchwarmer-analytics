@@ -2,14 +2,14 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { ErrorState } from "@/components/shared";
 import {
-  GameHeader,
-  GameHeaderSkeleton,
+  GameDetailHeader,
+  GameDetailHeaderSkeleton,
   GameBoxscoreTable,
   GameBoxscoreTableSkeleton,
 } from "@/components/game-detail";
 import {
-  GamePreviewCard,
-  GamePreviewSkeleton,
+  GamePreviewSections,
+  GamePreviewSectionsSkeleton,
 } from "@/components/game-preview";
 import {
   useGame,
@@ -98,11 +98,19 @@ function GameDetailPage() {
         Back to Games
       </button>
 
-      {isFutureGame &&
-        (gameLoading || previewLoading ? (
-          <GamePreviewSkeleton />
+      {/* Unified header for all game states */}
+      {gameLoading && !game ? (
+        <GameDetailHeaderSkeleton />
+      ) : (game || previewData) ? (
+        <GameDetailHeader game={game} preview={previewData} />
+      ) : null}
+
+      {/* Preview sections for future games */}
+      {isFutureGame && (
+        previewLoading ? (
+          <GamePreviewSectionsSkeleton />
         ) : previewData ? (
-          <GamePreviewCard
+          <GamePreviewSections
             preview={previewData}
             goalieRecentForm={goalieFormData}
           />
@@ -112,32 +120,25 @@ function GameDetailPage() {
             message="Could not fetch game preview data."
             onRetry={() => refetch()}
           />
-        ) : null)}
-
-      {isCompletedOrLive && (
-        <>
-          {gameLoading ? (
-            <GameHeaderSkeleton />
-          ) : (
-            <GameHeader game={game} preview={previewData} />
-          )}
-          {boxscoreLoading ? (
-            <GameBoxscoreTableSkeleton />
-          ) : boxscoreData ? (
-            <GameBoxscoreTable
-              boxscoreData={boxscoreData}
-              season={season}
-              goals={game.goals}
-            />
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              Box score not available for this game.
-            </div>
-          )}
-        </>
+        ) : null
       )}
 
-      {gameLoading && !game && <GameHeaderSkeleton />}
+      {/* Boxscore for completed/live games */}
+      {isCompletedOrLive && (
+        boxscoreLoading ? (
+          <GameBoxscoreTableSkeleton />
+        ) : boxscoreData ? (
+          <GameBoxscoreTable
+            boxscoreData={boxscoreData}
+            season={season}
+            goals={game.goals}
+          />
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            Box score not available for this game.
+          </div>
+        )
+      )}
     </div>
   );
 }

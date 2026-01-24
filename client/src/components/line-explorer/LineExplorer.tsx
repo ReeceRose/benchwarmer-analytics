@@ -75,11 +75,11 @@ export function LineExplorer({
 
     for (const line of lines) {
       if (line.expectedGoalsPct != null) {
-        totalXg += line.expectedGoalsPct * 100;
+        totalXg += line.expectedGoalsPct;
         xgCount++;
       }
       if (line.corsiPct != null) {
-        totalCf += line.corsiPct * 100;
+        totalCf += line.corsiPct;
         cfCount++;
       }
     }

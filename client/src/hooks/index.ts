@@ -18,3 +18,4 @@ export { useYesterdaysGames, useTodaysGames, useLiveScores, useGamesByDate, useG
 export { useBreakoutCandidates, useAgeCurves, useAgeDistribution, useSeasonPercentiles } from "@/hooks/useAnalytics";
 export { usePowerRankings } from "@/hooks/useStandings";
 export { useTeamSpecialTeams, useSpecialTeamsPlayers } from "@/hooks/useSpecialTeams";
+export { useLeaderboard } from "@/hooks/useLeaderboard";

@@ -288,4 +288,208 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
             goalieOutliers
         );
     }
+
+    /// <summary>
+    /// Minimum ice time in seconds for even strength rate stats (500 minutes).
+    /// </summary>
+    private const int MinEvenStrengthIceTimeSeconds = 500 * 60;
+
+    /// <summary>
+    /// Minimum ice time in seconds for special teams rate stats (50 minutes).
+    /// </summary>
+    private const int MinSpecialTeamsIceTimeSeconds = 50 * 60;
+
+    public async Task<LeaderboardResult> GetLeaderboardAsync(
+        string category,
+        int season,
+        string situation,
+        int limit = 50,
+        bool ascending = false,
+        CancellationToken cancellationToken = default)
+    {
+        // Goalie categories always use "all" situation
+        var isGoalieCategory = LeaderboardCategories.IsGoalieCategory(category);
+
+        if (isGoalieCategory)
+        {
+            return await GetGoalieLeaderboardAsync(category, season, limit, ascending, cancellationToken);
+        }
+
+        return await GetSkaterLeaderboardAsync(category, season, situation, limit, ascending, cancellationToken);
+    }
+
+    private async Task<LeaderboardResult> GetSkaterLeaderboardAsync(
+        string category,
+        int season,
+        string situation,
+        int limit,
+        bool ascending,
+        CancellationToken cancellationToken)
+    {
+        // Adjust minimum ice time based on situation
+        var isEvenStrength = situation == "5on5" || situation == "all";
+        var minIceTime = isEvenStrength ? MinEvenStrengthIceTimeSeconds : MinSpecialTeamsIceTimeSeconds;
+
+        var baseQuery = db.SkaterSeasons
+            .Include(s => s.Player)
+            .Where(s => s.Season == season && s.Situation == situation && !s.IsPlayoffs)
+            .Where(s => s.Player != null);
+
+        // For rate stats (Corsi%), require minimum ice time
+        if (category.Equals("corsiPct", StringComparison.OrdinalIgnoreCase))
+        {
+            baseQuery = baseQuery.Where(s => s.IceTimeSeconds >= minIceTime);
+        }
+
+        // Project to anonymous type with all needed fields, then sort by category
+        var query = baseQuery.Select(s => new
+        {
+            s.PlayerId,
+            Name = s.Player!.Name,
+            s.Team,
+            Position = s.Player.Position,
+            s.GamesPlayed,
+            s.Goals,
+            s.Assists,
+            Points = s.Goals + s.Assists,
+            ExpectedGoals = s.ExpectedGoals ?? 0m,
+            CorsiForPct = s.CorsiForPct ?? 0m,
+            s.IceTimeSeconds
+        });
+
+        // Apply sorting based on category
+        var orderedQuery = (category.ToLowerInvariant(), ascending) switch
+        {
+            ("points", false) => query.OrderByDescending(s => s.Points),
+            ("points", true) => query.OrderBy(s => s.Points),
+            ("goals", false) => query.OrderByDescending(s => s.Goals),
+            ("goals", true) => query.OrderBy(s => s.Goals),
+            ("assists", false) => query.OrderByDescending(s => s.Assists),
+            ("assists", true) => query.OrderBy(s => s.Assists),
+            ("expectedgoals", false) => query.OrderByDescending(s => s.ExpectedGoals),
+            ("expectedgoals", true) => query.OrderBy(s => s.ExpectedGoals),
+            ("corsipct", false) => query.OrderByDescending(s => s.CorsiForPct),
+            ("corsipct", true) => query.OrderBy(s => s.CorsiForPct),
+            ("icetime", false) => query.OrderByDescending(s => s.IceTimeSeconds),
+            ("icetime", true) => query.OrderBy(s => s.IceTimeSeconds),
+            ("gamesplayed", false) => query.OrderByDescending(s => s.GamesPlayed),
+            ("gamesplayed", true) => query.OrderBy(s => s.GamesPlayed),
+            (_, false) => query.OrderByDescending(s => s.Points),
+            (_, true) => query.OrderBy(s => s.Points)
+        };
+
+        var results = await orderedQuery
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
+        var totalCount = await baseQuery.CountAsync(cancellationToken);
+
+        var entries = results.Select((s, index) => new LeaderboardResultEntry(
+            Rank: index + 1,
+            PlayerId: s.PlayerId,
+            Name: s.Name,
+            Team: s.Team,
+            Position: s.Position,
+            PrimaryValue: category.ToLowerInvariant() switch
+            {
+                "points" => s.Points,
+                "goals" => s.Goals,
+                "assists" => s.Assists,
+                "expectedgoals" => s.ExpectedGoals,
+                "corsipct" => s.CorsiForPct,
+                "icetime" => s.IceTimeSeconds,
+                "gamesplayed" => s.GamesPlayed,
+                _ => s.Points
+            },
+            GamesPlayed: s.GamesPlayed,
+            Goals: s.Goals,
+            Assists: s.Assists,
+            ExpectedGoals: s.ExpectedGoals,
+            CorsiForPct: s.CorsiForPct,
+            IceTimeSeconds: s.IceTimeSeconds,
+            SavePercentage: null,
+            GoalsAgainstAverage: null,
+            GoalsSavedAboveExpected: null,
+            ShotsAgainst: null
+        )).ToList();
+
+        return new LeaderboardResult(category, totalCount, entries);
+    }
+
+    private async Task<LeaderboardResult> GetGoalieLeaderboardAsync(
+        string category,
+        int season,
+        int limit,
+        bool ascending,
+        CancellationToken cancellationToken)
+    {
+        const int minGoalieGames = 10;
+
+        var baseQuery = db.GoalieSeasons
+            .Include(g => g.Player)
+            .Where(g => g.Season == season && g.Situation == "all" && !g.IsPlayoffs)
+            .Where(g => g.Player != null && g.GamesPlayed >= minGoalieGames);
+
+        var query = baseQuery.Select(g => new
+        {
+            g.PlayerId,
+            Name = g.Player!.Name,
+            g.Team,
+            g.GamesPlayed,
+            SavePercentage = g.SavePercentage ?? 0m,
+            GoalsAgainstAverage = g.GoalsAgainstAverage ?? 0m,
+            GoalsSavedAboveExpected = g.GoalsSavedAboveExpected ?? 0m,
+            g.ShotsAgainst,
+            g.GoalsAgainst
+        });
+
+        // Apply sorting based on category
+        var orderedQuery = (category.ToLowerInvariant(), ascending) switch
+        {
+            ("savepct", false) => query.OrderByDescending(g => g.SavePercentage),
+            ("savepct", true) => query.OrderBy(g => g.SavePercentage),
+            ("gaa", false) => query.OrderByDescending(g => g.GoalsAgainstAverage),
+            ("gaa", true) => query.OrderBy(g => g.GoalsAgainstAverage),
+            ("gsax", false) => query.OrderByDescending(g => g.GoalsSavedAboveExpected),
+            ("gsax", true) => query.OrderBy(g => g.GoalsSavedAboveExpected),
+            ("shotsagainst", false) => query.OrderByDescending(g => g.ShotsAgainst),
+            ("shotsagainst", true) => query.OrderBy(g => g.ShotsAgainst),
+            (_, false) => query.OrderByDescending(g => g.SavePercentage),
+            (_, true) => query.OrderBy(g => g.SavePercentage)
+        };
+
+        var results = await orderedQuery
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
+        var totalCount = await baseQuery.CountAsync(cancellationToken);
+
+        var entries = results.Select((g, index) => new LeaderboardResultEntry(
+            Rank: index + 1,
+            PlayerId: g.PlayerId,
+            Name: g.Name,
+            Team: g.Team,
+            Position: "G",
+            PrimaryValue: category.ToLowerInvariant() switch
+            {
+                "savepct" => g.SavePercentage,
+                "gaa" => g.GoalsAgainstAverage,
+                "gsax" => g.GoalsSavedAboveExpected,
+                "shotsagainst" => g.ShotsAgainst,
+                _ => g.SavePercentage
+            },
+            GamesPlayed: g.GamesPlayed,
+            Goals: null,
+            Assists: null,
+            ExpectedGoals: null,
+            CorsiForPct: null,
+            IceTimeSeconds: null,
+            SavePercentage: g.SavePercentage,
+            GoalsAgainstAverage: g.GoalsAgainstAverage,
+            GoalsSavedAboveExpected: g.GoalsSavedAboveExpected,
+            ShotsAgainst: g.ShotsAgainst
+        )).ToList();
+
+        return new LeaderboardResult(category, totalCount, entries);
+    }
 }

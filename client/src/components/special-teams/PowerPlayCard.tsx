@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { StatItem } from "./StatItem";
+import { StatItem } from "@/components/special-teams/StatItem";
 import { formatPercent, formatIceTimeLong } from "@/lib/formatters";
 import type { PowerPlaySummary } from "@/types";
 

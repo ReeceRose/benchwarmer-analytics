@@ -93,6 +93,25 @@ public static class StatsEndpoints
                 """)
             .Produces<SeasonPercentilesDto>()
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/leaderboards", GetLeaderboard)
+            .WithName("GetLeaderboard")
+            .WithSummary("Get leaderboard for a specific stat category")
+            .WithDescription("""
+                Returns ranked list of players for a given stat category.
+
+                **Skater Categories:** points, goals, expectedGoals, corsiPct, iceTime
+                **Goalie Categories:** savePct, gaa, gsax
+
+                **Query Parameters:**
+                - `category`: Stat category (required)
+                - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
+                - `situation`: Game situation filter (5on5, all, 5on4, etc.). Defaults to all. Ignored for goalie categories.
+                - `limit`: Maximum entries to return (default: 50, max: 100)
+                - `sortDir`: Sort direction (asc or desc). Defaults to desc (top performers first).
+                """)
+            .Produces<LeaderboardResponseDto>()
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetHomepageData(
@@ -296,6 +315,42 @@ public static class StatsEndpoints
             percentiles.PointsPer60,
             percentiles.GoalsPer60
         ));
+    }
+
+    private static async Task<IResult> GetLeaderboard(
+        string? category,
+        int? season,
+        string? situation,
+        int? limit,
+        string? sortDir,
+        IStatsRepository statsRepository,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            return Results.BadRequest("Category is required. Valid categories: points, goals, assists, expectedGoals, corsiPct, iceTime, gamesPlayed, savePct, gaa, gsax, shotsAgainst");
+        }
+
+        if (!LeaderboardBuilder.IsValidCategory(category))
+        {
+            return Results.BadRequest($"Invalid category '{category}'. Valid categories: points, goals, assists, expectedGoals, corsiPct, iceTime, gamesPlayed, savePct, gaa, gsax, shotsAgainst");
+        }
+
+        var effectiveSeason = season ?? StatsMappers.GetDefaultSeason();
+        var effectiveSituation = situation ?? "all";
+        var effectiveLimit = Math.Clamp(limit ?? 50, 1, 100);
+        var ascending = string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase);
+
+        var result = await statsRepository.GetLeaderboardAsync(
+            category,
+            effectiveSeason,
+            effectiveSituation,
+            effectiveLimit,
+            ascending,
+            cancellationToken);
+
+        var response = LeaderboardBuilder.BuildResponse(result, effectiveSeason, effectiveSituation);
+        return Results.Ok(response);
     }
 }
 

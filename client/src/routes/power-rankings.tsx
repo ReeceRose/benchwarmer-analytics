@@ -421,10 +421,10 @@ function TeamRow({
       <TableCell className="text-right">{team.goalsFor}</TableCell>
       <TableCell className="text-right">{team.goalsAgainst}</TableCell>
       <TableCell className={`text-right ${xgPctColor}`}>
-        {team.xGoalsPct != null ? formatPercent(team.xGoalsPct) : "-"}
+        {team.xGoalsPct != null ? formatPercent(team.xGoalsPct, false) : "-"}
       </TableCell>
       <TableCell className={`text-right ${corsiColor}`}>
-        {team.corsiPct != null ? formatPercent(team.corsiPct) : "-"}
+        {team.corsiPct != null ? formatPercent(team.corsiPct, false) : "-"}
       </TableCell>
       <TableCell className={`text-right font-medium ${pdoColor}`}>
         {team.pdo != null ? team.pdo.toFixed(1) : "-"}

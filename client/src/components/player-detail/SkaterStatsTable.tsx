@@ -233,7 +233,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
                   <LuckCell goals={row.g} xg={row.xg} />
                 </TableCell>
                 <TableCell className="text-right tabular-nums hidden lg:table-cell">
-                  {row.cf != null ? formatPercent(row.cf) : "-"}
+                  {row.cf != null ? formatPercent(row.cf, false) : "-"}
                 </TableCell>
                 {rows.length >= 2 && (
                   <TableCell className="hidden xl:table-cell" />

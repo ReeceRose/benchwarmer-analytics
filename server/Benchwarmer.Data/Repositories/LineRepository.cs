@@ -204,7 +204,7 @@ public class LineRepository(AppDbContext db) : ILineRepository
     private static decimal? CalculatePercentage(decimal forValue, decimal againstValue)
     {
         var total = forValue + againstValue;
-        return total > 0 ? Math.Round(forValue / total, 2) : null;
+        return total > 0 ? Math.Round(forValue / total * 100, 1) : null;
     }
 
     public async Task UpsertBatchAsync(IEnumerable<LineCombination> lines, CancellationToken cancellationToken = default)

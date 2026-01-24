@@ -14,6 +14,7 @@ interface ChemistryMatrixProps {
 
 export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
   const [hoveredPair, setHoveredPair] = useState<ChemistryPair | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Cell size for the matrix
   const cellSize = 32;
@@ -85,9 +86,7 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
             const pair = matrixData.pairLookup.get(
               `${rowPlayer.id}-${colPlayer.id}`
             );
-            const xgPct = pair?.expectedGoalsPct
-              ? pair.expectedGoalsPct * 100
-              : null;
+            const xgPct = pair?.expectedGoalsPct ?? null;
             const hasData = pair != null;
 
             return (
@@ -107,7 +106,29 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
                       ? "cursor-pointer transition-opacity hover:opacity-80"
                       : ""
                   }
-                  onMouseEnter={() => hasData && setHoveredPair(pair || null)}
+                  onMouseEnter={(e) => {
+                    if (hasData) {
+                      const rect = (e.target as SVGRectElement).ownerSVGElement?.getBoundingClientRect();
+                      if (rect) {
+                        setMousePos({
+                          x: e.clientX - rect.left,
+                          y: e.clientY - rect.top,
+                        });
+                      }
+                      setHoveredPair(pair || null);
+                    }
+                  }}
+                  onMouseMove={(e) => {
+                    if (hasData) {
+                      const rect = (e.target as SVGRectElement).ownerSVGElement?.getBoundingClientRect();
+                      if (rect) {
+                        setMousePos({
+                          x: e.clientX - rect.left,
+                          y: e.clientY - rect.top,
+                        });
+                      }
+                    }
+                  }}
                   onMouseLeave={() => setHoveredPair(null)}
                 />
                 {xgPct != null && (
@@ -126,7 +147,7 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
           })
         )}
       </svg>
-      {hoveredPair && <ChemistryTooltip pair={hoveredPair} />}
+      {hoveredPair && <ChemistryTooltip pair={hoveredPair} position={mousePos} />}
     </div>
   );
 }

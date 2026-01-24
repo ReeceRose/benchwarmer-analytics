@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared";
-import { PowerPlayCard } from "./PowerPlayCard";
-import { PenaltyKillCard } from "./PenaltyKillCard";
-import { SpecialTeamsPlayerTable } from "./SpecialTeamsPlayerTable";
+import { PowerPlayCard } from "@/components/special-teams/PowerPlayCard";
+import { PenaltyKillCard } from "@/components/special-teams/PenaltyKillCard";
+import { SpecialTeamsPlayerTable } from "@/components/special-teams/SpecialTeamsPlayerTable";
 
 interface SpecialTeamsDashboardProps {
   abbrev: string;

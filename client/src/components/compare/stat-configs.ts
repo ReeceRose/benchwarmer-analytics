@@ -96,14 +96,14 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
   {
     key: "corsiForPct",
     label: "CF%",
-    format: (v) => (v != null ? formatPercent(v) : "-"),
+    format: (v) => (v != null ? formatPercent(v, false) : "-"),
     higherIsBetter: true,
     mode: "rate",
   },
   {
     key: "fenwickForPct",
     label: "FF%",
-    format: (v) => (v != null ? formatPercent(v) : "-"),
+    format: (v) => (v != null ? formatPercent(v, false) : "-"),
     higherIsBetter: true,
     mode: "rate",
   },

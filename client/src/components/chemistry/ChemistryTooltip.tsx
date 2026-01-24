@@ -3,11 +3,15 @@ import type { ChemistryPair } from "@/types";
 
 interface ChemistryTooltipProps {
   pair: ChemistryPair;
+  position: { x: number; y: number };
 }
 
-export function ChemistryTooltip({ pair }: ChemistryTooltipProps) {
+export function ChemistryTooltip({ pair, position }: ChemistryTooltipProps) {
   return (
-    <div className="absolute top-4 right-4 bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 min-w-50 z-10">
+    <div
+      className="absolute bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 min-w-50 z-10 pointer-events-none"
+      style={{ left: position.x + 12, top: position.y + 12 }}
+    >
       <div className="font-medium mb-2">
         {pair.player1Name} + {pair.player2Name}
       </div>
@@ -15,13 +19,13 @@ export function ChemistryTooltip({ pair }: ChemistryTooltipProps) {
         <span className="text-muted-foreground">xG%:</span>
         <span className="font-mono">
           {pair.expectedGoalsPct != null
-            ? formatPercent(pair.expectedGoalsPct)
+            ? formatPercent(pair.expectedGoalsPct, false)
             : "-"}
         </span>
         <span className="text-muted-foreground">CF%:</span>
         <span className="font-mono">
           {pair.corsiPct != null
-            ? formatPercent(pair.corsiPct)
+            ? formatPercent(pair.corsiPct, false)
             : "-"}
         </span>
         <span className="text-muted-foreground">TOI:</span>

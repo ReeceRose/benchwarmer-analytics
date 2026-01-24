@@ -24,6 +24,38 @@ interface SpecialTeamsPlayerTableProps {
 type SortField = "toi" | "goals" | "assists" | "points" | "shots" | "xGoals" | "xGoalsPer60" | "pointsPer60";
 type SortDirection = "asc" | "desc";
 
+interface SortableHeaderProps {
+  field: SortField;
+  label: string;
+  tooltip: string;
+  sortField: SortField;
+  sortDirection: SortDirection;
+  onSort: (field: SortField) => void;
+}
+
+function SortableHeader({
+  field,
+  label,
+  tooltip,
+  sortField,
+  sortDirection,
+  onSort,
+}: SortableHeaderProps) {
+  return (
+    <TableHead
+      className="text-right cursor-pointer hover:bg-muted/50 select-none"
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center justify-end gap-1">
+        <HeaderWithTooltip label={label} tooltip={tooltip} className="text-right" />
+        {sortField === field && (
+          <span className="text-xs">{sortDirection === "desc" ? "▼" : "▲"}</span>
+        )}
+      </div>
+    </TableHead>
+  );
+}
+
 function sortPlayers(
   players: SpecialTeamsPlayer[],
   field: SortField,
@@ -100,28 +132,6 @@ export function SpecialTeamsPlayerTable({
     ? sortPlayers(data.players, sortField, sortDirection)
     : [];
 
-  const SortableHeader = ({
-    field,
-    label,
-    tooltip,
-  }: {
-    field: SortField;
-    label: string;
-    tooltip: string;
-  }) => (
-    <TableHead
-      className="text-right cursor-pointer hover:bg-muted/50 select-none"
-      onClick={() => handleSort(field)}
-    >
-      <div className="flex items-center justify-end gap-1">
-        <HeaderWithTooltip label={label} tooltip={tooltip} className="text-right" />
-        {sortField === field && (
-          <span className="text-xs">{sortDirection === "desc" ? "▼" : "▲"}</span>
-        )}
-      </div>
-    </TableHead>
-  );
-
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -162,14 +172,14 @@ export function SpecialTeamsPlayerTable({
                 <TableHead className="w-[200px]">Player</TableHead>
                 <HeaderWithTooltip label="Pos" tooltip="Position" />
                 <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
-                <SortableHeader field="toi" label="TOI" tooltip="Total time on ice in situation" />
-                <SortableHeader field="goals" label="G" tooltip="Goals" />
-                <SortableHeader field="assists" label="A" tooltip="Assists" />
-                <SortableHeader field="points" label="P" tooltip="Points" />
-                <SortableHeader field="shots" label="S" tooltip="Shots on goal" />
-                <SortableHeader field="xGoals" label="xG" tooltip="Expected goals" />
-                <SortableHeader field="xGoalsPer60" label="xG/60" tooltip="Expected goals per 60 minutes" />
-                <SortableHeader field="pointsPer60" label="P/60" tooltip="Points per 60 minutes" />
+                <SortableHeader field="toi" label="TOI" tooltip="Total time on ice in situation" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                <SortableHeader field="goals" label="G" tooltip="Goals" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                <SortableHeader field="assists" label="A" tooltip="Assists" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                <SortableHeader field="points" label="P" tooltip="Points" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                <SortableHeader field="shots" label="S" tooltip="Shots on goal" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                <SortableHeader field="xGoals" label="xG" tooltip="Expected goals" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                <SortableHeader field="xGoalsPer60" label="xG/60" tooltip="Expected goals per 60 minutes" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                <SortableHeader field="pointsPer60" label="P/60" tooltip="Points per 60 minutes" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
               </TableRow>
             </TableHeader>
             <TableBody>

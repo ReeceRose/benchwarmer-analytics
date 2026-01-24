@@ -144,8 +144,8 @@ export function CareerTrajectory({ stats }: CareerTrajectoryProps) {
           rawValue = hours > 0 ? s.xg / hours : 0;
           break;
         case "corsiPct":
-          // corsiPct is stored as decimal (0.57 for 57%), multiply by 100 for display
-          rawValue = (s.corsiPct ?? 0.5) * 100;
+          // corsiPct is stored as whole number (57 for 57%)
+          rawValue = s.corsiPct ?? 50;
           break;
       }
 

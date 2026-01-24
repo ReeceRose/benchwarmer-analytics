@@ -34,6 +34,8 @@ import type {
   SpecialTeamsOverview,
   SpecialTeamsPlayersResponse,
   SpecialTeamsSituation,
+  LeaderboardCategory,
+  LeaderboardResponse,
 } from "@/types";
 
 const api = axios.create({
@@ -163,6 +165,19 @@ export async function getHomepageData(
 ): Promise<HomepageDataResponse> {
   const { data } = await api.get<HomepageDataResponse>("/stats/homepage", {
     params: { season, situation },
+  });
+  return data;
+}
+
+export async function getLeaderboard(
+  category: LeaderboardCategory,
+  season?: number,
+  situation?: string,
+  limit?: number,
+  sortDir?: "asc" | "desc"
+): Promise<LeaderboardResponse> {
+  const { data } = await api.get<LeaderboardResponse>("/stats/leaderboards", {
+    params: { category, season, situation, limit, sortDir },
   });
   return data;
 }

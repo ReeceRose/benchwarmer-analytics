@@ -76,8 +76,8 @@ export function LineStatsPanel({
       totalGf: acc.totalGf + pair.goalsFor,
       totalGa: acc.totalGa + pair.goalsAgainst,
       totalGp: Math.max(acc.totalGp, pair.gamesPlayed), // Use max GP from any pair
-      xgPctSum: acc.xgPctSum + (pair.expectedGoalsPct ?? 0.5),
-      cfPctSum: acc.cfPctSum + (pair.corsiPct ?? 0.5),
+      xgPctSum: acc.xgPctSum + (pair.expectedGoalsPct ?? 50),
+      cfPctSum: acc.cfPctSum + (pair.corsiPct ?? 50),
       validXgCount: acc.validXgCount + (pair.expectedGoalsPct != null ? 1 : 0),
       validCfCount: acc.validCfCount + (pair.corsiPct != null ? 1 : 0),
     }),
@@ -105,9 +105,9 @@ export function LineStatsPanel({
 
   // Determine if stats are good or bad (relative to 50%)
   const xgHighlight =
-    avgXgPct != null ? (avgXgPct > 0.52 ? "good" : avgXgPct < 0.48 ? "bad" : "neutral") : "neutral";
+    avgXgPct != null ? (avgXgPct > 52 ? "good" : avgXgPct < 48 ? "bad" : "neutral") : "neutral";
   const cfHighlight =
-    avgCfPct != null ? (avgCfPct > 0.52 ? "good" : avgCfPct < 0.48 ? "bad" : "neutral") : "neutral";
+    avgCfPct != null ? (avgCfPct > 52 ? "good" : avgCfPct < 48 ? "bad" : "neutral") : "neutral";
 
   return (
     <Card>
@@ -149,14 +149,14 @@ export function LineStatsPanel({
             <StatRow
               icon={<TrendingUp className="h-4 w-4" />}
               label="xG%"
-              value={avgXgPct != null ? formatPercent(avgXgPct) : "-"}
+              value={avgXgPct != null ? formatPercent(avgXgPct, false) : "-"}
               tooltip="Expected goals percentage (>50% is good)"
               highlight={xgHighlight}
             />
             <StatRow
               icon={<BarChart3 className="h-4 w-4" />}
               label="CF%"
-              value={avgCfPct != null ? formatPercent(avgCfPct) : "-"}
+              value={avgCfPct != null ? formatPercent(avgCfPct, false) : "-"}
               tooltip="Corsi for percentage - shot attempt share (>50% is good)"
               highlight={cfHighlight}
             />

@@ -345,15 +345,15 @@ public static class GameEndpoints
         }
 
         var dbStatsTask = gameStatsRepository.GetGameStatsAsync(gameId, cancellationToken);
-        var h2hTask = ComputeHeadToHeadForMatchups(
-            [(game.HomeTeamCode, game.AwayTeamCode, game.Season)],
-            gameRepository, cancellationToken);
-
-        await Task.WhenAll(dbStatsTask, standingsTask, h2hTask);
+        await Task.WhenAll(dbStatsTask, standingsTask);
 
         var dbStats = await dbStatsTask;
         var dbStandings = await standingsTask;
-        var dbH2hData = await h2hTask;
+
+        // Run head-to-head query sequentially to avoid DbContext concurrency issues
+        var dbH2hData = await ComputeHeadToHeadForMatchups(
+            [(game.HomeTeamCode, game.AwayTeamCode, game.Season)],
+            gameRepository, cancellationToken);
 
         dbStandings.TryGetValue(game.HomeTeamCode, out var dbHomeStandings);
         dbStandings.TryGetValue(game.AwayTeamCode, out var dbAwayStandings);
@@ -511,7 +511,9 @@ public static class GameEndpoints
                 Id: game.GameId,
                 Date: game.GameDate,
                 HomeTeam: homeTeam,
+                HomeTeamName: GameMappers.GetTeamName(homeTeam),
                 AwayTeam: awayTeam,
+                AwayTeamName: GameMappers.GetTeamName(awayTeam),
                 StartTimeUtc: game.StartTimeUtc?.ToString("o")
             ),
             HeadToHead: h2hRecord,

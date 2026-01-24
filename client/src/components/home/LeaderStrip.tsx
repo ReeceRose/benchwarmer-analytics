@@ -2,17 +2,19 @@ import { Link } from "@tanstack/react-router";
 import { Star, Target, TrendingUp, BarChart3, Clock, ChevronRight, Shield, Goal, Sparkles } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { formatToi, formatSavePct, formatPercent } from "@/lib/formatters";
-import type { Leaderboards, GoalieLeaderboards, LeaderEntry } from "@/types";
+import type { Leaderboards, GoalieLeaderboards, LeaderEntry, LeaderboardCategory } from "@/types";
 
 interface LeaderCardProps {
   title: string;
   icon: React.ReactNode;
   leaders: LeaderEntry[];
   formatValue: (value: number) => string;
-  statKey: string;
+  statKey: LeaderboardCategory;
+  season?: number;
+  situation?: string;
 }
 
-function LeaderCard({ title, icon, leaders, formatValue }: LeaderCardProps) {
+function LeaderCard({ title, icon, leaders, formatValue, statKey, season, situation }: LeaderCardProps) {
   if (!leaders || leaders.length === 0) {
     return (
       <Card className="min-w-70 shrink-0">
@@ -32,11 +34,17 @@ function LeaderCard({ title, icon, leaders, formatValue }: LeaderCardProps) {
   return (
     <Card className="min-w-70 shrink-0 hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          {icon}
-          {title}
-          <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
-        </CardTitle>
+        <Link
+          to="/leaderboards"
+          search={{ category: statKey, season, situation }}
+          className="flex items-center gap-2 hover:text-primary transition-colors group"
+        >
+          <CardTitle className="text-sm font-medium flex items-center gap-2 w-full">
+            {icon}
+            {title}
+            <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground group-hover:text-primary transition-colors" />
+          </CardTitle>
+        </Link>
       </CardHeader>
       <CardContent className="space-y-2">
         {leaders.slice(0, 3).map((player, index) => (
@@ -70,6 +78,8 @@ function LeaderCard({ title, icon, leaders, formatValue }: LeaderCardProps) {
 interface LeaderStripProps {
   leaders: Leaderboards;
   goalieLeaders?: GoalieLeaderboards;
+  season?: number;
+  situation?: string;
 }
 
 function formatGaa(value: number): string {
@@ -80,8 +90,14 @@ function formatGsax(value: number): string {
   return value >= 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
 }
 
-export function LeaderStrip({ leaders, goalieLeaders }: LeaderStripProps) {
-  const skaterCategories = [
+export function LeaderStrip({ leaders, goalieLeaders, season, situation }: LeaderStripProps) {
+  const skaterCategories: Array<{
+    key: LeaderboardCategory;
+    title: string;
+    icon: React.ReactNode;
+    data: LeaderEntry[];
+    format: (v: number) => string;
+  }> = [
     {
       key: "points",
       title: "Points",
@@ -108,7 +124,7 @@ export function LeaderStrip({ leaders, goalieLeaders }: LeaderStripProps) {
       title: "Corsi %",
       icon: <BarChart3 className="h-4 w-4 text-muted-foreground" />,
       data: leaders.corsiPct,
-      format: (v: number) => formatPercent(v, true),
+      format: (v: number) => formatPercent(v, false),
     },
     {
       key: "iceTime",
@@ -119,7 +135,13 @@ export function LeaderStrip({ leaders, goalieLeaders }: LeaderStripProps) {
     },
   ];
 
-  const goalieCategories = goalieLeaders ? [
+  const goalieCategories: Array<{
+    key: LeaderboardCategory;
+    title: string;
+    icon: React.ReactNode;
+    data: LeaderEntry[];
+    format: (v: number) => string;
+  }> = goalieLeaders ? [
     {
       key: "savePct",
       title: "Save %",
@@ -154,6 +176,8 @@ export function LeaderStrip({ leaders, goalieLeaders }: LeaderStripProps) {
             leaders={cat.data}
             formatValue={cat.format}
             statKey={cat.key}
+            season={season}
+            situation={situation}
           />
         ))}
         {goalieCategories.map((cat) => (
@@ -164,6 +188,8 @@ export function LeaderStrip({ leaders, goalieLeaders }: LeaderStripProps) {
             leaders={cat.data}
             formatValue={cat.format}
             statKey={cat.key}
+            season={season}
+            situation={situation}
           />
         ))}
       </div>
