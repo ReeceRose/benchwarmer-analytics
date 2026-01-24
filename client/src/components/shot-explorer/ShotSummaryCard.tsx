@@ -16,9 +16,9 @@ function StatItem({
 }) {
   const colorClass =
     highlight === "positive"
-      ? "text-green-600 dark:text-green-400"
+      ? "text-success"
       : highlight === "negative"
-        ? "text-red-600 dark:text-red-400"
+        ? "text-error"
         : "text-foreground";
 
   return (

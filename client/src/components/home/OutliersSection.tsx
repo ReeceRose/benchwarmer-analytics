@@ -50,7 +50,7 @@ function OutlierList({ title, description, icon, players, variant }: OutlierList
                 <div
                   className={`flex items-center gap-1 font-mono text-sm ${
                     isHot
-                      ? "text-green-600"
+                      ? "text-success"
                       : "text-destructive"
                   }`}
                 >
@@ -118,7 +118,7 @@ function GoalieOutlierList({ title, description, icon, goalies, variant }: Goali
                 <div
                   className={`flex items-center gap-1 font-mono text-sm ${
                     isHot
-                      ? "text-green-600"
+                      ? "text-success"
                       : "text-destructive"
                   }`}
                 >

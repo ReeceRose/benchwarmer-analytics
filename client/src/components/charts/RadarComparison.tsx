@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_COLORS } from "@/lib/chart-colors";
+import { CHART_COLOURS } from "@/lib/chart-colours";
 import type { SkaterStats } from "@/types";
 
 interface PlayerData {
@@ -200,8 +200,8 @@ export function RadarComparison({
                 key={player.name}
                 name={player.name}
                 dataKey={player.name}
-                stroke={player.color ?? CHART_COLORS[i % CHART_COLORS.length]}
-                fill={player.color ?? CHART_COLORS[i % CHART_COLORS.length]}
+                stroke={player.color ?? CHART_COLOURS[i % CHART_COLOURS.length]}
+                fill={player.color ?? CHART_COLOURS[i % CHART_COLOURS.length]}
                 fillOpacity={0.15}
                 strokeWidth={2}
               />

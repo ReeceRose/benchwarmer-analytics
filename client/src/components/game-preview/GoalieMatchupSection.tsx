@@ -54,10 +54,10 @@ function GoalieCard({
               className={`font-mono ${
                 goalie.goalsSavedAboveExpected != null &&
                 goalie.goalsSavedAboveExpected > 0
-                  ? "text-green-600"
+                  ? "text-success"
                   : goalie.goalsSavedAboveExpected != null &&
                       goalie.goalsSavedAboveExpected < 0
-                    ? "text-red-500"
+                    ? "text-error"
                     : ""
               }`}
             >
@@ -72,7 +72,7 @@ function GoalieCard({
           {recentForm && recentForm.gamesPlayed > 0 && (
             <span
               className={`flex items-center gap-1 ${
-                isHot ? "text-orange-500" : isCold ? "text-blue-500" : ""
+                isHot ? "text-hot" : isCold ? "text-cold" : ""
               }`}
             >
               {isHot && <Flame className="h-3 w-3" />}L{recentForm.gamesPlayed}:{" "}

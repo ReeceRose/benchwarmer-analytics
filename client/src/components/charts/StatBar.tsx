@@ -35,11 +35,11 @@ export function StatBar({
     const isBelowAvg = value < average;
 
     if (higherIsBetter) {
-      if (isAboveAvg) barColor = "bg-green-500";
-      else if (isBelowAvg) barColor = "bg-red-500";
+      if (isAboveAvg) barColor = "bg-success";
+      else if (isBelowAvg) barColor = "bg-error";
     } else {
-      if (isBelowAvg) barColor = "bg-green-500";
-      else if (isAboveAvg) barColor = "bg-red-500";
+      if (isBelowAvg) barColor = "bg-success";
+      else if (isAboveAvg) barColor = "bg-error";
     }
   }
 

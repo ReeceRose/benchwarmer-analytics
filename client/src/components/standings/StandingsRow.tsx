@@ -3,11 +3,11 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPercent } from "@/lib/formatters";
 import {
-  getPdoColor,
-  getPointsDiffColor,
-  getXgPctColor,
-  getCorsiColor,
-} from "@/lib/stat-colors";
+  getPdoColour,
+  getPointsDiffColour,
+  getXgPctColour,
+  getCorsiColour,
+} from "@/lib/stat-colours";
 import type { StandingsWithAnalytics } from "@/types";
 
 interface StandingsRowProps {
@@ -17,12 +17,12 @@ interface StandingsRowProps {
 
 export function StandingsRow({ team, analyticsLoading }: StandingsRowProps) {
   const analytics = team.analytics;
-  const pdoColor = analytics ? getPdoColor(analytics.pdo) : "";
+  const pdoColor = analytics ? getPdoColour(analytics.pdo) : "";
   const pointsDiffColor = analytics
-    ? getPointsDiffColor(analytics.pointsDiff)
+    ? getPointsDiffColour(analytics.pointsDiff)
     : "";
-  const xgPctColor = analytics ? getXgPctColor(analytics.xGoalsPct) : "";
-  const corsiColor = analytics ? getCorsiColor(analytics.corsiPct) : "";
+  const xgPctColor = analytics ? getXgPctColour(analytics.xGoalsPct) : "";
+  const corsiColor = analytics ? getCorsiColour(analytics.corsiPct) : "";
 
   return (
     <TableRow>
@@ -51,7 +51,7 @@ export function StandingsRow({ team, analyticsLoading }: StandingsRowProps) {
       <TableCell className="text-right tabular-nums">{team.goalsFor}</TableCell>
       <TableCell className="text-right tabular-nums">{team.goalsAgainst}</TableCell>
       <TableCell
-        className={`text-right tabular-nums ${team.goalDifferential >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+        className={`text-right tabular-nums ${team.goalDifferential >= 0 ? "text-success" : "text-error"}`}
       >
         {team.goalDifferential > 0 ? "+" : ""}
         {team.goalDifferential}
@@ -64,9 +64,9 @@ export function StandingsRow({ team, analyticsLoading }: StandingsRowProps) {
           <span
             className={
               team.streak.startsWith("W")
-                ? "text-green-600 dark:text-green-400"
+                ? "text-success"
                 : team.streak.startsWith("L")
-                  ? "text-red-600 dark:text-red-400"
+                  ? "text-error"
                   : "text-muted-foreground"
             }
           >

@@ -50,7 +50,7 @@ function DetailedGoalsList({
               </Badge>
             )}
             {goal.isGameWinningGoal && (
-              <Badge className="text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+              <Badge className="text-xs px-1.5 py-0.5 bg-highlight/20 text-highlight border-highlight/30">
                 GWG
               </Badge>
             )}

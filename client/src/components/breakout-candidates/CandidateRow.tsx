@@ -12,23 +12,23 @@ interface CandidateRowProps {
 export function CandidateRow({ candidate, rank }: CandidateRowProps) {
   const diffColor =
     candidate.goalsDifferential > 2
-      ? "text-red-500"
+      ? "text-error"
       : candidate.goalsDifferential > 0
-        ? "text-orange-500"
-        : "text-green-500";
+        ? "text-warning"
+        : "text-success";
 
   const corsiColor =
     (candidate.corsiForPct ?? 50) >= 52
-      ? "text-green-500"
+      ? "text-success"
       : (candidate.corsiForPct ?? 50) >= 48
         ? "text-foreground"
-        : "text-red-500";
+        : "text-error";
 
   const scoreColor =
     candidate.breakoutScore >= 5
-      ? "bg-green-500/10 text-green-600 border-green-500/20"
+      ? "bg-success/10 text-success border-success/20"
       : candidate.breakoutScore >= 3
-        ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+        ? "bg-warning/10 text-warning border-warning/20"
         : "bg-muted";
 
   return (

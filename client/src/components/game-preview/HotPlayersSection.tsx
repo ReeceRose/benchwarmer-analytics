@@ -19,9 +19,9 @@ function PlayerRow({ player }: { player: HotPlayer }) {
     >
       <div className="flex items-center gap-2">
         {isHot ? (
-          <Flame className="h-3.5 w-3.5 text-orange-500" />
+          <Flame className="h-3.5 w-3.5 text-hot" />
         ) : (
-          <Snowflake className="h-3.5 w-3.5 text-blue-500" />
+          <Snowflake className="h-3.5 w-3.5 text-cold" />
         )}
         <div>
           <span className="font-medium text-sm">{player.name}</span>
@@ -38,7 +38,7 @@ function PlayerRow({ player }: { player: HotPlayer }) {
         </div>
         <span
           className={`font-mono text-sm ${
-            isHot ? "text-green-600" : "text-red-500"
+            isHot ? "text-success" : "text-error"
           }`}
         >
           {isHot ? "+" : ""}

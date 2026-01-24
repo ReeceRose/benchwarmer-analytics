@@ -10,7 +10,7 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_AXIS_COLORS } from "@/lib/chart-colors";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 
 export interface PlayerInfo {
   playerId: number;
@@ -71,41 +71,41 @@ export function AgeCurvesChart({
             >
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke={CHART_AXIS_COLORS.grid}
-                strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                stroke={CHART_AXIS_COLOURS.grid}
+                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               />
               <XAxis
                 dataKey="age"
-                tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
+                tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
                 tickFormatter={(v: number) => `${v}`}
                 label={{
                   value: "Age",
                   position: "insideBottom",
                   offset: -5,
                   fontSize: 12,
-                  fill: CHART_AXIS_COLORS.tick,
+                  fill: CHART_AXIS_COLOURS.tick,
                 }}
-                stroke={CHART_AXIS_COLORS.grid}
-                strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                stroke={CHART_AXIS_COLOURS.grid}
+                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               />
               <YAxis
                 yAxisId="left"
-                tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
+                tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
                 width={45}
                 tickFormatter={(v: number) => v.toFixed(1)}
-                stroke={CHART_AXIS_COLORS.grid}
-                strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                stroke={CHART_AXIS_COLOURS.grid}
+                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               />
               <YAxis
                 yAxisId="right"
                 orientation="right"
-                tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 10 }}
+                tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
                 width={35}
                 tickFormatter={(v: number) =>
                   v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
                 }
-                stroke={CHART_AXIS_COLORS.grid}
-                strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                stroke={CHART_AXIS_COLOURS.grid}
+                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
                 domain={[0, "auto"]}
               />
               <Tooltip
@@ -155,7 +155,7 @@ export function AgeCurvesChart({
                 type="monotone"
                 dataKey="leagueSample"
                 name="Sample Size"
-                fill={CHART_AXIS_COLORS.reference}
+                fill={CHART_AXIS_COLOURS.reference}
                 stroke="none"
                 fillOpacity={0.1}
                 legendType="none"
@@ -165,7 +165,7 @@ export function AgeCurvesChart({
                 type="monotone"
                 dataKey="league"
                 name={useMedian ? "League Median" : "League Average"}
-                stroke={CHART_AXIS_COLORS.reference}
+                stroke={CHART_AXIS_COLOURS.reference}
                 strokeWidth={2}
                 dot={false}
                 strokeDasharray="5 5"

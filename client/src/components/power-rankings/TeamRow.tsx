@@ -2,13 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatPercent } from "@/lib/formatters";
 import {
-  getPdoColor,
-  getPointsDiffColor,
-  getXgPctColor,
-  getCorsiColor,
-  getPpPctColor,
-  getPkPctColor,
-} from "@/lib/stat-colors";
+  getPdoColour,
+  getPointsDiffColour,
+  getXgPctColour,
+  getCorsiColour,
+  getPpPctColour,
+  getPkPctColour,
+} from "@/lib/stat-colours";
 import type { TeamPowerRanking } from "@/types";
 
 interface TeamRowProps {
@@ -18,12 +18,12 @@ interface TeamRowProps {
 }
 
 export function TeamRow({ team, rank, season }: TeamRowProps) {
-  const pdoColor = getPdoColor(team.pdo);
-  const pointsDiffColor = getPointsDiffColor(team.pointsDiff);
-  const xgPctColor = getXgPctColor(team.xGoalsPct != null ? team.xGoalsPct * 100 : null);
-  const corsiColor = getCorsiColor(team.corsiPct != null ? team.corsiPct * 100 : null);
-  const ppPctColor = getPpPctColor(team.ppPct);
-  const pkPctColor = getPkPctColor(team.pkPct);
+  const pdoColor = getPdoColour(team.pdo);
+  const pointsDiffColor = getPointsDiffColour(team.pointsDiff);
+  const xgPctColor = getXgPctColour(team.xGoalsPct != null ? team.xGoalsPct * 100 : null);
+  const corsiColor = getCorsiColour(team.corsiPct != null ? team.corsiPct * 100 : null);
+  const ppPctColor = getPpPctColour(team.ppPct);
+  const pkPctColor = getPkPctColour(team.pkPct);
 
   return (
     <TableRow>

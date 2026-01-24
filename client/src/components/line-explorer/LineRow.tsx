@@ -17,8 +17,8 @@ interface LineRowProps {
 function getColorClass(value: number | undefined, avg: number | undefined): string {
   if (value === undefined || avg === undefined) return "";
   const diff = value - avg;
-  if (diff > 2) return "text-green-600 dark:text-green-400";
-  if (diff < -2) return "text-red-600 dark:text-red-400";
+  if (diff > 2) return "text-success";
+  if (diff < -2) return "text-error";
   return "";
 }
 

@@ -51,7 +51,7 @@ export function PlayerCard({ player, trend }: PlayerCardProps) {
             </div>
             <div className="text-right shrink-0">
               <div
-                className={`flex items-center gap-0.5 text-sm font-semibold ${isHot ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                className={`flex items-center gap-0.5 text-sm font-semibold ${isHot ? "text-success" : "text-error"}`}
               >
                 {isHot ? (
                   <TrendingUp className="h-3.5 w-3.5" />
@@ -112,7 +112,7 @@ export function GoalieCard({ goalie, trend }: GoalieCardProps) {
             </div>
             <div className="text-right shrink-0">
               <div
-                className={`flex items-center gap-0.5 text-sm font-semibold ${isHot ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                className={`flex items-center gap-0.5 text-sm font-semibold ${isHot ? "text-success" : "text-error"}`}
               >
                 {isHot ? (
                   <TrendingUp className="h-3.5 w-3.5" />
@@ -213,7 +213,7 @@ export function FeaturedPlayers({ enabled }: FeaturedPlayersProps) {
       {skatersHot.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <TrendingUp className="h-4 w-4 text-success" />
             <h2 className="font-semibold">Running Hot</h2>
             <span className="text-xs text-muted-foreground">
               Outperforming expected goals
@@ -230,7 +230,7 @@ export function FeaturedPlayers({ enabled }: FeaturedPlayersProps) {
       {skatersCold.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <TrendingDown className="h-4 w-4 text-error" />
             <h2 className="font-semibold">Running Cold</h2>
             <span className="text-xs text-muted-foreground">
               Due for positive regression

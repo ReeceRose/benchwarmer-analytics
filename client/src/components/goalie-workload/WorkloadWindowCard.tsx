@@ -11,7 +11,7 @@ export function WorkloadWindowCard({ window }: WorkloadWindowCardProps) {
     <div
       className={`rounded-lg border p-3 ${
         window.isHighWorkload
-          ? "border-orange-500/50 bg-orange-500/5"
+          ? "border-warning/50 bg-warning/5"
           : "border-border"
       }`}
     >
@@ -20,7 +20,7 @@ export function WorkloadWindowCard({ window }: WorkloadWindowCardProps) {
           Last {window.days} days
         </span>
         {window.isHighWorkload && (
-          <AlertTriangle className="h-3 w-3 text-orange-500" />
+          <AlertTriangle className="h-3 w-3 text-warning" />
         )}
       </div>
       <div className="text-xl font-bold">{window.gamesPlayed} GP</div>
@@ -30,7 +30,7 @@ export function WorkloadWindowCard({ window }: WorkloadWindowCardProps) {
       <div className="mt-2 text-xs">
         <span className="text-muted-foreground">Avg SA: </span>
         <span
-          className={window.avgShotsAgainstPerGame > 30 ? "text-orange-500" : ""}
+          className={window.avgShotsAgainstPerGame > 30 ? "text-warning" : ""}
         >
           {window.avgShotsAgainstPerGame.toFixed(1)}
         </span>

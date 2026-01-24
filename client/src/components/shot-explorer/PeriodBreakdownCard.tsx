@@ -121,9 +121,9 @@ export function PeriodBreakdownCard({ shots }: PeriodBreakdownCardProps) {
               {periodStats.map((stats) => {
                 const gaeHighlight =
                   stats.goalsAboveExpected > 0.5
-                    ? "text-green-600 dark:text-green-400"
+                    ? "text-success"
                     : stats.goalsAboveExpected < -0.5
-                      ? "text-red-600 dark:text-red-400"
+                      ? "text-error"
                       : "";
 
                 return (

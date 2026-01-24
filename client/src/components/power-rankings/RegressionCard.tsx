@@ -19,7 +19,7 @@ export function RegressionCard({
   if (candidates.length === 0) return null;
 
   const Icon = icon === "up" ? TrendingUp : TrendingDown;
-  const iconColor = icon === "up" ? "text-green-500" : "text-red-500";
+  const iconColor = icon === "up" ? "text-success" : "text-error";
 
   return (
     <Card className="py-3">

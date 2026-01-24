@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { CHART_AXIS_COLORS, CHART_GRADIENT_COLORS } from "@/lib/chart-colors";
+import { CHART_AXIS_COLOURS, CHART_GRADIENT_COLOURS } from "@/lib/chart-colours";
 import { GoalieGameTooltip } from "@/components/goalie-workload/GoalieGameTooltip";
 
 interface ChartDataPoint {
@@ -38,35 +38,35 @@ export function SavePercentageChart({ data }: SavePercentageChartProps) {
               <linearGradient id="svPctGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor={CHART_GRADIENT_COLORS.primary}
+                  stopColor={CHART_GRADIENT_COLOURS.primary}
                   stopOpacity={0.3}
                 />
                 <stop
                   offset="95%"
-                  stopColor={CHART_GRADIENT_COLORS.primary}
+                  stopColor={CHART_GRADIENT_COLOURS.primary}
                   stopOpacity={0}
                 />
               </linearGradient>
             </defs>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke={CHART_AXIS_COLORS.grid}
-              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+              stroke={CHART_AXIS_COLOURS.grid}
+              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
             <XAxis
               dataKey="game"
-              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 10 }}
+              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
               tickFormatter={(v) => `G${v}`}
-              stroke={CHART_AXIS_COLORS.grid}
-              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+              stroke={CHART_AXIS_COLOURS.grid}
+              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
             <YAxis
-              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 10 }}
+              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
               width={45}
               domain={[0.85, 1.0]}
               tickFormatter={(v) => v.toFixed(3)}
-              stroke={CHART_AXIS_COLORS.grid}
-              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+              stroke={CHART_AXIS_COLOURS.grid}
+              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
             <Tooltip
               content={({ active, payload }) => (
@@ -79,22 +79,22 @@ export function SavePercentageChart({ data }: SavePercentageChartProps) {
             />
             <ReferenceLine
               y={0.91}
-              stroke={CHART_AXIS_COLORS.tick}
+              stroke={CHART_AXIS_COLOURS.tick}
               strokeDasharray="5 5"
               label={{
                 value: "Avg (.910)",
                 position: "right",
                 fontSize: 9,
-                fill: CHART_AXIS_COLORS.tick,
+                fill: CHART_AXIS_COLOURS.tick,
               }}
             />
             <Line
               type="monotone"
               dataKey="savePercentage"
-              stroke={CHART_GRADIENT_COLORS.primary}
+              stroke={CHART_GRADIENT_COLOURS.primary}
               strokeWidth={2}
               dot={{
-                fill: CHART_GRADIENT_COLORS.primary,
+                fill: CHART_GRADIENT_COLOURS.primary,
                 strokeWidth: 0,
                 r: 3,
               }}

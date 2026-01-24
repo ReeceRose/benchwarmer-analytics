@@ -66,9 +66,9 @@ function DifferentialStat({
         <span
           className={`tabular-nums w-14 text-right font-medium ${
             isGood
-              ? "text-green-600 dark:text-green-400"
+              ? "text-success"
               : isBad
-                ? "text-red-600 dark:text-red-400"
+                ? "text-error"
                 : "text-muted-foreground"
           }`}
         >

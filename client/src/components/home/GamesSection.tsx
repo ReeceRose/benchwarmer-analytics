@@ -27,7 +27,7 @@ function LuckIndicator({ diff }: { diff: number | null }) {
     return (
       <Tooltip>
         <TooltipTrigger>
-          <TrendingUp className="h-3 w-3 text-green-500" />
+          <TrendingUp className="h-3 w-3 text-success" />
         </TooltipTrigger>
         <TooltipContent>
           <p>Outscored xG by {diff.toFixed(1)}</p>
@@ -38,7 +38,7 @@ function LuckIndicator({ diff }: { diff: number | null }) {
     return (
       <Tooltip>
         <TooltipTrigger>
-          <TrendingDown className="h-3 w-3 text-red-500" />
+          <TrendingDown className="h-3 w-3 text-error" />
         </TooltipTrigger>
         <TooltipContent>
           <p>Underperformed xG by {Math.abs(diff).toFixed(1)}</p>
@@ -258,7 +258,7 @@ export function GamesSection() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-orange-500" />
+              <Calendar className="h-5 w-5 text-hot" />
               Today's Games
               {todayLoading ? (
                 <Skeleton className="ml-1 h-5 w-6 rounded-full" />

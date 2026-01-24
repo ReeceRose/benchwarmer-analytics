@@ -59,7 +59,7 @@ function SkaterRow({
           ({skater.position})
         </span>
         {hasGwg && (
-          <Badge className="ml-2 text-xs px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">
+          <Badge className="ml-2 text-xs px-1.5 py-0.5 bg-highlight/20 text-highlight border-highlight/30">
             GWG
           </Badge>
         )}
@@ -72,7 +72,7 @@ function SkaterRow({
         {skater.points}
       </TableCell>
       <TableCell
-        className={`text-center font-mono ${skater.plusMinus > 0 ? "text-green-500" : skater.plusMinus < 0 ? "text-red-500" : ""}`}
+        className={`text-center font-mono ${skater.plusMinus > 0 ? "text-success" : skater.plusMinus < 0 ? "text-error" : ""}`}
       >
         {skater.plusMinus > 0 ? `+${skater.plusMinus}` : skater.plusMinus}
       </TableCell>
@@ -139,9 +139,9 @@ function GoalieRow({
           <span
             className={
               goalie.decision === "W"
-                ? "text-green-500"
+                ? "text-success"
                 : goalie.decision === "L"
-                  ? "text-red-500"
+                  ? "text-error"
                   : ""
             }
           >

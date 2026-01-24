@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatSeason } from "@/lib/formatters";
-import { CHART_COLORS_CSS, CHART_AXIS_COLORS } from "@/lib/chart-colors";
+import { CHART_COLOURS_CSS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 
 interface SeasonData {
   season: number;
@@ -109,16 +109,16 @@ export function PerformanceTrend({
             data={sortedData}
             margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLORS.grid} strokeOpacity={CHART_AXIS_COLORS.gridOpacity} />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLOURS.grid} strokeOpacity={CHART_AXIS_COLOURS.gridOpacity} />
             <XAxis
               dataKey="season"
               tickFormatter={(v: number) => formatSeason(v)}
-              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 11 }}
-              axisLine={{ stroke: CHART_AXIS_COLORS.grid, strokeOpacity: CHART_AXIS_COLORS.gridOpacity }}
+              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
+              axisLine={{ stroke: CHART_AXIS_COLOURS.grid, strokeOpacity: CHART_AXIS_COLOURS.gridOpacity }}
             />
             <YAxis
-              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 11 }}
-              axisLine={{ stroke: CHART_AXIS_COLORS.grid, strokeOpacity: CHART_AXIS_COLORS.gridOpacity }}
+              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
+              axisLine={{ stroke: CHART_AXIS_COLOURS.grid, strokeOpacity: CHART_AXIS_COLOURS.gridOpacity }}
               width={40}
             />
             <Tooltip content={<TrendChartTooltip metrics={metrics} />} wrapperStyle={{ outline: 'none', background: 'transparent', border: 'none' }} />
@@ -141,9 +141,9 @@ export function PerformanceTrend({
                 type="monotone"
                 dataKey={metric.key}
                 name={metric.label}
-                stroke={metric.color ?? CHART_COLORS_CSS[i % CHART_COLORS_CSS.length]}
+                stroke={metric.color ?? CHART_COLOURS_CSS[i % CHART_COLOURS_CSS.length]}
                 strokeWidth={2}
-                dot={{ r: 4, fill: metric.color ?? CHART_COLORS_CSS[i % CHART_COLORS_CSS.length] }}
+                dot={{ r: 4, fill: metric.color ?? CHART_COLOURS_CSS[i % CHART_COLOURS_CSS.length] }}
                 activeDot={{ r: 6 }}
                 connectNulls
               />

@@ -32,20 +32,20 @@ const GAME_LIMITS = [
 const TREND_CONFIG = {
   heavy: {
     icon: AlertTriangle,
-    color: "text-orange-500",
-    bg: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+    color: "text-warning",
+    bg: "bg-warning/10 text-warning border-warning/20",
     label: "Heavy Workload",
   },
   moderate: {
     icon: Activity,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    color: "text-cold",
+    bg: "bg-cold/10 text-cold border-cold/20",
     label: "Moderate",
   },
   light: {
     icon: TrendingDown,
-    color: "text-green-500",
-    bg: "bg-green-500/10 text-green-600 border-green-500/20",
+    color: "text-success",
+    bg: "bg-success/10 text-success border-success/20",
     label: "Light",
   },
 };

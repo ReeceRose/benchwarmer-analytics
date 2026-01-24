@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { CHART_AXIS_COLORS, CHART_GRADIENT_COLORS } from "@/lib/chart-colors";
+import { CHART_AXIS_COLOURS, CHART_GRADIENT_COLOURS } from "@/lib/chart-colours";
 import { GoalieGameTooltip } from "@/components/goalie-workload/GoalieGameTooltip";
 
 interface ChartDataPoint {
@@ -38,33 +38,33 @@ export function ShotsAgainstChart({ data }: ShotsAgainstChartProps) {
               <linearGradient id="saGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor={CHART_GRADIENT_COLORS.danger}
+                  stopColor={CHART_GRADIENT_COLOURS.danger}
                   stopOpacity={0.3}
                 />
                 <stop
                   offset="95%"
-                  stopColor={CHART_GRADIENT_COLORS.danger}
+                  stopColor={CHART_GRADIENT_COLOURS.danger}
                   stopOpacity={0}
                 />
               </linearGradient>
             </defs>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke={CHART_AXIS_COLORS.grid}
-              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+              stroke={CHART_AXIS_COLOURS.grid}
+              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
             <XAxis
               dataKey="game"
-              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 10 }}
+              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
               tickFormatter={(v) => `G${v}`}
-              stroke={CHART_AXIS_COLORS.grid}
-              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+              stroke={CHART_AXIS_COLOURS.grid}
+              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
             <YAxis
-              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 10 }}
+              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
               width={30}
-              stroke={CHART_AXIS_COLORS.grid}
-              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+              stroke={CHART_AXIS_COLOURS.grid}
+              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
             <Tooltip
               content={({ active, payload }) => (
@@ -77,19 +77,19 @@ export function ShotsAgainstChart({ data }: ShotsAgainstChartProps) {
             />
             <ReferenceLine
               y={30}
-              stroke={CHART_GRADIENT_COLORS.danger}
+              stroke={CHART_GRADIENT_COLOURS.danger}
               strokeDasharray="5 5"
               label={{
                 value: "High (30)",
                 position: "right",
                 fontSize: 9,
-                fill: CHART_GRADIENT_COLORS.danger,
+                fill: CHART_GRADIENT_COLOURS.danger,
               }}
             />
             <Area
               type="monotone"
               dataKey="shotsAgainst"
-              stroke={CHART_GRADIENT_COLORS.danger}
+              stroke={CHART_GRADIENT_COLOURS.danger}
               strokeWidth={2}
               fill="url(#saGradient)"
             />

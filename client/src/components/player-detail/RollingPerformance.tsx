@@ -20,7 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Flame, Snowflake, Minus } from "lucide-react";
 import { usePlayerRollingStats } from "@/hooks";
-import { CHART_AXIS_COLORS, CHART_GRADIENT_COLORS } from "@/lib/chart-colors";
+import { CHART_AXIS_COLOURS, CHART_GRADIENT_COLOURS } from "@/lib/chart-colours";
 import { formatPercent } from "@/lib/formatters";
 import type { GameStats } from "@/types";
 
@@ -119,15 +119,15 @@ export function RollingPerformance({
     data.trend === "hot" ? Flame : data.trend === "cold" ? Snowflake : Minus;
   const trendColor =
     data.trend === "hot"
-      ? "text-orange-500"
+      ? "text-hot"
       : data.trend === "cold"
-        ? "text-blue-500"
+        ? "text-cold"
         : "text-muted-foreground";
   const trendBg =
     data.trend === "hot"
-      ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
+      ? "bg-hot/10 text-hot border-hot/20"
       : data.trend === "cold"
-        ? "bg-blue-500/10 text-blue-600 border-blue-500/20"
+        ? "bg-cold/10 text-cold border-cold/20"
         : "bg-muted text-muted-foreground";
 
   return (
@@ -191,28 +191,28 @@ export function RollingPerformance({
                   x2="0"
                   y2="1"
                 >
-                  <stop offset="5%" stopColor={CHART_GRADIENT_COLORS.primary} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={CHART_GRADIENT_COLORS.primary} stopOpacity={0} />
+                  <stop offset="5%" stopColor={CHART_GRADIENT_COLOURS.primary} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={CHART_GRADIENT_COLOURS.primary} stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke={CHART_AXIS_COLORS.grid}
-                strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                stroke={CHART_AXIS_COLOURS.grid}
+                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               />
               <XAxis
                 dataKey="game"
-                tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 11 }}
+                tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
                 tickFormatter={(v) => `G${v}`}
-                stroke={CHART_AXIS_COLORS.grid}
-                strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                stroke={CHART_AXIS_COLOURS.grid}
+                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               />
               <YAxis
-                tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 11 }}
+                tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
                 width={35}
                 tickFormatter={(v) => selectedMetric.format(v)}
-                stroke={CHART_AXIS_COLORS.grid}
-                strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                stroke={CHART_AXIS_COLOURS.grid}
+                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               />
               <Tooltip
                 content={({ active, payload }) => {
@@ -237,19 +237,19 @@ export function RollingPerformance({
               />
               <ReferenceLine
                 y={seasonAverage}
-                stroke={CHART_AXIS_COLORS.reference}
+                stroke={CHART_AXIS_COLOURS.reference}
                 strokeDasharray="5 5"
                 label={{
                   value: "Season Avg",
                   position: "right",
                   fontSize: 10,
-                  fill: CHART_AXIS_COLORS.reference,
+                  fill: CHART_AXIS_COLOURS.reference,
                 }}
               />
               <Area
                 type="monotone"
                 dataKey={metric}
-                stroke={CHART_GRADIENT_COLORS.primary}
+                stroke={CHART_GRADIENT_COLOURS.primary}
                 strokeWidth={2}
                 fill="url(#rollingGradient)"
               />

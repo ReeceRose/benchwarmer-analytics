@@ -1,8 +1,8 @@
 import type { ChemistryPair } from "@/types";
-import { getChemistryHeatColor } from "@/lib/chart-colors";
+import { getChemistryHeatColour } from "@/lib/chart-colours";
 
 // Re-export for backwards compatibility
-export const getHeatColor = getChemistryHeatColor;
+export const getHeatColor = getChemistryHeatColour;
 
 export interface MatrixPlayer {
   id: number;

@@ -45,13 +45,13 @@ export function BackToBackSplitsDisplay({
           {svPctDiff > 0 ? (
             <span>
               SV% drops by{" "}
-              <span className="text-orange-500 font-medium">
+              <span className="text-warning font-medium">
                 {svPctDiff.toFixed(1)}%
               </span>{" "}
               in back-to-backs
             </span>
           ) : (
-            <span className="text-green-500">
+            <span className="text-success">
               No significant B2B performance drop
             </span>
           )}

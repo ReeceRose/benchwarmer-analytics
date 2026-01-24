@@ -6,7 +6,7 @@ import {
   
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { RINK_COLORS, getShotColor as getShotColorFromLib } from "@/lib/chart-colors";
+import { RINK_COLOURS, getShotColour as getShotColourFromLib } from "@/lib/chart-colours";
 
 interface RinkVisualizationProps {
   shots: Shot[];
@@ -34,7 +34,7 @@ const FACEOFF_X = 31; // 20ft from goal line = 31ft from boards
 const FACEOFF_Y_OFFSET = 22; // 22ft from center
 
 function getShotColor(shot: Shot): string {
-  return getShotColorFromLib(shot.isGoal, shot.xGoal ?? 0);
+  return getShotColourFromLib(shot.isGoal, shot.xGoal ?? 0);
 }
 
 function getShotSize(shot: Shot, totalShots: number): number {
@@ -75,24 +75,24 @@ function ShotTooltipContent({ shot }: { shot: Shot }) {
         </span>
       </div>
       <div
-        className={`font-semibold ${shot.isGoal ? "text-green-500" : "text-muted-foreground"}`}
+        className={`font-semibold ${shot.isGoal ? "text-success" : "text-muted-foreground"}`}
       >
         {shot.isGoal ? "GOAL" : shot.shotWasOnGoal ? "Save" : "Missed"}
       </div>
       {(shot.shotRebound || shot.shotRush || shot.shotOnEmptyNet) && (
         <div className="flex gap-2 text-xs">
           {shot.shotRebound && (
-            <span className="bg-orange-500/20 text-orange-700 dark:text-orange-300 px-1.5 py-0.5 rounded font-medium">
+            <span className="bg-hot/20 text-hot px-1.5 py-0.5 rounded font-medium">
               Rebound
             </span>
           )}
           {shot.shotRush && (
-            <span className="bg-blue-500/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium">
+            <span className="bg-cold/20 text-cold px-1.5 py-0.5 rounded font-medium">
               Rush
             </span>
           )}
           {shot.shotOnEmptyNet && (
-            <span className="bg-purple-500/20 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded font-medium">
+            <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">
               Empty Net
             </span>
           )}
@@ -203,7 +203,7 @@ export function RinkVisualization({
             y1="0"
             x2={GOAL_LINE_X}
             y2={RINK_HEIGHT}
-            stroke={RINK_COLORS.goalLine}
+            stroke={RINK_COLOURS.goalLine}
             strokeWidth="0.5"
           />
           <line
@@ -211,7 +211,7 @@ export function RinkVisualization({
             y1="0"
             x2={BLUE_LINE_X}
             y2={RINK_HEIGHT}
-            stroke={RINK_COLORS.blueLine}
+            stroke={RINK_COLOURS.blueLine}
             strokeWidth="1"
           />
           <rect
@@ -219,9 +219,9 @@ export function RinkVisualization({
             y={RINK_HEIGHT / 2 - CREASE_WIDTH / 2}
             width={CREASE_DEPTH}
             height={CREASE_WIDTH}
-            fill={RINK_COLORS.creaseFill}
+            fill={RINK_COLOURS.creaseFill}
             fillOpacity="0.3"
-            stroke={RINK_COLORS.goalLine}
+            stroke={RINK_COLOURS.goalLine}
             strokeWidth="0.3"
             rx="1"
           />
@@ -231,7 +231,7 @@ export function RinkVisualization({
             width="4"
             height="6"
             fill="none"
-            stroke={RINK_COLORS.goalLine}
+            stroke={RINK_COLOURS.goalLine}
             strokeWidth="0.5"
           />
           <circle
@@ -239,28 +239,28 @@ export function RinkVisualization({
             cy={RINK_HEIGHT / 2 - FACEOFF_Y_OFFSET}
             r={FACEOFF_CIRCLE_RADIUS}
             fill="none"
-            stroke={RINK_COLORS.goalLine}
+            stroke={RINK_COLOURS.goalLine}
             strokeWidth="0.3"
           />
           <circle
             cx={FACEOFF_X}
             cy={RINK_HEIGHT / 2 - FACEOFF_Y_OFFSET}
             r={FACEOFF_DOT_RADIUS}
-            fill={RINK_COLORS.goalLine}
+            fill={RINK_COLOURS.goalLine}
           />
           <circle
             cx={FACEOFF_X}
             cy={RINK_HEIGHT / 2 + FACEOFF_Y_OFFSET}
             r={FACEOFF_CIRCLE_RADIUS}
             fill="none"
-            stroke={RINK_COLORS.goalLine}
+            stroke={RINK_COLOURS.goalLine}
             strokeWidth="0.3"
           />
           <circle
             cx={FACEOFF_X}
             cy={RINK_HEIGHT / 2 + FACEOFF_Y_OFFSET}
             r={FACEOFF_DOT_RADIUS}
-            fill={RINK_COLORS.goalLine}
+            fill={RINK_COLOURS.goalLine}
           />
           {transformedShots
             .filter(({ shot }) => !shot.isGoal)
@@ -317,19 +317,19 @@ export function RinkVisualization({
       {showLegend && (
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-green-500 ring-2 ring-white" />
+            <div className="w-4 h-4 rounded-full bg-success ring-2 ring-white" />
             <span>Goal</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-orange-500" />
+            <div className="w-3 h-3 rounded-full bg-error" />
             <span>High Danger (xG &gt; 15%)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500" />
+            <div className="w-3 h-3 rounded-full bg-warning" />
             <span>Medium Danger (6-15%)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500" />
+            <div className="w-3 h-3 rounded-full bg-cold" />
             <span>Low Danger (&lt; 6%)</span>
           </div>
           <div className="text-xs ml-auto">Dot size = xG probability</div>

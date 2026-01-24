@@ -16,7 +16,7 @@ export function TopLinesCard({ lines, season }: TopLinesCardProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-emerald-500" />
+            <Users className="h-5 w-5 text-success" />
             Hot Lines (5v5)
           </CardTitle>
           <CardDescription>No line data available</CardDescription>
@@ -29,7 +29,7 @@ export function TopLinesCard({ lines, season }: TopLinesCardProps) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-emerald-500" />
+          <Users className="h-5 w-5 text-success" />
           Hot Lines (5v5)
         </CardTitle>
         <CardDescription>Top performing line combinations by xG%</CardDescription>

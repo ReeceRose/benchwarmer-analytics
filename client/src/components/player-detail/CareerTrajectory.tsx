@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatSeason } from "@/lib/formatters";
-import { CHART_COLORS, CHART_AXIS_COLORS } from "@/lib/chart-colors";
+import { CHART_COLOURS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import type { SkaterStats } from "@/types";
 
 interface CareerTrajectoryProps {
@@ -218,20 +218,20 @@ export function CareerTrajectory({ stats }: CareerTrajectoryProps) {
               data={trajectoryData}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLORS.grid} strokeOpacity={CHART_AXIS_COLORS.gridOpacity} />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLOURS.grid} strokeOpacity={CHART_AXIS_COLOURS.gridOpacity} />
               <XAxis
                 dataKey="seasonLabel"
-                tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
-                stroke={CHART_AXIS_COLORS.grid}
-                strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
+                stroke={CHART_AXIS_COLOURS.grid}
+                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               />
               <YAxis
                 domain={[minValue - padding, maxValue + padding]}
-                tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
+                tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
                 width={55}
                 tickFormatter={(v) => typeof v === "number" ? v.toFixed(1) : v}
-                stroke={CHART_AXIS_COLORS.grid}
-                strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                stroke={CHART_AXIS_COLOURS.grid}
+                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               />
               <Tooltip
                 content={({ active, payload }) => {
@@ -255,21 +255,21 @@ export function CareerTrajectory({ stats }: CareerTrajectoryProps) {
               />
               <ReferenceLine
                 y={leagueAverage}
-                stroke={CHART_AXIS_COLORS.reference}
+                stroke={CHART_AXIS_COLOURS.reference}
                 strokeDasharray="5 5"
                 label={{
                   value: "League Avg",
                   position: "right",
                   fontSize: 10,
-                  fill: CHART_AXIS_COLORS.reference,
+                  fill: CHART_AXIS_COLOURS.reference,
                 }}
               />
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke={CHART_COLORS[0]}
+                stroke={CHART_COLOURS[0]}
                 strokeWidth={2}
-                dot={{ fill: CHART_COLORS[0], r: 4 }}
+                dot={{ fill: CHART_COLOURS[0], r: 4 }}
                 activeDot={{ r: 6 }}
                 connectNulls={false}
               />

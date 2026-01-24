@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CHART_COLORS, CHART_AXIS_COLORS } from "@/lib/chart-colors";
+import { CHART_COLOURS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 
 export interface HistogramBin {
   range: string;
@@ -63,31 +63,31 @@ export function AgeDistributionDialog({
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
-                      stroke={CHART_AXIS_COLORS.grid}
-                      strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                      stroke={CHART_AXIS_COLOURS.grid}
+                      strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
                     />
                     <XAxis
                       dataKey="range"
-                      tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 10 }}
+                      tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
                       angle={-45}
                       textAnchor="end"
                       height={60}
                       interval={1}
-                      stroke={CHART_AXIS_COLORS.grid}
-                      strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                      stroke={CHART_AXIS_COLOURS.grid}
+                      strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
                     />
                     <YAxis
-                      tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
+                      tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
                       width={40}
                       label={{
                         value: "Players",
                         angle: -90,
                         position: "insideLeft",
                         fontSize: 12,
-                        fill: CHART_AXIS_COLORS.tick,
+                        fill: CHART_AXIS_COLOURS.tick,
                       }}
-                      stroke={CHART_AXIS_COLORS.grid}
-                      strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+                      stroke={CHART_AXIS_COLOURS.grid}
+                      strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
                     />
                     <Tooltip
                       content={({ active, payload }) => {
@@ -110,7 +110,7 @@ export function AgeDistributionDialog({
                     />
                     <Bar
                       dataKey="count"
-                      fill={CHART_COLORS[0]}
+                      fill={CHART_COLOURS[0]}
                       radius={[2, 2, 0, 0]}
                     />
                   </BarChart>

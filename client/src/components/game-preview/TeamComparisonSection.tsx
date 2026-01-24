@@ -36,24 +36,24 @@ function ComparisonBar({
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
         <span
-          className={homeBetter ? "font-semibold text-green-600" : "text-muted-foreground"}
+          className={homeBetter ? "font-semibold text-success" : "text-muted-foreground"}
         >
           {formatValue(homeValue)}
         </span>
         <span className="text-muted-foreground">{label}</span>
         <span
-          className={awayBetter ? "font-semibold text-green-600" : "text-muted-foreground"}
+          className={awayBetter ? "font-semibold text-success" : "text-muted-foreground"}
         >
           {formatValue(awayValue)}
         </span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden flex">
         <div
-          className={`transition-all ${homeBetter ? "bg-green-500" : "bg-muted-foreground/30"}`}
+          className={`transition-all ${homeBetter ? "bg-success" : "bg-muted-foreground/30"}`}
           style={{ width: `${homePercent}%` }}
         />
         <div
-          className={`transition-all ${awayBetter ? "bg-green-500" : "bg-muted-foreground/30"}`}
+          className={`transition-all ${awayBetter ? "bg-success" : "bg-muted-foreground/30"}`}
           style={{ width: `${100 - homePercent}%` }}
         />
       </div>

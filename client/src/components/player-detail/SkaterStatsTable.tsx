@@ -37,11 +37,11 @@ function calculatePercentile(value: number, thresholds: number[]): number {
 
 // Helper to get color class based on percentile
 function getPercentileColor(pctl: number): string {
-  if (pctl >= 90) return "text-green-600 dark:text-green-400";
-  if (pctl >= 75) return "text-green-500 dark:text-green-500";
+  if (pctl >= 90) return "text-success";
+  if (pctl >= 75) return "text-success";
   if (pctl >= 50) return "text-foreground";
-  if (pctl >= 25) return "text-orange-500 dark:text-orange-400";
-  return "text-red-500 dark:text-red-400";
+  if (pctl >= 25) return "text-warning";
+  return "text-error";
 }
 
 // Helper to render luck indicator cell
@@ -57,8 +57,8 @@ function LuckCell({ goals, xg }: { goals: number; xg: number }) {
       <TooltipTrigger asChild>
         <span className={cn(
           "inline-flex items-center gap-0.5 cursor-help",
-          isLucky && "text-green-600 dark:text-green-400",
-          isUnlucky && "text-red-600 dark:text-red-400",
+          isLucky && "text-success",
+          isUnlucky && "text-error",
           !isLucky && !isUnlucky && "text-muted-foreground"
         )}>
           {isLucky && <TrendingUp className="h-3 w-3" />}
@@ -270,8 +270,8 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
                     <TooltipTrigger asChild>
                       <div className="flex items-center justify-center gap-1.5">
                         <Sparkline data={trendData.ppg} width={50} height={16} />
-                        {pointsTrend === "up" && <TrendingUp className="h-3.5 w-3.5 text-green-500" />}
-                        {pointsTrend === "down" && <TrendingDown className="h-3.5 w-3.5 text-red-500" />}
+                        {pointsTrend === "up" && <TrendingUp className="h-3.5 w-3.5 text-success" />}
+                        {pointsTrend === "down" && <TrendingDown className="h-3.5 w-3.5 text-error" />}
                         {pointsTrend === "neutral" && <Minus className="h-3.5 w-3.5 text-muted-foreground" />}
                       </div>
                     </TooltipTrigger>

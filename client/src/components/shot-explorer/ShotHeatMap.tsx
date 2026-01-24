@@ -6,7 +6,7 @@ import {
   
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { RINK_COLORS, getHeatmapColor } from "@/lib/chart-colors";
+import { RINK_COLOURS, getHeatmapColour } from "@/lib/chart-colours";
 
 interface ShotHeatMapProps {
   shots: Shot[];
@@ -48,7 +48,7 @@ function getZoneColor(
 ): string {
   if (value === 0) return "transparent";
   const intensity = Math.min(value / max, 1);
-  return getHeatmapColor(intensity, mode);
+  return getHeatmapColour(intensity, mode);
 }
 
 export function ShotHeatMap({
@@ -220,7 +220,7 @@ export function ShotHeatMap({
             y1="0"
             x2={GOAL_LINE_X}
             y2={RINK_HEIGHT}
-            stroke={RINK_COLORS.goalLine}
+            stroke={RINK_COLOURS.goalLine}
             strokeWidth="0.5"
             opacity="0.6"
           />
@@ -229,7 +229,7 @@ export function ShotHeatMap({
             y1="0"
             x2={BLUE_LINE_X}
             y2={RINK_HEIGHT}
-            stroke={RINK_COLORS.blueLine}
+            stroke={RINK_COLOURS.blueLine}
             strokeWidth="1"
             opacity="0.6"
           />
@@ -238,9 +238,9 @@ export function ShotHeatMap({
             y={RINK_HEIGHT / 2 - CREASE_WIDTH / 2}
             width={CREASE_DEPTH}
             height={CREASE_WIDTH}
-            fill={RINK_COLORS.creaseFill}
+            fill={RINK_COLOURS.creaseFill}
             fillOpacity="0.3"
-            stroke={RINK_COLORS.goalLine}
+            stroke={RINK_COLOURS.goalLine}
             strokeWidth="0.3"
             rx="1"
           />
@@ -250,7 +250,7 @@ export function ShotHeatMap({
             width="4"
             height="6"
             fill="none"
-            stroke={RINK_COLORS.goalLine}
+            stroke={RINK_COLOURS.goalLine}
             strokeWidth="0.5"
             opacity="0.6"
           />
@@ -283,9 +283,9 @@ export function ShotHeatMap({
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>{mode === "xg" ? "Low xG" : "Few shots"}</span>
         <div className="flex h-3 w-24 rounded overflow-hidden">
-          <div className="flex-1 bg-blue-500/30" />
-          <div className="flex-1 bg-yellow-500/50" />
-          <div className="flex-1 bg-red-500/70" />
+          <div className="flex-1 bg-cold/30" />
+          <div className="flex-1 bg-warning/50" />
+          <div className="flex-1 bg-error/70" />
         </div>
         <span>{mode === "xg" ? "High xG" : "Many shots"}</span>
       </div>

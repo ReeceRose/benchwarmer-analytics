@@ -51,10 +51,10 @@ export function StatCell({
 
     if (diff > threshold) {
       trend = "up";
-      colorClass = higherIsBetter ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
+      colorClass = higherIsBetter ? "text-success" : "text-error";
     } else if (diff < -threshold) {
       trend = "down";
-      colorClass = higherIsBetter ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
+      colorClass = higherIsBetter ? "text-error" : "text-success";
     }
   }
 

@@ -9,7 +9,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_COLORS, CHART_AXIS_COLORS } from "@/lib/chart-colors";
+import { CHART_COLOURS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import type { GoalieStats } from "@/types";
 
 interface GoalieData {
@@ -120,7 +120,7 @@ function StatMiniChart({
       name: player.name.split(" ").pop() || player.name, // Last name only
       fullName: player.name,
       value: statDef.getValue(player.stats!),
-      color: CHART_COLORS[i % CHART_COLORS.length],
+      color: CHART_COLOURS[i % CHART_COLOURS.length],
     }))
     .filter((d) => d.value !== null);
 
@@ -171,20 +171,20 @@ function StatMiniChart({
         >
           <XAxis
             dataKey="name"
-            tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 11 }}
+            tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             domain={domain}
-            tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 10 }}
+            tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
             tickFormatter={(v: number) => statDef.format(v)}
             width={45}
             axisLine={false}
             tickLine={false}
           />
           {domain[0] < 0 && domain[1] > 0 && (
-            <ReferenceLine y={0} stroke="hsl(var(--border))" />
+            <ReferenceLine y={0} stroke="var(--border)" />
           )}
           <Tooltip content={<StatTooltip statDef={statDef} />} />
           <Bar dataKey="value" radius={[4, 4, 0, 0]}>
@@ -203,7 +203,7 @@ function StatMiniChart({
           <span
             key={i}
             style={{
-              color: d.value === bestValue ? undefined : CHART_AXIS_COLORS.tick,
+              color: d.value === bestValue ? undefined : CHART_AXIS_COLOURS.tick,
             }}
             className={`font-mono ${d.value === bestValue ? "text-foreground font-semibold" : ""}`}
           >
@@ -249,7 +249,7 @@ export function GoalieComparison({
               <span
                 className="w-3 h-3 rounded-full"
                 style={{
-                  backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                  backgroundColor: CHART_COLOURS[i % CHART_COLOURS.length],
                 }}
               />
               <span className="text-sm">{player.name}</span>

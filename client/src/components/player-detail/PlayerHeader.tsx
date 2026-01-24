@@ -105,9 +105,9 @@ export function PlayerHeader({ player, teams, isGoalie, luckStats }: PlayerHeade
               <TooltipTrigger asChild>
                 <div className={cn(
                   "flex items-center gap-1.5 cursor-help",
-                  isLucky && "text-green-600 dark:text-green-400",
-                  isUnlucky && "text-red-600 dark:text-red-400",
-                  !isLucky && !isUnlucky && "text-yellow-600 dark:text-yellow-400"
+                  isLucky && "text-success",
+                  isUnlucky && "text-error",
+                  !isLucky && !isUnlucky && "text-warning"
                 )}>
                   {isLucky && <TrendingUp className="h-3.5 w-3.5" />}
                   {isUnlucky && <TrendingDown className="h-3.5 w-3.5" />}

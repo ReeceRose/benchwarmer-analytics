@@ -29,9 +29,9 @@ interface StatRowProps {
 function StatRow({ icon, label, value, tooltip, highlight }: StatRowProps) {
   const colorClass =
     highlight === "good"
-      ? "text-green-600 dark:text-green-400"
+      ? "text-success"
       : highlight === "bad"
-        ? "text-red-600 dark:text-red-400"
+        ? "text-error"
         : "";
 
   return (

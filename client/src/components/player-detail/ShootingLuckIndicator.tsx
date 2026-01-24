@@ -53,9 +53,9 @@ export function ShootingLuckIndicator({
               <div
                 className={cn(
                   "absolute top-0 bottom-0 transition-all duration-300",
-                  isLucky && "bg-green-500/70 right-1/2",
-                  isUnlucky && "bg-red-500/70 left-1/2",
-                  isNeutral && "bg-yellow-500/70 left-1/2"
+                  isLucky && "bg-success/70 right-1/2",
+                  isUnlucky && "bg-error/70 left-1/2",
+                  isNeutral && "bg-warning/70 left-1/2"
                 )}
                 style={{
                   width: `${barWidth}%`,
@@ -64,16 +64,16 @@ export function ShootingLuckIndicator({
               />
             </div>
 
-            {isLucky && <TrendingUp className="h-3.5 w-3.5 text-green-500" />}
-            {isUnlucky && <TrendingDown className="h-3.5 w-3.5 text-red-500" />}
-            {isNeutral && <Minus className="h-3.5 w-3.5 text-yellow-500" />}
+            {isLucky && <TrendingUp className="h-3.5 w-3.5 text-success" />}
+            {isUnlucky && <TrendingDown className="h-3.5 w-3.5 text-error" />}
+            {isNeutral && <Minus className="h-3.5 w-3.5 text-warning" />}
 
             <span
               className={cn(
                 "text-xs font-semibold tabular-nums min-w-12 text-right",
-                isLucky && "text-green-600 dark:text-green-400",
-                isUnlucky && "text-red-600 dark:text-red-400",
-                isNeutral && "text-yellow-600 dark:text-yellow-400"
+                isLucky && "text-success",
+                isUnlucky && "text-error",
+                isNeutral && "text-warning"
               )}
             >
               {diff > 0 ? "+" : ""}
@@ -97,8 +97,8 @@ export function ShootingLuckIndicator({
               <span
                 className={cn(
                   "font-medium",
-                  isLucky && "text-green-600 dark:text-green-400",
-                  isUnlucky && "text-red-600 dark:text-red-400"
+                  isLucky && "text-success",
+                  isUnlucky && "text-error"
                 )}
               >
                 {diff > 0 ? "+" : ""}

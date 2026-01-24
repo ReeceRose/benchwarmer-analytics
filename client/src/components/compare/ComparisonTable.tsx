@@ -91,9 +91,9 @@ export function ComparisonTable({ players, positionType, statMode = "all" }: Com
                           key={player.playerId}
                           className={`text-center tabular-nums px-6 ${
                             isBest
-                              ? "text-green-600 dark:text-green-400 font-semibold"
+                              ? "text-success font-semibold"
                               : isWorst
-                                ? "text-red-600 dark:text-red-400"
+                                ? "text-error"
                                 : ""
                           }`}
                         >
@@ -129,9 +129,9 @@ export function ComparisonTable({ players, positionType, statMode = "all" }: Com
                           key={player.playerId}
                           className={`text-center tabular-nums px-6 ${
                             isBest
-                              ? "text-green-600 dark:text-green-400 font-semibold"
+                              ? "text-success font-semibold"
                               : isWorst
-                                ? "text-red-600 dark:text-red-400"
+                                ? "text-error"
                                 : ""
                           }`}
                         >

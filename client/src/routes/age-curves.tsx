@@ -20,7 +20,7 @@ import {
 } from "@/components/age-curves";
 import type { PlayerInfo, ChartDataPoint } from "@/components/age-curves";
 import { buildHistogramBins } from "@/lib/histogram";
-import { CHART_COLORS } from "@/lib/chart-colors";
+import { CHART_COLOURS } from "@/lib/chart-colours";
 
 const searchSchema = z.object({
   playerIds: z.string().optional(),
@@ -130,7 +130,7 @@ function AgeCurvesPage() {
       .map((curve, index) => ({
         playerId: curve.playerId,
         playerName: curve.playerName,
-        color: CHART_COLORS[index % CHART_COLORS.length],
+        color: CHART_COLOURS[index % CHART_COLOURS.length],
         dataKey: `player_${curve.playerId}`,
       }));
   }, [data, selectedPlayerIds]);
