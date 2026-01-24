@@ -101,9 +101,10 @@ export const getCorsiColor = getCorsiColour;
 
 /**
  * Save percentage colour - higher is better.
+ * Expects value in percentage form (e.g., 91.5 for 91.5%).
  */
 export function getSavePctColour(savePct: number | null | undefined): string {
-  return getThresholdColour(savePct, { good: 0.915, bad: 0.9 });
+  return getThresholdColour(savePct, { good: 91.5, bad: 90 });
 }
 
 // Legacy alias
@@ -140,3 +141,67 @@ export function getPkPctColour(pkPct: number | null | undefined): string {
 
 // Legacy alias
 export const getPkPctColor = getPkPctColour;
+
+/**
+ * Goal differential colour - positive is good, negative is bad.
+ */
+export function getGoalDiffColour(diff: number | null | undefined): string {
+  if (diff == null) return "text-muted-foreground";
+  if (diff > 10) return "text-success";
+  if (diff < -10) return "text-error";
+  return "text-foreground";
+}
+
+// Legacy alias
+export const getGoalDiffColor = getGoalDiffColour;
+
+/**
+ * Points percentage colour - higher is better.
+ * Good teams are above .600, struggling teams below .450.
+ */
+export function getPointsPctColour(pct: number | null | undefined): string {
+  if (pct == null) return "text-muted-foreground";
+  if (pct > 0.6) return "text-success";
+  if (pct < 0.45) return "text-error";
+  return "text-foreground";
+}
+
+// Legacy alias
+export const getPointsPctColor = getPointsPctColour;
+
+/**
+ * Shooting percentage colour - higher is better but extreme values regress.
+ * League average is around 9-10%.
+ */
+export function getShootingPctColour(pct: number | null | undefined): string {
+  if (pct == null) return "text-muted-foreground";
+  if (pct > 11) return "text-success";
+  if (pct < 8) return "text-error";
+  return "text-foreground";
+}
+
+// Legacy alias
+export const getShootingPctColor = getShootingPctColour;
+
+/**
+ * Fenwick percentage colour - higher is better.
+ */
+export function getFenwickColour(fenwick: number | null | undefined): string {
+  return getThresholdColour(fenwick, { good: 52, bad: 48 });
+}
+
+// Legacy alias
+export const getFenwickColor = getFenwickColour;
+
+/**
+ * Expected goal differential colour - positive is good, negative is bad.
+ */
+export function getXgDiffColour(diff: number | null | undefined): string {
+  if (diff == null) return "text-muted-foreground";
+  if (diff > 10) return "text-success";
+  if (diff < -10) return "text-error";
+  return "text-foreground";
+}
+
+// Legacy alias
+export const getXgDiffColor = getXgDiffColour;

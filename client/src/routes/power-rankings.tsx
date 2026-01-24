@@ -28,12 +28,23 @@ const sortKeySchema = z.enum([
   "losses",
   "otLosses",
   "points",
+  "pointsPct",
   "goalsFor",
   "goalsAgainst",
+  "goalDiff",
+  "gfPerGame",
+  "gaPerGame",
+  "xGoalsFor",
+  "xGoalsAgainst",
+  "xGoalDiff",
+  "expectedPoints",
   "ppPct",
   "pkPct",
   "xGoalsPct",
   "corsiPct",
+  "fenwickPct",
+  "shootingPct",
+  "savePct",
   "pdo",
   "pointsDiff",
 ]);
@@ -74,8 +85,24 @@ function PowerRankingsPage() {
     if (!data?.teams) return [];
     const teams = [...data.teams];
     teams.sort((a, b) => {
-      const aVal = Number(a[sortKey] ?? 0);
-      const bVal = Number(b[sortKey] ?? 0);
+      const getValue = (team: typeof a) => {
+        switch (sortKey) {
+          case "goalDiff":
+            return team.goalsFor - team.goalsAgainst;
+          case "pointsPct":
+            return team.gamesPlayed > 0 ? team.points / (team.gamesPlayed * 2) : 0;
+          case "gfPerGame":
+            return team.gamesPlayed > 0 ? team.goalsFor / team.gamesPlayed : 0;
+          case "gaPerGame":
+            return team.gamesPlayed > 0 ? team.goalsAgainst / team.gamesPlayed : 0;
+          case "xGoalDiff":
+            return team.xGoalsFor - team.xGoalsAgainst;
+          default:
+            return Number(team[sortKey] ?? 0);
+        }
+      };
+      const aVal = getValue(a);
+      const bVal = getValue(b);
       return sortDesc ? bVal - aVal : aVal - bVal;
     });
     return teams;
@@ -114,12 +141,15 @@ function PowerRankingsPage() {
           <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
           <div className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">Key Metrics: </span>
-            <strong>PP%</strong> (power play success rate),{" "}
-            <strong>PK%</strong> (penalty kill success rate),{" "}
+            <strong>Pts%</strong> (points earned / possible),{" "}
+            <strong>xGF/xGA</strong> (expected goals for/against),{" "}
+            <strong>xG±</strong> (expected goal differential),{" "}
+            <strong>xPts</strong> (expected points),{" "}
             <strong>xG%</strong> (expected goals share),{" "}
-            <strong>CF%</strong> (shot attempt share),{" "}
-            <strong>PDO</strong> (shooting% + save% - values near 100 are
-            sustainable).
+            <strong>CF%/FF%</strong> (shot attempt share),{" "}
+            <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
+            <strong>PDO</strong> (Sh% + Sv% - values near 100 are sustainable),{" "}
+            <strong>Pts±</strong> (actual - expected points).
           </div>
         </div>
       </Card>
@@ -188,7 +218,7 @@ function PowerRankingsPage() {
           <Card className="py-0 gap-0">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <Table className="table-fixed min-w-225">
+                <Table className="table-fixed min-w-400">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">#</TableHead>
@@ -244,6 +274,16 @@ function PowerRankingsPage() {
                         className="w-12"
                       />
                       <SortableTableHeader
+                        label="Pts%"
+                        tooltip="Points percentage (points earned / possible points)"
+                        sortKey="pointsPct"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "pointsPct"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
                         label="GF"
                         tooltip="Goals for"
                         sortKey="goalsFor"
@@ -262,6 +302,76 @@ function PowerRankingsPage() {
                         onSort={handleSort}
                         isHighlighted={sortKey === "goalsAgainst"}
                         className="w-12"
+                      />
+                      <SortableTableHeader
+                        label="Diff"
+                        tooltip="Goal differential (GF - GA)"
+                        sortKey="goalDiff"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "goalDiff"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="GF/G"
+                        tooltip="Goals for per game"
+                        sortKey="gfPerGame"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "gfPerGame"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="GA/G"
+                        tooltip="Goals against per game"
+                        sortKey="gaPerGame"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "gaPerGame"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="xGF"
+                        tooltip="Expected goals for"
+                        sortKey="xGoalsFor"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "xGoalsFor"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="xGA"
+                        tooltip="Expected goals against"
+                        sortKey="xGoalsAgainst"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "xGoalsAgainst"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="xG±"
+                        tooltip="Expected goal differential (xGF - xGA)"
+                        sortKey="xGoalDiff"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "xGoalDiff"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="xPts"
+                        tooltip="Expected points based on analytics"
+                        sortKey="expectedPoints"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "expectedPoints"}
+                        className="w-14"
                       />
                       <SortableTableHeader
                         label="PP%"
@@ -301,6 +411,36 @@ function PowerRankingsPage() {
                         sortDesc={sortDesc}
                         onSort={handleSort}
                         isHighlighted={sortKey === "corsiPct"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="FF%"
+                        tooltip="Fenwick percentage (unblocked shot attempt share)"
+                        sortKey="fenwickPct"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "fenwickPct"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="Sh%"
+                        tooltip="Team shooting percentage"
+                        sortKey="shootingPct"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "shootingPct"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="Sv%"
+                        tooltip="Team save percentage"
+                        sortKey="savePct"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "savePct"}
                         className="w-14"
                       />
                       <SortableTableHeader
