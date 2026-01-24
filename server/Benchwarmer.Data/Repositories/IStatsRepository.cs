@@ -129,12 +129,28 @@ public record LeaderboardResultEntry(
     // Skater stats
     int? Goals,
     int? Assists,
+    int? Shots,
     decimal? ExpectedGoals,
+    decimal? ExpectedGoalsPer60,
     decimal? CorsiForPct,
+    decimal? FenwickForPct,
+    decimal? OnIceShootingPct,
+    decimal? OnIceSavePct,
     int? IceTimeSeconds,
     // Goalie stats
     decimal? SavePercentage,
     decimal? GoalsAgainstAverage,
     decimal? GoalsSavedAboveExpected,
-    int? ShotsAgainst
+    int? ShotsAgainst,
+    int? GoalieIceTimeSeconds,
+    int? GoalsAgainst,
+    decimal? ExpectedGoalsAgainst,
+    int? HighDangerShots,
+    int? HighDangerGoals,
+    int? MediumDangerShots,
+    int? MediumDangerGoals,
+    int? LowDangerShots,
+    int? LowDangerGoals,
+    int? Rebounds,
+    decimal? ExpectedRebounds
 );

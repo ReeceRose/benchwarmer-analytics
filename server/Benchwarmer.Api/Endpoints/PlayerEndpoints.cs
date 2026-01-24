@@ -622,24 +622,50 @@ public static class PlayerEndpoints
             return Results.BadRequest(ApiError.TooManyPlayers);
         }
 
-        var comparisons = new List<PlayerComparisonDto>();
+        // Fetch all players in parallel
+        var playerTasks = playerIds.Select(id => playerRepository.GetByIdAsync(id, cancellationToken)).ToList();
+        await Task.WhenAll(playerTasks);
 
-        foreach (var playerId in playerIds)
+        var players = (await Task.WhenAll(playerTasks))
+            .Where(p => p is not null)
+            .Select(p => p!)
+            .ToList();
+
+        if (players.Count < 2)
         {
-            var player = await playerRepository.GetByIdAsync(playerId, cancellationToken);
-            if (player is null) continue;
+            return Results.BadRequest(ApiError.InsufficientPlayers);
+        }
 
-            // Check if player is a goalie
+        // Fetch stats for all players in parallel
+        var statsTasks = players.Select(async player =>
+        {
             if (player.Position == "G")
             {
-                var goalieStats = await goalieStatsRepository.GetByPlayerAsync(playerId, season, situation ?? "all", cancellationToken);
-                var latestGoalieStat = goalieStats
+                var goalieStats = await goalieStatsRepository.GetByPlayerAsync(player.Id, season, situation ?? "all", cancellationToken);
+                return (Player: player, SkaterStats: (IReadOnlyList<Benchwarmer.Data.Entities.SkaterSeason>?)null, GoalieStats: goalieStats);
+            }
+            else
+            {
+                var skaterStats = await statsRepository.GetByPlayerAsync(player.Id, season, situation ?? "all", cancellationToken);
+                return (Player: player, SkaterStats: skaterStats, GoalieStats: (IReadOnlyList<Benchwarmer.Data.Entities.GoalieSeason>?)null);
+            }
+        }).ToList();
+
+        var allStats = await Task.WhenAll(statsTasks);
+
+        var comparisons = allStats.Select(item =>
+        {
+            var player = item.Player;
+
+            if (player.Position == "G" && item.GoalieStats is not null)
+            {
+                var latestGoalieStat = item.GoalieStats
                     .Where(s => !s.IsPlayoffs)
                     .OrderByDescending(s => s.Season)
-                    .FirstOrDefault() ?? goalieStats.FirstOrDefault();
+                    .FirstOrDefault() ?? item.GoalieStats.FirstOrDefault();
 
-                comparisons.Add(new PlayerComparisonDto(
-                    playerId,
+                return new PlayerComparisonDto(
+                    player.Id,
                     player.Name,
                     player.Position,
                     player.CurrentTeamAbbreviation,
@@ -666,20 +692,18 @@ public static class PlayerEndpoints
                         latestGoalieStat.MediumDangerGoals,
                         latestGoalieStat.HighDangerGoals
                     ) : null
-                ));
+                );
             }
             else
             {
-                var stats = await statsRepository.GetByPlayerAsync(playerId, season, situation ?? "all", cancellationToken);
-                // Prefer regular season stats with expectedGoals data
-                var latestStat = stats
+                var latestStat = item.SkaterStats?
                     .Where(s => !s.IsPlayoffs)
                     .OrderByDescending(s => s.ExpectedGoals.HasValue)
                     .ThenByDescending(s => s.Season)
-                    .FirstOrDefault() ?? stats.FirstOrDefault();
+                    .FirstOrDefault() ?? item.SkaterStats?.FirstOrDefault();
 
-                comparisons.Add(new PlayerComparisonDto(
-                    playerId,
+                return new PlayerComparisonDto(
+                    player.Id,
                     player.Name,
                     player.Position,
                     player.CurrentTeamAbbreviation,
@@ -704,9 +728,9 @@ public static class PlayerEndpoints
                         latestStat.FenwickForPct
                     ) : null,
                     null
-                ));
+                );
             }
-        }
+        }).ToList();
 
         return Results.Ok(new PlayerComparisonResultDto(season, situation ?? "all", comparisons));
     }

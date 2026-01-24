@@ -3,10 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Data.Repositories;
 
-public class TeamSeasonRepository(AppDbContext db) : ITeamSeasonRepository
+public class TeamSeasonRepository(IDbContextFactory<AppDbContext> dbFactory) : ITeamSeasonRepository
 {
     public async Task<IReadOnlyList<TeamSeason>> GetBySeasonAsync(int season, string situation = "all", bool isPlayoffs = false, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.TeamSeasons
             .Where(ts => ts.Season == season && ts.Situation == situation && ts.IsPlayoffs == isPlayoffs)
             .Include(ts => ts.Team)
@@ -16,6 +17,7 @@ public class TeamSeasonRepository(AppDbContext db) : ITeamSeasonRepository
 
     public async Task<TeamSeason?> GetByTeamSeasonAsync(string teamAbbrev, int season, string situation = "all", bool isPlayoffs = false, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.TeamSeasons
             .Where(ts => ts.TeamAbbreviation == teamAbbrev && ts.Season == season && ts.Situation == situation && ts.IsPlayoffs == isPlayoffs)
             .Include(ts => ts.Team)

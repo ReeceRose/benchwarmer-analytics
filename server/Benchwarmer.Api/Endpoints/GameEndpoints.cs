@@ -469,20 +469,32 @@ public static class GameEndpoints
         var awayTeam = game.AwayTeamCode;
         var season = game.Season;
 
-        var homeTeamGames = await nhlScheduleService.GetTeamSeasonGamesAsync(homeTeam, season, cancellationToken);
+        // Run all independent queries in parallel
+        var homeTeamGamesTask = nhlScheduleService.GetTeamSeasonGamesAsync(homeTeam, season, cancellationToken);
+        var homeTeamStatsTask = teamSeasonRepository.GetByTeamSeasonAsync(homeTeam, season, "all", false, cancellationToken);
+        var awayTeamStatsTask = teamSeasonRepository.GetByTeamSeasonAsync(awayTeam, season, "all", false, cancellationToken);
+        var standingsTask = nhlScheduleService.GetStandingsAsync(cancellationToken);
+        var specialTeamsTask = nhlScheduleService.GetTeamSpecialTeamsAsync(season, cancellationToken);
+        var homeHotPlayersTask = skaterStatsRepository.GetHotPlayersByTeamAsync(homeTeam, season, 3, cancellationToken);
+        var awayHotPlayersTask = skaterStatsRepository.GetHotPlayersByTeamAsync(awayTeam, season, 3, cancellationToken);
+        var homeGoaliesTask = goalieStatsRepository.GetByTeamSeasonAsync(homeTeam, season, "all", false, cancellationToken);
+        var awayGoaliesTask = goalieStatsRepository.GetByTeamSeasonAsync(awayTeam, season, "all", false, cancellationToken);
+
+        await Task.WhenAll(
+            homeTeamGamesTask, homeTeamStatsTask, awayTeamStatsTask,
+            standingsTask, specialTeamsTask,
+            homeHotPlayersTask, awayHotPlayersTask,
+            homeGoaliesTask, awayGoaliesTask);
+
+        var homeTeamGames = await homeTeamGamesTask;
         var headToHeadGames = homeTeamGames
             .Where(g => g.GameState == "OFF" && g.GameType == 2)
             .Where(g => g.HomeTeam.Abbrev == awayTeam || g.AwayTeam.Abbrev == awayTeam)
             .OrderByDescending(g => g.GameDate)
             .ToList();
 
-        var homeTeamStats = await teamSeasonRepository.GetByTeamSeasonAsync(homeTeam, season, "all", false, cancellationToken);
-        var awayTeamStats = await teamSeasonRepository.GetByTeamSeasonAsync(awayTeam, season, "all", false, cancellationToken);
-
-        var standingsTask = nhlScheduleService.GetStandingsAsync(cancellationToken);
-        var specialTeamsTask = nhlScheduleService.GetTeamSpecialTeamsAsync(season, cancellationToken);
-        await Task.WhenAll(standingsTask, specialTeamsTask);
-
+        var homeTeamStats = await homeTeamStatsTask;
+        var awayTeamStats = await awayTeamStatsTask;
         var standings = await standingsTask;
         var specialTeams = await specialTeamsTask;
 
@@ -491,11 +503,10 @@ public static class GameEndpoints
         specialTeams.TryGetValue(homeTeam, out var homeSpecialTeams);
         specialTeams.TryGetValue(awayTeam, out var awaySpecialTeams);
 
-        var homeHotPlayers = await skaterStatsRepository.GetHotPlayersByTeamAsync(homeTeam, season, 3, cancellationToken);
-        var awayHotPlayers = await skaterStatsRepository.GetHotPlayersByTeamAsync(awayTeam, season, 3, cancellationToken);
-
-        var homeGoalies = await goalieStatsRepository.GetByTeamSeasonAsync(homeTeam, season, "all", false, cancellationToken);
-        var awayGoalies = await goalieStatsRepository.GetByTeamSeasonAsync(awayTeam, season, "all", false, cancellationToken);
+        var homeHotPlayers = await homeHotPlayersTask;
+        var awayHotPlayers = await awayHotPlayersTask;
+        var homeGoalies = await homeGoaliesTask;
+        var awayGoalies = await awayGoaliesTask;
 
         var h2hRecord = GamePreviewBuilder.BuildHeadToHeadRecord(headToHeadGames, homeTeam, awayTeam);
         var homeComparison = GamePreviewBuilder.BuildTeamPreviewStats(homeTeam, homeTeamStats, homeStandings, homeSpecialTeams);

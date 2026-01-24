@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Data.Repositories;
 
-public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
+public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : ISkaterStatsRepository
 {
     public async Task<IReadOnlyList<SkaterSeason>> GetByPlayerAsync(
         int playerId,
@@ -11,6 +11,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
         string? situation = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.SkaterSeasons
             .Where(s => s.PlayerId == playerId);
 
@@ -37,6 +38,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
         bool? isPlayoffs = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.SkaterSeasons
             .Include(s => s.Player)
             .Where(s => s.Team == teamAbbrev && s.Season == season && s.Situation == situation);
@@ -57,8 +59,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
         int limit = 50,
         CancellationToken cancellationToken = default)
     {
-        // Find players with strong underlying metrics (xG, Corsi%) but fewer actual goals
-        // Breakout candidates have: high xG/60, high CF%, but goals < xG
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.SkaterSeasons
             .Include(s => s.Player)
             .Where(s => s.Season == season &&
@@ -68,7 +69,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
                        s.ExpectedGoals.HasValue &&
                        s.ExpectedGoals > 0 &&
                        s.CorsiForPct.HasValue)
-            .OrderByDescending(s => s.ExpectedGoals - s.Goals) // Most unlucky first
+            .OrderByDescending(s => s.ExpectedGoals - s.Goals)
             .ThenByDescending(s => s.CorsiForPct)
             .Take(limit)
             .ToListAsync(cancellationToken);
@@ -79,14 +80,13 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
         bool useMedian = false,
         CancellationToken cancellationToken = default)
     {
-        // Calculate league performance by age
-        // Age is calculated as season year minus birth year
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var data = await db.SkaterSeasons
             .Include(s => s.Player)
             .Where(s => s.Situation == "all" &&
                        !s.IsPlayoffs &&
                        s.GamesPlayed >= minGames &&
-                       s.IceTimeSeconds > 3600 && // At least 1 hour of ice time
+                       s.IceTimeSeconds > 3600 &&
                        s.Player != null &&
                        s.Player.BirthDate.HasValue)
             .Select(s => new
@@ -94,12 +94,11 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
                 Age = s.Season - s.Player!.BirthDate!.Value.Year,
                 Minutes = s.IceTimeSeconds / 60.0m,
                 Points = s.Goals + s.Assists,
-                Goals = s.Goals,
+                s.Goals,
                 ExpectedGoals = s.ExpectedGoals ?? 0
             })
             .ToListAsync(cancellationToken);
 
-        // Group by age and calculate per-60 stats
         var grouped = data
             .Where(d => d.Age >= 18 && d.Age <= 45 && d.Minutes > 0)
             .GroupBy(d => d.Age)
@@ -136,6 +135,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
         int playerId,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var player = await db.Players.FindAsync([playerId], cancellationToken);
         if (player?.BirthDate is null)
         {
@@ -155,7 +155,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
                 Age = s.Season - birthYear,
                 Minutes = s.IceTimeSeconds / 60.0m,
                 Points = s.Goals + s.Assists,
-                Goals = s.Goals,
+                s.Goals,
                 ExpectedGoals = s.ExpectedGoals ?? 0,
                 s.GamesPlayed
             })
@@ -163,13 +163,12 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
 
         return data
             .Where(d => d.Minutes > 0)
-            .Select(d => (
-                Age: d.Age,
-                Season: d.Season,
+            .Select(d => (d.Age,
+                 d.Season,
                 PointsPer60: Math.Round(d.Points / d.Minutes * 60, 2),
                 GoalsPer60: Math.Round((decimal)d.Goals / d.Minutes * 60, 2),
                 XgPer60: Math.Round(d.ExpectedGoals / d.Minutes * 60, 2),
-                GamesPlayed: d.GamesPlayed
+                 d.GamesPlayed
             ))
             .OrderBy(d => d.Age)
             .ToList();
@@ -180,6 +179,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
         int minGames = 20,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var data = await db.SkaterSeasons
             .Include(s => s.Player)
             .Where(s => s.Situation == "all" &&
@@ -193,7 +193,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
             {
                 Minutes = s.IceTimeSeconds / 60.0m,
                 Points = s.Goals + s.Assists,
-                Goals = s.Goals,
+                s.Goals,
                 ExpectedGoals = s.ExpectedGoals ?? 0,
                 s.GamesPlayed
             })
@@ -205,7 +205,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
                 PointsPer60: Math.Round(d.Points / d.Minutes * 60, 2),
                 GoalsPer60: Math.Round((decimal)d.Goals / d.Minutes * 60, 2),
                 XgPer60: Math.Round(d.ExpectedGoals / d.Minutes * 60, 2),
-                GamesPlayed: d.GamesPlayed
+                 d.GamesPlayed
             ))
             .ToList();
     }
@@ -215,7 +215,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
         int minGames = 20,
         CancellationToken cancellationToken = default)
     {
-        // Get all qualifying player seasons for the given season
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var data = await db.SkaterSeasons
             .Where(s => s.Season == season &&
                        s.Situation == "all" &&
@@ -236,7 +236,6 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
             return new SeasonPercentiles(season, minGames, 0, [], [], [], []);
         }
 
-        // Calculate per-game and per-60 stats for each player
         var playerStats = data
             .Where(d => d.GamesPlayed > 0 && d.Minutes > 0)
             .Select(d => new
@@ -253,7 +252,6 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
             return new SeasonPercentiles(season, minGames, 0, [], [], [], []);
         }
 
-        // Sort each stat and calculate percentile thresholds (1-99)
         var ppgSorted = playerStats.Select(p => p.PointsPerGame).OrderBy(v => v).ToList();
         var gpgSorted = playerStats.Select(p => p.GoalsPerGame).OrderBy(v => v).ToList();
         var pp60Sorted = playerStats.Select(p => p.PointsPer60).OrderBy(v => v).ToList();
@@ -272,13 +270,11 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
 
     private static decimal[] CalculatePercentileThresholds(List<decimal> sortedValues)
     {
-        // Return the value at each percentile (1-99)
         var thresholds = new decimal[99];
         var count = sortedValues.Count;
 
         for (var p = 1; p <= 99; p++)
         {
-            // Linear interpolation for percentile
             var rank = (p / 100.0) * (count - 1);
             var lowerIndex = (int)Math.Floor(rank);
             var upperIndex = (int)Math.Ceiling(rank);
@@ -301,16 +297,15 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
 
     public async Task UpsertBatchAsync(IEnumerable<SkaterSeason> stats, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var statsList = stats.ToList();
         if (statsList.Count == 0) return;
 
-        // Extract unique keys to batch-fetch existing records (including IsPlayoffs)
         var keys = statsList
             .Select(s => new { s.PlayerId, s.Season, s.Team, s.Situation, s.IsPlayoffs })
             .Distinct()
             .ToList();
 
-        // Batch fetch all potentially existing records in a single query
         var playerIds = keys.Select(k => k.PlayerId).Distinct().ToList();
         var seasons = keys.Select(k => k.Season).Distinct().ToList();
         var teams = keys.Select(k => k.Team).Distinct().ToList();
@@ -325,7 +320,6 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
                        isPlayoffsValues.Contains(s.IsPlayoffs))
             .ToListAsync(cancellationToken);
 
-        // Build dictionary for O(1) lookup (including IsPlayoffs in key)
         var existingLookup = existingRecords
             .ToDictionary(s => (s.PlayerId, s.Season, s.Team, s.Situation, s.IsPlayoffs));
 
@@ -367,8 +361,7 @@ public class SkaterStatsRepository(AppDbContext db) : ISkaterStatsRepository
         int limit = 5,
         CancellationToken cancellationToken = default)
     {
-        // Get players with positive Goals - xG differential (scoring above expected)
-        // Filter for 5on5 situation to avoid special teams noise, min 10 games for sample size
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.SkaterSeasons
             .Include(s => s.Player)
             .Where(s => s.Team == teamAbbrev &&

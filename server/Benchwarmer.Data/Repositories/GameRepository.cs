@@ -3,16 +3,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Data.Repositories;
 
-public class GameRepository(AppDbContext db) : IGameRepository
+public class GameRepository(IDbContextFactory<AppDbContext> dbFactory) : IGameRepository
 {
     public async Task<Game?> GetByGameIdAsync(string gameId, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.Games
             .FirstOrDefaultAsync(g => g.GameId == gameId, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Game>> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.Games
             .Where(g => g.GameDate == date)
             .OrderBy(g => g.GameId)
@@ -21,6 +23,7 @@ public class GameRepository(AppDbContext db) : IGameRepository
 
     public async Task<IReadOnlyList<Game>> GetCompletedByDateAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.Games
             .Where(g => g.GameDate == date && g.GameState == "OFF")
             .OrderBy(g => g.GameId)
@@ -29,6 +32,7 @@ public class GameRepository(AppDbContext db) : IGameRepository
 
     public async Task<int> UpsertAsync(Game game, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var existing = await db.Games
             .FirstOrDefaultAsync(g => g.GameId == game.GameId, cancellationToken);
 
@@ -58,6 +62,7 @@ public class GameRepository(AppDbContext db) : IGameRepository
 
     public async Task<int> UpsertBatchAsync(IEnumerable<Game> games, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var gameList = games.ToList();
         if (gameList.Count == 0) return 0;
 
@@ -101,6 +106,7 @@ public class GameRepository(AppDbContext db) : IGameRepository
         int season,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.Games
             .Where(g => g.Season == season && g.GameState == "OFF")
             .Where(g =>
@@ -114,6 +120,7 @@ public class GameRepository(AppDbContext db) : IGameRepository
         IEnumerable<string> gameIds,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var idList = gameIds.ToList();
         return await db.Games
             .Where(g => idList.Contains(g.GameId))

@@ -3,25 +3,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Data.Repositories;
 
-public class ShotRepository(AppDbContext db) : IShotRepository
+public class ShotRepository(IDbContextFactory<AppDbContext> dbFactory) : IShotRepository
 {
     private const int BatchSize = 500;
 
     public async Task<int> UpsertBatchAsync(IEnumerable<Shot> shots, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var shotsList = shots.ToList();
         if (shotsList.Count == 0) return 0;
 
         var totalUpserted = 0;
 
-        // Process in batches to manage memory
         foreach (var batch in shotsList.Chunk(BatchSize))
         {
-            // Deduplicate within batch (keep last occurrence)
             var batchDict = batch.ToDictionary(s => s.ShotId, s => s);
             var batchList = batchDict.Values.ToList();
 
-            // Extract shot IDs to batch-fetch existing records
             var shotIds = batchList.Select(s => s.ShotId).ToList();
 
             var existingShots = await db.Shots
@@ -34,14 +32,12 @@ public class ShotRepository(AppDbContext db) : IShotRepository
             {
                 if (existingShots.TryGetValue(shot.ShotId, out var existing))
                 {
-                    // Update existing shot - copy all properties
                     UpdateShotProperties(existing, shot);
                 }
                 else
                 {
                     shot.CreatedAt = now;
                     db.Shots.Add(shot);
-                    // Track newly added shots to prevent duplicates within batch
                     existingShots[shot.ShotId] = shot;
                 }
             }
@@ -49,7 +45,6 @@ public class ShotRepository(AppDbContext db) : IShotRepository
             await db.SaveChangesAsync(cancellationToken);
             totalUpserted += batchList.Count;
 
-            // Clear change tracker to free memory
             db.ChangeTracker.Clear();
         }
 
@@ -65,6 +60,7 @@ public class ShotRepository(AppDbContext db) : IShotRepository
         int? limit = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.Shots.Where(s => s.ShooterPlayerId == playerId);
 
         if (season.HasValue)
@@ -102,6 +98,7 @@ public class ShotRepository(AppDbContext db) : IShotRepository
 
     public async Task<IReadOnlyList<Shot>> GetByGameAsync(string gameId, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.Shots
             .Where(s => s.GameId == gameId)
             .OrderBy(s => s.Period)
@@ -111,6 +108,7 @@ public class ShotRepository(AppDbContext db) : IShotRepository
 
     public async Task<int> GetCountBySeasonAsync(int season, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.Shots.CountAsync(s => s.Season == season, cancellationToken);
     }
 
@@ -125,6 +123,7 @@ public class ShotRepository(AppDbContext db) : IShotRepository
         int? limit = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.Shots.Where(s => s.TeamCode == teamCode && s.Season == season);
 
         if (isPlayoffs.HasValue)
@@ -362,7 +361,7 @@ public class ShotRepository(AppDbContext db) : IShotRepository
         int gameLimit = 20,
         CancellationToken cancellationToken = default)
     {
-        // First, get the most recent N distinct game IDs for this player
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var recentGameIds = await db.Shots
             .Where(s => s.ShooterPlayerId == playerId && s.Season == season && !s.IsPlayoffGame)
             .Select(s => s.GameId)
@@ -393,10 +392,7 @@ public class ShotRepository(AppDbContext db) : IShotRepository
         int? limit = null,
         CancellationToken cancellationToken = default)
     {
-        // Get shots where this team was defending (opponent's shots against us)
-        // Shot.TeamCode is the shooting team, so we want shots where:
-        // - HomeTeamCode == teamCode AND TeamCode != teamCode (we're home, opponent shooting)
-        // - OR AwayTeamCode == teamCode AND TeamCode != teamCode (we're away, opponent shooting)
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.Shots.Where(s =>
             s.Season == season &&
             s.TeamCode != teamCode &&
@@ -460,7 +456,7 @@ public class ShotRepository(AppDbContext db) : IShotRepository
         int gameLimit = 30,
         CancellationToken cancellationToken = default)
     {
-        // Get distinct game IDs where this goalie faced shots (excluding empty net)
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var recentGameIds = await db.Shots
             .Where(s => s.GoaliePlayerId == goaliePlayerId
                         && s.Season == season

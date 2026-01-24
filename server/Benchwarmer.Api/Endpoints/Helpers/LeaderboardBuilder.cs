@@ -49,6 +49,8 @@ public static class LeaderboardBuilder
             ExpectedRebounds: e.ExpectedRebounds
         )).ToList();
 
+        Console.WriteLine(entries[0].OnIceSavePct);
+
         return new LeaderboardResponseDto(
             Category: result.Category,
             Season: season,

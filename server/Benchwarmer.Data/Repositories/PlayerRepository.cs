@@ -3,15 +3,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Data.Repositories;
 
-public class PlayerRepository(AppDbContext db) : IPlayerRepository
+public class PlayerRepository(IDbContextFactory<AppDbContext> dbFactory) : IPlayerRepository
 {
     public async Task<Player?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.Players.FindAsync([id], cancellationToken);
     }
 
     public async Task<IReadOnlyList<Player>> GetByTeamAsync(string teamAbbrev, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         return await db.Players
             .Where(p => p.CurrentTeamAbbreviation == teamAbbrev)
             .OrderBy(p => p.Position)
@@ -21,7 +23,7 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
 
     public async Task<IReadOnlyList<Player>> GetByTeamAndSeasonAsync(string teamAbbrev, int season, bool? isPlayoffs = null, CancellationToken cancellationToken = default)
     {
-        // Get player IDs who played for this team during this season from SkaterSeasons
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.SkaterSeasons
             .Where(s => s.Team == teamAbbrev && s.Season == season && s.Situation == "all");
 
@@ -35,7 +37,6 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        // Fetch full player details
         return await db.Players
             .Where(p => playerIds.Contains(p.Id))
             .OrderBy(p => p.Position)
@@ -49,6 +50,7 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var normalizedQuery = query.ToLowerInvariant();
 
         var baseQuery = db.Players
@@ -67,7 +69,6 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
         }
         else
         {
-            // Default limit if no pagination
             resultQuery = (IOrderedQueryable<Player>)resultQuery.Take(50);
         }
 
@@ -77,6 +78,7 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
 
     public async Task UpsertBasicInfoAsync(int playerId, string name, string? teamAbbrev, string? position = null, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var existing = await db.Players.FindAsync([playerId], cancellationToken);
 
         if (existing is null)
@@ -96,7 +98,6 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
         {
             existing.Name = name;
             existing.CurrentTeamAbbreviation = teamAbbrev;
-            // Only update position if provided (don't overwrite existing position with null)
             if (position != null)
             {
                 existing.Position = position;
@@ -109,16 +110,15 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
 
     public async Task UpsertBatchAsync(IEnumerable<Player> players, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var playersList = players.ToList();
         if (playersList.Count == 0) return;
 
-        // Batch fetch all existing players by ID in a single query
         var playerIds = playersList.Select(p => p.Id).Distinct().ToList();
         var existingRecords = await db.Players
             .Where(p => playerIds.Contains(p.Id))
             .ToListAsync(cancellationToken);
 
-        // Build dictionary for O(1) lookup
         var existingLookup = existingRecords.ToDictionary(p => p.Id);
 
         var now = DateTime.UtcNow;

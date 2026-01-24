@@ -85,13 +85,17 @@ try
         options.AddPolicy(CachePolicies.LiveData, b => b.Expire(TimeSpan.FromSeconds(15)));
     });
 
-    builder.Services.AddDbContext<AppDbContext>(options =>
+    builder.Services.AddPooledDbContextFactory<AppDbContext>(options =>
         options.UseNpgsql(
             builder.Configuration.GetConnectionString("DefaultConnection"),
             npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 3,
                 maxRetryDelay: TimeSpan.FromSeconds(5),
                 errorCodesToAdd: null)));
+
+    // Also register AppDbContext directly for services that don't need parallel queries
+    builder.Services.AddScoped(sp =>
+        sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
     builder.Services.AddHangfire(config => config
         .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

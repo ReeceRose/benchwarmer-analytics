@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Data.Repositories;
 
-public class GameStatsRepository(AppDbContext db) : IGameStatsRepository
+public class GameStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IGameStatsRepository
 {
     private const decimal HighDangerThreshold = 0.15m;
     private const decimal MediumDangerThreshold = 0.06m;
@@ -15,6 +15,7 @@ public class GameStatsRepository(AppDbContext db) : IGameStatsRepository
 
     public async Task<IReadOnlyList<GameStats>> GetGameStatsBatchAsync(IEnumerable<string> gameIds, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var gameIdList = gameIds.ToList();
         if (gameIdList.Count == 0) return [];
 

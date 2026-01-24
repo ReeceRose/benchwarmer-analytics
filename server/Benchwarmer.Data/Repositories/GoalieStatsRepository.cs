@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Data.Repositories;
 
-public class GoalieStatsRepository(AppDbContext db) : IGoalieStatsRepository
+public class GoalieStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IGoalieStatsRepository
 {
     public async Task<IReadOnlyList<GoalieSeason>> GetByPlayerAsync(
         int playerId,
@@ -11,6 +11,7 @@ public class GoalieStatsRepository(AppDbContext db) : IGoalieStatsRepository
         string? situation = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.GoalieSeasons
             .Where(g => g.PlayerId == playerId);
 
@@ -37,6 +38,7 @@ public class GoalieStatsRepository(AppDbContext db) : IGoalieStatsRepository
         bool? isPlayoffs = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.GoalieSeasons
             .Include(g => g.Player)
             .Where(g => g.Team == teamAbbrev && g.Season == season && g.Situation == situation);
@@ -53,16 +55,15 @@ public class GoalieStatsRepository(AppDbContext db) : IGoalieStatsRepository
 
     public async Task UpsertBatchAsync(IEnumerable<GoalieSeason> stats, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var statsList = stats.ToList();
         if (statsList.Count == 0) return;
 
-        // Extract unique keys to batch-fetch existing records
         var keys = statsList
             .Select(g => new { g.PlayerId, g.Season, g.Team, g.Situation, g.IsPlayoffs })
             .Distinct()
             .ToList();
 
-        // Batch fetch all potentially existing records in a single query
         var playerIds = keys.Select(k => k.PlayerId).Distinct().ToList();
         var seasons = keys.Select(k => k.Season).Distinct().ToList();
         var teams = keys.Select(k => k.Team).Distinct().ToList();
@@ -77,7 +78,6 @@ public class GoalieStatsRepository(AppDbContext db) : IGoalieStatsRepository
                        isPlayoffsValues.Contains(g.IsPlayoffs))
             .ToListAsync(cancellationToken);
 
-        // Build dictionary for O(1) lookup
         var existingLookup = existingRecords
             .ToDictionary(g => (g.PlayerId, g.Season, g.Team, g.Situation, g.IsPlayoffs));
 

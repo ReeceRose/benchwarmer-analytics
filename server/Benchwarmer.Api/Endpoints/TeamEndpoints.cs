@@ -156,11 +156,14 @@ public static class TeamEndpoints
 
         if (season.HasValue)
         {
-            // Get skater stats
-            var skaterStats = await skaterStatsRepository.GetByTeamSeasonAsync(abbrev, season.Value, "all", playoffs, cancellationToken);
+            // Get skater and goalie stats in parallel
+            var skaterStatsTask = skaterStatsRepository.GetByTeamSeasonAsync(abbrev, season.Value, "all", playoffs, cancellationToken);
+            var goalieStatsTask = goalieStatsRepository.GetByTeamSeasonAsync(abbrev, season.Value, "all", playoffs, cancellationToken);
 
-            // Get goalie stats
-            var goalieStats = await goalieStatsRepository.GetByTeamSeasonAsync(abbrev, season.Value, "all", playoffs, cancellationToken);
+            await Task.WhenAll(skaterStatsTask, goalieStatsTask);
+
+            var skaterStats = await skaterStatsTask;
+            var goalieStats = await goalieStatsTask;
 
             // When playoffs is null (Both), we need to aggregate regular season + playoff stats per player
             if (!playoffs.HasValue)
@@ -500,15 +503,18 @@ public static class TeamEndpoints
         var seasonYear = season ?? DateTime.Now.Year;
         var isPlayoffs = playoffs ?? false;
 
-        // Get power play stats (5on4)
-        var ppStats = await teamSeasonRepository.GetByTeamSeasonAsync(abbrev, seasonYear, "5on4", isPlayoffs, cancellationToken);
+        // Run all queries in parallel
+        var ppStatsTask = teamSeasonRepository.GetByTeamSeasonAsync(abbrev, seasonYear, "5on4", isPlayoffs, cancellationToken);
+        var pkStatsTask = teamSeasonRepository.GetByTeamSeasonAsync(abbrev, seasonYear, "4on5", isPlayoffs, cancellationToken);
+        var allPpStatsTask = teamSeasonRepository.GetBySeasonAsync(seasonYear, "5on4", isPlayoffs, cancellationToken);
+        var allPkStatsTask = teamSeasonRepository.GetBySeasonAsync(seasonYear, "4on5", isPlayoffs, cancellationToken);
 
-        // Get penalty kill stats (4on5)
-        var pkStats = await teamSeasonRepository.GetByTeamSeasonAsync(abbrev, seasonYear, "4on5", isPlayoffs, cancellationToken);
+        await Task.WhenAll(ppStatsTask, pkStatsTask, allPpStatsTask, allPkStatsTask);
 
-        // Get all teams for league rankings
-        var allPpStats = await teamSeasonRepository.GetBySeasonAsync(seasonYear, "5on4", isPlayoffs, cancellationToken);
-        var allPkStats = await teamSeasonRepository.GetBySeasonAsync(seasonYear, "4on5", isPlayoffs, cancellationToken);
+        var ppStats = await ppStatsTask;
+        var pkStats = await pkStatsTask;
+        var allPpStats = await allPpStatsTask;
+        var allPkStats = await allPkStatsTask;
 
         // Calculate PP rankings (higher PP% is better)
         var ppRankings = allPpStats

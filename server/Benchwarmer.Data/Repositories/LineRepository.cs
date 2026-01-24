@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Data.Repositories;
 
-public class LineRepository(AppDbContext db) : ILineRepository
+public class LineRepository(IDbContextFactory<AppDbContext> dbFactory) : ILineRepository
 {
     public async Task<(IReadOnlyList<LineCombination> Lines, int TotalCount)> GetByTeamAsync(
         string teamAbbrev,
@@ -17,6 +17,7 @@ public class LineRepository(AppDbContext db) : ILineRepository
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.LineCombinations
             .Include(l => l.Player1)
             .Include(l => l.Player2)
@@ -43,13 +44,10 @@ public class LineRepository(AppDbContext db) : ILineRepository
             query = query.Where(l => l.IceTimeSeconds >= minToiSeconds);
         }
 
-        // Get total count before pagination
         var totalCount = await query.CountAsync(cancellationToken);
 
-        // Apply sorting
         query = ApplySorting(query, sortBy, sortDescending);
 
-        // Apply pagination
         if (page.HasValue && pageSize.HasValue)
         {
             var skip = (page.Value - 1) * pageSize.Value;
@@ -104,6 +102,7 @@ public class LineRepository(AppDbContext db) : ILineRepository
         string? positionFilter = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.ChemistryPairs
             .Where(c => c.Team == teamAbbrev && c.Season == season);
 
@@ -112,16 +111,13 @@ public class LineRepository(AppDbContext db) : ILineRepository
             query = query.Where(c => c.Situation == situation);
         }
 
-        // Apply position filter
         if (!string.IsNullOrEmpty(positionFilter))
         {
             query = positionFilter.ToLowerInvariant() switch
             {
-                // Forwards: C, LW, RW (both players must be forwards)
                 "forward" or "forwards" => query.Where(c =>
                     (c.Player1Position == "C" || c.Player1Position == "LW" || c.Player1Position == "RW") &&
                     (c.Player2Position == "C" || c.Player2Position == "LW" || c.Player2Position == "RW")),
-                // Defense: D (both players must be defensemen)
                 "defense" or "defensemen" => query.Where(c =>
                     c.Player1Position == "D" && c.Player2Position == "D"),
                 _ => query
@@ -141,6 +137,7 @@ public class LineRepository(AppDbContext db) : ILineRepository
         string? situation = null,
         CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var query = db.ChemistryPairs
             .Where(c => c.Season == season &&
                        (c.Player1Id == playerId || c.Player2Id == playerId));
@@ -154,7 +151,6 @@ public class LineRepository(AppDbContext db) : ILineRepository
             .OrderByDescending(c => c.TotalIceTimeSeconds)
             .ToListAsync(cancellationToken);
 
-        // Transform to return the "other" player as the linemate
         return pairs.Select(c =>
         {
             var isPlayer1 = c.Player1Id == playerId;
@@ -177,7 +173,7 @@ public class LineRepository(AppDbContext db) : ILineRepository
 
     public async Task RefreshChemistryPairsAsync(CancellationToken cancellationToken = default)
     {
-        // Use CONCURRENTLY to allow reads during refresh (requires unique index)
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         await db.Database.ExecuteSqlRawAsync(
             "REFRESH MATERIALIZED VIEW CONCURRENTLY chemistry_pairs",
             cancellationToken);
@@ -209,22 +205,20 @@ public class LineRepository(AppDbContext db) : ILineRepository
 
     public async Task UpsertBatchAsync(IEnumerable<LineCombination> lines, CancellationToken cancellationToken = default)
     {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var linesList = lines.ToList();
         if (linesList.Count == 0) return;
 
-        // Extract filter values to batch-fetch existing records
         var seasons = linesList.Select(l => l.Season).Distinct().ToList();
         var teams = linesList.Select(l => l.Team).Distinct().ToList();
         var situations = linesList.Select(l => l.Situation).Distinct().ToList();
 
-        // Batch fetch all potentially existing records in a single query
         var existingRecords = await db.LineCombinations
             .Where(l => seasons.Contains(l.Season) &&
                        teams.Contains(l.Team) &&
                        situations.Contains(l.Situation))
             .ToListAsync(cancellationToken);
 
-        // Build dictionary for O(1) lookup using composite key
         var existingLookup = existingRecords
             .ToDictionary(l => (l.Season, l.Team, l.Situation, l.Player1Id, l.Player2Id, l.Player3Id));
 
