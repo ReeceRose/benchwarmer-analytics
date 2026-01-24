@@ -1,24 +1,30 @@
 /**
  * Game-related formatting utilities shared across components
+ * All times are displayed in Eastern Time (ET) since NHL schedules are ET-centric
  */
+
+const ET_TIMEZONE = "America/New_York";
 
 export function formatGameTime(utcTime: string | null): string {
   if (!utcTime) return "TBD";
   const date = new Date(utcTime);
-  return date.toLocaleTimeString("en-US", {
+  const timeStr = date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
-    timeZoneName: "short",
+    timeZone: ET_TIMEZONE,
   });
+  return `${timeStr} ET`;
 }
 
 export function formatGameTimeShort(utcTime: string | null): string {
   if (!utcTime) return "TBD";
   const date = new Date(utcTime);
-  return date.toLocaleTimeString("en-US", {
+  const timeStr = date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZone: ET_TIMEZONE,
   });
+  return `${timeStr} ET`;
 }
 
 export function formatGameDate(dateStr: string): string {

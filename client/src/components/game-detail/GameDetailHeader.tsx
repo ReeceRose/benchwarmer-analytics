@@ -128,13 +128,7 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
 
   // Start time
   const startTimeUtc = game?.startTimeUtc ?? preview?.game.startTimeUtc;
-  const startTime = startTimeUtc
-    ? new Date(startTimeUtc).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        timeZoneName: "short",
-      })
-    : null;
+  const startTime = startTimeUtc ? formatGameTime(startTimeUtc) : null;
 
   return (
     <Card className="p-6">
