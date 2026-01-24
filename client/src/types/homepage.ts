@@ -13,6 +13,7 @@ export interface OutlierEntry {
   name: string;
   team?: string;
   position?: string;
+  headshotUrl?: string;
   goals: number;
   expectedGoals: number;
   differential: number;
@@ -63,6 +64,7 @@ export interface GoalieOutlierEntry {
   playerId: number;
   name: string;
   team?: string;
+  headshotUrl?: string;
   goalsAgainst: number;
   expectedGoalsAgainst: number;
   goalsSavedAboveExpected: number;

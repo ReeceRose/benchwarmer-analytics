@@ -6,6 +6,8 @@ import {
   getPointsDiffColor,
   getXgPctColor,
   getCorsiColor,
+  getPpPctColor,
+  getPkPctColor,
 } from "@/lib/stat-colors";
 import type { TeamPowerRanking } from "@/types";
 
@@ -18,8 +20,10 @@ interface TeamRowProps {
 export function TeamRow({ team, rank, season }: TeamRowProps) {
   const pdoColor = getPdoColor(team.pdo);
   const pointsDiffColor = getPointsDiffColor(team.pointsDiff);
-  const xgPctColor = getXgPctColor(team.xGoalsPct);
-  const corsiColor = getCorsiColor(team.corsiPct);
+  const xgPctColor = getXgPctColor(team.xGoalsPct != null ? team.xGoalsPct * 100 : null);
+  const corsiColor = getCorsiColor(team.corsiPct != null ? team.corsiPct * 100 : null);
+  const ppPctColor = getPpPctColor(team.ppPct);
+  const pkPctColor = getPkPctColor(team.pkPct);
 
   return (
     <TableRow>
@@ -44,11 +48,17 @@ export function TeamRow({ team, rank, season }: TeamRowProps) {
       <TableCell className="text-right font-semibold">{team.points}</TableCell>
       <TableCell className="text-right">{team.goalsFor}</TableCell>
       <TableCell className="text-right">{team.goalsAgainst}</TableCell>
+      <TableCell className={`text-right ${ppPctColor}`}>
+        {team.ppPct != null ? `${team.ppPct.toFixed(1)}%` : "-"}
+      </TableCell>
+      <TableCell className={`text-right ${pkPctColor}`}>
+        {team.pkPct != null ? `${team.pkPct.toFixed(1)}%` : "-"}
+      </TableCell>
       <TableCell className={`text-right ${xgPctColor}`}>
-        {team.xGoalsPct != null ? formatPercent(team.xGoalsPct, false) : "-"}
+        {team.xGoalsPct != null ? formatPercent(team.xGoalsPct) : "-"}
       </TableCell>
       <TableCell className={`text-right ${corsiColor}`}>
-        {team.corsiPct != null ? formatPercent(team.corsiPct, false) : "-"}
+        {team.corsiPct != null ? formatPercent(team.corsiPct) : "-"}
       </TableCell>
       <TableCell className={`text-right font-medium ${pdoColor}`}>
         {team.pdo != null ? team.pdo.toFixed(1) : "-"}

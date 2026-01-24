@@ -101,6 +101,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 s.Player!.Name,
                 s.Team,
                 s.Player.Position,
+                s.Player.HeadshotUrl,
                 s.Goals,
                 ExpectedGoals = s.ExpectedGoals ?? 0,
                 Differential = s.Goals - (s.ExpectedGoals ?? 0)
@@ -115,6 +116,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 s.Name,
                 s.Team,
                 s.Position,
+                s.HeadshotUrl,
                 s.Goals,
                 s.ExpectedGoals,
                 s.Differential
@@ -130,6 +132,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 s.Player!.Name,
                 s.Team,
                 s.Player.Position,
+                s.Player.HeadshotUrl,
                 s.Goals,
                 ExpectedGoals = s.ExpectedGoals ?? 0,
                 Differential = s.Goals - (s.ExpectedGoals ?? 0)
@@ -144,6 +147,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 s.Name,
                 s.Team,
                 s.Position,
+                s.HeadshotUrl,
                 s.Goals,
                 s.ExpectedGoals,
                 s.Differential
@@ -250,6 +254,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 g.PlayerId,
                 g.Player!.Name,
                 g.Team,
+                g.Player.HeadshotUrl,
                 g.GoalsAgainst,
                 g.ExpectedGoalsAgainst ?? 0,
                 g.GoalsSavedAboveExpected ?? 0
@@ -265,6 +270,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 g.PlayerId,
                 g.Player!.Name,
                 g.Team,
+                g.Player.HeadshotUrl,
                 g.GoalsAgainst,
                 g.ExpectedGoalsAgainst ?? 0,
                 g.GoalsSavedAboveExpected ?? 0
@@ -521,6 +527,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 s.Player!.Name,
                 s.Team,
                 s.Player.Position,
+                s.Player.HeadshotUrl,
                 s.Goals,
                 ExpectedGoals = s.ExpectedGoals ?? 0,
                 Differential = s.Goals - (s.ExpectedGoals ?? 0)
@@ -530,7 +537,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
             .ToListAsync(cancellationToken);
 
         var skaterRunningHot = runningHot
-            .Select(s => new OutlierEntry(s.PlayerId, s.Name, s.Team, s.Position, s.Goals, s.ExpectedGoals, s.Differential))
+            .Select(s => new OutlierEntry(s.PlayerId, s.Name, s.Team, s.Position, s.HeadshotUrl, s.Goals, s.ExpectedGoals, s.Differential))
             .ToList();
 
         // Skaters running cold (Goals < xG)
@@ -542,6 +549,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 s.Player!.Name,
                 s.Team,
                 s.Player.Position,
+                s.Player.HeadshotUrl,
                 s.Goals,
                 ExpectedGoals = s.ExpectedGoals ?? 0,
                 Differential = s.Goals - (s.ExpectedGoals ?? 0)
@@ -551,7 +559,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
             .ToListAsync(cancellationToken);
 
         var skaterRunningCold = runningCold
-            .Select(s => new OutlierEntry(s.PlayerId, s.Name, s.Team, s.Position, s.Goals, s.ExpectedGoals, s.Differential))
+            .Select(s => new OutlierEntry(s.PlayerId, s.Name, s.Team, s.Position, s.HeadshotUrl, s.Goals, s.ExpectedGoals, s.Differential))
             .ToList();
 
         // League averages
@@ -582,6 +590,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 g.PlayerId,
                 g.Player!.Name,
                 g.Team,
+                g.Player.HeadshotUrl,
                 g.GoalsAgainst,
                 g.ExpectedGoalsAgainst ?? 0,
                 g.GoalsSavedAboveExpected ?? 0
@@ -596,6 +605,7 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
                 g.PlayerId,
                 g.Player!.Name,
                 g.Team,
+                g.Player.HeadshotUrl,
                 g.GoalsAgainst,
                 g.ExpectedGoalsAgainst ?? 0,
                 g.GoalsSavedAboveExpected ?? 0

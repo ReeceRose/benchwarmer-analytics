@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { Trophy, Info, Filter } from "lucide-react";
-import { usePowerRankings, useSeasons, useSortableTable } from "@/hooks";
+import { usePowerRankings, useSeasons } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -18,25 +19,38 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ErrorState,
-  HeaderWithTooltip,
-  SortableTableHeader,
-} from "@/components/shared";
+import { ErrorState, SortableTableHeader } from "@/components/shared";
 import { TeamRow, RegressionCard } from "@/components/power-rankings";
-import type { TeamPowerRanking } from "@/types";
 import { z } from "zod";
+
+const sortKeySchema = z.enum([
+  "gamesPlayed",
+  "wins",
+  "losses",
+  "otLosses",
+  "points",
+  "goalsFor",
+  "goalsAgainst",
+  "ppPct",
+  "pkPct",
+  "xGoalsPct",
+  "corsiPct",
+  "pdo",
+  "pointsDiff",
+]);
+
+type SortKey = z.infer<typeof sortKeySchema>;
 
 const searchSchema = z.object({
   season: z.number().optional(),
+  sortKey: sortKeySchema.optional(),
+  sortDir: z.enum(["asc", "desc"]).optional(),
 });
 
 export const Route = createFileRoute("/power-rankings")({
   component: PowerRankingsPage,
   validateSearch: searchSchema,
 });
-
-type SortKey = "points" | "xGoalsPct" | "pdo" | "pointsDiff" | "corsiPct";
 
 function PowerRankingsPage() {
   // Use calculated default season immediately - don't wait for API
@@ -45,20 +59,42 @@ function PowerRankingsPage() {
   const apiCurrentSeason = seasonsData?.seasons?.[0]?.year;
 
   const navigate = useNavigate({ from: Route.fullPath });
-  const { season } = Route.useSearch();
+  const { season, sortKey: urlSortKey, sortDir: urlSortDir } = Route.useSearch();
 
   // Prefer URL param > API current season > calculated default
   const effectiveSeason = season ?? apiCurrentSeason ?? defaultSeason;
   const isCurrentSeason = effectiveSeason === (apiCurrentSeason ?? defaultSeason);
   const { data, isLoading, error, refetch } = usePowerRankings(effectiveSeason);
 
-  const { sortedData: sortedTeams, sortKey, sortDesc, handleSort } =
-    useSortableTable<TeamPowerRanking, SortKey>({
-      data: data?.teams ?? [],
-      defaultSortKey: "points",
-      defaultSortDesc: true,
-      getValue: (team, key) => team[key] ?? 0,
+  // Sort state from URL with defaults
+  const sortKey: SortKey = urlSortKey ?? "points";
+  const sortDesc = urlSortDir ? urlSortDir === "desc" : true;
+
+  // Sort teams client-side based on URL params
+  const sortedTeams = useMemo(() => {
+    if (!data?.teams) return [];
+    const teams = [...data.teams];
+    teams.sort((a, b) => {
+      const aVal = Number(a[sortKey] ?? 0);
+      const bVal = Number(b[sortKey] ?? 0);
+      return sortDesc ? bVal - aVal : aVal - bVal;
     });
+    return teams;
+  }, [data?.teams, sortKey, sortDesc]);
+
+  const updateSearch = (updates: Partial<{ season: number; sortKey: SortKey; sortDir: "asc" | "desc" }>) => {
+    navigate({ search: (prev) => ({ ...prev, ...updates }) });
+  };
+
+  const handleSort = (key: string) => {
+    if (key === sortKey) {
+      // Toggle direction
+      updateSearch({ sortDir: sortDesc ? "asc" : "desc" });
+    } else {
+      // New column - default to descending
+      updateSearch({ sortKey: key as SortKey, sortDir: "desc" });
+    }
+  };
 
   return (
     <div className="container py-8">
@@ -79,10 +115,12 @@ function PowerRankingsPage() {
           <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
           <div className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">Key Metrics: </span>
-            <strong>xG%</strong> (expected goals share - team&apos;s scoring
-            chance quality), <strong>CF%</strong> (Corsi - shot attempt share),{" "}
+            <strong>PP%</strong> (power play success rate),{" "}
+            <strong>PK%</strong> (penalty kill success rate),{" "}
+            <strong>xG%</strong> (expected goals share),{" "}
+            <strong>CF%</strong> (shot attempt share),{" "}
             <strong>PDO</strong> (shooting% + save% - values near 100 are
-            sustainable, extreme values regress).
+            sustainable).
           </div>
         </div>
       </Card>
@@ -92,7 +130,7 @@ function PowerRankingsPage() {
           <Filter className="h-4 w-4 text-muted-foreground" />
           <Select
             value={String(effectiveSeason ?? "")}
-            onValueChange={(v) => navigate({ search: { season: parseInt(v) } })}
+            onValueChange={(v) => updateSearch({ season: parseInt(v) })}
           >
             <SelectTrigger className="w-36 h-9">
               <SelectValue placeholder="Season" />
@@ -151,30 +189,50 @@ function PowerRankingsPage() {
           <Card className="py-0 gap-0">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="table-fixed min-w-225">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">#</TableHead>
-                      <TableHead>Team</TableHead>
-                      <HeaderWithTooltip
+                      <TableHead className="w-10">#</TableHead>
+                      <TableHead className="w-32">Team</TableHead>
+                      <SortableTableHeader
                         label="GP"
                         tooltip="Games played"
-                        className="text-right"
+                        sortKey="gamesPlayed"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "gamesPlayed"}
+                        className="w-12"
                       />
-                      <HeaderWithTooltip
+                      <SortableTableHeader
                         label="W"
                         tooltip="Wins"
-                        className="text-right"
+                        sortKey="wins"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "wins"}
+                        className="w-12"
                       />
-                      <HeaderWithTooltip
+                      <SortableTableHeader
                         label="L"
                         tooltip="Losses"
-                        className="text-right"
+                        sortKey="losses"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "losses"}
+                        className="w-12"
                       />
-                      <HeaderWithTooltip
+                      <SortableTableHeader
                         label="OTL"
                         tooltip="Overtime losses"
-                        className="text-right"
+                        sortKey="otLosses"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "otLosses"}
+                        className="w-12"
                       />
                       <SortableTableHeader
                         label="Pts"
@@ -183,16 +241,48 @@ function PowerRankingsPage() {
                         currentSort={sortKey}
                         sortDesc={sortDesc}
                         onSort={handleSort}
+                        isHighlighted={sortKey === "points"}
+                        className="w-12"
                       />
-                      <HeaderWithTooltip
+                      <SortableTableHeader
                         label="GF"
                         tooltip="Goals for"
-                        className="text-right"
+                        sortKey="goalsFor"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "goalsFor"}
+                        className="w-12"
                       />
-                      <HeaderWithTooltip
+                      <SortableTableHeader
                         label="GA"
                         tooltip="Goals against"
-                        className="text-right"
+                        sortKey="goalsAgainst"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "goalsAgainst"}
+                        className="w-12"
+                      />
+                      <SortableTableHeader
+                        label="PP%"
+                        tooltip="Power play percentage"
+                        sortKey="ppPct"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "ppPct"}
+                        className="w-14"
+                      />
+                      <SortableTableHeader
+                        label="PK%"
+                        tooltip="Penalty kill percentage"
+                        sortKey="pkPct"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={handleSort}
+                        isHighlighted={sortKey === "pkPct"}
+                        className="w-14"
                       />
                       <SortableTableHeader
                         label="xG%"
@@ -201,6 +291,8 @@ function PowerRankingsPage() {
                         currentSort={sortKey}
                         sortDesc={sortDesc}
                         onSort={handleSort}
+                        isHighlighted={sortKey === "xGoalsPct"}
+                        className="w-14"
                       />
                       <SortableTableHeader
                         label="CF%"
@@ -209,6 +301,8 @@ function PowerRankingsPage() {
                         currentSort={sortKey}
                         sortDesc={sortDesc}
                         onSort={handleSort}
+                        isHighlighted={sortKey === "corsiPct"}
+                        className="w-14"
                       />
                       <SortableTableHeader
                         label="PDO"
@@ -217,6 +311,8 @@ function PowerRankingsPage() {
                         currentSort={sortKey}
                         sortDesc={sortDesc}
                         onSort={handleSort}
+                        isHighlighted={sortKey === "pdo"}
+                        className="w-14"
                       />
                       <SortableTableHeader
                         label="Pts±"
@@ -225,6 +321,8 @@ function PowerRankingsPage() {
                         currentSort={sortKey}
                         sortDesc={sortDesc}
                         onSort={handleSort}
+                        isHighlighted={sortKey === "pointsDiff"}
+                        className="w-14"
                       />
                     </TableRow>
                   </TableHeader>

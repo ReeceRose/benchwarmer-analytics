@@ -98,8 +98,19 @@ public static class StandingsEndpoints
         // Get team season stats (all situations, regular season only) - this has accurate GP from MoneyPuck
         var teamSeasons = await teamSeasonRepository.GetBySeasonAsync(targetSeason, "all", isPlayoffs: false, cancellationToken);
 
-        // Build power rankings using TeamSeason data
-        var rankings = teamSeasons.Select(StandingsMappers.BuildPowerRanking).ToList();
+        // Get special teams data for PP% and PK%
+        var ppStats = await teamSeasonRepository.GetBySeasonAsync(targetSeason, "5on4", isPlayoffs: false, cancellationToken);
+        var pkStats = await teamSeasonRepository.GetBySeasonAsync(targetSeason, "4on5", isPlayoffs: false, cancellationToken);
+
+        var ppByTeam = ppStats.ToDictionary(s => s.TeamAbbreviation, TeamMappers.CalculatePPPercentage);
+        var pkByTeam = pkStats.ToDictionary(s => s.TeamAbbreviation, TeamMappers.CalculatePKPercentage);
+
+        // Build power rankings using TeamSeason data with special teams
+        var rankings = teamSeasons.Select(ts => StandingsMappers.BuildPowerRanking(
+            ts,
+            ppByTeam.GetValueOrDefault(ts.TeamAbbreviation),
+            pkByTeam.GetValueOrDefault(ts.TeamAbbreviation)
+        )).ToList();
 
         // Sort by points and set ranks
         var sortedByPoints = rankings.OrderByDescending(r => r.Points).ThenByDescending(r => r.Wins).ToList();

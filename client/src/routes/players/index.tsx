@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared";
+import { FeaturedPlayers } from "@/components/players";
 import { formatPosition } from "@/lib/formatters";
 
 type PlayersSearch = {
@@ -137,18 +138,7 @@ function PlayersPage() {
           </CardContent>
         </Card>
       )}
-      {!showResults && !error && (
-        <div className="text-center py-16">
-          <Search className="h-16 w-16 mx-auto text-muted-foreground/30 mb-6" />
-          <p className="text-xl font-medium text-muted-foreground">
-            Start typing to search
-          </p>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-            Search by player name to find detailed statistics, performance metrics,
-            and linemate history.
-          </p>
-        </div>
-      )}
+      {!error && <FeaturedPlayers enabled={!showResults} />}
     </div>
   );
 }

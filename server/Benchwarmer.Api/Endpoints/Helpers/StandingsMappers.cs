@@ -11,7 +11,10 @@ public static class StandingsMappers
     /// <summary>
     /// Build a power ranking DTO from team season stats.
     /// </summary>
-    public static TeamPowerRankingDto BuildPowerRanking(TeamSeason ts)
+    public static TeamPowerRankingDto BuildPowerRanking(
+        TeamSeason ts,
+        decimal? ppPct = null,
+        decimal? pkPct = null)
     {
         var gamesPlayed = ts.GamesPlayed;
         var goalsFor = ts.GoalsFor;
@@ -68,6 +71,8 @@ public static class StandingsMappers
             pdo,
             shootingPct,
             savePct,
+            ppPct,
+            pkPct,
             expectedPoints,
             points - expectedPoints,
             0, // Will be set after sorting

@@ -37,6 +37,7 @@ public record OutlierEntryDto(
     string Name,
     string? Team,
     string? Position,
+    string? HeadshotUrl,
     int Goals,
     decimal ExpectedGoals,
     decimal Differential
@@ -78,6 +79,7 @@ public record GoalieOutlierEntryDto(
     int PlayerId,
     string Name,
     string? Team,
+    string? HeadshotUrl,
     int GoalsAgainst,
     decimal ExpectedGoalsAgainst,
     decimal GoalsSavedAboveExpected

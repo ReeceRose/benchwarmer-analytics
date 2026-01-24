@@ -26,6 +26,10 @@ export interface TeamPowerRanking {
   shootingPct?: number;
   savePct?: number;
 
+  // Special teams
+  ppPct?: number; // Power play percentage
+  pkPct?: number; // Penalty kill percentage
+
   // Expected vs Actual
   expectedPoints: number;
   pointsDiff: number; // Points - ExpectedPoints (positive = overperforming)

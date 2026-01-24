@@ -39,6 +39,10 @@ public record TeamPowerRankingDto(
     decimal? ShootingPct,
     decimal? SavePct,
 
+    // Special teams
+    decimal? PpPct,  // Power play percentage
+    decimal? PkPct,  // Penalty kill percentage
+
     // Expected vs Actual
     int ExpectedPoints,
     int PointsDiff,  // Points - ExpectedPoints (positive = overperforming)

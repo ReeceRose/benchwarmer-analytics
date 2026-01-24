@@ -92,3 +92,19 @@ export function getSavePctColor(savePct: number | null | undefined): string {
 export function getGaaColor(gaa: number | null | undefined): string {
   return getThresholdColor(gaa, { good: 3.0, bad: 2.5 }, true);
 }
+
+/**
+ * Power play percentage color - higher is better.
+ * League average is around 20%.
+ */
+export function getPpPctColor(ppPct: number | null | undefined): string {
+  return getThresholdColor(ppPct, { good: 23, bad: 17 });
+}
+
+/**
+ * Penalty kill percentage color - higher is better.
+ * League average is around 80%.
+ */
+export function getPkPctColor(pkPct: number | null | undefined): string {
+  return getThresholdColor(pkPct, { good: 82, bad: 77 });
+}

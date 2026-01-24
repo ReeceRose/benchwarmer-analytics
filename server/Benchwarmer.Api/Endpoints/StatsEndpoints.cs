@@ -176,8 +176,8 @@ public static class StatsEndpoints
                 stats.IceTimeLeaders.Select(l => new LeaderEntryDto(l.PlayerId, l.Name, l.Team, l.Position, l.Value)).ToList()
             ),
             new OutliersDto(
-                stats.RunningHot.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, o.Goals, o.ExpectedGoals, o.Differential)).ToList(),
-                stats.RunningCold.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, o.Goals, o.ExpectedGoals, o.Differential)).ToList()
+                stats.RunningHot.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, PlayerHelpers.GetHeadshotUrl(o.PlayerId, o.HeadshotUrl, o.Team), o.Goals, o.ExpectedGoals, o.Differential)).ToList(),
+                stats.RunningCold.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, PlayerHelpers.GetHeadshotUrl(o.PlayerId, o.HeadshotUrl, o.Team), o.Goals, o.ExpectedGoals, o.Differential)).ToList()
             ),
             stats.TopLines.Select(l => new TopLineDto(
                 l.Id,
@@ -195,8 +195,8 @@ public static class StatsEndpoints
                 stats.GoalieLeaders.GoalsSavedAboveExpected.Select(l => new LeaderEntryDto(l.PlayerId, l.Name, l.Team, l.Position, l.Value)).ToList()
             ),
             new GoalieOutliersDto(
-                stats.GoalieOutliers.RunningHot.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList(),
-                stats.GoalieOutliers.RunningCold.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList()
+                stats.GoalieOutliers.RunningHot.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, PlayerHelpers.GetHeadshotUrl(g.PlayerId, g.HeadshotUrl, g.Team), g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList(),
+                stats.GoalieOutliers.RunningCold.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, PlayerHelpers.GetHeadshotUrl(g.PlayerId, g.HeadshotUrl, g.Team), g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList()
             )
         );
 
@@ -227,12 +227,12 @@ public static class StatsEndpoints
             effectiveSeason,
             effectiveSituation,
             new SkaterOutliersDto(
-                result.SkaterRunningHot.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, o.Goals, o.ExpectedGoals, o.Differential)).ToList(),
-                result.SkaterRunningCold.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, o.Goals, o.ExpectedGoals, o.Differential)).ToList()
+                result.SkaterRunningHot.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, PlayerHelpers.GetHeadshotUrl(o.PlayerId, o.HeadshotUrl, o.Team), o.Goals, o.ExpectedGoals, o.Differential)).ToList(),
+                result.SkaterRunningCold.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, PlayerHelpers.GetHeadshotUrl(o.PlayerId, o.HeadshotUrl, o.Team), o.Goals, o.ExpectedGoals, o.Differential)).ToList()
             ),
             new GoalieOutliersDto(
-                result.GoalieRunningHot.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList(),
-                result.GoalieRunningCold.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList()
+                result.GoalieRunningHot.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, PlayerHelpers.GetHeadshotUrl(g.PlayerId, g.HeadshotUrl, g.Team), g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList(),
+                result.GoalieRunningCold.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, PlayerHelpers.GetHeadshotUrl(g.PlayerId, g.HeadshotUrl, g.Team), g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList()
             ),
             new LeagueAveragesDto(result.AvgCorsiPct, result.AvgExpectedGoalsPct)
         );
