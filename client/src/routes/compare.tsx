@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { GitCompare, Filter } from "lucide-react";
 import { usePlayerComparison, useSeasons, usePlayers } from "@/hooks";
+import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -42,8 +43,9 @@ const SITUATIONS = [
 ] as const;
 
 function ComparePage() {
+  // Use calculated default season immediately - don't wait for API
+  const calculatedSeason = getCurrentSeason();
   const { data: seasonsData } = useSeasons();
-  const defaultSeason = seasonsData?.seasons?.[0]?.year;
 
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
@@ -57,7 +59,8 @@ function ComparePage() {
       .filter((id) => !isNaN(id));
   }, [search.ids]);
 
-  const season = search.season ?? defaultSeason;
+  // Prefer URL param > API current season > calculated default
+  const season = search.season ?? seasonsData?.seasons?.[0]?.year ?? calculatedSeason;
   const situation = (search.situation as Situation) || "all";
 
   // Fetch basic player info for all selected players (even if only 1)

@@ -12,7 +12,9 @@ export {
 export { useLines } from "@/hooks/useLines";
 export { useChemistryMatrix } from "@/hooks/useChemistryMatrix";
 export { useSeasons, useTeamSeasons } from "@/hooks/useSeasons";
-export { useHomepageData } from "@/hooks/useHomepageData";
+export { useHomeLeaders } from "@/hooks/useHomeLeaders";
+export { useOutliers } from "@/hooks/useOutliers";
+export { useTopLines } from "@/hooks/useTopLines";
 export { useTeamShots, useTeamShotsAgainst, useShooterStats, usePlayerShots } from "@/hooks/useShots";
 export { useYesterdaysGames, useTodaysGames, useLiveScores, useGamesByDate, useGame, useGameBoxscore, useGamePreview, useGoalieRecentForm } from "@/hooks/useGames";
 export { useBreakoutCandidates, useAgeCurves, useAgeDistribution, useSeasonPercentiles } from "@/hooks/useAnalytics";

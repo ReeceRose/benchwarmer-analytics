@@ -492,4 +492,160 @@ public class StatsRepository(AppDbContext db) : IStatsRepository
 
         return new LeaderboardResult(category, totalCount, entries);
     }
+
+    public async Task<OutliersResult> GetOutliersAsync(
+        int season,
+        string situation,
+        int skaterLimit = 15,
+        int goalieLimit = 5,
+        CancellationToken cancellationToken = default)
+    {
+        // Adjust thresholds based on situation
+        var isEvenStrength = situation == "5on5" || situation == "all";
+        var minIceTime = isEvenStrength ? MinEvenStrengthIceTimeSeconds : MinSpecialTeamsIceTimeSeconds;
+        var minGoals = isEvenStrength ? 10 : 3;
+        var minLineToi = isEvenStrength ? 300 * 60 : 30 * 60;
+
+        // Base query for skater stats
+        var statsQuery = db.SkaterSeasons
+            .Include(s => s.Player)
+            .Where(s => s.Season == season && s.Situation == situation && !s.IsPlayoffs)
+            .Where(s => s.Player != null);
+
+        // Skaters running hot (Goals > xG)
+        var runningHot = await statsQuery
+            .Where(s => s.ExpectedGoals.HasValue && s.Goals >= minGoals)
+            .Select(s => new
+            {
+                s.PlayerId,
+                s.Player!.Name,
+                s.Team,
+                s.Player.Position,
+                s.Goals,
+                ExpectedGoals = s.ExpectedGoals ?? 0,
+                Differential = s.Goals - (s.ExpectedGoals ?? 0)
+            })
+            .OrderByDescending(s => s.Differential)
+            .Take(skaterLimit)
+            .ToListAsync(cancellationToken);
+
+        var skaterRunningHot = runningHot
+            .Select(s => new OutlierEntry(s.PlayerId, s.Name, s.Team, s.Position, s.Goals, s.ExpectedGoals, s.Differential))
+            .ToList();
+
+        // Skaters running cold (Goals < xG)
+        var runningCold = await statsQuery
+            .Where(s => s.ExpectedGoals.HasValue && s.ExpectedGoals >= minGoals)
+            .Select(s => new
+            {
+                s.PlayerId,
+                s.Player!.Name,
+                s.Team,
+                s.Player.Position,
+                s.Goals,
+                ExpectedGoals = s.ExpectedGoals ?? 0,
+                Differential = s.Goals - (s.ExpectedGoals ?? 0)
+            })
+            .OrderBy(s => s.Differential)
+            .Take(skaterLimit)
+            .ToListAsync(cancellationToken);
+
+        var skaterRunningCold = runningCold
+            .Select(s => new OutlierEntry(s.PlayerId, s.Name, s.Team, s.Position, s.Goals, s.ExpectedGoals, s.Differential))
+            .ToList();
+
+        // League averages
+        var corsiQuery = statsQuery.Where(s => s.CorsiForPct.HasValue && s.IceTimeSeconds >= minIceTime);
+        var avgCorsi = await corsiQuery.AnyAsync(cancellationToken)
+            ? await corsiQuery.AverageAsync(s => s.CorsiForPct ?? 50m, cancellationToken)
+            : 50m;
+
+        var xgPctQuery = db.LineCombinations
+            .Where(l => l.Season == season && l.Situation == situation)
+            .Where(l => l.ExpectedGoalsPct.HasValue && l.IceTimeSeconds >= minLineToi);
+        var avgXgPct = await xgPctQuery.AnyAsync(cancellationToken)
+            ? await xgPctQuery.AverageAsync(l => l.ExpectedGoalsPct ?? 50m, cancellationToken)
+            : 50m;
+
+        // Goalie outliers
+        const int minGoalieGames = 10;
+        var goalieQuery = db.GoalieSeasons
+            .Include(g => g.Player)
+            .Where(g => g.Season == season && g.Situation == "all" && !g.IsPlayoffs)
+            .Where(g => g.Player != null && g.GamesPlayed >= minGoalieGames);
+
+        var goaliesRunningHot = await goalieQuery
+            .Where(g => g.GoalsSavedAboveExpected.HasValue && g.ExpectedGoalsAgainst.HasValue)
+            .OrderByDescending(g => g.GoalsSavedAboveExpected)
+            .Take(goalieLimit)
+            .Select(g => new GoalieOutlierEntry(
+                g.PlayerId,
+                g.Player!.Name,
+                g.Team,
+                g.GoalsAgainst,
+                g.ExpectedGoalsAgainst ?? 0,
+                g.GoalsSavedAboveExpected ?? 0
+            ))
+            .ToListAsync(cancellationToken);
+
+        var goaliesRunningCold = await goalieQuery
+            .Where(g => g.GoalsSavedAboveExpected.HasValue && g.ExpectedGoalsAgainst.HasValue)
+            .OrderBy(g => g.GoalsSavedAboveExpected)
+            .Take(goalieLimit)
+            .Select(g => new GoalieOutlierEntry(
+                g.PlayerId,
+                g.Player!.Name,
+                g.Team,
+                g.GoalsAgainst,
+                g.ExpectedGoalsAgainst ?? 0,
+                g.GoalsSavedAboveExpected ?? 0
+            ))
+            .ToListAsync(cancellationToken);
+
+        return new OutliersResult(
+            skaterRunningHot,
+            skaterRunningCold,
+            goaliesRunningHot,
+            goaliesRunningCold,
+            avgCorsi,
+            avgXgPct
+        );
+    }
+
+    public async Task<IReadOnlyList<TopLine>> GetTopLinesAsync(
+        int season,
+        string situation,
+        int limit = 5,
+        CancellationToken cancellationToken = default)
+    {
+        var isEvenStrength = situation == "5on5" || situation == "all";
+        var minLineToi = isEvenStrength ? 300 * 60 : 30 * 60;
+
+        var topLines = await db.LineCombinations
+            .Include(l => l.Player1)
+            .Include(l => l.Player2)
+            .Include(l => l.Player3)
+            .Where(l => l.Season == season && l.Situation == situation)
+            .Where(l => l.Player3Id.HasValue) // Forward lines have 3 players
+            .Where(l => l.ExpectedGoalsPct.HasValue && l.IceTimeSeconds >= minLineToi)
+            .OrderByDescending(l => l.ExpectedGoalsPct)
+            .Take(limit)
+            .Select(l => new TopLine(
+                l.Id,
+                l.Team,
+                new List<LinePlayer>
+                {
+                    new(l.Player1Id, l.Player1!.Name, l.Player1.Position),
+                    new(l.Player2Id, l.Player2!.Name, l.Player2.Position),
+                    new(l.Player3Id!.Value, l.Player3!.Name, l.Player3.Position)
+                },
+                l.IceTimeSeconds,
+                l.ExpectedGoalsPct,
+                l.GoalsFor,
+                l.GoalsAgainst
+            ))
+            .ToListAsync(cancellationToken);
+
+        return topLines;
+    }
 }

@@ -1,20 +1,17 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   SeasonSelector,
   SituationSelector,
-  ErrorState,
 } from "@/components/shared";
 import {
-  LeaderStrip,
-  LuckChart,
-  OutliersSection,
-  TopLinesCard,
+  LeaderStripSection,
+  OutliersSectionWrapper,
+  TopLinesSection,
   TeamGrid,
   GamesSection,
 } from "@/components/home";
-import { useHomepageData, useSeasons } from "@/hooks";
+import { useSeasons } from "@/hooks";
 import { formatSeason } from "@/lib/formatters";
 import type { Situation } from "@/types";
 
@@ -54,11 +51,6 @@ function HomePage() {
     });
   };
 
-  const { data, isLoading, error, refetch } = useHomepageData(
-    effectiveSeason,
-    situation
-  );
-
   return (
     <div className="container py-6 space-y-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -89,75 +81,17 @@ function HomePage() {
         </p>
       )}
 
-      {error && (
-        <ErrorState
-          title="Failed to load data"
-          message="Could not fetch homepage data. Make sure the API is running."
-          onRetry={() => refetch()}
-        />
-      )}
+      {/* Each section now fetches its own data independently */}
+      {effectiveSeason === defaultSeason && <GamesSection />}
 
-      {!error && (
-        <>
-          {effectiveSeason === defaultSeason && <GamesSection />}
-          <section>
-            <h2 className="text-lg font-semibold mb-3">League Leaders</h2>
-            {isLoading ? (
-              <div className="flex gap-4 overflow-hidden">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <Skeleton key={i} className="h-40 w-70 shrink-0 rounded-lg" />
-                ))}
-              </div>
-            ) : data ? (
-              <LeaderStrip
-                leaders={data.leaders}
-                goalieLeaders={data.goalieLeaders}
-                season={effectiveSeason}
-                situation={situation}
-              />
-            ) : null}
-          </section>
+      <LeaderStripSection season={effectiveSeason} situation={situation} />
 
-          <section className="space-y-4">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-64 rounded-lg" />
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <Skeleton className="h-80 rounded-lg" />
-                  <Skeleton className="h-80 rounded-lg" />
-                </div>
-              </>
-            ) : data?.outliers ? (
-              <>
-                <LuckChart
-                  runningHot={data.outliers.runningHot}
-                  runningCold={data.outliers.runningCold}
-                />
-                <OutliersSection
-                  runningHot={data.outliers.runningHot}
-                  runningCold={data.outliers.runningCold}
-                  goalieRunningHot={data.goalieOutliers?.runningHot}
-                  goalieRunningCold={data.goalieOutliers?.runningCold}
-                />
-              </>
-            ) : null}
-          </section>
+      <OutliersSectionWrapper season={effectiveSeason} situation={situation} />
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-64 rounded-lg" />
-                <Skeleton className="h-64 rounded-lg" />
-              </>
-            ) : data ? (
-              <>
-                <TopLinesCard lines={data.topLines} season={effectiveSeason} />
-                <TeamGrid />
-              </>
-            ) : null}
-          </div>
-        </>
-      )}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <TopLinesSection season={effectiveSeason} situation={situation} />
+        <TeamGrid />
+      </div>
     </div>
   );
 }

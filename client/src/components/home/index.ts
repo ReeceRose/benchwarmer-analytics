@@ -1,6 +1,9 @@
 export { LeaderStrip } from "@/components/home/LeaderStrip";
+export { LeaderStripSection } from "@/components/home/LeaderStripSection";
 export { LuckChart } from "@/components/home/LuckChart";
 export { OutliersSection } from "@/components/home/OutliersSection";
+export { OutliersSectionWrapper } from "@/components/home/OutliersSectionWrapper";
 export { TopLinesCard } from "@/components/home/TopLinesCard";
+export { TopLinesSection } from "@/components/home/TopLinesSection";
 export { TeamGrid } from "@/components/home/TeamGrid";
 export { GamesSection } from "@/components/home/GamesSection";

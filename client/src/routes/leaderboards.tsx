@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { Trophy, Filter } from "lucide-react";
 import { useLeaderboard, useSeasons } from "@/hooks";
+import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -57,10 +58,12 @@ function LeaderboardsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const { category = "points", season, situation, sortDir } = Route.useSearch();
 
+  // Use calculated default season immediately - don't wait for API
+  const defaultSeason = getCurrentSeason();
   const { data: seasonsData } = useSeasons();
-  const currentSeason = seasonsData?.seasons?.[0]?.year;
 
-  const effectiveSeason = season ?? currentSeason;
+  // Prefer URL param > API current season > calculated default
+  const effectiveSeason = season ?? seasonsData?.seasons?.[0]?.year ?? defaultSeason;
   const effectiveSituation = situation ?? "all";
 
   // Determine if viewing skaters or goalies based on category

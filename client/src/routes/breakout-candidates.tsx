@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { TrendingUp, Info, Filter } from "lucide-react";
 import { useBreakoutCandidates, useSeasons, useSortableTable } from "@/hooks";
+import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -37,13 +38,15 @@ type SortKey =
   | "shotsPer60";
 
 function BreakoutCandidatesPage() {
+  // Use calculated default season immediately - don't wait for API
+  const defaultSeason = getCurrentSeason();
   const { data: seasonsData } = useSeasons();
-  const currentSeason = seasonsData?.seasons?.[0]?.year;
 
   const [season, setSeason] = useState<number | undefined>(undefined);
   const [minGames, setMinGames] = useState(20);
 
-  const effectiveSeason = season ?? currentSeason;
+  // Prefer local state > API current season > calculated default
+  const effectiveSeason = season ?? seasonsData?.seasons?.[0]?.year ?? defaultSeason;
   const { data, isLoading, error, refetch } = useBreakoutCandidates(
     effectiveSeason,
     minGames,

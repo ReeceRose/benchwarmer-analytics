@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { getBreakoutCandidates, getAgeCurves, getAgeDistribution, getSeasonPercentiles } from "@/lib/api";
 
 export function useBreakoutCandidates(
@@ -10,6 +10,7 @@ export function useBreakoutCandidates(
     queryKey: ["analytics", "breakout-candidates", { season, minGames, limit }],
     queryFn: () => getBreakoutCandidates(season, minGames, limit),
     staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData, // Show old data while loading new filters
   });
 }
 
@@ -21,6 +22,7 @@ export function useAgeCurves(minGames?: number, playerIds?: number[], useMedian?
     queryKey: ["analytics", "age-curves", minGames, playerIdsKey, useMedian],
     queryFn: () => getAgeCurves(minGames, playerIds, useMedian),
     staleTime: 1000 * 60 * 5, // 5 min cache
+    placeholderData: keepPreviousData, // Show old data while loading new settings
   });
 }
 

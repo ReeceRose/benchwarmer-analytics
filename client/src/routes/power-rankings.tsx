@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Trophy, Info, Filter } from "lucide-react";
 import { usePowerRankings, useSeasons, useSortableTable } from "@/hooks";
+import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -38,13 +39,17 @@ export const Route = createFileRoute("/power-rankings")({
 type SortKey = "points" | "xGoalsPct" | "pdo" | "pointsDiff" | "corsiPct";
 
 function PowerRankingsPage() {
+  // Use calculated default season immediately - don't wait for API
+  const defaultSeason = getCurrentSeason();
   const { data: seasonsData } = useSeasons();
-  const currentSeason = seasonsData?.seasons?.[0]?.year;
+  const apiCurrentSeason = seasonsData?.seasons?.[0]?.year;
+
   const navigate = useNavigate({ from: Route.fullPath });
   const { season } = Route.useSearch();
 
-  const effectiveSeason = season ?? currentSeason;
-  const isCurrentSeason = effectiveSeason === currentSeason;
+  // Prefer URL param > API current season > calculated default
+  const effectiveSeason = season ?? apiCurrentSeason ?? defaultSeason;
+  const isCurrentSeason = effectiveSeason === (apiCurrentSeason ?? defaultSeason);
   const { data, isLoading, error, refetch } = usePowerRankings(effectiveSeason);
 
   const { sortedData: sortedTeams, sortKey, sortDesc, handleSort } =

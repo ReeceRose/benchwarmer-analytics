@@ -16,7 +16,8 @@ import type {
   PlayerRollingStatsResponse,
   GoalieWorkloadResponse,
   SeasonListResponse,
-  HomepageDataResponse,
+  OutliersResponse,
+  TopLinesResponse,
   TeamShotsResponse,
   ShotQueryParams,
   ShooterStats,
@@ -159,16 +160,6 @@ export async function getTeamSeasons(abbrev: string): Promise<SeasonListResponse
 
 // Stats
 
-export async function getHomepageData(
-  season?: number,
-  situation?: string
-): Promise<HomepageDataResponse> {
-  const { data } = await api.get<HomepageDataResponse>("/stats/homepage", {
-    params: { season, situation },
-  });
-  return data;
-}
-
 export async function getLeaderboard(
   category: LeaderboardCategory,
   season?: number,
@@ -178,6 +169,29 @@ export async function getLeaderboard(
 ): Promise<LeaderboardResponse> {
   const { data } = await api.get<LeaderboardResponse>("/stats/leaderboards", {
     params: { category, season, situation, limit, sortDir },
+  });
+  return data;
+}
+
+export async function getOutliers(
+  season?: number,
+  situation?: string,
+  skaterLimit?: number,
+  goalieLimit?: number
+): Promise<OutliersResponse> {
+  const { data } = await api.get<OutliersResponse>("/stats/outliers", {
+    params: { season, situation, skaterLimit, goalieLimit },
+  });
+  return data;
+}
+
+export async function getTopLines(
+  season?: number,
+  situation?: string,
+  limit?: number
+): Promise<TopLinesResponse> {
+  const { data } = await api.get<TopLinesResponse>("/stats/top-lines", {
+    params: { season, situation, limit },
   });
   return data;
 }

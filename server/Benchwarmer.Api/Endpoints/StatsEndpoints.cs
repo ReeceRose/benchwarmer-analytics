@@ -29,6 +29,40 @@ public static class StatsEndpoints
             .Produces<HomepageDataDto>()
             .CacheOutput(CachePolicies.TeamData);
 
+        group.MapGet("/outliers", GetOutliers)
+            .WithName("GetOutliers")
+            .WithSummary("Get skater and goalie outliers")
+            .WithDescription("""
+                Returns players over/under-performing their expected metrics.
+
+                **Skaters:** Based on Goals vs Expected Goals differential
+                **Goalies:** Based on Goals Saved Above Expected (GSAx)
+
+                Also includes league averages for Corsi% and xG%.
+
+                **Query Parameters:**
+                - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
+                - `situation`: Game situation filter (5on5, all, 5on4, etc.). Defaults to 5on5.
+                - `skaterLimit`: Max skater outliers per category (default: 15)
+                - `goalieLimit`: Max goalie outliers per category (default: 5)
+                """)
+            .Produces<OutliersResponseDto>()
+            .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/top-lines", GetTopLines)
+            .WithName("GetTopLines")
+            .WithSummary("Get top performing line combinations")
+            .WithDescription("""
+                Returns top line combinations ranked by Expected Goals Percentage (xG%).
+
+                **Query Parameters:**
+                - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
+                - `situation`: Game situation filter (5on5, all, 5on4, etc.). Defaults to 5on5.
+                - `limit`: Maximum lines to return (default: 5)
+                """)
+            .Produces<TopLinesResponseDto>()
+            .CacheOutput(CachePolicies.TeamData);
+
         group.MapGet("/breakout-candidates", GetBreakoutCandidates)
             .WithName("GetBreakoutCandidates")
             .WithSummary("Get players poised for breakout seasons")
@@ -164,6 +198,77 @@ public static class StatsEndpoints
                 stats.GoalieOutliers.RunningHot.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList(),
                 stats.GoalieOutliers.RunningCold.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList()
             )
+        );
+
+        return Results.Ok(response);
+    }
+
+    private static async Task<IResult> GetOutliers(
+        int? season,
+        string? situation,
+        int? skaterLimit,
+        int? goalieLimit,
+        IStatsRepository statsRepository,
+        CancellationToken cancellationToken)
+    {
+        var effectiveSeason = season ?? StatsMappers.GetDefaultSeason();
+        var effectiveSituation = situation ?? "5on5";
+        var effectiveSkaterLimit = Math.Clamp(skaterLimit ?? 15, 1, 50);
+        var effectiveGoalieLimit = Math.Clamp(goalieLimit ?? 5, 1, 20);
+
+        var result = await statsRepository.GetOutliersAsync(
+            effectiveSeason,
+            effectiveSituation,
+            effectiveSkaterLimit,
+            effectiveGoalieLimit,
+            cancellationToken);
+
+        var response = new OutliersResponseDto(
+            effectiveSeason,
+            effectiveSituation,
+            new SkaterOutliersDto(
+                result.SkaterRunningHot.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, o.Goals, o.ExpectedGoals, o.Differential)).ToList(),
+                result.SkaterRunningCold.Select(o => new OutlierEntryDto(o.PlayerId, o.Name, o.Team, o.Position, o.Goals, o.ExpectedGoals, o.Differential)).ToList()
+            ),
+            new GoalieOutliersDto(
+                result.GoalieRunningHot.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList(),
+                result.GoalieRunningCold.Select(g => new GoalieOutlierEntryDto(g.PlayerId, g.Name, g.Team, g.GoalsAgainst, g.ExpectedGoalsAgainst, g.GoalsSavedAboveExpected)).ToList()
+            ),
+            new LeagueAveragesDto(result.AvgCorsiPct, result.AvgExpectedGoalsPct)
+        );
+
+        return Results.Ok(response);
+    }
+
+    private static async Task<IResult> GetTopLines(
+        int? season,
+        string? situation,
+        int? limit,
+        IStatsRepository statsRepository,
+        CancellationToken cancellationToken)
+    {
+        var effectiveSeason = season ?? StatsMappers.GetDefaultSeason();
+        var effectiveSituation = situation ?? "5on5";
+        var effectiveLimit = Math.Clamp(limit ?? 5, 1, 20);
+
+        var lines = await statsRepository.GetTopLinesAsync(
+            effectiveSeason,
+            effectiveSituation,
+            effectiveLimit,
+            cancellationToken);
+
+        var response = new TopLinesResponseDto(
+            effectiveSeason,
+            effectiveSituation,
+            lines.Select(l => new TopLineDto(
+                l.Id,
+                l.Team,
+                l.Players.Select(p => new LinePlayerDto(p.PlayerId, p.Name, p.Position)).ToList(),
+                l.IceTimeSeconds,
+                l.ExpectedGoalsPct,
+                l.GoalsFor,
+                l.GoalsAgainst
+            )).ToList()
         );
 
         return Results.Ok(response);
@@ -426,4 +531,23 @@ public record AgeDistributionDto(
     int Age,
     int MinGamesPlayed,
     IReadOnlyList<DistributionDataPointDto> DataPoints
+);
+
+public record OutliersResponseDto(
+    int Season,
+    string Situation,
+    SkaterOutliersDto SkaterOutliers,
+    GoalieOutliersDto GoalieOutliers,
+    LeagueAveragesDto LeagueAverages
+);
+
+public record SkaterOutliersDto(
+    IReadOnlyList<OutlierEntryDto> RunningHot,
+    IReadOnlyList<OutlierEntryDto> RunningCold
+);
+
+public record TopLinesResponseDto(
+    int Season,
+    string Situation,
+    IReadOnlyList<TopLineDto> Lines
 );

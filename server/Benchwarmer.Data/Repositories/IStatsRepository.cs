@@ -17,7 +17,29 @@ public interface IStatsRepository
         int limit = 50,
         bool ascending = false,
         CancellationToken cancellationToken = default);
+
+    Task<OutliersResult> GetOutliersAsync(
+        int season,
+        string situation,
+        int skaterLimit = 15,
+        int goalieLimit = 5,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TopLine>> GetTopLinesAsync(
+        int season,
+        string situation,
+        int limit = 5,
+        CancellationToken cancellationToken = default);
 }
+
+public record OutliersResult(
+    IReadOnlyList<OutlierEntry> SkaterRunningHot,
+    IReadOnlyList<OutlierEntry> SkaterRunningCold,
+    IReadOnlyList<GoalieOutlierEntry> GoalieRunningHot,
+    IReadOnlyList<GoalieOutlierEntry> GoalieRunningCold,
+    decimal AvgCorsiPct,
+    decimal AvgExpectedGoalsPct
+);
 
 public record HomepageStats(
     IReadOnlyList<LeaderEntry> PointsLeaders,

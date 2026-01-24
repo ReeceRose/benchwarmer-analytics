@@ -17,21 +17,18 @@ import {
   useGamePreview,
   useGoalieRecentForm,
 } from "@/hooks";
+import { getSeasonFromDate } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/games/$gameId")({
   component: GameDetailPage,
 });
 
-function getSeasonFromDate(dateStr: string): number {
-  const date = new Date(dateStr + "T12:00:00");
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  return month < 9 ? year - 1 : year;
-}
-
 function GameDetailPage() {
   const router = useRouter();
   const { gameId } = Route.useParams();
+
+  // Load ALL queries in parallel for faster page load
+  // Each query starts immediately rather than waiting for game state
   const {
     data: game,
     isLoading: gameLoading,
@@ -39,30 +36,23 @@ function GameDetailPage() {
     refetch,
   } = useGame(gameId);
 
-  // Determine if this is a future game (show preview) or completed/live (show boxscore)
-  const isFutureGame = game?.gameState === "FUT" || game?.gameState === "PRE";
-  const isLive = game?.gameState === "LIVE" || game?.gameState === "CRIT";
-  const isCompletedOrLive = game && !isFutureGame;
+  const { data: boxscoreData, isLoading: boxscoreLoading } =
+    useGameBoxscore(gameId);
 
-  // Only fetch boxscore for completed/live games
-  const { data: boxscoreData, isLoading: boxscoreLoading } = useGameBoxscore(
-    isCompletedOrLive ? gameId : undefined
-  );
-
-  // Fetch preview for future games AND live games (for series/streak data)
   const {
     data: previewData,
     isLoading: previewLoading,
     error: previewError,
-  } = useGamePreview(isFutureGame || isLive ? gameId : undefined);
+  } = useGamePreview(gameId);
 
-  // Fetch goalie recent form separately (allows preview to load faster)
-  const { data: goalieFormData } = useGoalieRecentForm(
-    isFutureGame ? gameId : undefined
-  );
+  const { data: goalieFormData } = useGoalieRecentForm(gameId);
+
+  // Determine game state for conditional rendering (queries already running)
+  const isFutureGame = game?.gameState === "FUT" || game?.gameState === "PRE";
+  const isCompletedOrLive = game && !isFutureGame;
 
   const season = game
-    ? getSeasonFromDate(game.gameDate)
+    ? getSeasonFromDate(new Date(game.gameDate + "T12:00:00"))
     : new Date().getFullYear();
 
   const handleBack = () => {

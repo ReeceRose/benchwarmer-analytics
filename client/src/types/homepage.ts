@@ -91,3 +91,19 @@ export interface HomepageDataResponse {
   goalieLeaders: GoalieLeaderboards;
   goalieOutliers: GoalieOutliers;
 }
+
+/** Response from GET /api/stats/outliers */
+export interface OutliersResponse {
+  season: number;
+  situation: string;
+  skaterOutliers: Outliers;
+  goalieOutliers: GoalieOutliers;
+  leagueAverages: LeagueAverages;
+}
+
+/** Response from GET /api/stats/top-lines */
+export interface TopLinesResponse {
+  season: number;
+  situation: string;
+  lines: TopLine[];
+}
