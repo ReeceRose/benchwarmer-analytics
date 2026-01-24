@@ -24,13 +24,29 @@ public static class LeaderboardBuilder
             GamesPlayed: e.GamesPlayed,
             Goals: e.Goals,
             Assists: e.Assists,
+            Shots: e.Shots,
             ExpectedGoals: e.ExpectedGoals,
+            ExpectedGoalsPer60: e.ExpectedGoalsPer60,
             CorsiForPct: e.CorsiForPct,
+            FenwickForPct: e.FenwickForPct,
+            OnIceShootingPct: e.OnIceShootingPct,
+            OnIceSavePct: e.OnIceSavePct,
             IceTimeSeconds: e.IceTimeSeconds,
             SavePercentage: e.SavePercentage,
             GoalsAgainstAverage: e.GoalsAgainstAverage,
             GoalsSavedAboveExpected: e.GoalsSavedAboveExpected,
-            ShotsAgainst: e.ShotsAgainst
+            ShotsAgainst: e.ShotsAgainst,
+            GoalieIceTimeSeconds: e.GoalieIceTimeSeconds,
+            GoalsAgainst: e.GoalsAgainst,
+            ExpectedGoalsAgainst: e.ExpectedGoalsAgainst,
+            HighDangerShots: e.HighDangerShots,
+            HighDangerGoals: e.HighDangerGoals,
+            MediumDangerShots: e.MediumDangerShots,
+            MediumDangerGoals: e.MediumDangerGoals,
+            LowDangerShots: e.LowDangerShots,
+            LowDangerGoals: e.LowDangerGoals,
+            Rebounds: e.Rebounds,
+            ExpectedRebounds: e.ExpectedRebounds
         )).ToList();
 
         return new LeaderboardResponseDto(

@@ -1,12 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { formatPosition, formatToi, formatPercent, formatSavePct } from "@/lib/formatters";
+import {
+  formatPosition,
+  formatToi,
+  formatPercent,
+  formatSavePct,
+} from "@/lib/formatters";
 import type { LeaderboardEntry } from "@/types";
 
 interface LeaderboardRowProps {
   entry: LeaderboardEntry;
   rank: number;
+  season: number;
   isGoalie: boolean;
   highlightedColumn: string;
 }
@@ -14,6 +20,7 @@ interface LeaderboardRowProps {
 export function LeaderboardRow({
   entry,
   rank,
+  season,
   isGoalie,
   highlightedColumn,
 }: LeaderboardRowProps) {
@@ -44,6 +51,7 @@ export function LeaderboardRow({
           <Link
             to="/teams/$abbrev"
             params={{ abbrev: entry.team }}
+            search={{ season: season }}
             className="hover:underline text-muted-foreground"
           >
             {entry.team}
@@ -66,12 +74,35 @@ export function LeaderboardRow({
           <TableCell className={cellClass("assists")}>
             {entry.assists ?? "-"}
           </TableCell>
+          <TableCell className={cellClass("shots")}>
+            {entry.shots ?? "-"}
+          </TableCell>
           <TableCell className={cellClass("expectedGoals")}>
             {entry.expectedGoals != null ? entry.expectedGoals.toFixed(1) : "-"}
+          </TableCell>
+          <TableCell className={cellClass("xgPer60")}>
+            {entry.expectedGoalsPer60 != null
+              ? entry.expectedGoalsPer60.toFixed(2)
+              : "-"}
           </TableCell>
           <TableCell className={cellClass("corsiPct")}>
             {entry.corsiForPct != null
               ? formatPercent(entry.corsiForPct, false)
+              : "-"}
+          </TableCell>
+          <TableCell className={cellClass("fenwickPct")}>
+            {entry.fenwickForPct != null
+              ? formatPercent(entry.fenwickForPct, false)
+              : "-"}
+          </TableCell>
+          <TableCell className={cellClass("oiShPct")}>
+            {entry.onIceShootingPct != null
+              ? formatPercent(entry.onIceShootingPct, false)
+              : "-"}
+          </TableCell>
+          <TableCell className={cellClass("oiSvPct")}>
+            {entry.onIceSavePct != null
+              ? formatPercent(entry.onIceSavePct, false)
               : "-"}
           </TableCell>
           <TableCell className={cellClass("iceTime")}>
@@ -101,6 +132,27 @@ export function LeaderboardRow({
           </TableCell>
           <TableCell className={cellClass("shotsAgainst")}>
             {entry.shotsAgainst ?? "-"}
+          </TableCell>
+          <TableCell className={cellClass("goalieTime")}>
+            {entry.goalieIceTimeSeconds != null
+              ? formatToi(entry.goalieIceTimeSeconds)
+              : "-"}
+          </TableCell>
+          <TableCell className={cellClass("goalsAgainst")}>
+            {entry.goalsAgainst ?? "-"}
+          </TableCell>
+          <TableCell className={cellClass("xga")}>
+            {entry.expectedGoalsAgainst != null
+              ? entry.expectedGoalsAgainst.toFixed(1)
+              : "-"}
+          </TableCell>
+          <TableCell className={cellClass("hdSv")}>
+            {entry.highDangerShots != null && entry.highDangerGoals != null
+              ? formatSavePct(
+                  (entry.highDangerShots - entry.highDangerGoals) /
+                    entry.highDangerShots,
+                )
+              : "-"}
           </TableCell>
         </>
       )}

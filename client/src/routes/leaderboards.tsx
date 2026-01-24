@@ -29,17 +29,27 @@ import {
 import type { LeaderboardCategory } from "@/types";
 
 const categorySchema = z.enum([
+  // Skater categories
   "points",
   "goals",
   "assists",
+  "shots",
   "expectedGoals",
+  "xgPer60",
   "corsiPct",
+  "fenwickPct",
+  "oiShPct",
+  "oiSvPct",
   "iceTime",
   "gamesPlayed",
+  // Goalie categories
   "savePct",
   "gaa",
   "gsax",
   "shotsAgainst",
+  "goalieTime",
+  "goalsAgainst",
+  "xga",
 ]);
 
 const searchSchema = z.object({
@@ -269,6 +279,16 @@ function LeaderboardsPage() {
                           className="w-14"
                         />
                         <SortableTableHeader
+                          label="S"
+                          tooltip="Shots on goal"
+                          sortKey="shots"
+                          currentSort={sortKey}
+                          sortDesc={sortDesc}
+                          onSort={handleSort}
+                          isHighlighted={sortKey === "shots"}
+                          className="w-14"
+                        />
+                        <SortableTableHeader
                           label="xG"
                           tooltip="Expected goals based on shot quality"
                           sortKey="expectedGoals"
@@ -279,6 +299,16 @@ function LeaderboardsPage() {
                           className="w-16"
                         />
                         <SortableTableHeader
+                          label="xG/60"
+                          tooltip="Expected goals per 60 minutes"
+                          sortKey="xgPer60"
+                          currentSort={sortKey}
+                          sortDesc={sortDesc}
+                          onSort={handleSort}
+                          isHighlighted={sortKey === "xgPer60"}
+                          className="w-18"
+                        />
+                        <SortableTableHeader
                           label="CF%"
                           tooltip="Corsi for % - shot attempt share when on ice"
                           sortKey="corsiPct"
@@ -286,6 +316,36 @@ function LeaderboardsPage() {
                           sortDesc={sortDesc}
                           onSort={handleSort}
                           isHighlighted={sortKey === "corsiPct"}
+                          className="w-18"
+                        />
+                        <SortableTableHeader
+                          label="FF%"
+                          tooltip="Fenwick for % - unblocked shot attempt share"
+                          sortKey="fenwickPct"
+                          currentSort={sortKey}
+                          sortDesc={sortDesc}
+                          onSort={handleSort}
+                          isHighlighted={sortKey === "fenwickPct"}
+                          className="w-18"
+                        />
+                        <SortableTableHeader
+                          label="oiSh%"
+                          tooltip="On-ice shooting % - team shooting % when on ice"
+                          sortKey="oiShPct"
+                          currentSort={sortKey}
+                          sortDesc={sortDesc}
+                          onSort={handleSort}
+                          isHighlighted={sortKey === "oiShPct"}
+                          className="w-18"
+                        />
+                        <SortableTableHeader
+                          label="oiSv%"
+                          tooltip="On-ice save % - team save % when on ice"
+                          sortKey="oiSvPct"
+                          currentSort={sortKey}
+                          sortDesc={sortDesc}
+                          onSort={handleSort}
+                          isHighlighted={sortKey === "oiSvPct"}
                           className="w-18"
                         />
                         <SortableTableHeader
@@ -342,6 +402,48 @@ function LeaderboardsPage() {
                           isHighlighted={sortKey === "shotsAgainst"}
                           className="w-16"
                         />
+                        <SortableTableHeader
+                          label="TOI"
+                          tooltip="Total time on ice"
+                          sortKey="goalieTime"
+                          currentSort={sortKey}
+                          sortDesc={sortDesc}
+                          onSort={handleSort}
+                          isHighlighted={sortKey === "goalieTime"}
+                          className="w-20"
+                        />
+                        <SortableTableHeader
+                          label="GA"
+                          tooltip="Goals against (lower is better)"
+                          sortKey="goalsAgainst"
+                          currentSort={sortKey}
+                          sortDesc={sortDesc}
+                          onSort={handleSort}
+                          isHighlighted={sortKey === "goalsAgainst"}
+                          lowerIsBetter
+                          className="w-14"
+                        />
+                        <SortableTableHeader
+                          label="xGA"
+                          tooltip="Expected goals against (lower is better)"
+                          sortKey="xga"
+                          currentSort={sortKey}
+                          sortDesc={sortDesc}
+                          onSort={handleSort}
+                          isHighlighted={sortKey === "xga"}
+                          lowerIsBetter
+                          className="w-16"
+                        />
+                        <SortableTableHeader
+                          label="HD Sv%"
+                          tooltip="High danger save percentage"
+                          sortKey="savePct"
+                          currentSort={sortKey}
+                          sortDesc={sortDesc}
+                          onSort={handleSort}
+                          isHighlighted={false}
+                          className="w-18"
+                        />
                       </>
                     )}
                   </TableRow>
@@ -352,6 +454,7 @@ function LeaderboardsPage() {
                       key={entry.playerId}
                       entry={entry}
                       rank={entry.rank}
+                      season={effectiveSeason}
                       isGoalie={isGoalieView}
                       highlightedColumn={sortKey}
                     />

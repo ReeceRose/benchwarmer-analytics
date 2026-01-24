@@ -160,6 +160,11 @@ export function StandingsTable({
                 className="text-right font-semibold w-11"
               />
               <HeaderWithTooltip
+                label="Pts%"
+                tooltip="Points percentage"
+                className="text-right w-13"
+              />
+              <HeaderWithTooltip
                 label="GF"
                 tooltip="Goals for"
                 className="text-right w-11"
@@ -175,6 +180,16 @@ export function StandingsTable({
                 className="text-right w-12"
               />
               <HeaderWithTooltip
+                label="Home"
+                tooltip="Home record"
+                className="text-right w-16"
+              />
+              <HeaderWithTooltip
+                label="Away"
+                tooltip="Away record"
+                className="text-right w-16"
+              />
+              <HeaderWithTooltip
                 label="L10"
                 tooltip="Last 10 games"
                 className="text-right w-14"
@@ -182,6 +197,26 @@ export function StandingsTable({
               <HeaderWithTooltip
                 label="Strk"
                 tooltip="Current streak"
+                className="text-right w-12"
+              />
+              <HeaderWithTooltip
+                label="xGF"
+                tooltip="Expected goals for"
+                className="text-right w-12"
+              />
+              <HeaderWithTooltip
+                label="xGA"
+                tooltip="Expected goals against"
+                className="text-right w-12"
+              />
+              <HeaderWithTooltip
+                label="xG±"
+                tooltip="Expected goal differential"
+                className="text-right w-12"
+              />
+              <HeaderWithTooltip
+                label="xPts"
+                tooltip="Expected points"
                 className="text-right w-12"
               />
               <HeaderWithTooltip
@@ -193,6 +228,21 @@ export function StandingsTable({
                 label="CF%"
                 tooltip="Corsi percentage"
                 className="text-right w-13"
+              />
+              <HeaderWithTooltip
+                label="FF%"
+                tooltip="Fenwick percentage"
+                className="text-right w-13"
+              />
+              <HeaderWithTooltip
+                label="Sh%"
+                tooltip="Team shooting percentage"
+                className="text-right w-12"
+              />
+              <HeaderWithTooltip
+                label="Sv%"
+                tooltip="Team save percentage"
+                className="text-right w-12"
               />
               <HeaderWithTooltip
                 label="PDO"

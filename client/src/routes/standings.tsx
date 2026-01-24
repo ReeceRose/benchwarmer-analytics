@@ -73,10 +73,16 @@ function StandingsPage() {
         <div className="flex items-start gap-3">
           <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
           <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Analytics: </span>
-            <strong>xG%</strong> (expected goals share), <strong>CF%</strong>{" "}
-            (Corsi - shot attempts), <strong>PDO</strong> (Sh% + Sv% - luck
-            indicator, regresses to 100).
+            <span className="font-medium text-foreground">Key Metrics: </span>
+            <strong>Pts%</strong> (points earned / possible),{" "}
+            <strong>xGF/xGA</strong> (expected goals for/against),{" "}
+            <strong>xG±</strong> (expected goal differential),{" "}
+            <strong>xPts</strong> (expected points),{" "}
+            <strong>xG%</strong> (expected goals share),{" "}
+            <strong>CF%/FF%</strong> (shot attempt share),{" "}
+            <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
+            <strong>PDO</strong> (Sh% + Sv% - values near 100 are sustainable),{" "}
+            <strong>Pts±</strong> (actual - expected points).
           </div>
         </div>
       </Card>

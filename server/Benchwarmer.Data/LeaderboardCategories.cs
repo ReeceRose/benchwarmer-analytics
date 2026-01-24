@@ -9,13 +9,13 @@ public static class LeaderboardCategories
     /// Skater stat categories.
     /// </summary>
     public static readonly string[] Skater =
-        ["points", "goals", "assists", "expectedgoals", "corsipct", "icetime", "gamesplayed"];
+        ["points", "goals", "assists", "shots", "expectedgoals", "xgper60", "corsipct", "fenwickpct", "oishpct", "oisvpct", "icetime", "gamesplayed"];
 
     /// <summary>
     /// Goalie stat categories (always use "all" situation).
     /// </summary>
     public static readonly string[] Goalie =
-        ["savepct", "gaa", "gsax", "shotsagainst"];
+        ["savepct", "gaa", "gsax", "shotsagainst", "goalietime", "goalsagainst", "xga"];
 
     /// <summary>
     /// Checks if the category is valid.
