@@ -121,7 +121,7 @@ export function PerformanceTrend({
               axisLine={{ stroke: CHART_AXIS_COLORS.grid, strokeOpacity: CHART_AXIS_COLORS.gridOpacity }}
               width={40}
             />
-            <Tooltip content={<TrendChartTooltip metrics={metrics} />} />
+            <Tooltip content={<TrendChartTooltip metrics={metrics} />} wrapperStyle={{ outline: 'none', background: 'transparent', border: 'none' }} />
             {metrics.length > 1 && (
               <Legend
                 wrapperStyle={{ fontSize: "12px" }}

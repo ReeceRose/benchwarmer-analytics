@@ -57,3 +57,71 @@ export interface PowerRankingsResponse {
   teams: TeamPowerRanking[];
   insights: RegressionInsights;
 }
+
+/** Official NHL standings for a team */
+export interface OfficialStandings {
+  abbreviation: string;
+  name: string;
+  division?: string;
+  conference?: string;
+
+  // Core standings
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
+  otLosses: number;
+  points: number;
+  pointPctg?: number;
+
+  // Goals
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifferential: number;
+
+  // Splits
+  homeRecord: string;
+  awayRecord: string;
+  last10Record: string;
+  streak?: string;
+
+  // Positioning
+  divisionRank: number;
+  conferenceRank: number;
+  leagueRank: number;
+  wildcardRank: number;
+}
+
+/** Response from GET /api/standings */
+export interface OfficialStandingsResponse {
+  season?: number;
+  teams: OfficialStandings[];
+}
+
+/** Team analytics for standings overlay */
+export interface StandingsAnalytics {
+  abbreviation: string;
+  xGoalsFor: number;
+  xGoalsAgainst: number;
+  xGoalsPct?: number;
+  corsiPct?: number;
+  fenwickPct?: number;
+  pdo?: number;
+  shootingPct?: number;
+  savePct?: number;
+  expectedPoints: number;
+  pointsDiff: number;
+}
+
+/** Response from GET /api/standings/analytics */
+export interface StandingsAnalyticsResponse {
+  season: number;
+  teams: StandingsAnalytics[];
+}
+
+/** Grouping options for standings view */
+export type StandingsGrouping = "league" | "conference" | "division";
+
+/** Combined standings with optional analytics */
+export interface StandingsWithAnalytics extends OfficialStandings {
+  analytics?: StandingsAnalytics;
+}

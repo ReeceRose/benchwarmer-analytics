@@ -32,6 +32,8 @@ import type {
   AgeDistributionResponse,
   SeasonPercentilesResponse,
   PowerRankingsResponse,
+  OfficialStandingsResponse,
+  StandingsAnalyticsResponse,
   SpecialTeamsOverview,
   SpecialTeamsPlayersResponse,
   SpecialTeamsSituation,
@@ -375,6 +377,25 @@ export async function getPowerRankings(
 ): Promise<PowerRankingsResponse> {
   const { data } = await api.get<PowerRankingsResponse>(
     "/standings/power-rankings",
+    { params: { season } }
+  );
+  return data;
+}
+
+export async function getOfficialStandings(
+  season?: number
+): Promise<OfficialStandingsResponse> {
+  const { data } = await api.get<OfficialStandingsResponse>("/standings", {
+    params: { season },
+  });
+  return data;
+}
+
+export async function getStandingsAnalytics(
+  season?: number
+): Promise<StandingsAnalyticsResponse> {
+  const { data } = await api.get<StandingsAnalyticsResponse>(
+    "/standings/analytics",
     { params: { season } }
   );
   return data;

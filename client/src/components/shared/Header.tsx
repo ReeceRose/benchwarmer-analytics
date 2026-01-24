@@ -43,6 +43,12 @@ export function Header() {
             Compare
           </Link>
           <Link
+            to="/standings"
+            className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
+          >
+            Standings
+          </Link>
+          <Link
             to="/power-rankings"
             className="text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground"
           >

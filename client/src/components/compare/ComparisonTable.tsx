@@ -7,6 +7,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { formatPosition } from "@/lib/formatters";
 import {
@@ -35,9 +40,9 @@ export function ComparisonTable({ players, positionType, statMode = "all" }: Com
   return (
     <Card className="py-0 gap-0">
       <CardContent className="p-0 overflow-x-auto">
-        <Table className="border-collapse">
+        <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableRow className="bg-muted/50">
               <TableHead className="font-semibold sticky left-0 bg-muted/50 z-10 border-r w-32 pl-4 py-4">
                 Stat
               </TableHead>
@@ -60,13 +65,20 @@ export function ComparisonTable({ players, positionType, statMode = "all" }: Com
           </TableHeader>
           <TableBody>
             {isGoalie
-              ? goalieConfigs.map((config, index) => (
+              ? goalieConfigs.map((config) => (
                   <TableRow
                     key={config.key}
-                    className={index % 2 === 0 ? "bg-muted/20" : ""}
+                    className="hover:bg-muted/30"
                   >
                     <TableCell className="font-medium sticky left-0 bg-inherit z-10 border-r pl-4">
-                      {config.label}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help">{config.label}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{config.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     {players.map((player) => {
                       const { formatted, isBest, isWorst } = getGoalieStatValue(
@@ -91,13 +103,20 @@ export function ComparisonTable({ players, positionType, statMode = "all" }: Com
                     })}
                   </TableRow>
                 ))
-              : skaterConfigs.map((config, index) => (
+              : skaterConfigs.map((config) => (
                   <TableRow
                     key={config.key}
-                    className={index % 2 === 0 ? "bg-muted/20" : ""}
+                    className="hover:bg-muted/30"
                   >
                     <TableCell className="font-medium sticky left-0 bg-inherit z-10 border-r pl-4">
-                      {config.label}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help">{config.label}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{config.tooltip}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     {players.map((player) => {
                       const { formatted, isBest, isWorst } = getSkaterStatValue(

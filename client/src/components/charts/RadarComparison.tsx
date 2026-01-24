@@ -206,7 +206,7 @@ export function RadarComparison({
                 strokeWidth={2}
               />
             ))}
-            <Tooltip content={<RadarChartTooltip />} />
+            <Tooltip content={<RadarChartTooltip />} wrapperStyle={{ outline: 'none', background: 'transparent', border: 'none' }} />
             {validPlayers.length > 1 && (
               <Legend
                 wrapperStyle={{ fontSize: "12px" }}

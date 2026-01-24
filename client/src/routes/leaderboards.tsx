@@ -63,7 +63,8 @@ function LeaderboardsPage() {
   const { data: seasonsData } = useSeasons();
 
   // Prefer URL param > API current season > calculated default
-  const effectiveSeason = season ?? seasonsData?.seasons?.[0]?.year ?? defaultSeason;
+  const effectiveSeason =
+    season ?? seasonsData?.seasons?.[0]?.year ?? defaultSeason;
   const effectiveSituation = situation ?? "all";
 
   // Determine if viewing skaters or goalies based on category
@@ -82,7 +83,7 @@ function LeaderboardsPage() {
     effectiveSeason,
     effectiveSituation,
     50,
-    effectiveSortDir
+    effectiveSortDir,
   );
 
   // Use server-sorted entries directly (no client-side re-sorting needed)
@@ -94,7 +95,7 @@ function LeaderboardsPage() {
       season: number;
       situation: string;
       sortDir: "asc" | "desc";
-    }>
+    }>,
   ) => {
     navigate({
       search: (prev) => ({
@@ -110,7 +111,10 @@ function LeaderboardsPage() {
       updateSearch({ sortDir: sortDesc ? "asc" : "desc" });
     } else {
       // New column - use default direction for that column, clear sortDir to use default
-      updateSearch({ category: key as LeaderboardCategory, sortDir: undefined });
+      updateSearch({
+        category: key as LeaderboardCategory,
+        sortDir: undefined,
+      });
     }
   };
 
@@ -136,7 +140,6 @@ function LeaderboardsPage() {
         </p>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <Tabs
           value={isGoalieView ? "goalies" : "skaters"}
@@ -213,9 +216,7 @@ function LeaderboardsPage() {
           </CardContent>
         </Card>
       ) : sortedEntries.length > 0 ? (
-        <Card
-          className={`py-0 gap-0 ${isPlaceholderData ? "opacity-60" : ""}`}
-        >
+        <Card className={`py-0 gap-0 ${isPlaceholderData ? "opacity-60" : ""}`}>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table className="table-fixed min-w-175">

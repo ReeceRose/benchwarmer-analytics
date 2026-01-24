@@ -3,13 +3,12 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_COLORS, CHART_AXIS_COLORS } from "@/lib/chart-colors";
+import { CHART_COLORS } from "@/lib/chart-colors";
 import type { GoalieStats } from "@/types";
 
 interface GoalieData {
@@ -131,18 +130,45 @@ export function GoalieComparison({
     );
   }
 
-  // Build chart data - one bar per stat, grouped by players
+  // Build chart data - normalize each stat to 0-100 scale independently
   const chartData = GOALIE_STAT_DEFS.map((def) => {
     const dataPoint: Record<string, string | number | null> = {
       stat: def.label,
     };
 
+    // Get all values for this stat
+    const values = validPlayers
+      .map((p) => def.getValue(p.stats!))
+      .filter((v): v is number => v !== null);
+
+    if (values.length === 0) {
+      validPlayers.forEach((player) => {
+        dataPoint[player.name] = 0;
+        dataPoint[`${player.name}_formatted`] = "-";
+      });
+      return dataPoint;
+    }
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min;
+
     validPlayers.forEach((player) => {
       const value = def.getValue(player.stats!);
-      dataPoint[player.name] = value;
-      // Store raw value for tooltip formatting
+      // Store formatted value for tooltip
       dataPoint[`${player.name}_formatted`] =
         value !== null ? def.format(value) : "-";
+
+      if (value === null) {
+        dataPoint[player.name] = 0;
+      } else if (range === 0) {
+        // Both values are the same
+        dataPoint[player.name] = 100;
+      } else {
+        // Normalize to 0-100, accounting for higherIsBetter
+        const normalized = ((value - min) / range) * 100;
+        dataPoint[player.name] = def.higherIsBetter ? normalized : 100 - normalized;
+      }
     });
 
     return dataPoint;
@@ -160,20 +186,26 @@ export function GoalieComparison({
             layout="vertical"
             margin={{ top: 10, right: 30, left: 60, bottom: 10 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLORS.grid} strokeOpacity={CHART_AXIS_COLORS.gridOpacity} />
+            {/* No grid needed for normalized comparison */}
             <XAxis
               type="number"
-              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
-              stroke={CHART_AXIS_COLORS.grid}
-              strokeOpacity={CHART_AXIS_COLORS.gridOpacity}
+              domain={[0, 100]}
+              tick={false}
+              axisLine={false}
             />
             <YAxis
               type="category"
               dataKey="stat"
-              tick={{ fill: CHART_AXIS_COLORS.tick, fontSize: 12 }}
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
               width={80}
+              axisLine={false}
+              tickLine={false}
             />
-            <Tooltip content={<GoalieChartTooltip />} />
+            <Tooltip
+              content={<GoalieChartTooltip />}
+              wrapperStyle={{ backgroundColor: 'transparent', border: 'none', boxShadow: 'none', padding: 0 }}
+              cursor={{ fill: 'hsl(var(--muted))', fillOpacity: 0.3 }}
+            />
             {validPlayers.map((player, i) => (
               <Bar
                 key={player.name}
@@ -194,7 +226,7 @@ export function GoalieComparison({
           </BarChart>
         </ResponsiveContainer>
         <p className="text-xs text-muted-foreground text-center mt-2">
-          Key goalie metrics comparison
+          Longer bar = better performance (hover for actual values)
         </p>
       </CardContent>
     </Card>

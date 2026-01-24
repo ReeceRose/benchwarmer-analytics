@@ -76,12 +76,16 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
   // Get team data - prefer game data, fall back to preview
   const homeTeamCode = game?.home.teamCode ?? preview?.game.homeTeam ?? "";
   const awayTeamCode = game?.away.teamCode ?? preview?.game.awayTeam ?? "";
-  const homeTeamName = game?.home.teamName ?? preview?.game.homeTeamName ?? null;
-  const awayTeamName = game?.away.teamName ?? preview?.game.awayTeamName ?? null;
+  const homeTeamName =
+    game?.home.teamName ?? preview?.game.homeTeamName ?? null;
+  const awayTeamName =
+    game?.away.teamName ?? preview?.game.awayTeamName ?? null;
 
   // Get date for season calculation
   const gameDate = game?.gameDate ?? preview?.game.date ?? "";
-  const season = gameDate ? getSeasonFromDate(gameDate) : new Date().getFullYear();
+  const season = gameDate
+    ? getSeasonFromDate(gameDate)
+    : new Date().getFullYear();
 
   // Scores (only for live/completed)
   const homeGoals = game?.home.goals;
@@ -94,8 +98,10 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
   const awayStreak = game?.away.streak ?? preview?.teamComparison.away.streak;
   const homeLast10 = game?.home.last10 ?? preview?.teamComparison.home.last10;
   const awayLast10 = game?.away.last10 ?? preview?.teamComparison.away.last10;
-  const homeRecord = game?.home.homeRecord ?? preview?.teamComparison.home.homeRecord;
-  const awayRoadRecord = game?.away.roadRecord ?? preview?.teamComparison.away.roadRecord;
+  const homeRecord =
+    game?.home.homeRecord ?? preview?.teamComparison.home.homeRecord;
+  const awayRoadRecord =
+    game?.away.roadRecord ?? preview?.teamComparison.away.roadRecord;
 
   // Build series summary from game data or preview head-to-head
   let seriesSummary = game?.seasonSeries ?? "";
@@ -133,7 +139,6 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
   return (
     <Card className="p-6">
       <div className="text-center space-y-4">
-        {/* Status indicator */}
         <div className="text-sm text-muted-foreground uppercase tracking-wide">
           {isLive && game ? (
             <div className="flex items-center justify-center gap-2">
@@ -167,9 +172,7 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
           )}
         </div>
 
-        {/* Teams and Score */}
         <div className="flex items-center justify-center gap-8">
-          {/* Away Team */}
           <Link
             to="/teams/$abbrev"
             params={{ abbrev: awayTeamCode }}
@@ -182,16 +185,18 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
               {awayTeamCode}
             </div>
             {awayTeamName && (
-              <div className="text-sm text-muted-foreground">{awayTeamName}</div>
+              <div className="text-sm text-muted-foreground">
+                {awayTeamName}
+              </div>
             )}
             {(awayRoadRecord || game?.away.record) && (
               <div className="text-xs text-muted-foreground">
-                ({awayRoadRecord ? `${awayRoadRecord} away` : game?.away.record})
+                ({awayRoadRecord ? `${awayRoadRecord} away` : game?.away.record}
+                )
               </div>
             )}
           </Link>
 
-          {/* Score or @ symbol */}
           {isFuture ? (
             <span className="text-2xl text-muted-foreground">@</span>
           ) : (
@@ -214,7 +219,6 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
             </div>
           )}
 
-          {/* Home Team */}
           <Link
             to="/teams/$abbrev"
             params={{ abbrev: homeTeamCode }}
@@ -227,7 +231,9 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
               {homeTeamCode}
             </div>
             {homeTeamName && (
-              <div className="text-sm text-muted-foreground">{homeTeamName}</div>
+              <div className="text-sm text-muted-foreground">
+                {homeTeamName}
+              </div>
             )}
             {(homeRecord || game?.home.record) && (
               <div className="text-xs text-muted-foreground">
@@ -237,7 +243,6 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
           </Link>
         </div>
 
-        {/* Date/Time */}
         <div className="text-sm text-muted-foreground">
           {isFuture && startTime ? (
             <div className="flex items-center justify-center gap-2">
@@ -252,12 +257,10 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
           ) : null}
         </div>
 
-        {/* Season Series */}
         {seriesSummary && (
           <div className="text-sm text-muted-foreground">{seriesSummary}</div>
         )}
 
-        {/* Streaks and L10 */}
         {(awayStreak || homeStreak) && (
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <span>
@@ -280,7 +283,6 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
           </div>
         )}
 
-        {/* Period breakdown (completed/live games only) */}
         {game && game.periods.length > 0 && (
           <div className="flex items-center justify-center gap-4 pt-2 border-t">
             {game.periods.map((p) => (
@@ -300,7 +302,6 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
           </div>
         )}
 
-        {/* Goals list (completed/live games only) */}
         {game && game.goals && game.goals.length > 0 && (
           <DetailedGoalsList goals={game.goals} awayCode={awayTeamCode} />
         )}

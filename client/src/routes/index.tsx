@@ -1,9 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import {
-  SeasonSelector,
-  SituationSelector,
-} from "@/components/shared";
+import { SeasonSelector, SituationSelector } from "@/components/shared";
 import {
   LeaderStripSection,
   OutliersSectionWrapper,
@@ -81,7 +78,6 @@ function HomePage() {
         </p>
       )}
 
-      {/* Each section now fetches its own data independently */}
       {effectiveSeason === defaultSeason && <GamesSection />}
 
       <LeaderStripSection season={effectiveSeason} situation={situation} />

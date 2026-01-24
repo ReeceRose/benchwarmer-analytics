@@ -18,7 +18,11 @@ export { useTopLines } from "@/hooks/useTopLines";
 export { useTeamShots, useTeamShotsAgainst, useShooterStats, usePlayerShots } from "@/hooks/useShots";
 export { useYesterdaysGames, useTodaysGames, useLiveScores, useGamesByDate, useGame, useGameBoxscore, useGamePreview, useGoalieRecentForm } from "@/hooks/useGames";
 export { useBreakoutCandidates, useAgeCurves, useAgeDistribution, useSeasonPercentiles } from "@/hooks/useAnalytics";
-export { usePowerRankings } from "@/hooks/useStandings";
+export {
+  usePowerRankings,
+  useOfficialStandings,
+  useStandingsAnalytics,
+} from "@/hooks/useStandings";
 export { useTeamSpecialTeams, useSpecialTeamsPlayers } from "@/hooks/useSpecialTeams";
 export { useLeaderboard } from "@/hooks/useLeaderboard";
 export { useSortableTable } from "@/hooks/useSortableTable";

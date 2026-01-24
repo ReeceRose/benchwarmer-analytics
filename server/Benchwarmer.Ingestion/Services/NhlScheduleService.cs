@@ -207,6 +207,7 @@ public class NhlScheduleService(HttpClient httpClient, ILogger<NhlScheduleServic
     public async Task<IReadOnlyDictionary<string, NhlTeamStandings>> GetStandingsAsync(
         CancellationToken cancellationToken = default)
     {
+        // Always use current standings - NHL API historical data is unreliable
         var url = $"{BaseUrl}/standings/now";
         logger.LogInformation("Fetching NHL standings from {Url}", url);
 

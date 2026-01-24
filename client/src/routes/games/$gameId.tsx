@@ -88,16 +88,14 @@ function GameDetailPage() {
         Back to Games
       </button>
 
-      {/* Unified header for all game states */}
       {gameLoading && !game ? (
         <GameDetailHeaderSkeleton />
-      ) : (game || previewData) ? (
+      ) : game || previewData ? (
         <GameDetailHeader game={game} preview={previewData} />
       ) : null}
 
-      {/* Preview sections for future games */}
-      {isFutureGame && (
-        previewLoading ? (
+      {isFutureGame &&
+        (previewLoading ? (
           <GamePreviewSectionsSkeleton />
         ) : previewData ? (
           <GamePreviewSections
@@ -110,12 +108,10 @@ function GameDetailPage() {
             message="Could not fetch game preview data."
             onRetry={() => refetch()}
           />
-        ) : null
-      )}
+        ) : null)}
 
-      {/* Boxscore for completed/live games */}
-      {isCompletedOrLive && (
-        boxscoreLoading ? (
+      {isCompletedOrLive &&
+        (boxscoreLoading ? (
           <GameBoxscoreTableSkeleton />
         ) : boxscoreData ? (
           <GameBoxscoreTable
@@ -127,8 +123,7 @@ function GameDetailPage() {
           <div className="text-center py-12 text-muted-foreground">
             Box score not available for this game.
           </div>
-        )
-      )}
+        ))}
     </div>
   );
 }
