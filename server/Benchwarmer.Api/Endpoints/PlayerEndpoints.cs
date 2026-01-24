@@ -186,7 +186,7 @@ public static class PlayerEndpoints
             player.LastName,
             player.Position,
             player.CurrentTeamAbbreviation,
-            player.HeadshotUrl,
+            PlayerHelpers.GetHeadshotUrl(player.Id, player.HeadshotUrl, player.CurrentTeamAbbreviation),
             player.BirthDate,
             player.HeightInches,
             player.WeightLbs,
