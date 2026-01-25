@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Star, Target, TrendingUp, BarChart3, Clock, ChevronRight, Shield, Goal, Sparkles } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatToi, formatSavePct, formatPercent } from "@/lib/formatters";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { Leaderboards, GoalieLeaderboards, LeaderEntry, LeaderboardCategory } from "@/types";
 
 interface LeaderCardProps {
@@ -58,6 +60,15 @@ function LeaderCard({ title, icon, leaders, formatValue, statKey, season, situat
               <span className="text-muted-foreground font-mono text-xs w-4 shrink-0">
                 {index + 1}.
               </span>
+              <Avatar className="h-6 w-6 shrink-0">
+                <AvatarImage
+                  src={getPlayerHeadshotUrl(player.playerId, player.team)}
+                  alt={player.name}
+                />
+                <AvatarFallback className="text-[10px]">
+                  {getPlayerInitials(player.name)}
+                </AvatarFallback>
+              </Avatar>
               <span className="font-medium text-sm truncate">{player.name}</span>
               {player.team && (
                 <span className="text-xs text-muted-foreground shrink-0">

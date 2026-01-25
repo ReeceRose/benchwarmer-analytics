@@ -17,6 +17,12 @@ public interface ISkaterStatsRepository
         bool? isPlayoffs = null,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<SkaterSeason>> GetBySeasonSituationAsync(
+        int season,
+        string situation,
+        bool isPlayoffs = false,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<SkaterSeason>> GetBreakoutCandidatesAsync(
         int season,
         int minGames = 20,

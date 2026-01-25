@@ -187,6 +187,7 @@ try
     app.MapShotEndpoints();
     app.MapGameEndpoints();
     app.MapStandingsEndpoints();
+    app.MapSpecialTeamsEndpoints();
 
     app.MapGet("/api/health", () => new { status = "healthy" })
         .WithName("HealthCheck")

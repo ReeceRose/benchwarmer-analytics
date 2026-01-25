@@ -2,11 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 
 interface PlayerInfo {
   playerId: number;
   playerName: string;
   color: string;
+  team?: string;
 }
 
 interface SelectedPlayersBarProps {
@@ -28,9 +31,18 @@ export function SelectedPlayersBar({
         <Badge
           key={player.playerId}
           variant="secondary"
-          className="gap-1 pl-2"
+          className="gap-1 pl-2 flex items-center"
           style={{ borderLeftColor: player.color, borderLeftWidth: 3 }}
         >
+          <Avatar className="h-5 w-5">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(player.playerId, player.team)}
+              alt={player.playerName}
+            />
+            <AvatarFallback className="text-[8px]">
+              {getPlayerInitials(player.playerName)}
+            </AvatarFallback>
+          </Avatar>
           <Link
             to="/players/$id"
             params={{ id: String(player.playerId) }}

@@ -3,15 +3,17 @@ import type { Shot } from "@/types";
 import {
   Tooltip,
   TooltipContent,
-  
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RINK_COLOURS, getShotColour as getShotColourFromLib } from "@/lib/chart-colours";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 
 interface RinkVisualizationProps {
   shots: Shot[];
   width?: number;
   showLegend?: boolean;
+  teamAbbreviation?: string;
 }
 
 // NHL rink dimensions (in feet): 200ft long x 85ft wide
@@ -52,14 +54,27 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-function ShotTooltipContent({ shot }: { shot: Shot }) {
+function ShotTooltipContent({ shot, teamAbbreviation }: { shot: Shot; teamAbbreviation?: string }) {
   return (
     <div className="space-y-1 text-sm">
-      <div className="font-semibold">
-        {shot.shooterName || "Unknown"}{" "}
-        {shot.shooterPosition && (
-          <span className="text-muted-foreground">({shot.shooterPosition})</span>
+      <div className="font-semibold flex items-center gap-2">
+        {shot.shooterPlayerId && (
+          <Avatar className="h-6 w-6">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(shot.shooterPlayerId, teamAbbreviation)}
+              alt={shot.shooterName || "Unknown"}
+            />
+            <AvatarFallback className="text-[10px]">
+              {getPlayerInitials(shot.shooterName || "?")}
+            </AvatarFallback>
+          </Avatar>
         )}
+        <span>
+          {shot.shooterName || "Unknown"}{" "}
+          {shot.shooterPosition && (
+            <span className="text-muted-foreground">({shot.shooterPosition})</span>
+          )}
+        </span>
       </div>
       <div className="flex gap-3 text-muted-foreground">
         <span>P{shot.period}</span>
@@ -106,6 +121,7 @@ export function RinkVisualization({
   shots,
   width = 480,
   showLegend = true,
+  teamAbbreviation,
 }: RinkVisualizationProps) {
   // Calculate height to maintain proper NHL rink aspect ratio (100:85)
   const height = Math.round(width * (RINK_HEIGHT / RINK_LENGTH));
@@ -285,7 +301,7 @@ export function RinkVisualization({
                     />
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-xs">
-                    <ShotTooltipContent shot={shot} />
+                    <ShotTooltipContent shot={shot} teamAbbreviation={teamAbbreviation} />
                   </TooltipContent>
                 </Tooltip>
               );
@@ -308,7 +324,7 @@ export function RinkVisualization({
                 />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs">
-                <ShotTooltipContent shot={shot} />
+                <ShotTooltipContent shot={shot} teamAbbreviation={teamAbbreviation} />
               </TooltipContent>
             </Tooltip>
           ))}

@@ -13,9 +13,10 @@ import type { DangerLevel } from "@/types";
 interface PlayerShotMapProps {
   playerId: number;
   availableSeasons: number[];
+  playerTeamAbbreviation?: string;
 }
 
-export function PlayerShotMap({ playerId, availableSeasons }: PlayerShotMapProps) {
+export function PlayerShotMap({ playerId, availableSeasons, playerTeamAbbreviation }: PlayerShotMapProps) {
   const [shotSeason, setShotSeason] = useState<number | null>(null);
   const [shotPeriod, setShotPeriod] = useState<number | undefined>(undefined);
   const [shotType, setShotType] = useState<string | undefined>(undefined);
@@ -96,7 +97,7 @@ export function PlayerShotMap({ playerId, availableSeasons }: PlayerShotMapProps
           <Skeleton className="h-75 w-full" />
         ) : filteredShots.length > 0 ? (
           <div className="space-y-4">
-            <RinkVisualization shots={filteredShots} showLegend />
+            <RinkVisualization shots={filteredShots} showLegend teamAbbreviation={playerTeamAbbreviation} />
             {shotsData?.summary && <ShotSummaryCard summary={shotsData.summary} />}
             <PeriodBreakdownCard shots={filteredShots} />
             <p className="text-sm text-muted-foreground text-center">

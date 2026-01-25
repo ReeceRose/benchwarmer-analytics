@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Flame } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatSavePct } from "@/lib/formatters";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { GoalieMatchup, GoaliePreview, GoalieRecentForm } from "@/types";
 
 interface GoalieMatchupSectionProps {
@@ -12,9 +14,11 @@ interface GoalieMatchupSectionProps {
 
 function GoalieCard({
   goalie,
+  team,
   recentForm,
 }: {
   goalie: GoaliePreview;
+  team: string;
   recentForm?: GoalieRecentForm;
 }) {
   // Compare recent form to season average (1% threshold)
@@ -36,7 +40,18 @@ function GoalieCard({
       className="block p-2 bg-muted/30 rounded hover:bg-muted/50 transition-colors"
     >
       <div className="text-center space-y-1">
-        <div className="font-medium text-sm">{goalie.name}</div>
+        <div className="flex flex-col items-center gap-1">
+          <Avatar className="h-10 w-10">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(goalie.playerId, team)}
+              alt={goalie.name}
+            />
+            <AvatarFallback className="text-xs">
+              {getPlayerInitials(goalie.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="font-medium text-sm">{goalie.name}</span>
+        </div>
         <div className="flex items-center justify-center gap-3 text-xs">
           <span>
             <span className="text-muted-foreground">SV%</span>{" "}
@@ -118,6 +133,7 @@ function TeamGoalies({
           <GoalieCard
             key={goalie.playerId}
             goalie={goalie}
+            team={team}
             recentForm={recentFormMap.get(goalie.playerId)}
           />
         ))}

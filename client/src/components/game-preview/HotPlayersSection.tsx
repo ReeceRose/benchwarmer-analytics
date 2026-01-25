@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Flame, Snowflake } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { HotPlayers, HotPlayer } from "@/types";
 
 interface HotPlayersSectionProps {
@@ -8,7 +10,7 @@ interface HotPlayersSectionProps {
   awayTeam: string;
 }
 
-function PlayerRow({ player }: { player: HotPlayer }) {
+function PlayerRow({ player, team }: { player: HotPlayer; team: string }) {
   const isHot = player.trend === "hot";
 
   return (
@@ -23,6 +25,15 @@ function PlayerRow({ player }: { player: HotPlayer }) {
         ) : (
           <Snowflake className="h-3.5 w-3.5 text-cold" />
         )}
+        <Avatar className="h-6 w-6">
+          <AvatarImage
+            src={getPlayerHeadshotUrl(player.playerId, team)}
+            alt={player.name}
+          />
+          <AvatarFallback className="text-[10px]">
+            {getPlayerInitials(player.name)}
+          </AvatarFallback>
+        </Avatar>
         <div>
           <span className="font-medium text-sm">{player.name}</span>
           {player.position && (
@@ -65,7 +76,7 @@ function TeamColumn({
         <p className="text-sm text-muted-foreground">No hot players</p>
       ) : (
         players.map((player) => (
-          <PlayerRow key={player.playerId} player={player} />
+          <PlayerRow key={player.playerId} player={player} team={team} />
         ))
       )}
     </div>

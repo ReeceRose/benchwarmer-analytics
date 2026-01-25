@@ -9,8 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { HeaderWithTooltip } from "@/components/shared";
 import { formatPosition, formatHeight, formatWeight, formatToi, formatSavePct } from "@/lib/formatters";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { RosterPlayer } from "@/types/player";
 
 function formatGaa(value?: number): string {
@@ -67,9 +69,18 @@ export function GoalieRosterTable({ title, players, showStats = false }: GoalieR
                     <Link
                       to="/players/$id"
                       params={{ id: String(player.id) }}
-                      className="hover:underline font-medium"
+                      className="flex items-center gap-2 hover:underline"
                     >
-                      {player.name}
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage
+                          src={player.headshotUrl || getPlayerHeadshotUrl(player.id, player.currentTeamAbbreviation)}
+                          alt={player.name}
+                        />
+                        <AvatarFallback className="text-[10px]">
+                          {getPlayerInitials(player.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{player.name}</span>
                     </Link>
                   </TableCell>
                   <TableCell>

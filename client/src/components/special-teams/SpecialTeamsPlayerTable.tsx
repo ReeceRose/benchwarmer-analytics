@@ -10,9 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HeaderWithTooltip, LoadingState } from "@/components/shared";
 import { formatPosition, formatToi } from "@/lib/formatters";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import { useSpecialTeamsPlayers } from "@/hooks";
 import type { SpecialTeamsSituation, SpecialTeamsPlayer } from "@/types";
 
@@ -189,9 +191,18 @@ export function SpecialTeamsPlayerTable({
                     <Link
                       to="/players/$id"
                       params={{ id: String(player.playerId) }}
-                      className="hover:underline font-medium"
+                      className="flex items-center gap-2 hover:underline"
                     >
-                      {player.name}
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage
+                          src={getPlayerHeadshotUrl(player.playerId, abbrev)}
+                          alt={player.name}
+                        />
+                        <AvatarFallback className="text-[10px]">
+                          {getPlayerInitials(player.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{player.name}</span>
                     </Link>
                   </TableCell>
                   <TableCell>

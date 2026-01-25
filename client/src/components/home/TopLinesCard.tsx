@@ -2,7 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { Users, ChevronRight } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatToi, formatPercent } from "@/lib/formatters";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { TopLine } from "@/types";
 
 interface TopLinesCardProps {
@@ -53,12 +55,21 @@ export function TopLinesCard({ lines, season }: TopLinesCardProps) {
                     {line.team}
                   </Badge>
                 </div>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                   {line.players.map((player, i) => (
                     <span
                       key={player.playerId}
-                      className="text-sm"
+                      className="flex items-center gap-1 text-sm"
                     >
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage
+                          src={getPlayerHeadshotUrl(player.playerId, line.team)}
+                          alt={player.name}
+                        />
+                        <AvatarFallback className="text-[8px]">
+                          {getPlayerInitials(player.name)}
+                        </AvatarFallback>
+                      </Avatar>
                       {player.name}
                       {i < line.players.length - 1 && (
                         <span className="text-muted-foreground mx-1">-</span>

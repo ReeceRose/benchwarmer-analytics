@@ -1,7 +1,9 @@
 import { GitCompare, X, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlayerSearchDropdown } from "@/components/compare/PlayerSearchDropdown";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { Player, PlayerDetail } from "@/types";
 
 interface SelectedPlayersCardProps {
@@ -44,17 +46,26 @@ export function SelectedPlayersCard({
               <Badge
                 key={player.id}
                 variant="secondary"
-                className="py-1.5 px-3 text-sm"
+                className="py-1.5 px-3 text-sm flex items-center gap-2"
               >
+                <Avatar className="h-5 w-5">
+                  <AvatarImage
+                    src={getPlayerHeadshotUrl(player.id, player.currentTeamAbbreviation)}
+                    alt={player.name}
+                  />
+                  <AvatarFallback className="text-[8px]">
+                    {getPlayerInitials(player.name)}
+                  </AvatarFallback>
+                </Avatar>
                 {player.name}
                 {player.currentTeamAbbreviation && (
-                  <span className="text-muted-foreground ml-1">
+                  <span className="text-muted-foreground">
                     ({player.currentTeamAbbreviation})
                   </span>
                 )}
                 <button
                   onClick={() => onRemovePlayer(player.id)}
-                  className="ml-2 hover:text-destructive"
+                  className="ml-1 hover:text-destructive"
                   aria-label={`Remove ${player.name}`}
                 >
                   <X className="h-3 w-3" />

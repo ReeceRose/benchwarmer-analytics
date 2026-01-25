@@ -183,6 +183,7 @@ export function ShotExplorer({
                 <RinkVisualization
                   shots={filteredShots}
                   showLegend
+                  teamAbbreviation={teamAbbrev}
                 />
               ) : (
                 <ShotHeatMap

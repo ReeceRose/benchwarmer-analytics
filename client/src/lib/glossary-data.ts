@@ -494,7 +494,87 @@ export const metrics: MetricDefinition[] = [
       "Penalty kill success rate: how often the team prevents a power-play goal.",
     formula: "PK% = (1 - (PP Goals Against / Times Shorthanded)) × 100",
     interpretation:
-      "In some views we estimate times shorthanded from special-teams TOI (≈ TOI ÷ 120s). This is an approximation when penalty counts aren’t available.",
+      "In some views we estimate times shorthanded from special-teams TOI (≈ TOI ÷ 120s). This is an approximation when penalty counts aren't available.",
+  },
+  {
+    name: "Special Teams Percentage",
+    abbreviation: "ST%",
+    aliases: ["Special Teams%", "SpecialTeamsPct"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Combined power play and penalty kill percentage, used to rank overall special teams effectiveness.",
+    formula: "ST% = PP% + PK%",
+    interpretation:
+      "A quick gauge of overall special teams strength. Values around 100 are average (e.g., 20% PP + 80% PK). Higher is better.",
+  },
+  {
+    name: "Penalties Drawn",
+    abbreviation: "PD",
+    aliases: ["Drawn"],
+    category: "basic",
+    description:
+      "The number of penalties a player has drawn against opponents, creating power play opportunities for their team.",
+    interpretation:
+      "Players who draw penalties provide value beyond their scoring stats by generating extra offensive chances.",
+  },
+  {
+    name: "Penalties Drawn per 60",
+    abbreviation: "PD/60",
+    aliases: ["DrawnPer60"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Penalties drawn normalized to 60 minutes of 5v5 ice time.",
+    formula: "PD/60 = (Penalties Drawn ÷ TOI) × 60  (TOI in minutes)",
+    interpretation:
+      "Rate stat for drawing penalties. Higher values indicate players who consistently force opponents into infractions.",
+  },
+  {
+    name: "Penalties Taken",
+    abbreviation: "PT",
+    aliases: ["Taken", "PIM"],
+    category: "basic",
+    description:
+      "The number of penalties a player has committed, putting their team shorthanded.",
+    interpretation:
+      "Lower is better. Frequent penalties can hurt a team's chances, especially in close games.",
+  },
+  {
+    name: "Penalties Taken per 60",
+    abbreviation: "PT/60",
+    aliases: ["TakenPer60"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Penalties taken normalized to 60 minutes of 5v5 ice time.",
+    formula: "PT/60 = (Penalties Taken ÷ TOI) × 60  (TOI in minutes)",
+    interpretation:
+      "Rate stat for taking penalties. Lower values are preferable; high rates indicate discipline issues.",
+  },
+  {
+    name: "Net Penalties",
+    abbreviation: "Net",
+    aliases: ["NetPenalties", "Penalty Differential"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "The difference between penalties drawn and penalties taken.",
+    formula: "Net = Penalties Drawn - Penalties Taken",
+    interpretation:
+      "Positive values mean the player draws more penalties than they take, providing net PP opportunities. Negative means the opposite.",
+  },
+  {
+    name: "Net Penalties per 60",
+    abbreviation: "Net/60",
+    aliases: ["NetPer60", "NetPenaltiesPer60"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Net penalty differential normalized to 60 minutes of 5v5 ice time.",
+    formula: "Net/60 = ((Penalties Drawn - Penalties Taken) ÷ TOI) × 60",
+    interpretation:
+      "The best single metric for penalty impact. Positive values indicate net power play contributors; negative values indicate net penalty killers.",
   },
   {
     name: "Score-Adjusted",

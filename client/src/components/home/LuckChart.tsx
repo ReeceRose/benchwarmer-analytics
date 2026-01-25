@@ -16,8 +16,10 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sparkles } from "lucide-react";
-import { CHART_COLOURS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { OutlierEntry } from "@/types";
 
 interface LuckChartProps {
@@ -34,6 +36,34 @@ interface ChartDataPoint {
   differential: number;
 }
 
+// Colors for hot (above line) and cold (below line)
+const HOT_COLOR = "hsl(142, 76%, 36%)"; // green
+const COLD_COLOR = "hsl(0, 72%, 51%)"; // red
+
+function getPointColor(differential: number) {
+  return differential > 0 ? HOT_COLOR : COLD_COLOR;
+}
+
+function CustomDot(props: {
+  cx?: number;
+  cy?: number;
+  payload?: ChartDataPoint;
+}) {
+  const { cx, cy, payload } = props;
+  if (!cx || !cy || !payload) return null;
+
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={6}
+      fill={getPointColor(payload.differential)}
+      stroke="hsl(var(--background))"
+      strokeWidth={1.5}
+    />
+  );
+}
+
 function CustomTooltip({
   active,
   payload,
@@ -47,27 +77,36 @@ function CustomTooltip({
   const isHot = data.differential > 0;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
-      <p className="font-semibold">{data.name}</p>
-      {data.team && (
-        <p className="text-muted-foreground text-xs">{data.team}</p>
-      )}
-      <div className="mt-2 space-y-1">
-        <p>
-          <span className="text-muted-foreground">Goals:</span>{" "}
-          <span className="font-mono">{data.goals}</span>
-        </p>
-        <p>
-          <span className="text-muted-foreground">xG:</span>{" "}
-          <span className="font-mono">{data.xG.toFixed(1)}</span>
-        </p>
-        <p className={isHot ? "text-success" : "text-destructive"}>
-          <span className="text-muted-foreground">Diff:</span>{" "}
-          <span className="font-mono">
-            {isHot ? "+" : ""}
-            {data.differential.toFixed(1)}
-          </span>
-        </p>
+    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm min-w-40">
+      <div className="flex items-center gap-2 mb-2">
+        <Avatar className="h-6 w-6">
+          <AvatarImage
+            src={getPlayerHeadshotUrl(data.playerId, data.team)}
+            alt={data.name}
+            loading="lazy"
+          />
+          <AvatarFallback className="text-xs">
+            {getPlayerInitials(data.name)}
+          </AvatarFallback>
+        </Avatar>
+        <span className="font-semibold">{data.name}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+        <span className="text-muted-foreground">Goals:</span>
+        <span className="font-mono">{data.goals}</span>
+        <span className="text-muted-foreground">xG:</span>
+        <span className="font-mono">{data.xG.toFixed(1)}</span>
+        <span className="text-muted-foreground">Diff:</span>
+        <span
+          className={`font-mono font-semibold ${
+            isHot
+              ? "text-green-600 dark:text-green-400"
+              : "text-red-600 dark:text-red-400"
+          }`}
+        >
+          {isHot ? "+" : ""}
+          {data.differential.toFixed(1)}
+        </span>
       </div>
     </div>
   );
@@ -187,16 +226,32 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
             />
             <Scatter
               data={chartData}
-              fill={CHART_COLOURS[0]}
-              fillOpacity={0.8}
+              shape={<CustomDot />}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
+              fillOpacity={0.85}
             />
           </ScatterChart>
         </ResponsiveContainer>
-        <div className="flex justify-center gap-6 mt-2 text-xs text-muted-foreground">
-          <span>Above line = Running hot</span>
-          <span>Below line = Running cold</span>
+        <div className="flex justify-center gap-8 mt-4 text-xs">
+          <div className="flex items-center gap-2">
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: HOT_COLOR }}
+            />
+            <span className="text-muted-foreground">
+              Above line = Running hot
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: COLD_COLOR }}
+            />
+            <span className="text-muted-foreground">
+              Below line = Running cold
+            </span>
+          </div>
         </div>
       </CardContent>
     </Card>

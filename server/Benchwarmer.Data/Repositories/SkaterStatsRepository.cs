@@ -53,6 +53,19 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<SkaterSeason>> GetBySeasonSituationAsync(
+        int season,
+        string situation,
+        bool isPlayoffs = false,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.SkaterSeasons
+            .Include(s => s.Player)
+            .Where(s => s.Season == season && s.Situation == situation && s.IsPlayoffs == isPlayoffs)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<SkaterSeason>> GetBreakoutCandidatesAsync(
         int season,
         int minGames = 20,

@@ -13,8 +13,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatPosition } from "@/lib/formatters";
 import { getMetricTooltipContent } from "@/lib/metric-tooltips";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import {
   SKATER_STAT_CONFIGS,
   GOALIE_STAT_CONFIGS,
@@ -53,6 +55,15 @@ export function ComparisonTable({ players, positionType, statMode = "all" }: Com
                   className="text-center font-semibold min-w-40 px-6 py-4"
                 >
                   <div className="flex flex-col items-center gap-1">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage
+                        src={getPlayerHeadshotUrl(player.playerId, player.team)}
+                        alt={player.name}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {getPlayerInitials(player.name)}
+                      </AvatarFallback>
+                    </Avatar>
                     <span>{player.name}</span>
                     {player.position && (
                       <Badge variant="outline" className="text-xs font-normal">

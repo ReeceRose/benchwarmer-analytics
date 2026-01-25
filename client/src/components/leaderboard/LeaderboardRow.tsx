@@ -1,12 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   formatPosition,
   formatToi,
   formatPercent,
   formatSavePct,
 } from "@/lib/formatters";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { LeaderboardEntry } from "@/types";
 
 interface LeaderboardRowProps {
@@ -36,9 +38,18 @@ export function LeaderboardRow({
         <Link
           to="/players/$id"
           params={{ id: String(entry.playerId) }}
-          className="hover:underline font-medium"
+          className="flex items-center gap-2 hover:underline"
         >
-          {entry.name}
+          <Avatar className="h-6 w-6">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(entry.playerId, entry.team)}
+              alt={entry.name}
+            />
+            <AvatarFallback className="text-[10px]">
+              {getPlayerInitials(entry.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="font-medium">{entry.name}</span>
         </Link>
       </TableCell>
       <TableCell>

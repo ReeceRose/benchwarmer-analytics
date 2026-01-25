@@ -163,7 +163,7 @@ function PlayerDetailPage() {
       )}
 
       {!isGoalie && availableSeasons.length > 0 && (
-        <PlayerShotMap playerId={playerId} availableSeasons={availableSeasons} />
+        <PlayerShotMap playerId={playerId} availableSeasons={availableSeasons} playerTeamAbbreviation={player?.currentTeamAbbreviation} />
       )}
     </div>
   );

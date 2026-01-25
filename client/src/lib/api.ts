@@ -37,6 +37,11 @@ import type {
   SpecialTeamsOverview,
   SpecialTeamsPlayersResponse,
   SpecialTeamsSituation,
+  TeamSpecialTeamsRankingsResponse,
+  SpecialTeamsPlayerLeadersResponse,
+  PlayerPenaltyStatsResponse,
+  PlayerLeaderSortField,
+  PenaltySortField,
   LeaderboardCategory,
   LeaderboardResponse,
 } from "@/types";
@@ -432,6 +437,82 @@ export async function getSpecialTeamsPlayers(
   const { data } = await api.get<SpecialTeamsPlayersResponse>(
     `/teams/${abbrev}/special-teams/players`,
     { params }
+  );
+  return data;
+}
+
+// League-wide Special Teams Stats
+
+export async function getSpecialTeamsTeamRankings(
+  season?: number,
+  playoffs?: boolean
+): Promise<TeamSpecialTeamsRankingsResponse> {
+  const params: Record<string, unknown> = {};
+  if (season !== undefined) params.season = season;
+  if (playoffs !== undefined) params.playoffs = playoffs;
+
+  const { data } = await api.get<TeamSpecialTeamsRankingsResponse>(
+    "/special-teams/team-rankings",
+    { params: Object.keys(params).length > 0 ? params : undefined }
+  );
+  return data;
+}
+
+export async function getSpecialTeamsPlayerLeaders(
+  situation: SpecialTeamsSituation,
+  season?: number,
+  playoffs?: boolean,
+  options?: {
+    minToi?: number;
+    position?: "F" | "D";
+    team?: string;
+    limit?: number;
+    sortBy?: PlayerLeaderSortField;
+    sortDir?: "asc" | "desc";
+  }
+): Promise<SpecialTeamsPlayerLeadersResponse> {
+  const params: Record<string, unknown> = { situation };
+  if (season !== undefined) params.season = season;
+  if (playoffs !== undefined) params.playoffs = playoffs;
+  if (options?.minToi !== undefined) params.minToi = options.minToi;
+  if (options?.position !== undefined) params.position = options.position;
+  if (options?.team !== undefined) params.team = options.team;
+  if (options?.limit !== undefined) params.limit = options.limit;
+  if (options?.sortBy !== undefined) params.sortBy = options.sortBy;
+  if (options?.sortDir !== undefined) params.sortDir = options.sortDir;
+
+  const { data } = await api.get<SpecialTeamsPlayerLeadersResponse>(
+    "/special-teams/player-leaders",
+    { params }
+  );
+  return data;
+}
+
+export async function getPlayerPenaltyStats(
+  season?: number,
+  playoffs?: boolean,
+  options?: {
+    minToi?: number;
+    position?: "F" | "D";
+    team?: string;
+    limit?: number;
+    sortBy?: PenaltySortField;
+    sortDir?: "asc" | "desc";
+  }
+): Promise<PlayerPenaltyStatsResponse> {
+  const params: Record<string, unknown> = {};
+  if (season !== undefined) params.season = season;
+  if (playoffs !== undefined) params.playoffs = playoffs;
+  if (options?.minToi !== undefined) params.minToi = options.minToi;
+  if (options?.position !== undefined) params.position = options.position;
+  if (options?.team !== undefined) params.team = options.team;
+  if (options?.limit !== undefined) params.limit = options.limit;
+  if (options?.sortBy !== undefined) params.sortBy = options.sortBy;
+  if (options?.sortDir !== undefined) params.sortDir = options.sortDir;
+
+  const { data } = await api.get<PlayerPenaltyStatsResponse>(
+    "/special-teams/penalty-stats",
+    { params: Object.keys(params).length > 0 ? params : undefined }
   );
   return data;
 }

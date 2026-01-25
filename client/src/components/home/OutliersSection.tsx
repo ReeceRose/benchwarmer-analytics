@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Flame, Snowflake, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { OutlierEntry, GoalieOutlierEntry } from "@/types";
 
 interface OutlierListProps {
@@ -34,11 +36,22 @@ function OutlierList({ title, description, icon, players, variant }: OutlierList
               params={{ id: player.playerId.toString() }}
               className="flex items-center justify-between py-2 px-2 -mx-2 hover:bg-muted/50 rounded transition-colors"
             >
-              <div className="flex flex-col">
-                <span className="font-medium text-sm">{player.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {player.team} {player.position && `- ${player.position}`}
-                </span>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={player.headshotUrl || getPlayerHeadshotUrl(player.playerId, player.team)}
+                    alt={player.name}
+                  />
+                  <AvatarFallback className="text-xs">
+                    {getPlayerInitials(player.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm">{player.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {player.team} {player.position && `- ${player.position}`}
+                  </span>
+                </div>
               </div>
               <div className="flex items-center gap-3 text-right">
                 <div className="flex flex-col items-end">
@@ -102,11 +115,22 @@ function GoalieOutlierList({ title, description, icon, goalies, variant }: Goali
               params={{ id: goalie.playerId.toString() }}
               className="flex items-center justify-between py-2 px-2 -mx-2 hover:bg-muted/50 rounded transition-colors"
             >
-              <div className="flex flex-col">
-                <span className="font-medium text-sm">{goalie.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {goalie.team} - G
-                </span>
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={goalie.headshotUrl || getPlayerHeadshotUrl(goalie.playerId, goalie.team)}
+                    alt={goalie.name}
+                  />
+                  <AvatarFallback className="text-xs">
+                    {getPlayerInitials(goalie.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm">{goalie.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {goalie.team} - G
+                  </span>
+                </div>
               </div>
               <div className="flex items-center gap-3 text-right">
                 <div className="flex flex-col items-end">

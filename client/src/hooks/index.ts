@@ -23,6 +23,12 @@ export {
   useOfficialStandings,
   useStandingsAnalytics,
 } from "@/hooks/useStandings";
-export { useTeamSpecialTeams, useSpecialTeamsPlayers } from "@/hooks/useSpecialTeams";
+export {
+  useTeamSpecialTeams,
+  useSpecialTeamsPlayers,
+  useSpecialTeamsTeamRankings,
+  useSpecialTeamsPlayerLeaders,
+  usePlayerPenaltyStats,
+} from "@/hooks/useSpecialTeams";
 export { useLeaderboard } from "@/hooks/useLeaderboard";
 export { useSortableTable } from "@/hooks/useSortableTable";

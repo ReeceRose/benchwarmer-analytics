@@ -11,8 +11,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { HeaderWithTooltip } from "@/components/shared";
 import { formatSavePct } from "@/lib/formatters";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type {
   GameBoxscoreResponse,
   BoxscoreSkater,
@@ -29,10 +31,12 @@ interface GameBoxscoreTableProps {
 function SkaterRow({
   skater,
   season,
+  teamCode,
   hasGwg,
 }: {
   skater: BoxscoreSkater;
   season: number;
+  teamCode: string;
   hasGwg?: boolean;
 }) {
   const navigate = useNavigate();
@@ -51,18 +55,29 @@ function SkaterRow({
       onClick={handleClick}
     >
       <TableCell className="font-medium">
-        <span className="text-muted-foreground text-xs mr-2">
-          #{skater.jerseyNumber}
-        </span>
-        {skater.name}
-        <span className="ml-2 text-xs text-muted-foreground">
-          ({skater.position})
-        </span>
-        {hasGwg && (
-          <Badge className="ml-2 text-xs px-1.5 py-0.5 bg-highlight/20 text-highlight border-highlight/30">
-            GWG
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          <Avatar className="h-6 w-6">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(skater.playerId, teamCode)}
+              alt={skater.name}
+            />
+            <AvatarFallback className="text-[10px]">
+              {getPlayerInitials(skater.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-muted-foreground text-xs">
+            #{skater.jerseyNumber}
+          </span>
+          <span>{skater.name}</span>
+          <span className="text-xs text-muted-foreground">
+            ({skater.position})
+          </span>
+          {hasGwg && (
+            <Badge className="text-xs px-1.5 py-0.5 bg-highlight/20 text-highlight border-highlight/30">
+              GWG
+            </Badge>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-center font-mono font-bold">
         {skater.goals}
@@ -93,9 +108,11 @@ function SkaterRow({
 function GoalieRow({
   goalie,
   season,
+  teamCode,
 }: {
   goalie: BoxscoreGoalie;
   season: number;
+  teamCode: string;
 }) {
   const navigate = useNavigate();
 
@@ -113,13 +130,24 @@ function GoalieRow({
       onClick={handleClick}
     >
       <TableCell className="font-medium">
-        <span className="text-muted-foreground text-xs mr-2">
-          #{goalie.jerseyNumber}
-        </span>
-        {goalie.name}
-        {goalie.starter && (
-          <span className="ml-2 text-xs text-primary">(Starter)</span>
-        )}
+        <div className="flex items-center gap-2">
+          <Avatar className="h-6 w-6">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(goalie.playerId, teamCode)}
+              alt={goalie.name}
+            />
+            <AvatarFallback className="text-[10px]">
+              {getPlayerInitials(goalie.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-muted-foreground text-xs">
+            #{goalie.jerseyNumber}
+          </span>
+          <span>{goalie.name}</span>
+          {goalie.starter && (
+            <span className="text-xs text-primary">(Starter)</span>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-center font-mono">{goalie.saves}</TableCell>
       <TableCell className="text-center font-mono">
@@ -196,6 +224,7 @@ function TeamSkatersTable({
               key={skater.playerId}
               skater={skater}
               season={season}
+              teamCode={teamCode}
               hasGwg={skater.playerId === gwgScorerId}
             />
           ))}
@@ -225,6 +254,7 @@ function TeamSkatersTable({
                   key={goalie.playerId}
                   goalie={goalie}
                   season={season}
+                  teamCode={teamCode}
                 />
               ))}
             </TableBody>

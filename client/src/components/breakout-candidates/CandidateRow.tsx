@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatPosition } from "@/lib/formatters";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { BreakoutCandidate } from "@/types";
 
 interface CandidateRowProps {
@@ -38,9 +40,18 @@ export function CandidateRow({ candidate, rank }: CandidateRowProps) {
         <Link
           to="/players/$id"
           params={{ id: String(candidate.playerId) }}
-          className="hover:underline font-medium"
+          className="flex items-center gap-2 hover:underline"
         >
-          {candidate.name}
+          <Avatar className="h-6 w-6">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(candidate.playerId, candidate.team)}
+              alt={candidate.name}
+            />
+            <AvatarFallback className="text-[10px]">
+              {getPlayerInitials(candidate.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span className="font-medium">{candidate.name}</span>
         </Link>
       </TableCell>
       <TableCell>
