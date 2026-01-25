@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
   // Materialized views (read-only)
   public DbSet<ChemistryPairView> ChemistryPairs => Set<ChemistryPairView>();
+  public DbSet<SeasonPercentileView> SeasonPercentiles => Set<SeasonPercentileView>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -147,6 +148,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       e.Property(c => c.XGoalsAgainst).HasColumnName("x_goals_against");
       e.Property(c => c.CorsiFor).HasColumnName("corsi_for");
       e.Property(c => c.CorsiAgainst).HasColumnName("corsi_against");
+    });
+
+    // SeasonPercentileView (materialized view - read only)
+    modelBuilder.Entity<SeasonPercentileView>(e =>
+    {
+      e.HasNoKey();
+      e.ToView("season_percentiles");
+      e.Property(s => s.Season).HasColumnName("season");
+      e.Property(s => s.PlayerCount).HasColumnName("player_count");
+      e.Property(s => s.Percentile).HasColumnName("percentile");
+      e.Property(s => s.PointsPerGame).HasColumnName("points_per_game");
+      e.Property(s => s.GoalsPerGame).HasColumnName("goals_per_game");
+      e.Property(s => s.PointsPer60).HasColumnName("points_per_60");
+      e.Property(s => s.GoalsPer60).HasColumnName("goals_per_60");
     });
 
   }

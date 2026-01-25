@@ -81,54 +81,77 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
         CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-        var data = await db.SkaterSeasons
-            .Include(s => s.Player)
-            .Where(s => s.Situation == "all" &&
-                       !s.IsPlayoffs &&
-                       s.GamesPlayed >= minGames &&
-                       s.IceTimeSeconds > 3600 &&
-                       s.Player != null &&
-                       s.Player.BirthDate.HasValue)
-            .Select(s => new
-            {
-                Age = s.Season - s.Player!.BirthDate!.Value.Year,
-                Minutes = s.IceTimeSeconds / 60.0m,
-                Points = s.Goals + s.Assists,
-                s.Goals,
-                ExpectedGoals = s.ExpectedGoals ?? 0
-            })
+
+        // Use raw SQL to do aggregation in the database instead of loading all rows into memory
+        // Column aliases must match C# property names exactly (PascalCase)
+        var sql = useMedian
+            ? """
+              SELECT
+                  age as "Age",
+                  ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY points_per_60)::numeric, 2) as "PointsPer60",
+                  ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY goals_per_60)::numeric, 2) as "GoalsPer60",
+                  ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY xg_per_60)::numeric, 2) as "XgPer60",
+                  COUNT(*)::int as "PlayerCount"
+              FROM (
+                  SELECT
+                      s.season - EXTRACT(YEAR FROM p.birth_date)::int as age,
+                      (s.goals + s.assists) / (s.ice_time_seconds / 3600.0) as points_per_60,
+                      s.goals / (s.ice_time_seconds / 3600.0) as goals_per_60,
+                      COALESCE(s.expected_goals, 0) / (s.ice_time_seconds / 3600.0) as xg_per_60
+                  FROM skater_seasons s
+                  JOIN players p ON s.player_id = p.id
+                  WHERE s.situation = 'all'
+                    AND s.is_playoffs = false
+                    AND s.games_played >= {0}
+                    AND s.ice_time_seconds > 3600
+                    AND p.birth_date IS NOT NULL
+              ) sub
+              WHERE age BETWEEN 18 AND 45
+              GROUP BY age
+              ORDER BY age
+              """
+            : """
+              SELECT
+                  age as "Age",
+                  ROUND(AVG(points_per_60)::numeric, 2) as "PointsPer60",
+                  ROUND(AVG(goals_per_60)::numeric, 2) as "GoalsPer60",
+                  ROUND(AVG(xg_per_60)::numeric, 2) as "XgPer60",
+                  COUNT(*)::int as "PlayerCount"
+              FROM (
+                  SELECT
+                      s.season - EXTRACT(YEAR FROM p.birth_date)::int as age,
+                      (s.goals + s.assists) / (s.ice_time_seconds / 3600.0) as points_per_60,
+                      s.goals / (s.ice_time_seconds / 3600.0) as goals_per_60,
+                      COALESCE(s.expected_goals, 0) / (s.ice_time_seconds / 3600.0) as xg_per_60
+                  FROM skater_seasons s
+                  JOIN players p ON s.player_id = p.id
+                  WHERE s.situation = 'all'
+                    AND s.is_playoffs = false
+                    AND s.games_played >= {0}
+                    AND s.ice_time_seconds > 3600
+                    AND p.birth_date IS NOT NULL
+              ) sub
+              WHERE age BETWEEN 18 AND 45
+              GROUP BY age
+              ORDER BY age
+              """;
+
+        var results = await db.Database
+            .SqlQueryRaw<AgeCurveRow>(sql, minGames)
             .ToListAsync(cancellationToken);
 
-        var grouped = data
-            .Where(d => d.Age >= 18 && d.Age <= 45 && d.Minutes > 0)
-            .GroupBy(d => d.Age)
-            .Select(g =>
-            {
-                var pointsPer60Values = g.Select(d => d.Points / d.Minutes * 60).OrderBy(v => v).ToList();
-                var goalsPer60Values = g.Select(d => (decimal)d.Goals / d.Minutes * 60).OrderBy(v => v).ToList();
-                var xgPer60Values = g.Select(d => d.ExpectedGoals / d.Minutes * 60).OrderBy(v => v).ToList();
-
-                return (
-                    Age: g.Key,
-                    PointsPer60: Math.Round(useMedian ? Median(pointsPer60Values) : pointsPer60Values.Average(), 2),
-                    GoalsPer60: Math.Round(useMedian ? Median(goalsPer60Values) : goalsPer60Values.Average(), 2),
-                    XgPer60: Math.Round(useMedian ? Median(xgPer60Values) : xgPer60Values.Average(), 2),
-                    PlayerCount: g.Count()
-                );
-            })
-            .OrderBy(x => x.Age)
+        return results
+            .Select(r => (r.Age, r.PointsPer60, r.GoalsPer60, r.XgPer60, r.PlayerCount))
             .ToList();
-
-        return grouped;
     }
 
-    private static decimal Median(List<decimal> sortedValues)
+    private sealed class AgeCurveRow
     {
-        if (sortedValues.Count == 0) return 0;
-        var mid = sortedValues.Count / 2;
-        return sortedValues.Count % 2 == 0
-            ? (sortedValues[mid - 1] + sortedValues[mid]) / 2
-            : sortedValues[mid];
+        public int Age { get; init; }
+        public decimal PointsPer60 { get; init; }
+        public decimal GoalsPer60 { get; init; }
+        public decimal XgPer60 { get; init; }
+        public int PlayerCount { get; init; }
     }
 
     public async Task<IReadOnlyList<(int Age, int Season, decimal PointsPer60, decimal GoalsPer60, decimal XgPer60, int GamesPlayed)>> GetPlayerAgeCurveAsync(
@@ -215,6 +238,46 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
         int minGames = 20,
         CancellationToken cancellationToken = default)
     {
+        // Use materialized view for the default minGames=20 (fast path)
+        if (minGames == 20)
+        {
+            return await GetSeasonPercentilesFromViewAsync(season, cancellationToken);
+        }
+
+        // Fall back to runtime calculation for non-default minGames
+        return await CalculateSeasonPercentilesAsync(season, minGames, cancellationToken);
+    }
+
+    private async Task<SeasonPercentiles> GetSeasonPercentilesFromViewAsync(
+        int season,
+        CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+
+        var rows = await db.SeasonPercentiles
+            .Where(p => p.Season == season)
+            .OrderBy(p => p.Percentile)
+            .ToListAsync(cancellationToken);
+
+        if (rows.Count == 0)
+        {
+            return new SeasonPercentiles(season, 20, 0, [], [], [], []);
+        }
+
+        var playerCount = rows[0].PlayerCount;
+        var ppg = rows.Select(r => r.PointsPerGame).ToArray();
+        var gpg = rows.Select(r => r.GoalsPerGame).ToArray();
+        var pp60 = rows.Select(r => r.PointsPer60).ToArray();
+        var gp60 = rows.Select(r => r.GoalsPer60).ToArray();
+
+        return new SeasonPercentiles(season, 20, playerCount, ppg, gpg, pp60, gp60);
+    }
+
+    private async Task<SeasonPercentiles> CalculateSeasonPercentilesAsync(
+        int season,
+        int minGames,
+        CancellationToken cancellationToken)
+    {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         var data = await db.SkaterSeasons
             .Where(s => s.Season == season &&
@@ -293,6 +356,14 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
         }
 
         return thresholds;
+    }
+
+    public async Task RefreshSeasonPercentilesAsync(CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.Database.ExecuteSqlRawAsync(
+            "REFRESH MATERIALIZED VIEW CONCURRENTLY season_percentiles",
+            cancellationToken);
     }
 
     public async Task UpsertBatchAsync(IEnumerable<SkaterSeason> stats, CancellationToken cancellationToken = default)

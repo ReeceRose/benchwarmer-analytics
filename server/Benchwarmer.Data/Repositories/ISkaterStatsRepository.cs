@@ -53,6 +53,12 @@ public interface ISkaterStatsRepository
         int season,
         int limit = 5,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Refreshes the season_percentiles materialized view.
+    /// Should be called after skater data is updated (e.g., during nightly sync).
+    /// </summary>
+    Task RefreshSeasonPercentilesAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

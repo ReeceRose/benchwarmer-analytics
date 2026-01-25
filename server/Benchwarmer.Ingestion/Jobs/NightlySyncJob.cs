@@ -19,6 +19,7 @@ public class NightlySyncJob(
     ShotImporter shotImporter,
     ILineRepository lineRepository,
     IGameRepository gameRepository,
+    ISkaterStatsRepository skaterStatsRepository,
     ILogger<NightlySyncJob> logger)
 {
     private readonly MoneyPuckDownloader _downloader = downloader;
@@ -30,6 +31,7 @@ public class NightlySyncJob(
     private readonly ShotImporter _shotImporter = shotImporter;
     private readonly ILineRepository _lineRepository = lineRepository;
     private readonly IGameRepository _gameRepository = gameRepository;
+    private readonly ISkaterStatsRepository _skaterStatsRepository = skaterStatsRepository;
     private readonly ILogger<NightlySyncJob> _logger = logger;
 
     // Datasets that have separate regular/playoff data
@@ -65,6 +67,7 @@ public class NightlySyncJob(
         // Refresh materialized views after import
         _logger.LogInformation("Refreshing materialized views...");
         await _lineRepository.RefreshChemistryPairsAsync(cancellationToken);
+        await _skaterStatsRepository.RefreshSeasonPercentilesAsync(cancellationToken);
 
         var duration = DateTime.UtcNow - startTime;
         _logger.LogInformation(

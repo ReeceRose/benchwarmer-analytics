@@ -19,6 +19,7 @@ public class InitialSeedJob(
     TeamImporter teamImporter,
     ShotImporter shotImporter,
     ILineRepository lineRepository,
+    ISkaterStatsRepository skaterStatsRepository,
     ILogger<InitialSeedJob> logger)
 {
     private readonly MoneyPuckDownloader _downloader = downloader;
@@ -29,6 +30,7 @@ public class InitialSeedJob(
     private readonly TeamImporter _teamImporter = teamImporter;
     private readonly ShotImporter _shotImporter = shotImporter;
     private readonly ILineRepository _lineRepository = lineRepository;
+    private readonly ISkaterStatsRepository _skaterStatsRepository = skaterStatsRepository;
     private readonly ILogger<InitialSeedJob> _logger = logger;
 
     // MoneyPuck data starts from 2008
@@ -85,6 +87,7 @@ public class InitialSeedJob(
         // Refresh materialized views after import
         _logger.LogInformation("Refreshing materialized views...");
         await _lineRepository.RefreshChemistryPairsAsync(cancellationToken);
+        await _skaterStatsRepository.RefreshSeasonPercentilesAsync(cancellationToken);
 
         var duration = DateTime.UtcNow - startTime;
         _logger.LogInformation(
