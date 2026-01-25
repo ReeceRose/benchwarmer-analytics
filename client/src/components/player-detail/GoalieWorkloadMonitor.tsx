@@ -56,7 +56,7 @@ export function GoalieWorkloadMonitor({
 }: GoalieWorkloadMonitorProps) {
   const [gameLimit, setGameLimit] = useState("10");
 
-  const { data, isLoading } = useGoalieWorkload(
+  const { data, isLoading, isFetching } = useGoalieWorkload(
     playerId,
     season,
     parseInt(gameLimit)
@@ -112,18 +112,6 @@ export function GoalieWorkloadMonitor({
             {trend.label}
           </Badge>
         </div>
-        <Select value={gameLimit} onValueChange={setGameLimit}>
-          <SelectTrigger className="w-40 h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {GAME_LIMITS.map((w) => (
-              <SelectItem key={w.value} value={w.value}>
-                {w.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -131,6 +119,32 @@ export function GoalieWorkloadMonitor({
           <WorkloadWindowCard window={data.last7Days} />
           <WorkloadWindowCard window={data.last14Days} />
           <WorkloadWindowCard window={data.last30Days} />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-medium">Performance Trends</h4>
+            {isFetching && (
+              <span className="text-xs text-muted-foreground">(loading...)</span>
+            )}
+            {!isFetching && data.gamesIncluded < parseInt(gameLimit) && (
+              <span className="text-xs text-muted-foreground">
+                ({data.gamesIncluded} games available)
+              </span>
+            )}
+          </div>
+          <Select value={gameLimit} onValueChange={setGameLimit}>
+            <SelectTrigger className="w-40 h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {GAME_LIMITS.map((w) => (
+                <SelectItem key={w.value} value={w.value}>
+                  {w.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <ShotsAgainstChart data={chartData} />
