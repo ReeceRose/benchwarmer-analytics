@@ -8,6 +8,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<Team> Teams => Set<Team>();
   public DbSet<Player> Players => Set<Player>();
   public DbSet<SkaterSeason> SkaterSeasons => Set<SkaterSeason>();
+  public DbSet<SkaterSeasonAdvanced> SkaterSeasonAdvanced => Set<SkaterSeasonAdvanced>();
   public DbSet<GoalieSeason> GoalieSeasons => Set<GoalieSeason>();
   public DbSet<TeamSeason> TeamSeasons => Set<TeamSeason>();
   public DbSet<LineCombination> LineCombinations => Set<LineCombination>();
@@ -44,6 +45,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     // SkaterSeason
     modelBuilder.Entity<SkaterSeason>(e =>
+    {
+      e.HasOne(s => s.Player)
+              .WithMany()
+              .HasForeignKey(s => s.PlayerId);
+
+      e.HasIndex(s => new { s.PlayerId, s.Season, s.Team, s.Situation, s.IsPlayoffs }).IsUnique();
+      e.HasIndex(s => new { s.Season, s.Team });
+    });
+
+    // SkaterSeasonAdvanced
+    modelBuilder.Entity<SkaterSeasonAdvanced>(e =>
     {
       e.HasOne(s => s.Player)
               .WithMany()

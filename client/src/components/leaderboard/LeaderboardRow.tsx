@@ -87,22 +87,22 @@ export function LeaderboardRow({
           </TableCell>
           <TableCell className={cellClass("corsiPct")}>
             {entry.corsiForPct != null
-              ? formatPercent(entry.corsiForPct, false)
+              ? formatPercent(entry.corsiForPct)
               : "-"}
           </TableCell>
           <TableCell className={cellClass("fenwickPct")}>
             {entry.fenwickForPct != null
-              ? formatPercent(entry.fenwickForPct, false)
+              ? formatPercent(entry.fenwickForPct)
               : "-"}
           </TableCell>
           <TableCell className={cellClass("oiShPct")}>
             {entry.onIceShootingPct != null
-              ? formatPercent(entry.onIceShootingPct, false)
+              ? formatPercent(entry.onIceShootingPct)
               : "-"}
           </TableCell>
           <TableCell className={cellClass("oiSvPct")}>
             {entry.onIceSavePct != null
-              ? formatPercent(entry.onIceSavePct, false)
+              ? formatPercent(entry.onIceSavePct)
               : "-"}
           </TableCell>
           <TableCell className={cellClass("iceTime")}>
