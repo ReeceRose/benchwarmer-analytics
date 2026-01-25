@@ -179,6 +179,7 @@ function BreakoutCandidatesPage() {
                     <SortableTableHeader
                       label="G Diff"
                       tooltip="Goals below expected (xG - G). Positive = unlucky"
+                      metric="xG-G"
                       sortKey="goalsDifferential"
                       currentSort={sortKey}
                       sortDesc={sortDesc}
@@ -187,6 +188,7 @@ function BreakoutCandidatesPage() {
                     <SortableTableHeader
                       label="CF%"
                       tooltip="Corsi For % (shot attempt share)"
+                      metric="CF%"
                       sortKey="corsiForPct"
                       currentSort={sortKey}
                       sortDesc={sortDesc}
@@ -195,6 +197,7 @@ function BreakoutCandidatesPage() {
                     <SortableTableHeader
                       label="Sh/60"
                       tooltip="Shots per 60 minutes"
+                      metric="Sh/60"
                       sortKey="shotsPer60"
                       currentSort={sortKey}
                       sortDesc={sortDesc}
@@ -203,6 +206,7 @@ function BreakoutCandidatesPage() {
                     <SortableTableHeader
                       label="Score"
                       tooltip="Combined breakout score (higher = more likely to break out)"
+                      metric="Breakout Score"
                       sortKey="breakoutScore"
                       currentSort={sortKey}
                       sortDesc={sortDesc}

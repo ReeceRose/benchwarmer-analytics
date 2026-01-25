@@ -276,6 +276,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="Pts%"
                         tooltip="Points percentage (points earned / possible points)"
+                        metric="Pts%"
                         sortKey="pointsPct"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -306,6 +307,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="Diff"
                         tooltip="Goal differential (GF - GA)"
+                        metric="Diff"
                         sortKey="goalDiff"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -346,6 +348,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="xGA"
                         tooltip="Expected goals against"
+                        metric="xGA"
                         sortKey="xGoalsAgainst"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -356,6 +359,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="xG±"
                         tooltip="Expected goal differential (xGF - xGA)"
+                        metric="xG±"
                         sortKey="xGoalDiff"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -366,6 +370,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="xPts"
                         tooltip="Expected points based on analytics"
+                        metric="xPts"
                         sortKey="expectedPoints"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -376,6 +381,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="PP%"
                         tooltip="Power play percentage"
+                        metric="PP%"
                         sortKey="ppPct"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -386,6 +392,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="PK%"
                         tooltip="Penalty kill percentage"
+                        metric="PK%"
                         sortKey="pkPct"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -396,6 +403,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="xG%"
                         tooltip="Expected goals percentage (share of expected goals)"
+                        metric="xG%"
                         sortKey="xGoalsPct"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -406,6 +414,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="CF%"
                         tooltip="Corsi percentage (shot attempt share)"
+                        metric="CF%"
                         sortKey="corsiPct"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -416,6 +425,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="FF%"
                         tooltip="Fenwick percentage (unblocked shot attempt share)"
+                        metric="FF%"
                         sortKey="fenwickPct"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -426,6 +436,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="Sh%"
                         tooltip="Team shooting percentage"
+                        metric="Sh%"
                         sortKey="shootingPct"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -436,6 +447,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="Sv%"
                         tooltip="Team save percentage"
+                        metric="Sv%"
                         sortKey="savePct"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -446,6 +458,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="PDO"
                         tooltip="Shooting% + Save% (values near 100 are sustainable)"
+                        metric="PDO"
                         sortKey="pdo"
                         currentSort={sortKey}
                         sortDesc={sortDesc}
@@ -456,6 +469,7 @@ function PowerRankingsPage() {
                       <SortableTableHeader
                         label="Pts±"
                         tooltip="Points above/below expected (positive = overperforming)"
+                        metric="Pts±"
                         sortKey="pointsDiff"
                         currentSort={sortKey}
                         sortDesc={sortDesc}

@@ -251,6 +251,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="P"
                           tooltip="Total points (goals + assists)"
+                          metric="P"
                           sortKey="points"
                           currentSort={sortKey}
                           sortDesc={sortDesc}
@@ -301,6 +302,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="xG/60"
                           tooltip="Expected goals per 60 minutes"
+                          metric="xG/60"
                           sortKey="xgPer60"
                           currentSort={sortKey}
                           sortDesc={sortDesc}
@@ -311,6 +313,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="CF%"
                           tooltip="Corsi for % - shot attempt share when on ice"
+                          metric="CF%"
                           sortKey="corsiPct"
                           currentSort={sortKey}
                           sortDesc={sortDesc}
@@ -321,6 +324,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="FF%"
                           tooltip="Fenwick for % - unblocked shot attempt share"
+                          metric="FF%"
                           sortKey="fenwickPct"
                           currentSort={sortKey}
                           sortDesc={sortDesc}
@@ -331,6 +335,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="oiSh%"
                           tooltip="On-ice shooting % - team shooting % when on ice"
+                          metric="oiSH%"
                           sortKey="oiShPct"
                           currentSort={sortKey}
                           sortDesc={sortDesc}
@@ -341,6 +346,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="oiSv%"
                           tooltip="On-ice save % - team save % when on ice"
+                          metric="oiSV%"
                           sortKey="oiSvPct"
                           currentSort={sortKey}
                           sortDesc={sortDesc}
@@ -364,6 +370,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="Sv%"
                           tooltip="Save percentage"
+                          metric="SV%"
                           sortKey="savePct"
                           currentSort={sortKey}
                           sortDesc={sortDesc}
@@ -374,6 +381,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="GAA"
                           tooltip="Goals against average (lower is better)"
+                          metric="GAA"
                           sortKey="gaa"
                           currentSort={sortKey}
                           sortDesc={sortDesc}
@@ -385,6 +393,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="GSAx"
                           tooltip="Goals saved above expected"
+                          metric="GSAx"
                           sortKey="gsax"
                           currentSort={sortKey}
                           sortDesc={sortDesc}
@@ -426,6 +435,7 @@ function LeaderboardsPage() {
                         <SortableTableHeader
                           label="xGA"
                           tooltip="Expected goals against (lower is better)"
+                          metric="xGA"
                           sortKey="xga"
                           currentSort={sortKey}
                           sortDesc={sortDesc}

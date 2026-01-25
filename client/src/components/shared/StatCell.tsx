@@ -1,11 +1,12 @@
+import type { ReactNode } from "react";
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
-  
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { getMetricTooltipContent } from "@/lib/metric-tooltips";
 
 interface StatCellProps {
   /** The stat value to display */
@@ -16,8 +17,10 @@ interface StatCellProps {
   higherIsBetter?: boolean;
   /** Format function for display */
   format?: (value: number) => string;
-  /** Tooltip text explaining the stat */
-  tooltip?: string;
+  /** Tooltip content explaining the stat */
+  tooltip?: ReactNode;
+  /** Optional metric key (e.g. "xPts", "PDO") to pull tooltip from glossary */
+  metric?: string;
   /** Show trend arrow relative to average */
   showTrend?: boolean;
   /** Threshold for considering a value "different" from average (as percentage) */
@@ -31,6 +34,7 @@ export function StatCell({
   higherIsBetter = true,
   format = (v) => v.toFixed(1),
   tooltip,
+  metric,
   showTrend = true,
   threshold = 0.05,
   className,
@@ -71,21 +75,21 @@ export function StatCell({
     </span>
   );
 
-  if (tooltip) {
+  const tooltipContent = tooltip ?? (metric ? getMetricTooltipContent(metric) : null);
+
+  if (tooltipContent) {
     return (
-      
-        <Tooltip>
-          <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent>
-            <p>{tooltip}</p>
-            {average !== undefined && (
-              <p className="text-xs text-muted-foreground">
-                Avg: {format(average)}
-              </p>
-            )}
-          </TooltipContent>
-        </Tooltip>
-      
+      <Tooltip>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent>
+          {typeof tooltipContent === "string" ? <p className="text-xs">{tooltipContent}</p> : tooltipContent}
+          {average !== undefined && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Avg: {format(average)}
+            </p>
+          )}
+        </TooltipContent>
+      </Tooltip>
     );
   }
 

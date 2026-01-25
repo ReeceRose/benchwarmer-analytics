@@ -60,6 +60,7 @@ export function DivisionGroup({
               <HeaderWithTooltip
                 label="Pts%"
                 tooltip="Points percentage"
+                metric="Pts%"
                 className="text-right w-13"
               />
               <HeaderWithTooltip
@@ -75,6 +76,7 @@ export function DivisionGroup({
               <HeaderWithTooltip
                 label="Diff"
                 tooltip="Goal differential"
+                metric="Diff"
                 className="text-right w-12"
               />
               <HeaderWithTooltip
@@ -110,46 +112,55 @@ export function DivisionGroup({
               <HeaderWithTooltip
                 label="xG±"
                 tooltip="Expected goal differential"
+                metric="xG±"
                 className="text-right w-12"
               />
               <HeaderWithTooltip
                 label="xPts"
                 tooltip="Expected points"
+                metric="xPts"
                 className="text-right w-12"
               />
               <HeaderWithTooltip
                 label="xG%"
                 tooltip="Expected goals percentage"
+                metric="xG%"
                 className="text-right w-13"
               />
               <HeaderWithTooltip
                 label="CF%"
                 tooltip="Corsi percentage"
+                metric="CF%"
                 className="text-right w-13"
               />
               <HeaderWithTooltip
                 label="FF%"
                 tooltip="Fenwick percentage"
+                metric="FF%"
                 className="text-right w-13"
               />
               <HeaderWithTooltip
                 label="Sh%"
                 tooltip="Team shooting percentage"
+                metric="Sh%"
                 className="text-right w-12"
               />
               <HeaderWithTooltip
                 label="Sv%"
                 tooltip="Team save percentage"
+                metric="Sv%"
                 className="text-right w-12"
               />
               <HeaderWithTooltip
                 label="PDO"
                 tooltip="Sh% + Sv% (luck indicator)"
+                metric="PDO"
                 className="text-right w-13"
               />
               <HeaderWithTooltip
                 label="Pts±"
                 tooltip="Points vs expected"
+                metric="Pts±"
                 className="text-right w-12"
               />
             </TableRow>

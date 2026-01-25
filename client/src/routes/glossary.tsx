@@ -42,6 +42,51 @@ function GlossaryPage() {
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Benchwarmer Calculations (Transparency)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              Some metrics shown on this site are <strong className="text-foreground">calculated</strong>{" "}
+              from other fields. Wherever possible we display the exact formula in the glossary entry.
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong className="text-foreground">Per-60 rates</strong>:{" "}
+                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                  Stat/60 = (Stat ÷ TOI) × 60
+                </code>{" "}
+                (TOI in minutes)
+              </li>
+              <li>
+                <strong className="text-foreground">Power rankings record</strong>: when we don’t have
+                official W/L/OTL in the dataset, we estimate via a goal-based Pythagorean expectation{" "}
+                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                  Win% = GF²/(GF²+GA²)
+                </code>{" "}
+                and approximate OTL as ~10% of losses.
+              </li>
+              <li>
+                <strong className="text-foreground">PDO</strong>:{" "}
+                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                  PDO = Sh% + Sv%
+                </code>
+              </li>
+              <li>
+                <strong className="text-foreground">Expected points</strong>:{" "}
+                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                  xWin% = xGF²/(xGF²+xGA²); xPts = round(xWin%×GP×2)
+                </code>
+              </li>
+              <li>
+                <strong className="text-foreground">Percentiles</strong>: thresholds are computed by sorting
+                league values and using linear interpolation for the 1st–99th percentiles.
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
         {categoryOrder.map((category) => {
           const info = categoryInfo[category];
           const categoryMetrics = metrics.filter((m) => m.category === category);
@@ -64,6 +109,11 @@ function GlossaryPage() {
                         {metric.abbreviation && (
                           <Badge variant="secondary" className="font-mono text-xs">
                             {metric.abbreviation}
+                          </Badge>
+                        )}
+                        {metric.isCalculated && (
+                          <Badge variant="outline" className="text-xs">
+                            Calculated
                           </Badge>
                         )}
                       </div>

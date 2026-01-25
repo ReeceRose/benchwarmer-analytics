@@ -1,10 +1,14 @@
 export interface MetricDefinition {
   name: string;
   abbreviation?: string;
-  category: "basic" | "possession" | "expected" | "shooting" | "context";
+  category: "basic" | "possession" | "expected" | "shooting" | "context" | "derived";
   description: string;
   formula?: string;
   interpretation?: string;
+  /** Alternate keys used in tables/headers (e.g. "xPts", "Pts±") */
+  aliases?: string[];
+  /** True when this stat is derived/calculated by this app (not a raw field) */
+  isCalculated?: boolean;
 }
 
 export const metrics: MetricDefinition[] = [
@@ -35,6 +39,45 @@ export const metrics: MetricDefinition[] = [
     category: "basic",
     description: "The sum of goals and assists.",
     formula: "Goals + Assists",
+  },
+  {
+    name: "Points per Game",
+    abbreviation: "P/GP",
+    aliases: ["PPG"],
+    category: "derived",
+    isCalculated: true,
+    description: "Points normalized by games played.",
+    formula: "Points / Games Played",
+    interpretation:
+      "Useful for comparing players with different games played. More stable over time than raw points early in the season.",
+  },
+  {
+    name: "Goals per 60",
+    abbreviation: "G/60",
+    category: "derived",
+    isCalculated: true,
+    description: "Goals normalized to 60 minutes of ice time.",
+    formula: "G/60 = (Goals ÷ TOI) × 60  (TOI in minutes)",
+    interpretation:
+      "A rate stat that lets you compare players with different ice time. More volatile in small samples than per-game.",
+  },
+  {
+    name: "Assists per 60",
+    abbreviation: "A/60",
+    category: "derived",
+    isCalculated: true,
+    description: "Assists normalized to 60 minutes of ice time.",
+    formula: "A/60 = (Assists ÷ TOI) × 60  (TOI in minutes)",
+  },
+  {
+    name: "Points per 60",
+    abbreviation: "P/60",
+    category: "derived",
+    isCalculated: true,
+    description: "Points normalized to 60 minutes of ice time.",
+    formula: "P/60 = (Points ÷ TOI) × 60  (TOI in minutes)",
+    interpretation:
+      "A common all-in rate metric for offensive production. Useful for comparing usage tiers (top line vs depth).",
   },
   {
     name: "Shots on Goal",
@@ -102,8 +145,18 @@ export const metrics: MetricDefinition[] = [
       "xG values range from 0 to 1 for each shot. A shot from the slot might be worth 0.15 xG (15% chance of scoring), while a shot from the point might only be 0.02 xG.",
   },
   {
+    name: "Expected Goals Against",
+    abbreviation: "xGA",
+    category: "expected",
+    description:
+      "Expected goals allowed, based on the shot quality faced. For goalies/teams this aggregates the xG values of shots against.",
+    interpretation:
+      "Lower is better. Comparing xGA to actual goals against helps estimate how much was goaltending vs shot quality.",
+  },
+  {
     name: "Expected Goals For Percentage",
     abbreviation: "xGF%",
+    aliases: ["xG%"],
     category: "expected",
     description:
       "The percentage of expected goals that are for a player's team while they are on the ice.",
@@ -117,7 +170,7 @@ export const metrics: MetricDefinition[] = [
     category: "expected",
     description:
       "Expected goals normalized to per-60-minutes of ice time, allowing fair comparison between players with different ice time.",
-    formula: "(xG / TOI) × 60",
+    formula: "(xG / TOI) × 60  (TOI in minutes)",
     interpretation:
       "Useful for comparing players who play different amounts. A first-line forward and fourth-line forward can be compared on equal footing.",
   },
@@ -131,6 +184,153 @@ export const metrics: MetricDefinition[] = [
     interpretation:
       "Can indicate shooting skill, finishing ability, or luck. Over small samples, this is often variance. Over large samples, it may reflect true skill.",
   },
+  {
+    name: "Goals Below Expected",
+    abbreviation: "xG-G",
+    aliases: ["G Diff", "Goals Differential"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "The difference between expected goals and actual goals. Positive values indicate the player has scored fewer goals than expected.",
+    formula: "xG - G",
+    interpretation:
+      "A simple “unlucky finishing” indicator. In the breakout model we use this as a core signal, but it can be variance in small samples.",
+  },
+
+  // Derived / calculated metrics (Benchwarmer)
+  {
+    name: "Goal Differential",
+    abbreviation: "Diff",
+    aliases: ["GD"],
+    category: "derived",
+    isCalculated: true,
+    description: "Net goals scored minus goals allowed.",
+    formula: "Goals For (GF) - Goals Against (GA)",
+    interpretation:
+      "A simple signal of team strength. More predictive when paired with xG-based metrics.",
+  },
+  {
+    name: "Expected Goal Differential",
+    abbreviation: "xG±",
+    category: "derived",
+    isCalculated: true,
+    description: "Net expected goals for minus expected goals against.",
+    formula: "xGF - xGA",
+    interpretation:
+      "Less noisy than goal differential because it weights shot quality and reduces finishing/goalie variance.",
+  },
+  {
+    name: "Goals For per Game",
+    abbreviation: "GF/GP",
+    category: "derived",
+    isCalculated: true,
+    description: "Average goals scored per game.",
+    formula: "GF / GP",
+  },
+  {
+    name: "Goals Against per Game",
+    abbreviation: "GA/GP",
+    category: "derived",
+    isCalculated: true,
+    description: "Average goals allowed per game.",
+    formula: "GA / GP",
+  },
+  {
+    name: "Expected Goals For per Game",
+    abbreviation: "xGF/GP",
+    category: "derived",
+    isCalculated: true,
+    description: "Average expected goals created per game.",
+    formula: "xGF / GP",
+  },
+  {
+    name: "Expected Goals Against per Game",
+    abbreviation: "xGA/GP",
+    category: "derived",
+    isCalculated: true,
+    description: "Average expected goals allowed per game.",
+    formula: "xGA / GP",
+  },
+  {
+    name: "Points Percentage",
+    abbreviation: "Pts%",
+    category: "derived",
+    isCalculated: true,
+    description:
+      "A team's points as a percentage of the maximum possible points (2 per game).",
+    formula: "Points / (GP × 2) × 100",
+    interpretation:
+      "Normalizes standings across teams with different games played. Useful early in the season.",
+  },
+  {
+    name: "Team Shooting Percentage",
+    abbreviation: "Sh%",
+    aliases: ["Shooting%"],
+    category: "derived",
+    isCalculated: true,
+    description: "Team shooting percentage based on goals and shots on goal.",
+    formula: "GF / SOG For × 100",
+    interpretation:
+      "Often noisy in small samples. Very high or low values frequently regress toward league average.",
+  },
+  {
+    name: "Team Save Percentage",
+    abbreviation: "Sv%",
+    aliases: ["Save%"],
+    category: "derived",
+    isCalculated: true,
+    description: "Team save percentage based on shots on goal against.",
+    formula: "(SOG Against - GA) / SOG Against × 100",
+    interpretation:
+      "Strongly influenced by goaltending. Extreme team values tend to regress over time.",
+  },
+  {
+    name: "PDO",
+    abbreviation: "PDO",
+    category: "derived",
+    isCalculated: true,
+    description:
+      "A common 'luck' proxy: team shooting% plus team save% (both on the 0–100 scale).",
+    formula: "PDO = Sh% + Sv%",
+    interpretation:
+      "Values near 100 are typically sustainable. High PDO (>102) suggests overperformance; low PDO (<98) suggests underperformance.",
+  },
+  {
+    name: "Expected Points",
+    abbreviation: "xPts",
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Expected points based on expected-goals share using a Pythagorean-style expectation.",
+    formula:
+      "xWin% = xGF² / (xGF² + xGA²);  xPts = round(xWin% × GP × 2)",
+    interpretation:
+      "A rough expectation of standings points from shot quality. Useful for identifying teams whose results may not match their process.",
+  },
+  {
+    name: "Points vs Expected",
+    abbreviation: "Pts±",
+    aliases: ["Pts+/-", "PtsDiff"],
+    category: "derived",
+    isCalculated: true,
+    description: "Difference between actual points and expected points.",
+    formula: "Pts± = Points - xPts",
+    interpretation:
+      "Positive values suggest overperformance vs xG; negative values suggest underperformance. Interpreting this alongside PDO is helpful.",
+  },
+  {
+    name: "Percentiles",
+    abbreviation: "pctl",
+    aliases: ["percentile", "percentiles"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "League percentile thresholds used for player distributions (e.g., P/GP, G/60).",
+    formula:
+      "Sort values; for each p=1..99: rank=(p/100)×(n−1); linear interpolate between nearest neighbors",
+    interpretation:
+      "We compute thresholds (not per-player ranks) so charts can show where a given value sits in the league distribution.",
+  },
 
   // Shooting Quality
   {
@@ -141,6 +341,31 @@ export const metrics: MetricDefinition[] = [
       "Shots taken from the most dangerous areas of the ice, primarily the slot and crease area. These shots typically have xG values above 0.10.",
     interpretation:
       "Teams that generate more high-danger chances tend to score more goals. This metric filters out low-value shots from the point.",
+  },
+  {
+    name: "Shots per 60",
+    abbreviation: "Sh/60",
+    aliases: ["S/60"],
+    category: "derived",
+    isCalculated: true,
+    description: "Shots on goal normalized to 60 minutes of ice time.",
+    formula: "Sh/60 = (Shots ÷ TOI) × 60  (TOI in minutes)",
+    interpretation:
+      "A proxy for shot volume/shot generation. Higher rates typically correlate with better goal-scoring chances over time.",
+  },
+
+  {
+    name: "Breakout Score",
+    abbreviation: "Breakout Score",
+    aliases: ["Score", "BreakoutScore"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "A combined score used to rank breakout candidates. Higher means stronger underlying process with goals lagging expected.",
+    formula:
+      "BreakoutScore = round( (xG - G) + ((CF% - 50)/10) + ((Sh/60 - 7)/3), 2 )",
+    interpretation:
+      "This is a lightweight heuristic (not a predictive model). It rewards players with positive xG-goal gaps, above-average possession, and above-average shot volume.",
   },
   {
     name: "Medium Danger Chances",
@@ -166,12 +391,48 @@ export const metrics: MetricDefinition[] = [
     interpretation:
       "League average is typically around 9-10%. Very high or low shooting percentages often regress toward the mean over time.",
   },
+
+  {
+    name: "Save Percentage",
+    abbreviation: "SV%",
+    aliases: ["Sv%"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "The percentage of shots on goal stopped by a goalie or team.",
+    formula: "SV% = (Shots Against - Goals Against) / Shots Against × 100",
+    interpretation:
+      "A key goalie metric. Small swings can be meaningful, but it’s also sensitive to shot quality faced.",
+  },
+  {
+    name: "Goals Against Average",
+    abbreviation: "GAA",
+    category: "derived",
+    isCalculated: true,
+    description: "Goals allowed per 60 minutes of ice time (goalies).",
+    formula: "GAA = (Goals Against ÷ TOI) × 60  (TOI in minutes)",
+    interpretation:
+      "Lower is better. Unlike SV%, GAA is heavily influenced by team defense and shot volume/quality.",
+  },
+  {
+    name: "Goals Saved Above Expected",
+    abbreviation: "GSAx",
+    aliases: ["GSAE"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "How many goals a goalie prevented compared to an average goalie facing the same shot quality.",
+    formula: "GSAx = xGA - GA",
+    interpretation:
+      "Positive is better (saved more than expected). Over small samples, this can be noisy.",
+  },
   {
     name: "On-Ice Shooting Percentage",
     abbreviation: "oiSH%",
     category: "shooting",
     description:
       "The team's shooting percentage while this player is on the ice.",
+    formula: "On-Ice Goals For / On-Ice Shots on Goal For × 100",
     interpretation:
       "A measure that includes teammates' shooting. High values may indicate good linemates or positive shooting luck.",
   },
@@ -179,7 +440,8 @@ export const metrics: MetricDefinition[] = [
     name: "On-Ice Save Percentage",
     abbreviation: "oiSV%",
     category: "shooting",
-    description: "The goalie's save percentage while this player is on the ice.",
+    description: "The team's save percentage while this player is on the ice.",
+    formula: "(On-Ice Shots on Goal Against - On-Ice Goals Against) / On-Ice Shots on Goal Against × 100",
     interpretation:
       "Heavily influenced by goaltending quality. Extreme values in either direction are often not sustainable.",
   },
@@ -204,6 +466,17 @@ export const metrics: MetricDefinition[] = [
       "PP stats are useful for evaluating offensive skill but should be considered separately from even-strength performance.",
   },
   {
+    name: "Power Play Percentage",
+    abbreviation: "PP%",
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Power play scoring rate: goals scored per power play opportunity.",
+    formula: "PP% = PP Goals / PP Opportunities × 100",
+    interpretation:
+      "In some views we estimate opportunities from special-teams TOI (≈ TOI ÷ 120s). This is an approximation when penalty counts aren’t available.",
+  },
+  {
     name: "Penalty Kill",
     abbreviation: "PK / 4v5",
     category: "context",
@@ -211,6 +484,17 @@ export const metrics: MetricDefinition[] = [
       "Statistics collected when a player's team is shorthanded due to a penalty.",
     interpretation:
       "PK specialists often have poor raw numbers due to playing in disadvantaged situations. Context is critical.",
+  },
+  {
+    name: "Penalty Kill Percentage",
+    abbreviation: "PK%",
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Penalty kill success rate: how often the team prevents a power-play goal.",
+    formula: "PK% = (1 - (PP Goals Against / Times Shorthanded)) × 100",
+    interpretation:
+      "In some views we estimate times shorthanded from special-teams TOI (≈ TOI ÷ 120s). This is an approximation when penalty counts aren’t available.",
   },
   {
     name: "Score-Adjusted",
@@ -245,6 +529,11 @@ export const categoryInfo = {
     label: "Game Context",
     description: "Situational modifiers that affect how statistics should be interpreted.",
   },
+  derived: {
+    label: "Derived (Calculated)",
+    description:
+      "Metrics computed by Benchwarmer from other fields. Formulas shown for transparency.",
+  },
 };
 
 export const categoryOrder: Array<keyof typeof categoryInfo> = [
@@ -253,4 +542,5 @@ export const categoryOrder: Array<keyof typeof categoryInfo> = [
   "expected",
   "shooting",
   "context",
+  "derived",
 ];

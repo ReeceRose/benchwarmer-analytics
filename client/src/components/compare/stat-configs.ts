@@ -9,6 +9,8 @@ export interface SkaterStatConfig {
   key: keyof SkaterStats | "pointsPerGame" | "goalsPer60" | "assistsPer60";
   label: string;
   tooltip: string;
+  /** Optional metric key (e.g. "xG/60") for glossary-driven tooltips */
+  metric?: string;
   format: (value: number | undefined | null, stats?: SkaterStats) => string;
   higherIsBetter: boolean;
   mode: "counting" | "rate" | "context"; // context = always shown (GP, TOI)
@@ -27,6 +29,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     key: "goals",
     label: "G",
     tooltip: "Goals scored",
+    metric: "G",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: true,
     mode: "counting",
@@ -43,6 +46,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     key: "points",
     label: "P",
     tooltip: "Points (Goals + Assists)",
+    metric: "P",
     format: (v) => (v != null ? String(v) : "-"),
     higherIsBetter: true,
     mode: "counting",
@@ -51,6 +55,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     key: "pointsPerGame",
     label: "P/GP",
     tooltip: "Points per game",
+    metric: "P/GP",
     format: (_, stats) =>
       stats && stats.gamesPlayed > 0
         ? (stats.points / stats.gamesPlayed).toFixed(2)
@@ -62,6 +67,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     key: "iceTimeSeconds",
     label: "TOI",
     tooltip: "Total time on ice",
+    metric: "TOI",
     format: (v) => (v != null ? formatToi(v) : "-"),
     higherIsBetter: true,
     mode: "context",
@@ -78,6 +84,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     key: "expectedGoals",
     label: "xG",
     tooltip: "Expected goals based on shot quality",
+    metric: "xG",
     format: (v) => (v != null ? v.toFixed(1) : "-"),
     higherIsBetter: true,
     mode: "counting",
@@ -86,6 +93,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     key: "goalsPer60",
     label: "G/60",
     tooltip: "Goals per 60 minutes of ice time",
+    metric: "G/60",
     format: (_, stats) =>
       stats && stats.iceTimeSeconds > 0
         ? formatPer60(stats.goals, stats.iceTimeSeconds)
@@ -97,6 +105,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     key: "expectedGoalsPer60",
     label: "xG/60",
     tooltip: "Expected goals per 60 minutes of ice time",
+    metric: "xG/60",
     format: (_, stats) =>
       stats && stats.iceTimeSeconds > 0 && stats.expectedGoals != null
         ? ((stats.expectedGoals / stats.iceTimeSeconds) * 3600).toFixed(2)
@@ -108,6 +117,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     key: "corsiForPct",
     label: "CF%",
     tooltip: "Corsi For % — shot attempt share while on ice",
+    metric: "CF%",
     format: (v) => (v != null ? formatPercent(v, false) : "-"),
     higherIsBetter: true,
     mode: "rate",
@@ -116,6 +126,7 @@ export const SKATER_STAT_CONFIGS: SkaterStatConfig[] = [
     key: "fenwickForPct",
     label: "FF%",
     tooltip: "Fenwick For % — unblocked shot attempt share",
+    metric: "FF%",
     format: (v) => (v != null ? formatPercent(v, false) : "-"),
     higherIsBetter: true,
     mode: "rate",
@@ -127,6 +138,8 @@ export interface GoalieStatConfig {
   key: keyof GoalieStats | "savePctDisplay";
   label: string;
   tooltip: string;
+  /** Optional metric key (e.g. "GAA") for glossary-driven tooltips */
+  metric?: string;
   format: (value: number | undefined | null, stats?: GoalieStats) => string;
   higherIsBetter: boolean;
   mode: "counting" | "rate" | "context";
@@ -169,6 +182,7 @@ export const GOALIE_STAT_CONFIGS: GoalieStatConfig[] = [
     key: "savePctDisplay",
     label: "SV%",
     tooltip: "Save percentage",
+    metric: "SV%",
     format: (_, stats) => formatSavePct(stats?.savePercentage),
     higherIsBetter: true,
     mode: "rate",
@@ -177,6 +191,7 @@ export const GOALIE_STAT_CONFIGS: GoalieStatConfig[] = [
     key: "goalsAgainstAverage",
     label: "GAA",
     tooltip: "Goals against average per 60 minutes",
+    metric: "GAA",
     format: (v) => (v != null ? v.toFixed(2) : "-"),
     higherIsBetter: false,
     mode: "rate",
@@ -185,6 +200,7 @@ export const GOALIE_STAT_CONFIGS: GoalieStatConfig[] = [
     key: "goalsSavedAboveExpected",
     label: "GSAE",
     tooltip: "Goals saved above expected — positive is better",
+    metric: "GSAx",
     format: (v) => (v != null ? v.toFixed(1) : "-"),
     higherIsBetter: true,
     mode: "rate",
@@ -193,6 +209,7 @@ export const GOALIE_STAT_CONFIGS: GoalieStatConfig[] = [
     key: "expectedGoalsAgainst",
     label: "xGA",
     tooltip: "Expected goals against based on shot quality",
+    metric: "xGA",
     format: (v) => (v != null ? v.toFixed(1) : "-"),
     higherIsBetter: false,
     mode: "counting",

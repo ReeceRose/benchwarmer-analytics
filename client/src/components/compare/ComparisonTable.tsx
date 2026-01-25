@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { formatPosition } from "@/lib/formatters";
+import { getMetricTooltipContent } from "@/lib/metric-tooltips";
 import {
   SKATER_STAT_CONFIGS,
   GOALIE_STAT_CONFIGS,
@@ -76,7 +77,9 @@ export function ComparisonTable({ players, positionType, statMode = "all" }: Com
                           <span className="cursor-help">{config.label}</span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">{config.tooltip}</p>
+                          {getMetricTooltipContent(config.metric ?? config.label) ?? (
+                            <p className="text-xs">{config.tooltip}</p>
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     </TableCell>
@@ -114,7 +117,9 @@ export function ComparisonTable({ players, positionType, statMode = "all" }: Com
                           <span className="cursor-help">{config.label}</span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">{config.tooltip}</p>
+                          {getMetricTooltipContent(config.metric ?? config.label) ?? (
+                            <p className="text-xs">{config.tooltip}</p>
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     </TableCell>
