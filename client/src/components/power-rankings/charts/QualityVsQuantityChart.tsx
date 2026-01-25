@@ -11,7 +11,13 @@ import {
   Label,
   ReferenceArea,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { TeamLogo } from "@/components/shared";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getTeamLogoUrl } from "@/lib/team-logos";
@@ -52,13 +58,17 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">CF% (Quantity):</span>{" "}
-          <span className={`font-mono ${isGoodQuantity ? "text-success" : "text-error"}`}>
+          <span
+            className={`font-mono ${isGoodQuantity ? "text-success" : "text-error"}`}
+          >
             {data.corsiPct.toFixed(1)}%
           </span>
         </p>
         <p>
           <span className="text-muted-foreground">xG% (Quality):</span>{" "}
-          <span className={`font-mono ${isGoodQuality ? "text-success" : "text-error"}`}>
+          <span
+            className={`font-mono ${isGoodQuality ? "text-success" : "text-error"}`}
+          >
             {data.xGoalsPct.toFixed(1)}%
           </span>
         </p>
@@ -89,7 +99,10 @@ function CustomDot(props: {
   );
 }
 
-export function QualityVsQuantityChart({ teams, season }: QualityVsQuantityChartProps) {
+export function QualityVsQuantityChart({
+  teams,
+  season,
+}: QualityVsQuantityChartProps) {
   const navigate = useNavigate();
 
   // Prepare chart data - filter out teams without CF%/xG% data
@@ -132,9 +145,12 @@ export function QualityVsQuantityChart({ teams, season }: QualityVsQuantityChart
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Quality vs Quantity of Chances</CardTitle>
+        <CardTitle className="text-lg">
+          Quality vs Quantity of Chances
+        </CardTitle>
         <CardDescription>
-          xG% (quality) vs CF% (volume) - top-right is dominant, bottom-left is struggling
+          xG% (quality) vs CF% (volume) - top-right is dominant, bottom-left is
+          struggling
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -146,7 +162,6 @@ export function QualityVsQuantityChart({ teams, season }: QualityVsQuantityChart
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
 
-            {/* Quadrant shading */}
             <ReferenceArea
               x1={xMin}
               x2={50}
@@ -214,7 +229,6 @@ export function QualityVsQuantityChart({ teams, season }: QualityVsQuantityChart
               />
             </YAxis>
 
-            {/* Reference lines at 50% */}
             <ReferenceLine
               x={50}
               stroke={CHART_AXIS_COLOURS.reference}
@@ -238,19 +252,31 @@ export function QualityVsQuantityChart({ teams, season }: QualityVsQuantityChart
           </ScatterChart>
         </ResponsiveContainer>
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
-          <div className="p-2 rounded" style={{ backgroundColor: "hsla(217, 91%, 60%, 0.15)" }}>
+          <div
+            className="p-2 rounded"
+            style={{ backgroundColor: "hsla(217, 91%, 60%, 0.15)" }}
+          >
             <span className="font-medium">Quality over Volume</span>
             <p className="text-muted-foreground">High xG%, Low CF%</p>
           </div>
-          <div className="p-2 rounded" style={{ backgroundColor: "hsla(142, 76%, 36%, 0.15)" }}>
+          <div
+            className="p-2 rounded"
+            style={{ backgroundColor: "hsla(142, 76%, 36%, 0.15)" }}
+          >
             <span className="font-medium text-success">Dominant</span>
             <p className="text-muted-foreground">High xG%, High CF%</p>
           </div>
-          <div className="p-2 rounded" style={{ backgroundColor: "hsla(0, 72%, 51%, 0.15)" }}>
+          <div
+            className="p-2 rounded"
+            style={{ backgroundColor: "hsla(0, 72%, 51%, 0.15)" }}
+          >
             <span className="font-medium text-error">Struggling</span>
             <p className="text-muted-foreground">Low xG%, Low CF%</p>
           </div>
-          <div className="p-2 rounded" style={{ backgroundColor: "hsla(45, 93%, 47%, 0.15)" }}>
+          <div
+            className="p-2 rounded"
+            style={{ backgroundColor: "hsla(45, 93%, 47%, 0.15)" }}
+          >
             <span className="font-medium">Volume over Quality</span>
             <p className="text-muted-foreground">Low xG%, High CF%</p>
           </div>

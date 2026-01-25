@@ -77,11 +77,17 @@ function PowerRankingsPage() {
   const apiCurrentSeason = seasonsData?.seasons?.[0]?.year;
 
   const navigate = useNavigate({ from: Route.fullPath });
-  const { season, sortKey: urlSortKey, sortDir: urlSortDir, view: urlView } = Route.useSearch();
+  const {
+    season,
+    sortKey: urlSortKey,
+    sortDir: urlSortDir,
+    view: urlView,
+  } = Route.useSearch();
 
   // Prefer URL param > API current season > calculated default
   const effectiveSeason = season ?? apiCurrentSeason ?? defaultSeason;
-  const isCurrentSeason = effectiveSeason === (apiCurrentSeason ?? defaultSeason);
+  const isCurrentSeason =
+    effectiveSeason === (apiCurrentSeason ?? defaultSeason);
   const { data, isLoading, error, refetch } = usePowerRankings(effectiveSeason);
 
   // View state from URL with default to table
@@ -101,11 +107,15 @@ function PowerRankingsPage() {
           case "goalDiff":
             return team.goalsFor - team.goalsAgainst;
           case "pointsPct":
-            return team.gamesPlayed > 0 ? team.points / (team.gamesPlayed * 2) : 0;
+            return team.gamesPlayed > 0
+              ? team.points / (team.gamesPlayed * 2)
+              : 0;
           case "gfPerGame":
             return team.gamesPlayed > 0 ? team.goalsFor / team.gamesPlayed : 0;
           case "gaPerGame":
-            return team.gamesPlayed > 0 ? team.goalsAgainst / team.gamesPlayed : 0;
+            return team.gamesPlayed > 0
+              ? team.goalsAgainst / team.gamesPlayed
+              : 0;
           case "xGoalDiff":
             return team.xGoalsFor - team.xGoalsAgainst;
           default:
@@ -119,7 +129,14 @@ function PowerRankingsPage() {
     return teams;
   })();
 
-  const updateSearch = (updates: Partial<{ season: number; sortKey: SortKey; sortDir: "asc" | "desc"; view: "charts" | "table" }>) => {
+  const updateSearch = (
+    updates: Partial<{
+      season: number;
+      sortKey: SortKey;
+      sortDir: "asc" | "desc";
+      view: "charts" | "table";
+    }>,
+  ) => {
     navigate({ search: (prev) => ({ ...prev, ...updates }) });
   };
 
@@ -155,10 +172,9 @@ function PowerRankingsPage() {
             <strong>Pts%</strong> (points earned / possible),{" "}
             <strong>xGF/xGA</strong> (expected goals for/against),{" "}
             <strong>xG±</strong> (expected goal differential),{" "}
-            <strong>xPts</strong> (expected points),{" "}
-            <strong>xG%</strong> (expected goals share),{" "}
-            <strong>CF%/FF%</strong> (shot attempt share),{" "}
-            <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
+            <strong>xPts</strong> (expected points), <strong>xG%</strong>{" "}
+            (expected goals share), <strong>CF%/FF%</strong> (shot attempt
+            share), <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
             <strong>PDO</strong> (Sh% + Sv% - values near 100 are sustainable),{" "}
             <strong>Pts±</strong> (actual - expected points).
           </div>
@@ -185,7 +201,6 @@ function PowerRankingsPage() {
           </Select>
         </div>
 
-        {/* View Toggle */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
           <Button
             variant={currentView === "charts" ? "secondary" : "ghost"}
@@ -276,19 +291,22 @@ function PowerRankingsPage() {
 // Charts View Component
 import type { TeamPowerRanking } from "@/types";
 
-function ChartsView({ teams, season }: { teams: TeamPowerRanking[]; season?: number }) {
+function ChartsView({
+  teams,
+  season,
+}: {
+  teams: TeamPowerRanking[];
+  season?: number;
+}) {
   return (
     <div className="space-y-6">
-      {/* Top row: Ranking bars full width */}
       <TeamRankingBars teams={teams} season={season} />
 
-      {/* Second row: 2 scatter plots side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <LuckQuadrantChart teams={teams} season={season} />
         <QualityVsQuantityChart teams={teams} season={season} />
       </div>
 
-      {/* Third row: Expected vs Actual Points full width */}
       <PointsExpectedChart teams={teams} season={season} />
     </div>
   );
@@ -597,9 +615,7 @@ function TableView({
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded bg-muted-foreground" />
-          <span className="text-muted-foreground">
-            Average / Sustainable
-          </span>
+          <span className="text-muted-foreground">Average / Sustainable</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded bg-error" />

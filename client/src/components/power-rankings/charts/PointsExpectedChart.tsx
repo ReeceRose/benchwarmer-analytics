@@ -9,7 +9,13 @@ import {
   ReferenceLine,
   Scatter,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { TeamLogo } from "@/components/shared";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getTeamLogoUrl } from "@/lib/team-logos";
@@ -62,9 +68,12 @@ function CustomTooltip({
         <p className={isOver ? "text-warning" : "text-success"}>
           <span className="text-muted-foreground">Difference:</span>{" "}
           <span className="font-mono font-semibold">
-            {isOver ? "+" : ""}{data.diff}
+            {isOver ? "+" : ""}
+            {data.diff}
           </span>
-          <span className="ml-1">({isOver ? "Overperforming" : "Underperforming"})</span>
+          <span className="ml-1">
+            ({isOver ? "Overperforming" : "Underperforming"})
+          </span>
         </p>
       </div>
     </div>
@@ -97,10 +106,7 @@ function CustomYAxisTick({
 }
 
 // Expected points dot (hollow circle)
-function ExpectedPointsDot(props: {
-  cx?: number;
-  cy?: number;
-}) {
+function ExpectedPointsDot(props: { cx?: number; cy?: number }) {
   const { cx, cy } = props;
   if (!cx || !cy) return null;
   return (
@@ -139,7 +145,10 @@ function ActualPointsDot(props: {
   );
 }
 
-export function PointsExpectedChart({ teams, season }: PointsExpectedChartProps) {
+export function PointsExpectedChart({
+  teams,
+  season,
+}: PointsExpectedChartProps) {
   const navigate = useNavigate();
 
   // Sort by points differential (biggest overperformers at top)
@@ -184,7 +193,8 @@ export function PointsExpectedChart({ teams, season }: PointsExpectedChartProps)
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Expected vs Actual Points</CardTitle>
         <CardDescription>
-          Sorted by differential - overperformers at top, underperformers at bottom
+          Sorted by differential - overperformers at top, underperformers at
+          bottom
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -209,9 +219,11 @@ export function PointsExpectedChart({ teams, season }: PointsExpectedChartProps)
               axisLine={false}
               tickLine={false}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.5 }} />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.5 }}
+            />
 
-            {/* Connecting bars (the "dumbbell" lines) */}
             <Bar
               dataKey="lineEnd"
               stackId="dumbbell"
@@ -225,19 +237,16 @@ export function PointsExpectedChart({ teams, season }: PointsExpectedChartProps)
                   { x: entry.expectedPoints, y: entry.abbrev },
                   { x: entry.points, y: entry.abbrev },
                 ]}
-                stroke={entry.diff > 0 ? "hsl(45, 93%, 47%)" : "hsl(142, 76%, 36%)"}
+                stroke={
+                  entry.diff > 0 ? "hsl(45, 93%, 47%)" : "hsl(142, 76%, 36%)"
+                }
                 strokeWidth={3}
                 strokeOpacity={0.6}
               />
             ))}
 
-            {/* Expected points dots (hollow) */}
-            <Scatter
-              dataKey="expectedPoints"
-              shape={<ExpectedPointsDot />}
-            />
+            <Scatter dataKey="expectedPoints" shape={<ExpectedPointsDot />} />
 
-            {/* Actual points dots (filled) */}
             <Scatter
               dataKey="points"
               shape={<ActualPointsDot onClick={handleClick} />}
@@ -246,16 +255,29 @@ export function PointsExpectedChart({ teams, season }: PointsExpectedChartProps)
         </ResponsiveContainer>
         <div className="flex justify-center gap-8 mt-4 text-xs">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full border-2" style={{ borderColor: CHART_AXIS_COLOURS.tick }} />
+            <span
+              className="w-3 h-3 rounded-full border-2"
+              style={{ borderColor: CHART_AXIS_COLOURS.tick }}
+            />
             <span className="text-muted-foreground">Expected Points</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "hsl(45, 93%, 47%)" }} />
-            <span className="text-muted-foreground">Actual (Overperforming)</span>
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: "hsl(45, 93%, 47%)" }}
+            />
+            <span className="text-muted-foreground">
+              Actual (Overperforming)
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "hsl(142, 76%, 36%)" }} />
-            <span className="text-muted-foreground">Actual (Underperforming)</span>
+            <span
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: "hsl(142, 76%, 36%)" }}
+            />
+            <span className="text-muted-foreground">
+              Actual (Underperforming)
+            </span>
           </div>
         </div>
       </CardContent>

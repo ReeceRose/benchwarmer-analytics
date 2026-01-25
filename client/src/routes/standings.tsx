@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { TableIcon, Info } from "lucide-react";
+import { TableIcon, Info, BarChart3 } from "lucide-react";
 import {
   useOfficialStandings,
   useStandingsAnalytics,
@@ -8,14 +8,21 @@ import {
 } from "@/hooks";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared";
 import { StandingsTable } from "@/components/standings";
+import {
+  PointsLuckChart,
+  GoalDifferentialChart,
+  PDODistributionChart,
+} from "@/components/standings/charts";
 import type { StandingsGrouping, StandingsWithAnalytics } from "@/types";
 import { z } from "zod";
 
 const searchSchema = z.object({
   grouping: z.enum(["league", "conference", "division"]).optional(),
+  view: z.enum(["charts", "table"]).optional(),
 });
 
 export const Route = createFileRoute("/standings")({
@@ -28,7 +35,10 @@ function StandingsPage() {
   const currentSeason = seasonsData?.seasons?.[0]?.year;
 
   const navigate = useNavigate({ from: Route.fullPath });
-  const { grouping = "division" } = Route.useSearch();
+  const { grouping = "division", view: urlView } = Route.useSearch();
+
+  // View state from URL with default to table
+  const currentView = urlView ?? "table";
 
   // Fetch current standings (no season param = live data)
   const {
@@ -56,6 +66,12 @@ function StandingsPage() {
     }));
   }, [officialData, analyticsData]);
 
+  const updateSearch = (
+    updates: Partial<{ grouping: StandingsGrouping; view: "charts" | "table" }>,
+  ) => {
+    navigate({ search: (prev) => ({ ...prev, ...updates }) });
+  };
+
   return (
     <div className="container py-8">
       <div className="mb-6">
@@ -77,29 +93,53 @@ function StandingsPage() {
             <strong>Pts%</strong> (points earned / possible),{" "}
             <strong>xGF/xGA</strong> (expected goals for/against),{" "}
             <strong>xG±</strong> (expected goal differential),{" "}
-            <strong>xPts</strong> (expected points),{" "}
-            <strong>xG%</strong> (expected goals share),{" "}
-            <strong>CF%/FF%</strong> (shot attempt share),{" "}
-            <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
+            <strong>xPts</strong> (expected points), <strong>xG%</strong>{" "}
+            (expected goals share), <strong>CF%/FF%</strong> (shot attempt
+            share), <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
             <strong>PDO</strong> (Sh% + Sv% - values near 100 are sustainable),{" "}
             <strong>Pts±</strong> (actual - expected points).
           </div>
         </div>
       </Card>
 
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <Tabs
-          value={grouping}
-          onValueChange={(v) =>
-            navigate({ search: { grouping: v as StandingsGrouping } })
-          }
-        >
-          <TabsList>
-            <TabsTrigger value="division">Division</TabsTrigger>
-            <TabsTrigger value="conference">Conference</TabsTrigger>
-            <TabsTrigger value="league">League</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        {currentView === "table" ? (
+          <Tabs
+            value={grouping}
+            onValueChange={(v) =>
+              updateSearch({ grouping: v as StandingsGrouping })
+            }
+          >
+            <TabsList>
+              <TabsTrigger value="division">Division</TabsTrigger>
+              <TabsTrigger value="conference">Conference</TabsTrigger>
+              <TabsTrigger value="league">League</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        ) : (
+          <div /> // Spacer to keep toggle on the right
+        )}
+
+        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+          <Button
+            variant={currentView === "charts" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => updateSearch({ view: "charts" })}
+            className="gap-2"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Charts
+          </Button>
+          <Button
+            variant={currentView === "table" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => updateSearch({ view: "table" })}
+            className="gap-2"
+          >
+            <TableIcon className="h-4 w-4" />
+            Table
+          </Button>
+        </div>
       </div>
 
       {officialError && (
@@ -124,11 +164,18 @@ function StandingsPage() {
           </CardContent>
         </Card>
       ) : officialData?.teams && officialData.teams.length > 0 ? (
-        <StandingsTable
-          teams={teamsWithAnalytics}
-          grouping={grouping}
-          analyticsLoading={analyticsLoading}
-        />
+        currentView === "charts" ? (
+          <ChartsView
+            teams={teamsWithAnalytics}
+            analyticsLoading={analyticsLoading}
+          />
+        ) : (
+          <StandingsTable
+            teams={teamsWithAnalytics}
+            grouping={grouping}
+            analyticsLoading={analyticsLoading}
+          />
+        )
       ) : (
         <Card>
           <CardContent className="py-12 text-center">
@@ -140,6 +187,40 @@ function StandingsPage() {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+// Charts View Component
+function ChartsView({
+  teams,
+  analyticsLoading,
+}: {
+  teams: StandingsWithAnalytics[];
+  analyticsLoading?: boolean;
+}) {
+  if (analyticsLoading) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PointsLuckChart teams={teams} />
+        <PDODistributionChart teams={teams} />
+      </div>
+
+      <GoalDifferentialChart teams={teams} />
     </div>
   );
 }
