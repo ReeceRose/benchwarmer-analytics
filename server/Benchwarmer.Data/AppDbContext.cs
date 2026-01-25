@@ -52,6 +52,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
       e.HasIndex(s => new { s.PlayerId, s.Season, s.Team, s.Situation, s.IsPlayoffs }).IsUnique();
       e.HasIndex(s => new { s.Season, s.Team });
+      e.HasIndex(s => new { s.Situation, s.Season, s.IsPlayoffs });
     });
 
     // SkaterSeasonAdvanced
@@ -74,6 +75,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
       e.HasIndex(g => new { g.PlayerId, g.Season, g.Team, g.Situation, g.IsPlayoffs }).IsUnique();
       e.HasIndex(g => new { g.Season, g.Team });
+      e.HasIndex(g => new { g.Situation, g.Season, g.IsPlayoffs });
     });
 
     // TeamSeason
@@ -112,6 +114,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       e.HasIndex(s => s.GoaliePlayerId);
       e.HasIndex(s => new { s.Season, s.IsGoal });
       e.HasIndex(s => new { s.Season, s.TeamCode });
+      e.HasIndex(s => new { s.ShooterPlayerId, s.Season });
+      e.HasIndex(s => new { s.GoaliePlayerId, s.Season });
     });
 
     // Game
@@ -120,6 +124,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       e.HasIndex(g => g.GameId).IsUnique();
       e.HasIndex(g => g.GameDate);
       e.HasIndex(g => new { g.GameDate, g.GameState });
+      e.HasIndex(g => g.Season);
     });
 
     // ChemistryPairView (materialized view - read only)
