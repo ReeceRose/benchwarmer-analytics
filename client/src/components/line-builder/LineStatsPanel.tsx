@@ -10,11 +10,11 @@ import { formatToi, formatPercent } from "@/lib/formatters";
 import type { ChemistryPair } from "@/types";
 
 interface LineStatsPanelProps {
-  /** Chemistry data for selected player pairs */
+  // Chemistry data for selected player pairs
   pairStats: ChemistryPair[];
-  /** Number of players currently in the line */
+  // Number of players currently in the line
   playerCount: number;
-  /** Whether this is a forward line (3 players) or defense pair (2 players) */
+  // Whether this is a forward line (3 players) or defense pair (2 players)
   isForwardLine: boolean;
 }
 

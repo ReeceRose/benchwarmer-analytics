@@ -19,8 +19,9 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { TeamLogo } from "@/components/shared";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { LeaderboardEntry } from "@/types";
 
 interface GoalieQuadrantChartProps {
@@ -57,7 +58,16 @@ function CustomTooltip({
   return (
     <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
-        <TeamLogo abbrev={data.team} size="sm" />
+        <Avatar className="h-6 w-6">
+          <AvatarImage
+            src={getPlayerHeadshotUrl(data.playerId, data.team)}
+            alt={data.name}
+            loading="lazy"
+          />
+          <AvatarFallback className="text-[10px]">
+            {getPlayerInitials(data.name)}
+          </AvatarFallback>
+        </Avatar>
         <span className="font-semibold">{data.name}</span>
       </div>
       <div className="space-y-1 text-xs">
@@ -179,7 +189,6 @@ export function GoalieQuadrantChart({
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
 
-            {/* Quadrant shading */}
             <ReferenceArea
               x1={xMin}
               x2={AVG_GSAX}
@@ -248,7 +257,6 @@ export function GoalieQuadrantChart({
 
             <ZAxis dataKey="gamesPlayed" range={[40, 200]} />
 
-            {/* Reference lines at averages */}
             <ReferenceLine
               x={AVG_GSAX}
               stroke={CHART_AXIS_COLOURS.reference}

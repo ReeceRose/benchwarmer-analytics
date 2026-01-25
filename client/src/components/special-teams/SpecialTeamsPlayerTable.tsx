@@ -169,7 +169,7 @@ export function SpecialTeamsPlayerTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Player</TableHead>
+                <TableHead className="w-50">Player</TableHead>
                 <HeaderWithTooltip label="Pos" tooltip="Position" />
                 <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
                 <SortableHeader field="toi" label="TOI" tooltip="Total time on ice in situation" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />

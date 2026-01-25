@@ -122,7 +122,7 @@ function StandingsPage() {
 
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
           <Button
-            variant={currentView === "charts" ? "secondary" : "ghost"}
+            variant={currentView === "charts" ? "default" : "ghost"}
             size="sm"
             onClick={() => updateSearch({ view: "charts" })}
             className="gap-2"
@@ -131,7 +131,7 @@ function StandingsPage() {
             Charts
           </Button>
           <Button
-            variant={currentView === "table" ? "secondary" : "ghost"}
+            variant={currentView === "table" ? "default" : "ghost"}
             size="sm"
             onClick={() => updateSearch({ view: "table" })}
             className="gap-2"

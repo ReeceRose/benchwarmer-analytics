@@ -95,7 +95,7 @@ function PlayersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[40%]">Name</TableHead>
+                    <TableHead className="w-2/5">Name</TableHead>
                     <TableHead>Position</TableHead>
                     <TableHead>Team</TableHead>
                   </TableRow>

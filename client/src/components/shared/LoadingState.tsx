@@ -2,9 +2,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface LoadingStateProps {
-  /** Type of loading skeleton to display */
+  // Type of loading skeleton to display
   variant?: "card" | "table" | "list" | "page";
-  /** Number of items to show for list/table variants */
+  // Number of items to show for list/table variants
   count?: number;
   className?: string;
 }

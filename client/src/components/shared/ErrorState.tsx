@@ -10,13 +10,13 @@ import {
 import { cn } from "@/lib/utils";
 
 interface ErrorStateProps {
-  /** Error title */
+  // Error title
   title?: string;
-  /** Error message to display */
+  // Error message to display
   message?: string;
-  /** Callback for retry action */
+  // Callback for retry action
   onRetry?: () => void;
-  /** Display variant */
+  // Display variant
   variant?: "card" | "inline";
   className?: string;
 }

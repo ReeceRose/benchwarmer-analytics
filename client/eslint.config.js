@@ -36,6 +36,70 @@ const noJsxComments = {
   },
 }
 
+const noArbitraryTailwind = {
+  meta: {
+    type: 'suggestion',
+    docs: {
+      description:
+        'Disallow arbitrary Tailwind size values (e.g., w-[200px]). Use canonical classes instead.',
+    },
+  },
+  create(context) {
+    // Pattern: size utility with simple numeric value (px, rem, %, etc.)
+    // Skip calc(), var(), and other complex expressions
+    const arbitraryPattern = /\b(w|h|min-w|max-w|min-h|max-h|size)-\[(\d+(?:\.\d+)?(?:px|rem|em|%)?)\]/g
+
+    function checkForArbitraryValues(node, value) {
+      if (typeof value !== 'string') return
+
+      let match
+      while ((match = arbitraryPattern.exec(value)) !== null) {
+        const [fullMatch] = match
+        context.report({
+          node,
+          message: `Arbitrary Tailwind value "${fullMatch}" is not allowed. Use a canonical Tailwind class instead.`,
+        })
+      }
+      // Reset regex lastIndex for next call
+      arbitraryPattern.lastIndex = 0
+    }
+
+    return {
+      // Check className="..." and class="..."
+      JSXAttribute(node) {
+        if (
+          node.name &&
+          (node.name.name === 'className' || node.name.name === 'class') &&
+          node.value
+        ) {
+          if (node.value.type === 'Literal' && typeof node.value.value === 'string') {
+            checkForArbitraryValues(node.value, node.value.value)
+          }
+        }
+      },
+      // Check template literals in className={`...`}
+      TemplateLiteral(node) {
+        for (const quasi of node.quasis) {
+          checkForArbitraryValues(quasi, quasi.value.raw)
+        }
+      },
+      // Check string literals in cn(), clsx(), twMerge() calls
+      Literal(node) {
+        if (typeof node.value === 'string' && node.parent) {
+          if (
+            node.parent.type === 'CallExpression' &&
+            node.parent.callee &&
+            node.parent.callee.name &&
+            ['cn', 'clsx', 'classNames', 'twMerge'].includes(node.parent.callee.name)
+          ) {
+            checkForArbitraryValues(node, node.value)
+          }
+        }
+      },
+    }
+  },
+}
+
 export default defineConfig([
   globalIgnores(['dist']),
   {
@@ -70,11 +134,13 @@ export default defineConfig([
       custom: {
         rules: {
           'no-jsx-comments': noJsxComments,
+          'no-arbitrary-tailwind': noArbitraryTailwind,
         },
       },
     },
     rules: {
       'custom/no-jsx-comments': 'error',
+      'custom/no-arbitrary-tailwind': 'error',
     },
   },
 ])

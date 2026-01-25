@@ -9,21 +9,21 @@ import { cn } from "@/lib/utils";
 import { getMetricTooltipContent } from "@/lib/metric-tooltips";
 
 interface StatCellProps {
-  /** The stat value to display */
+  // The stat value to display
   value: number | string | null | undefined;
-  /** Average or comparison value */
+  // Average or comparison value
   average?: number;
-  /** Whether higher is better for this stat */
+  // Whether higher is better for this stat
   higherIsBetter?: boolean;
-  /** Format function for display */
+  // Format function for display
   format?: (value: number) => string;
-  /** Tooltip content explaining the stat */
+  // Tooltip content explaining the stat
   tooltip?: ReactNode;
-  /** Optional metric key (e.g. "xPts", "PDO") to pull tooltip from glossary */
+  // Optional metric key (e.g. "xPts", "PDO") to pull tooltip from glossary
   metric?: string;
-  /** Show trend arrow relative to average */
+  // Show trend arrow relative to average
   showTrend?: boolean;
-  /** Threshold for considering a value "different" from average (as percentage) */
+  // Threshold for considering a value "different" from average (as percentage)
   threshold?: number;
   className?: string;
 }

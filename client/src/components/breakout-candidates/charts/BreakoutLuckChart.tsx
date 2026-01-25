@@ -20,11 +20,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
-import type { LeaderboardEntry } from "@/types";
+import type { BreakoutCandidate } from "@/types";
 
-interface SkaterLuckChartProps {
-  entries: LeaderboardEntry[];
-  season?: number;
+interface BreakoutLuckChartProps {
+  candidates: BreakoutCandidate[];
 }
 
 interface ChartDataPoint {
@@ -34,6 +33,7 @@ interface ChartDataPoint {
   goals: number;
   expectedGoals: number;
   diff: number;
+  breakoutScore: number;
 }
 
 // Custom tooltip
@@ -47,7 +47,7 @@ function CustomTooltip({
   if (!active || !payload?.length) return null;
 
   const data = payload[0].payload;
-  const isLucky = data.diff > 0;
+  const isUnlucky = data.diff > 0;
 
   return (
     <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
@@ -73,14 +73,18 @@ function CustomTooltip({
           <span className="text-muted-foreground">Expected Goals:</span>{" "}
           <span className="font-mono">{data.expectedGoals.toFixed(1)}</span>
         </p>
-        <p className={isLucky ? "text-warning" : "text-success"}>
+        <p className={isUnlucky ? "text-success" : "text-muted-foreground"}>
           <span className="text-muted-foreground">Difference:</span>{" "}
           <span className="font-mono font-semibold">
-            {isLucky ? "+" : ""}
+            {isUnlucky ? "+" : ""}
             {data.diff.toFixed(1)}
           </span>
-          <span className="ml-1">
-            ({isLucky ? "Overperforming" : "Underperforming"})
+          {isUnlucky && <span className="ml-1">(Breakout Candidate)</span>}
+        </p>
+        <p>
+          <span className="text-muted-foreground">Breakout Score:</span>{" "}
+          <span className="font-mono font-semibold">
+            {data.breakoutScore.toFixed(1)}
           </span>
         </p>
       </div>
@@ -88,7 +92,7 @@ function CustomTooltip({
   );
 }
 
-// Custom dot
+// Custom dot with player headshot using foreignObject for better image loading
 function CustomDot(props: {
   cx?: number;
   cy?: number;
@@ -97,33 +101,47 @@ function CustomDot(props: {
   const { cx, cy, payload } = props;
   if (!cx || !cy || !payload) return null;
 
-  const isLucky = payload.diff > 0;
+  const isUnlucky = payload.diff > 0;
+  const size = 12; // radius
 
   return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={6}
-      fill={isLucky ? "hsl(45, 93%, 47%)" : "hsl(142, 76%, 36%)"}
-      stroke="hsl(var(--background))"
-      strokeWidth={1.5}
-    />
+    <g>
+      <foreignObject
+        x={cx - size}
+        y={cy - size}
+        width={size * 2}
+        height={size * 2}
+      >
+        <img
+          src={getPlayerHeadshotUrl(payload.playerId, payload.team)}
+          alt={payload.name}
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: "50%",
+            objectFit: "cover",
+            border: `2px solid ${isUnlucky ? "hsl(142, 76%, 36%)" : "hsl(var(--muted-foreground))"}`,
+          }}
+        />
+      </foreignObject>
+    </g>
   );
 }
 
-export function SkaterLuckChart({ entries }: SkaterLuckChartProps) {
+export function BreakoutLuckChart({ candidates }: BreakoutLuckChartProps) {
   const navigate = useNavigate();
 
-  // Filter to entries with both goals and xG data
-  const chartData: ChartDataPoint[] = entries
-    .filter((e) => e.goals != null && e.expectedGoals != null && e.expectedGoals > 0)
-    .map((entry) => ({
-      playerId: entry.playerId,
-      name: entry.name,
-      team: entry.team ?? "",
-      goals: entry.goals!,
-      expectedGoals: entry.expectedGoals!,
-      diff: entry.goals! - entry.expectedGoals!,
+  // Prepare chart data
+  const chartData: ChartDataPoint[] = candidates
+    .filter((c) => c.expectedGoals > 0)
+    .map((candidate) => ({
+      playerId: candidate.playerId,
+      name: candidate.name,
+      team: candidate.team,
+      goals: candidate.goals,
+      expectedGoals: candidate.expectedGoals,
+      diff: candidate.goalsDifferential,
+      breakoutScore: candidate.breakoutScore,
     }));
 
   const handleClick = (data: ChartDataPoint) => {
@@ -137,7 +155,7 @@ export function SkaterLuckChart({ entries }: SkaterLuckChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Goals vs Expected Goals</CardTitle>
+          <CardTitle>xG vs Goals</CardTitle>
           <CardDescription>No data available</CardDescription>
         </CardHeader>
       </Card>
@@ -152,9 +170,10 @@ export function SkaterLuckChart({ entries }: SkaterLuckChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Goals vs Expected Goals</CardTitle>
+        <CardTitle className="text-lg">Expected Goals vs Actual Goals</CardTitle>
         <CardDescription>
-          Players above the line are outperforming their expected goals
+          Players below the line have scored fewer goals than expected - key
+          breakout candidates
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -220,20 +239,17 @@ export function SkaterLuckChart({ entries }: SkaterLuckChartProps) {
         <div className="flex justify-center gap-8 mt-4 text-xs">
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "hsl(45, 93%, 47%)" }}
+              className="w-3 h-3 rounded-full border-2"
+              style={{ borderColor: "hsl(142, 76%, 36%)" }}
             />
             <span className="text-muted-foreground">
-              Above line = Overperforming xG
+              Below line = Breakout candidate (unlucky)
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "hsl(142, 76%, 36%)" }}
-            />
+            <span className="w-3 h-3 rounded-full border-2 border-muted-foreground" />
             <span className="text-muted-foreground">
-              Below line = Underperforming xG
+              Above line = Outperforming xG
             </span>
           </div>
         </div>
