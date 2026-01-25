@@ -146,6 +146,25 @@ public static class StatsEndpoints
                 """)
             .Produces<LeaderboardResponseDto>()
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/rookies", GetRookies)
+            .WithName("GetRookies")
+            .WithSummary("Get rookie players for a season")
+            .WithDescription("""
+                Returns players meeting NHL rookie criteria:
+                - No prior season with 26+ games played
+                - Under 26 years old as of September 15 of the season
+
+                Includes a composite Rookie Score based on production and underlying metrics.
+
+                **Query Parameters:**
+                - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
+                - `minGames`: Minimum games played to be included (default: 10)
+                - `limit`: Maximum rookies to return (default: 50, max: 100)
+                - `position`: Position filter: "F" for forwards, "D" for defensemen, omit for all
+                """)
+            .Produces<RookiesResponseDto>()
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetHomepageData(
@@ -457,6 +476,73 @@ public static class StatsEndpoints
         var response = LeaderboardBuilder.BuildResponse(result, effectiveSeason, effectiveSituation);
         return Results.Ok(response);
     }
+
+    private static async Task<IResult> GetRookies(
+        int? season,
+        int? minGames,
+        int? limit,
+        string? position,
+        ISkaterStatsRepository statsRepository,
+        CancellationToken cancellationToken)
+    {
+        var effectiveSeason = season ?? StatsMappers.GetDefaultSeason();
+        var effectiveMinGames = minGames ?? 10;
+        var effectiveLimit = Math.Clamp(limit ?? 50, 1, 100);
+
+        // Normalize position filter
+        var effectivePosition = position?.ToUpperInvariant() switch
+        {
+            "F" or "FORWARDS" => "F",
+            "D" or "DEFENSE" or "DEFENSEMEN" => "D",
+            _ => null
+        };
+
+        var rookies = await statsRepository.GetRookiesAsync(
+            effectiveSeason,
+            effectiveMinGames,
+            effectiveLimit,
+            effectivePosition,
+            cancellationToken);
+
+        var rookieDtos = rookies.Select(r =>
+        {
+            var age = r.Player?.BirthDate.HasValue == true
+                ? StatsMappers.CalculateAgeAsSept15(r.Player.BirthDate.Value, effectiveSeason)
+                : 0;
+
+            var shotsPer60 = r.IceTimeSeconds > 0
+                ? Math.Round((decimal)r.Shots / r.IceTimeSeconds * 3600, 2)
+                : 0;
+
+            return new RookieDto(
+                r.PlayerId,
+                r.Player?.Name ?? "Unknown",
+                r.Team,
+                r.Player?.Position,
+                PlayerHelpers.GetHeadshotUrl(r.PlayerId, r.Player?.HeadshotUrl, r.Team),
+                age,
+                r.GamesPlayed,
+                r.Goals,
+                r.Assists,
+                r.Goals + r.Assists,
+                r.Shots,
+                Math.Round(r.ExpectedGoals ?? 0, 2),
+                Math.Round(r.Goals - (r.ExpectedGoals ?? 0), 2),
+                r.CorsiForPct,
+                r.FenwickForPct,
+                shotsPer60,
+                r.IceTimeSeconds,
+                StatsMappers.CalculateRookieScore(r, r.Player?.Position, age)
+            );
+        }).ToList();
+
+        return Results.Ok(new RookiesResponseDto(
+            effectiveSeason,
+            effectiveMinGames,
+            effectivePosition,
+            rookieDtos
+        ));
+    }
 }
 
 public record SeasonPercentilesDto(
@@ -550,4 +636,32 @@ public record TopLinesResponseDto(
     int Season,
     string Situation,
     IReadOnlyList<TopLineDto> Lines
+);
+
+public record RookieDto(
+    int PlayerId,
+    string Name,
+    string Team,
+    string? Position,
+    string? HeadshotUrl,
+    int Age,
+    int GamesPlayed,
+    int Goals,
+    int Assists,
+    int Points,
+    int Shots,
+    decimal ExpectedGoals,
+    decimal GoalsDifferential,
+    decimal? CorsiForPct,
+    decimal? FenwickForPct,
+    decimal ShotsPer60,
+    int IceTimeSeconds,
+    decimal RookieScore
+);
+
+public record RookiesResponseDto(
+    int Season,
+    int MinGamesPlayed,
+    string? PositionFilter,
+    IReadOnlyList<RookieDto> Rookies
 );

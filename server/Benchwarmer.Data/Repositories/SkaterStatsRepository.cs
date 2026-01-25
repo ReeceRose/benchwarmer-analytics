@@ -459,4 +459,77 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
             .Take(limit)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<SkaterSeason>> GetRookiesAsync(
+        int season,
+        int minGames = 10,
+        int limit = 100,
+        string? position = null,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+
+        // Normalize position filter to parameter value
+        var (filterForwards, filterDefense) = position?.ToUpperInvariant() switch
+        {
+            "F" => (true, false),
+            "D" => (false, true),
+            _ => (false, false) // No filter - include all positions
+        };
+        var includeAllPositions = !filterForwards && !filterDefense;
+
+        // Query for rookies using NHL criteria:
+        // 1. No prior season with RookieMaxPriorGames+ games played
+        // 2. Under RookieMaxAge years old as of September 15 of the season year
+        var sql = $$"""
+            SELECT ss.id
+            FROM skater_seasons ss
+            JOIN players p ON ss.player_id = p.id
+            WHERE ss.season = {0}
+              AND ss.situation = 'all'
+              AND ss.is_playoffs = false
+              AND ss.games_played >= {1}
+              AND p.birth_date IS NOT NULL
+              -- Position filter (parameterized to avoid string concatenation)
+              AND (
+                  {2} = true
+                  OR ({3} = true AND p.position IN ('C', 'LW', 'RW'))
+                  OR ({4} = true AND p.position = 'D')
+              )
+              -- Rookie criteria 1: No prior season with {{NhlConstants.RookieMaxPriorGames}}+ games
+              AND NOT EXISTS (
+                  SELECT 1 FROM skater_seasons prior
+                  WHERE prior.player_id = ss.player_id
+                    AND prior.season < ss.season
+                    AND prior.situation = 'all'
+                    AND prior.is_playoffs = false
+                    AND prior.games_played >= {{NhlConstants.RookieMaxPriorGames}}
+              )
+              -- Rookie criteria 2: Under {{NhlConstants.RookieMaxAge}} as of Sept 15 of season year
+              AND (
+                  EXTRACT(YEAR FROM AGE(MAKE_DATE({0}, 9, 15), p.birth_date)) < {{NhlConstants.RookieMaxAge}}
+              )
+            ORDER BY (ss.goals + ss.assists) DESC
+            LIMIT {5}
+            """;
+
+        var skaterIds = await db.Database
+            .SqlQueryRaw<int>(sql, season, minGames, includeAllPositions, filterForwards, filterDefense, limit)
+            .ToListAsync(cancellationToken);
+
+        if (skaterIds.Count == 0)
+        {
+            return [];
+        }
+
+        // Load full entities with Player navigation property
+        var rookies = await db.SkaterSeasons
+            .Include(s => s.Player)
+            .Where(s => skaterIds.Contains(s.Id))
+            .ToListAsync(cancellationToken);
+
+        // Preserve the order from the SQL query (by points DESC)
+        var orderMap = skaterIds.Select((id, index) => (id, index)).ToDictionary(x => x.id, x => x.index);
+        return rookies.OrderBy(r => orderMap.GetValueOrDefault(r.Id, int.MaxValue)).ToList();
+    }
 }

@@ -65,3 +65,33 @@ export interface SeasonPercentilesResponse {
   pointsPer60: number[];
   goalsPer60: number[];
 }
+
+export interface Rookie {
+  playerId: number;
+  name: string;
+  team: string;
+  position: string | null;
+  headshotUrl: string | null;
+  age: number;
+  gamesPlayed: number;
+  goals: number;
+  assists: number;
+  points: number;
+  shots: number;
+  expectedGoals: number;
+  goalsDifferential: number;
+  corsiForPct: number | null;
+  fenwickForPct: number | null;
+  shotsPer60: number;
+  iceTimeSeconds: number;
+  rookieScore: number;
+}
+
+export interface RookiesResponse {
+  season: number;
+  minGamesPlayed: number;
+  positionFilter: string | null;
+  rookies: Rookie[];
+}
+
+export type RookiePositionFilter = "all" | "forwards" | "defensemen";

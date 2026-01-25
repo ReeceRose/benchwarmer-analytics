@@ -44,6 +44,7 @@ import type {
   PenaltySortField,
   LeaderboardCategory,
   LeaderboardResponse,
+  RookiesResponse,
 } from "@/types";
 
 const api = axios.create({
@@ -336,6 +337,18 @@ export async function getBreakoutCandidates(
     "/stats/breakout-candidates",
     { params: { season, minGames, limit } }
   );
+  return data;
+}
+
+export async function getRookies(
+  season?: number,
+  minGames?: number,
+  limit?: number,
+  position?: string
+): Promise<RookiesResponse> {
+  const { data } = await api.get<RookiesResponse>("/stats/rookies", {
+    params: { season, minGames, limit, position },
+  });
   return data;
 }
 

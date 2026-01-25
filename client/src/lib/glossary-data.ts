@@ -368,6 +368,19 @@ export const metrics: MetricDefinition[] = [
       "This is a lightweight heuristic (not a predictive model). It rewards players with positive xG-goal gaps, above-average possession, and above-average shot volume.",
   },
   {
+    name: "Rookie Score",
+    abbreviation: "Rookie Score",
+    aliases: ["RookieScore"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "A composite score for evaluating first-year players, combining production, underlying metrics, position, and age adjustments.",
+    formula:
+      "Production = (Points × 2 × PosMult) + ((G - xG) × 1.5 × PosMult); Underlying = ((CF% - 50) / 5) + (Sh/60 / 3); AgeBonus = (22 - Age) × 2; RookieScore = Production + Underlying + AgeBonus",
+    interpretation:
+      "Defensemen receive a 1.3× multiplier on production metrics since they naturally score less than forwards. Younger rookies (under 22) receive a bonus while older rookies (over 22) receive a penalty, reflecting development potential. An 18-year-old gets +8 points; a 25-year-old gets -6 points.",
+  },
+  {
     name: "Medium Danger Chances",
     abbreviation: "MD",
     category: "shooting",

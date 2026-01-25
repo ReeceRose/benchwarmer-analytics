@@ -65,6 +65,17 @@ public interface ISkaterStatsRepository
     /// Should be called after skater data is updated (e.g., during nightly sync).
     /// </summary>
     Task RefreshSeasonPercentilesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets rookies for a season based on NHL rookie criteria.
+    /// See <see cref="NhlConstants"/> for eligibility thresholds.
+    /// </summary>
+    Task<IReadOnlyList<SkaterSeason>> GetRookiesAsync(
+        int season,
+        int minGames = 10,
+        int limit = 100,
+        string? position = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

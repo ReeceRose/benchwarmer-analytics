@@ -32,3 +32,4 @@ export {
 } from "@/hooks/useSpecialTeams";
 export { useLeaderboard } from "@/hooks/useLeaderboard";
 export { useSortableTable } from "@/hooks/useSortableTable";
+export { useRookies } from "@/hooks/useRookies";
