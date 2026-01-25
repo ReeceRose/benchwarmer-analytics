@@ -71,10 +71,10 @@ export function LineRow({
         {line.goalsAgainst}
       </TableCell>
       <TableCell className={cn("text-right tabular-nums font-medium", getColorClass(xgPct, teamAvgXgPct))}>
-        {xgPct != null ? formatPercent(xgPct, false) : "-"}
+        {xgPct != null ? formatPercent(xgPct, true) : "-"}
       </TableCell>
       <TableCell className={cn("text-right tabular-nums", getColorClass(cfPct, teamAvgCfPct))}>
-        {cfPct != null ? formatPercent(cfPct, false) : "-"}
+        {cfPct != null ? formatPercent(cfPct, true) : "-"}
       </TableCell>
       <TableCell className="w-10">
         <Button

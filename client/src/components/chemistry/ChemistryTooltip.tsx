@@ -19,13 +19,13 @@ export function ChemistryTooltip({ pair, position }: ChemistryTooltipProps) {
         <span className="text-muted-foreground">xG%:</span>
         <span className="font-mono">
           {pair.expectedGoalsPct != null
-            ? formatPercent(pair.expectedGoalsPct, false)
+            ? formatPercent(pair.expectedGoalsPct, true)
             : "-"}
         </span>
         <span className="text-muted-foreground">CF%:</span>
         <span className="font-mono">
           {pair.corsiPct != null
-            ? formatPercent(pair.corsiPct, false)
+            ? formatPercent(pair.corsiPct, true)
             : "-"}
         </span>
         <span className="text-muted-foreground">TOI:</span>

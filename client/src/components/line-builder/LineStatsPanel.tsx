@@ -149,14 +149,14 @@ export function LineStatsPanel({
             <StatRow
               icon={<TrendingUp className="h-4 w-4" />}
               label="xG%"
-              value={avgXgPct != null ? formatPercent(avgXgPct, false) : "-"}
+              value={avgXgPct != null ? formatPercent(avgXgPct, true) : "-"}
               tooltip="Expected goals percentage (>50% is good)"
               highlight={xgHighlight}
             />
             <StatRow
               icon={<BarChart3 className="h-4 w-4" />}
               label="CF%"
-              value={avgCfPct != null ? formatPercent(avgCfPct, false) : "-"}
+              value={avgCfPct != null ? formatPercent(avgCfPct, true) : "-"}
               tooltip="Corsi for percentage - shot attempt share (>50% is good)"
               highlight={cfHighlight}
             />

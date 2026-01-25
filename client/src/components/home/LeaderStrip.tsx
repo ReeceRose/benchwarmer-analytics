@@ -135,7 +135,7 @@ export function LeaderStrip({ leaders, goalieLeaders, season, situation }: Leade
       title: "Corsi %",
       icon: <BarChart3 className="h-4 w-4 text-muted-foreground" />,
       data: leaders.corsiPct,
-      format: (v: number) => formatPercent(v, false),
+      format: (v: number) => formatPercent(v, true),
     },
     {
       key: "iceTime",

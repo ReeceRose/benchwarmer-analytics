@@ -131,12 +131,12 @@ export function StandingsRow({ team, analyticsLoading }: StandingsRowProps) {
           </TableCell>
           <TableCell className={`text-right tabular-nums ${corsiColor}`}>
             {analytics.corsiPct != null
-              ? formatPercent(analytics.corsiPct, false)
+              ? formatPercent(analytics.corsiPct, true)
               : "-"}
           </TableCell>
           <TableCell className={`text-right tabular-nums ${fenwickColor}`}>
             {analytics.fenwickPct != null
-              ? formatPercent(analytics.fenwickPct, false)
+              ? formatPercent(analytics.fenwickPct, true)
               : "-"}
           </TableCell>
           <TableCell className={`text-right tabular-nums ${shootingPctColor}`}>

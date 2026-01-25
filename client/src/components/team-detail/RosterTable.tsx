@@ -87,7 +87,7 @@ export function RosterTable({ title, players, showStats = false }: RosterTablePr
                       <TableCell className="text-right tabular-nums font-medium">{player.points ?? "-"}</TableCell>
                       <TableCell className="text-right tabular-nums">{player.shots ?? "-"}</TableCell>
                       <TableCell className="text-right tabular-nums">{player.expectedGoals?.toFixed(1) ?? "-"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatPercent(player.corsiForPct, false)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatPercent(player.corsiForPct, true)}</TableCell>
                     </>
                   ) : (
                     <>
