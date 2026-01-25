@@ -15,3 +15,4 @@ export { Sparkline } from "@/components/shared/Sparkline";
 export { HeaderWithTooltip } from "@/components/shared/HeaderWithTooltip";
 export { SortableTableHeader } from "@/components/shared/SortableTableHeader";
 export { PlayerSearchDropdown } from "@/components/shared/PlayerSearchDropdown";
+export { TeamLogo } from "@/components/team-detail/TeamLogo";

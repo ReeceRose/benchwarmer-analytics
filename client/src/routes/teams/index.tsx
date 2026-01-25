@@ -1,84 +1,8 @@
-import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useTeams } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ErrorState } from "@/components/shared";
-
-// Map database abbreviations to NHL logo CDN abbreviations
-// Logo URL format: https://assets.nhle.com/logos/nhl/svg/{abbrev}_light.svg
-const TEAM_LOGO_MAP: Record<string, string> = {
-  // Standard mappings
-  ANA: "ANA",
-  ARI: "ARI",
-  BOS: "BOS",
-  BUF: "BUF",
-  CGY: "CGY",
-  CAR: "CAR",
-  CHI: "CHI",
-  COL: "COL",
-  CBJ: "CBJ",
-  DAL: "DAL",
-  DET: "DET",
-  EDM: "EDM",
-  FLA: "FLA",
-  LAK: "LAK",
-  MIN: "MIN",
-  MTL: "MTL",
-  NSH: "NSH",
-  NJD: "NJD",
-  NYI: "NYI",
-  NYR: "NYR",
-  OTT: "OTT",
-  PHI: "PHI",
-  PIT: "PIT",
-  SJS: "SJS",
-  SEA: "SEA",
-  STL: "STL",
-  TBL: "TBL",
-  TOR: "TOR",
-  UTA: "UTA",
-  VAN: "VAN",
-  VGK: "VGK",
-  WSH: "WSH",
-  WPG: "WPG",
-  // MoneyPuck uses periods in some abbreviations
-  "L.A": "LAK",
-  "N.J": "NJD",
-  "S.J": "SJS",
-  "T.B": "TBL",
-  // Historical teams
-  ATL: "ATL",
-};
-
-function getTeamLogoUrl(abbrev: string): string {
-  const mapped = TEAM_LOGO_MAP[abbrev] ?? abbrev;
-  return `https://assets.nhle.com/logos/nhl/svg/${mapped}_light.svg`;
-}
-
-function TeamLogo({ abbrev, name, isActive }: { abbrev: string; name: string; isActive: boolean }) {
-  const [hasError, setHasError] = useState(false);
-
-  // For inactive teams, skip loading the logo since it won't exist
-  if (hasError || !isActive) {
-    // Fallback: show abbreviation in a circle
-    return (
-      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-        <span className="text-sm font-bold text-muted-foreground">{abbrev}</span>
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={getTeamLogoUrl(abbrev)}
-      alt={`${name} logo`}
-      className="w-16 h-16 object-contain group-hover:scale-110 transition-transform"
-      loading="lazy"
-      onError={() => setHasError(true)}
-    />
-  );
-}
+import { ErrorState, TeamLogo } from "@/components/shared";
 
 export const Route = createFileRoute("/teams/")({
   component: TeamsPage,
@@ -132,7 +56,7 @@ function TeamsPage() {
               params={{ abbrev: team.abbreviation }}
               className={`group flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors ${!team.isActive ? "opacity-60" : ""}`}
             >
-              <TeamLogo abbrev={team.abbreviation} name={team.name} isActive={team.isActive} />
+              <TeamLogo abbrev={team.abbreviation} size="lg" className="group-hover:scale-110 transition-transform" />
               <span className="text-sm font-medium text-center">
                 {team.name}
               </span>
