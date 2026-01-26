@@ -195,17 +195,15 @@ export function ShotHeatMap({
                 <TooltipContent side="top" className="text-sm">
                   <div className="space-y-1">
                     <div className="font-semibold">{zone.shots} shots</div>
-                    <div className="grid grid-cols-2 gap-x-3 text-muted-foreground">
-                      <span>Goals:</span>
-                      <span className="font-medium text-foreground">
-                        {zone.goals}
-                      </span>
-                      <span>Avg xG:</span>
-                      <span className="font-medium text-foreground">
+                    <div className="grid grid-cols-2 gap-x-3">
+                      <span className="opacity-70">Goals:</span>
+                      <span className="font-medium">{zone.goals}</span>
+                      <span className="opacity-70">Avg xG:</span>
+                      <span className="font-medium">
                         {(zone.avgXg * 100).toFixed(1)}%
                       </span>
-                      <span>Sh%:</span>
-                      <span className="font-medium text-foreground">
+                      <span className="opacity-70">Sh%:</span>
+                      <span className="font-medium">
                         {zone.shootingPct.toFixed(1)}%
                       </span>
                     </div>
