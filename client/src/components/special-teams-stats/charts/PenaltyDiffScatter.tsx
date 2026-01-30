@@ -20,8 +20,11 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { X, ExternalLink } from "lucide-react";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+import { useChartSelection } from "@/hooks";
 import type { PlayerPenaltyStats } from "@/types";
 
 interface PenaltyDiffScatterProps {
@@ -41,6 +44,9 @@ interface ScatterDataPoint {
   toi: number;
 }
 
+const MOBILE_DOT_RADIUS = 10;
+const DESKTOP_DOT_RADIUS = 6;
+
 function formatRate(v: number) {
   // Avoid displaying floating-point artifacts like 2.3000000000000003
   return v.toFixed(1).replace(/\.0$/, "");
@@ -54,23 +60,29 @@ function CustomDot(props: {
   cx?: number;
   cy?: number;
   payload?: ScatterDataPoint;
+  isSelected?: boolean;
 }) {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload, isSelected } = props;
   if (!cx || !cy || !payload) return null;
+
+  const isMobile =
+    typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const baseRadius = isMobile ? MOBILE_DOT_RADIUS : DESKTOP_DOT_RADIUS;
+  const radius = isSelected ? baseRadius + 2 : baseRadius;
 
   return (
     <circle
       cx={cx}
       cy={cy}
-      r={6}
+      r={radius}
       fill={getNetColor(payload.netPer60)}
-      stroke="hsl(var(--background))"
-      strokeWidth={1.5}
+      stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--background))"}
+      strokeWidth={isSelected ? 3 : 1.5}
+      style={{ transition: "r 0.15s, stroke-width 0.15s" }}
     />
   );
 }
 
-// Custom tooltip
 function CustomTooltip({
   active,
   payload,
@@ -78,6 +90,10 @@ function CustomTooltip({
   active?: boolean;
   payload?: Array<{ payload: ScatterDataPoint }>;
 }) {
+  if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+    return null;
+  }
+
   if (!active || !payload?.length) return null;
 
   const data = payload[0].payload;
@@ -128,11 +144,80 @@ function CustomTooltip({
   );
 }
 
+function SelectionPanel({
+  data,
+  onClose,
+  onNavigate,
+}: {
+  data: ScatterDataPoint;
+  onClose: () => void;
+  onNavigate: () => void;
+}) {
+  const isPositive = data.netPer60 > 0;
+
+  return (
+    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Avatar className="h-10 w-10 shrink-0">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(data.playerId, data.team)}
+              alt={data.name}
+            />
+            <AvatarFallback>{getPlayerInitials(data.name)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="font-semibold truncate">
+              {data.name}
+              <span
+                className={`ml-2 text-xs ${isPositive ? "text-success" : "text-destructive"}`}
+              >
+                {isPositive ? "Net Positive" : "Net Negative"}
+              </span>
+            </p>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>
+                <span className="text-xs">Drawn/60:</span>{" "}
+                <span className="font-mono text-green-600 dark:text-green-400">
+                  {data.drawnPer60.toFixed(2)}
+                </span>
+              </span>
+              <span>
+                <span className="text-xs">Taken/60:</span>{" "}
+                <span className="font-mono text-red-600 dark:text-red-400">
+                  {data.takenPer60.toFixed(2)}
+                </span>
+              </span>
+              <span
+                className={`font-mono font-semibold ${isPositive ? "text-success" : "text-destructive"}`}
+              >
+                {isPositive ? "+" : ""}
+                {data.netPer60.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button size="sm" variant="default" onClick={onNavigate}>
+            View
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PenaltyDiffScatter({
   players,
   scopeLabel,
 }: PenaltyDiffScatterProps) {
   const navigate = useNavigate();
+  const { selectedItem, handleSelect, clearSelection } =
+    useChartSelection<ScatterDataPoint>();
 
   // Prepare scatter data
   const scatterData: ScatterDataPoint[] = players.map((player) => ({
@@ -148,10 +233,23 @@ export function PenaltyDiffScatter({
   }));
 
   const handleClick = (data: ScatterDataPoint) => {
-    navigate({
-      to: "/players/$id",
-      params: { id: String(data.playerId) },
-    });
+    if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+      handleSelect(data);
+    } else {
+      navigate({
+        to: "/players/$id",
+        params: { id: String(data.playerId) },
+      });
+    }
+  };
+
+  const handleNavigateToPlayer = () => {
+    if (selectedItem) {
+      navigate({
+        to: "/players/$id",
+        params: { id: String(selectedItem.playerId) },
+      });
+    }
   };
 
   if (players.length === 0) {
@@ -284,7 +382,12 @@ export function PenaltyDiffScatter({
 
             <Scatter
               data={scatterData}
-              shape={<CustomDot />}
+              shape={(props: { cx?: number; cy?: number; payload?: ScatterDataPoint }) => (
+                <CustomDot
+                  {...props}
+                  isSelected={selectedItem?.playerId === props.payload?.playerId}
+                />
+              )}
               cursor="pointer"
               onClick={(data) =>
                 handleClick(data as unknown as ScatterDataPoint)
@@ -293,6 +396,14 @@ export function PenaltyDiffScatter({
             />
           </ScatterChart>
         </ResponsiveContainer>
+
+        {selectedItem && (
+          <SelectionPanel
+            data={selectedItem}
+            onClose={clearSelection}
+            onNavigate={handleNavigateToPlayer}
+          />
+        )}
         <div className="flex justify-center gap-8 mt-4 text-xs">
           <div
             className="flex items-center gap-2"
@@ -317,6 +428,10 @@ export function PenaltyDiffScatter({
             </span>
           </div>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
+          Tap a player to see details
+        </p>
       </CardContent>
     </Card>
   );

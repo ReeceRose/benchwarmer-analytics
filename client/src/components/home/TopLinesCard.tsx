@@ -1,10 +1,19 @@
 import { Link } from "@tanstack/react-router";
 import { Users, ChevronRight } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatToi, formatPercent } from "@/lib/formatters";
-import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+import {
+  getPlayerHeadshotUrl,
+  getPlayerInitials,
+} from "@/lib/player-headshots";
 import type { TopLine } from "@/types";
 
 interface TopLinesCardProps {
@@ -34,71 +43,77 @@ export function TopLinesCard({ lines, season }: TopLinesCardProps) {
           <Users className="h-5 w-5 text-success" />
           Hot Lines (5v5)
         </CardTitle>
-        <CardDescription>Top performing line combinations by xG%</CardDescription>
+        <CardDescription>
+          Top performing line combinations by xG%
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-1">
         {lines.slice(0, 5).map((line, index) => (
           <Link
             key={line.id}
             to="/teams/$abbrev/lines"
             params={{ abbrev: line.team }}
             search={{ season }}
-            className="block p-3 -mx-3 hover:bg-muted/50 rounded-lg transition-colors group"
+            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-3 hover:bg-muted/50 rounded-lg transition-colors group"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-muted-foreground font-mono text-xs">
-                    #{index + 1}
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    {line.team}
-                  </Badge>
-                </div>
-                <div className="flex flex-wrap items-center gap-1">
-                  {line.players.map((player, i) => (
-                    <span
-                      key={player.playerId}
-                      className="flex items-center gap-1 text-sm"
-                    >
-                      <Avatar className="h-5 w-5">
-                        <AvatarImage
-                          src={getPlayerHeadshotUrl(player.playerId, line.team)}
-                          alt={player.name}
-                        />
-                        <AvatarFallback className="text-[8px]">
-                          {getPlayerInitials(player.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      {player.name}
-                      {i < line.players.length - 1 && (
-                        <span className="text-muted-foreground mx-1">-</span>
-                      )}
-                    </span>
-                  ))}
-                </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground font-mono text-xs w-4">
+                #{index + 1}
+              </span>
+              <Badge variant="outline" className="text-xs">
+                {line.team}
+              </Badge>
+              <div className="flex -space-x-1.5">
+                {line.players.map((player) => (
+                  <Avatar
+                    key={player.playerId}
+                    className="h-7 w-7 border-2 border-background"
+                  >
+                    <AvatarImage
+                      src={getPlayerHeadshotUrl(player.playerId, line.team)}
+                      alt={player.name}
+                    />
+                    <AvatarFallback className="text-[8px]">
+                      {getPlayerInitials(player.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
               </div>
-              <div className="flex items-center gap-4 text-right shrink-0">
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground">xG%</span>
-                  <span className="font-mono text-sm font-medium">
-                    {line.expectedGoalsPct != null ? formatPercent(line.expectedGoalsPct, false) : "—"}
-                  </span>
+            </div>
+
+            <div className="flex flex-col min-w-0">
+              {line.players.map((player) => (
+                <span
+                  key={player.playerId}
+                  className="text-xs text-muted-foreground truncate"
+                >
+                  {player.name}
+                </span>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="text-center">
+                <div className="font-mono text-sm font-medium text-success">
+                  {line.expectedGoalsPct != null
+                    ? formatPercent(line.expectedGoalsPct, false)
+                    : "—"}
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground">GF/GA</span>
-                  <span className="font-mono text-sm">
-                    {line.goalsFor}/{line.goalsAgainst}
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground">TOI</span>
-                  <span className="font-mono text-sm">
-                    {formatToi(line.iceTimeSeconds)}
-                  </span>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="text-[10px] text-muted-foreground">xG%</div>
               </div>
+              <div className="text-center hidden sm:block">
+                <div className="font-mono text-sm">
+                  {line.goalsFor}/{line.goalsAgainst}
+                </div>
+                <div className="text-[10px] text-muted-foreground">GF/GA</div>
+              </div>
+              <div className="text-center hidden sm:block">
+                <div className="font-mono text-sm">
+                  {formatToi(line.iceTimeSeconds)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">TOI</div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
             </div>
           </Link>
         ))}

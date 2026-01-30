@@ -20,8 +20,11 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { X, ExternalLink } from "lucide-react";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+import { useChartSelection } from "@/hooks";
 import type { LeaderboardEntry } from "@/types";
 
 interface GoalieQuadrantChartProps {
@@ -38,11 +41,10 @@ interface ChartDataPoint {
   gamesPlayed: number;
 }
 
-// League average constants
 const AVG_GSAX = 0;
 const AVG_SAVE_PCT = 90.5;
+const MOBILE_SIZE_BOOST = 4;
 
-// Custom tooltip
 function CustomTooltip({
   active,
   payload,
@@ -50,6 +52,10 @@ function CustomTooltip({
   active?: boolean;
   payload?: Array<{ payload: ChartDataPoint }>;
 }) {
+  if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+    return null;
+  }
+
   if (!active || !payload?.length) return null;
 
   const data = payload[0].payload;
@@ -98,17 +104,20 @@ function CustomTooltip({
   );
 }
 
-// Custom dot with size based on games played
 function CustomDot(props: {
   cx?: number;
   cy?: number;
   payload?: ChartDataPoint;
+  isSelected?: boolean;
 }) {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload, isSelected } = props;
   if (!cx || !cy || !payload) return null;
 
-  // Size based on games played (min 4, max 12)
-  const size = Math.max(4, Math.min(12, 4 + payload.gamesPlayed / 8));
+  const isMobile =
+    typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const sizeBoost = isMobile ? MOBILE_SIZE_BOOST : 0;
+  const baseSize = Math.max(4, Math.min(12, 4 + payload.gamesPlayed / 8)) + sizeBoost;
+  const size = isSelected ? baseSize + 2 : baseSize;
   const isPositiveGSAx = payload.gsax > 0;
 
   return (
@@ -118,24 +127,80 @@ function CustomDot(props: {
       r={size}
       fill={isPositiveGSAx ? "hsl(142, 76%, 36%)" : "hsl(0, 72%, 51%)"}
       fillOpacity={0.7}
-      stroke="hsl(var(--background))"
-      strokeWidth={1.5}
+      stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--background))"}
+      strokeWidth={isSelected ? 3 : 1.5}
+      style={{ transition: "r 0.15s, stroke-width 0.15s" }}
     />
   );
 }
 
-export function GoalieQuadrantChart({
-  entries,
-}: GoalieQuadrantChartProps) {
-  const navigate = useNavigate();
+function SelectionPanel({
+  data,
+  onClose,
+  onNavigate,
+}: {
+  data: ChartDataPoint;
+  onClose: () => void;
+  onNavigate: () => void;
+}) {
+  const isElite = data.gsax > 0 && data.savePct > AVG_SAVE_PCT;
 
-  // Filter to goalies with GSAx and Sv% data
+  return (
+    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Avatar className="h-10 w-10 shrink-0">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(data.playerId, data.team)}
+              alt={data.name}
+            />
+            <AvatarFallback>{getPlayerInitials(data.name)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="font-semibold truncate">
+              {data.name}
+              {isElite && <span className="ml-2 text-success text-xs">Elite</span>}
+            </p>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>
+                <span className="text-xs">Sv%:</span>{" "}
+                <span className="font-mono">{data.savePct.toFixed(1)}%</span>
+              </span>
+              <span
+                className={`font-mono font-semibold ${data.gsax > 0 ? "text-success" : "text-destructive"}`}
+              >
+                GSAx: {data.gsax > 0 ? "+" : ""}
+                {data.gsax.toFixed(1)}
+              </span>
+              <span className="text-xs">{data.gamesPlayed} GP</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button size="sm" variant="default" onClick={onNavigate}>
+            View
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
+  const navigate = useNavigate();
+  const { selectedItem, handleSelect, clearSelection } =
+    useChartSelection<ChartDataPoint>();
+
   const chartData: ChartDataPoint[] = entries
     .filter(
       (e) =>
         e.goalsSavedAboveExpected != null &&
         e.savePercentage != null &&
-        e.gamesPlayed >= 5,
+        e.gamesPlayed >= 5
     )
     .map((entry) => ({
       playerId: entry.playerId,
@@ -147,10 +212,23 @@ export function GoalieQuadrantChart({
     }));
 
   const handleClick = (data: ChartDataPoint) => {
-    navigate({
-      to: "/players/$id",
-      params: { id: String(data.playerId) },
-    });
+    if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+      handleSelect(data);
+    } else {
+      navigate({
+        to: "/players/$id",
+        params: { id: String(data.playerId) },
+      });
+    }
+  };
+
+  const handleNavigateToPlayer = () => {
+    if (selectedItem) {
+      navigate({
+        to: "/players/$id",
+        params: { id: String(selectedItem.playerId) },
+      });
+    }
   };
 
   if (chartData.length === 0) {
@@ -164,7 +242,6 @@ export function GoalieQuadrantChart({
     );
   }
 
-  // Calculate domain
   const gsaxValues = chartData.map((d) => d.gsax);
   const svPctValues = chartData.map((d) => d.savePct);
   const xMin = Math.floor(Math.min(...gsaxValues)) - 2;
@@ -273,12 +350,26 @@ export function GoalieQuadrantChart({
             <Tooltip content={<CustomTooltip />} />
             <Scatter
               data={chartData}
-              shape={<CustomDot />}
+              shape={(props: { cx?: number; cy?: number; payload?: ChartDataPoint }) => (
+                <CustomDot
+                  {...props}
+                  isSelected={selectedItem?.playerId === props.payload?.playerId}
+                />
+              )}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
             />
           </ScatterChart>
         </ResponsiveContainer>
+
+        {selectedItem && (
+          <SelectionPanel
+            data={selectedItem}
+            onClose={clearSelection}
+            onNavigate={handleNavigateToPlayer}
+          />
+        )}
+
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
           <div
             className="p-2 rounded"
@@ -309,6 +400,10 @@ export function GoalieQuadrantChart({
             <p className="text-muted-foreground">Low Sv%, Positive GSAx</p>
           </div>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
+          Tap a point to see goalie details
+        </p>
       </CardContent>
     </Card>
   );

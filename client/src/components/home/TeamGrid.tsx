@@ -90,7 +90,7 @@ export function TeamGrid() {
               <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
                 {division}
               </h3>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-2">
                 {abbrevs.map((abbrev) => {
                   const team = teamLookup.get(abbrev);
                   if (!team) return null;
@@ -99,7 +99,7 @@ export function TeamGrid() {
                       key={abbrev}
                       to="/teams/$abbrev"
                       params={{ abbrev }}
-                      className="group flex items-center justify-center p-1 rounded hover:bg-muted/50 transition-colors"
+                      className="group flex items-center justify-center p-2 rounded-lg hover:bg-muted/50 transition-colors"
                       title={team.name}
                     >
                       <TeamLogo abbrev={abbrev} name={team.name} />

@@ -17,9 +17,11 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, X, ExternalLink } from "lucide-react";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+import { useChartSelection } from "@/hooks";
 import type { OutlierEntry } from "@/types";
 
 interface LuckChartProps {
@@ -44,22 +46,35 @@ function getPointColor(differential: number) {
   return differential > 0 ? HOT_COLOR : COLD_COLOR;
 }
 
+// Larger touch targets on mobile (10px vs 6px)
+const MOBILE_DOT_RADIUS = 10;
+const DESKTOP_DOT_RADIUS = 6;
+
 function CustomDot(props: {
   cx?: number;
   cy?: number;
   payload?: ChartDataPoint;
+  isSelected?: boolean;
 }) {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload, isSelected } = props;
   if (!cx || !cy || !payload) return null;
+
+  // Use CSS media query approach - render larger for touch
+  const baseRadius = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches
+    ? MOBILE_DOT_RADIUS
+    : DESKTOP_DOT_RADIUS;
+
+  const radius = isSelected ? baseRadius + 2 : baseRadius;
 
   return (
     <circle
       cx={cx}
       cy={cy}
-      r={6}
+      r={radius}
       fill={getPointColor(payload.differential)}
-      stroke="hsl(var(--background))"
-      strokeWidth={1.5}
+      stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--background))"}
+      strokeWidth={isSelected ? 3 : 1.5}
+      style={{ transition: "r 0.15s, stroke-width 0.15s" }}
     />
   );
 }
@@ -71,6 +86,11 @@ function CustomTooltip({
   active?: boolean;
   payload?: Array<{ payload: ChartDataPoint }>;
 }) {
+  // Only show tooltip on non-touch devices
+  if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+    return null;
+  }
+
   if (!active || !payload?.length) return null;
 
   const data = payload[0].payload;
@@ -112,8 +132,71 @@ function CustomTooltip({
   );
 }
 
+// Selection panel for mobile - shows below chart when a point is tapped
+function SelectionPanel({
+  data,
+  onClose,
+  onNavigate,
+}: {
+  data: ChartDataPoint;
+  onClose: () => void;
+  onNavigate: () => void;
+}) {
+  const isHot = data.differential > 0;
+
+  return (
+    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Avatar className="h-10 w-10 shrink-0">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(data.playerId, data.team)}
+              alt={data.name}
+            />
+            <AvatarFallback>{getPlayerInitials(data.name)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="font-semibold truncate">{data.name}</p>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>
+                <span className="text-xs">Goals:</span>{" "}
+                <span className="font-mono">{data.goals}</span>
+              </span>
+              <span>
+                <span className="text-xs">xG:</span>{" "}
+                <span className="font-mono">{data.xG.toFixed(1)}</span>
+              </span>
+              <span
+                className={`font-mono font-semibold ${
+                  isHot
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+              >
+                {isHot ? "+" : ""}
+                {data.differential.toFixed(1)}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button size="sm" variant="default" onClick={onNavigate}>
+            View
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
   const navigate = useNavigate();
+  const { selectedItem, handleSelect, clearSelection } =
+    useChartSelection<ChartDataPoint>();
 
   // Combine hot and cold data for the scatter plot
   const chartData: ChartDataPoint[] = [
@@ -150,10 +233,24 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
   }
 
   const handleClick = (data: ChartDataPoint) => {
-    navigate({
-      to: "/players/$id",
-      params: { id: data.playerId.toString() },
-    });
+    // On touch devices, select first; on desktop, navigate directly
+    if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+      handleSelect(data);
+    } else {
+      navigate({
+        to: "/players/$id",
+        params: { id: data.playerId.toString() },
+      });
+    }
+  };
+
+  const handleNavigateToPlayer = () => {
+    if (selectedItem) {
+      navigate({
+        to: "/players/$id",
+        params: { id: selectedItem.playerId.toString() },
+      });
+    }
   };
 
   return (
@@ -170,7 +267,11 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLOURS.grid} strokeOpacity={CHART_AXIS_COLOURS.gridOpacity} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={CHART_AXIS_COLOURS.grid}
+              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
+            />
             <XAxis
               dataKey="xG"
               name="Expected Goals"
@@ -226,13 +327,29 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
             />
             <Scatter
               data={chartData}
-              shape={<CustomDot />}
+              shape={(props: { cx?: number; cy?: number; payload?: ChartDataPoint }) => (
+                <CustomDot
+                  {...props}
+                  isSelected={
+                    selectedItem?.playerId === props.payload?.playerId
+                  }
+                />
+              )}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
               fillOpacity={0.85}
             />
           </ScatterChart>
         </ResponsiveContainer>
+
+        {selectedItem && (
+          <SelectionPanel
+            data={selectedItem}
+            onClose={clearSelection}
+            onNavigate={handleNavigateToPlayer}
+          />
+        )}
+
         <div className="flex justify-center gap-8 mt-4 text-xs">
           <div className="flex items-center gap-2">
             <span
@@ -253,6 +370,10 @@ export function LuckChart({ runningHot, runningCold }: LuckChartProps) {
             </span>
           </div>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
+          Tap a point to see player details
+        </p>
       </CardContent>
     </Card>
   );

@@ -17,9 +17,12 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { X, ExternalLink } from "lucide-react";
 import { TeamLogo } from "@/components/shared";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getTeamLogoUrl } from "@/lib/team-logos";
+import { useChartSelection } from "@/hooks";
 import type { StandingsWithAnalytics } from "@/types";
 
 interface PointsLuckChartProps {
@@ -34,7 +37,9 @@ interface ChartDataPoint {
   diff: number;
 }
 
-// Custom tooltip
+const MOBILE_SIZE = 16;
+const DESKTOP_SIZE = 12;
+
 function CustomTooltip({
   active,
   payload,
@@ -42,6 +47,10 @@ function CustomTooltip({
   active?: boolean;
   payload?: Array<{ payload: ChartDataPoint }>;
 }) {
+  if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+    return null;
+  }
+
   if (!active || !payload?.length) return null;
 
   const data = payload[0].payload;
@@ -75,30 +84,107 @@ function CustomTooltip({
   );
 }
 
-// Custom dot showing team logo
 function CustomDot(props: {
   cx?: number;
   cy?: number;
   payload?: ChartDataPoint;
+  isSelected?: boolean;
 }) {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload, isSelected } = props;
   if (!cx || !cy || !payload) return null;
+
+  const isMobile =
+    typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const size = isMobile ? MOBILE_SIZE : DESKTOP_SIZE;
 
   return (
     <g>
       <image
         href={getTeamLogoUrl(payload.abbrev)}
-        x={cx - 12}
-        y={cy - 12}
-        width={24}
-        height={24}
+        x={cx - size}
+        y={cy - size}
+        width={size * 2}
+        height={size * 2}
+        style={{
+          transition: "all 0.15s",
+          filter: isSelected ? "drop-shadow(0 0 4px hsl(var(--primary)))" : undefined,
+        }}
       />
+      {isSelected && (
+        <circle
+          cx={cx}
+          cy={cy}
+          r={size + 3}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth={2}
+        />
+      )}
     </g>
+  );
+}
+
+function SelectionPanel({
+  data,
+  onClose,
+  onNavigate,
+}: {
+  data: ChartDataPoint;
+  onClose: () => void;
+  onNavigate: () => void;
+}) {
+  const isLucky = data.diff > 0;
+
+  return (
+    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <TeamLogo abbrev={data.abbrev} size="md" />
+          <div className="min-w-0">
+            <p className="font-semibold truncate">
+              {data.name}
+              <span
+                className={`ml-2 text-xs ${isLucky ? "text-warning" : "text-success"}`}
+              >
+                {isLucky ? "Lucky" : "Unlucky"}
+              </span>
+            </p>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>
+                <span className="text-xs">Pts:</span>{" "}
+                <span className="font-mono font-semibold">{data.points}</span>
+              </span>
+              <span>
+                <span className="text-xs">xPts:</span>{" "}
+                <span className="font-mono">{data.expectedPoints.toFixed(1)}</span>
+              </span>
+              <span
+                className={`font-mono font-semibold ${isLucky ? "text-warning" : "text-success"}`}
+              >
+                {isLucky ? "+" : ""}
+                {data.diff.toFixed(1)}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button size="sm" variant="default" onClick={onNavigate}>
+            View
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export function PointsLuckChart({ teams }: PointsLuckChartProps) {
   const navigate = useNavigate();
+  const { selectedItem, handleSelect, clearSelection } =
+    useChartSelection<ChartDataPoint>();
 
   // Prepare chart data - only teams with analytics
   const chartData: ChartDataPoint[] = teams
@@ -112,10 +198,23 @@ export function PointsLuckChart({ teams }: PointsLuckChartProps) {
     }));
 
   const handleClick = (data: ChartDataPoint) => {
-    navigate({
-      to: "/teams/$abbrev",
-      params: { abbrev: data.abbrev },
-    });
+    if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+      handleSelect(data);
+    } else {
+      navigate({
+        to: "/teams/$abbrev",
+        params: { abbrev: data.abbrev },
+      });
+    }
+  };
+
+  const handleNavigateToTeam = () => {
+    if (selectedItem) {
+      navigate({
+        to: "/teams/$abbrev",
+        params: { abbrev: selectedItem.abbrev },
+      });
+    }
   };
 
   if (chartData.length === 0) {
@@ -197,12 +296,26 @@ export function PointsLuckChart({ teams }: PointsLuckChartProps) {
             <Tooltip content={<CustomTooltip />} />
             <Scatter
               data={chartData}
-              shape={<CustomDot />}
+              shape={(props: { cx?: number; cy?: number; payload?: ChartDataPoint }) => (
+                <CustomDot
+                  {...props}
+                  isSelected={selectedItem?.abbrev === props.payload?.abbrev}
+                />
+              )}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
             />
           </ScatterChart>
         </ResponsiveContainer>
+
+        {selectedItem && (
+          <SelectionPanel
+            data={selectedItem}
+            onClose={clearSelection}
+            onNavigate={handleNavigateToTeam}
+          />
+        )}
+
         <div className="flex justify-center gap-8 mt-4 text-xs">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
@@ -215,6 +328,10 @@ export function PointsLuckChart({ teams }: PointsLuckChartProps) {
             </span>
           </div>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
+          Tap a team to see details
+        </p>
       </CardContent>
     </Card>
   );

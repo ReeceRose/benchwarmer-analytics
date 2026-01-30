@@ -27,13 +27,13 @@ function DetailedGoalsList({
   if (!goals || goals.length === 0) return null;
 
   return (
-    <div className="pt-4 border-t text-sm">
+    <div className="pt-4 border-t text-sm text-left">
       <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
         Goals
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         {goals.map((goal, idx) => (
-          <div key={idx} className="flex items-center justify-center gap-2">
+          <div key={idx} className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
             <Badge variant="outline" className="text-xs px-1.5 py-0">
               {goal.teamCode === awayCode ? "A" : "H"}
             </Badge>

@@ -18,14 +18,14 @@ function OutlierList({ title, description, icon, players, variant }: OutlierList
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-4">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           {icon}
           {title}
         </CardTitle>
-        <CardDescription className="text-xs">{description}</CardDescription>
+        <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-1">
         {players.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data available</p>
         ) : (
@@ -34,43 +34,43 @@ function OutlierList({ title, description, icon, players, variant }: OutlierList
               key={player.playerId}
               to="/players/$id"
               params={{ id: player.playerId.toString() }}
-              className="flex items-center justify-between py-2 px-2 -mx-2 hover:bg-muted/50 rounded transition-colors"
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-3 hover:bg-muted/50 rounded-lg transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={player.headshotUrl || getPlayerHeadshotUrl(player.playerId, player.team)}
-                    alt={player.name}
-                  />
-                  <AvatarFallback className="text-xs">
-                    {getPlayerInitials(player.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm">{player.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {player.team} {player.position && `- ${player.position}`}
-                  </span>
-                </div>
+              <Avatar className="h-10 w-10">
+                <AvatarImage
+                  src={player.headshotUrl || getPlayerHeadshotUrl(player.playerId, player.team)}
+                  alt={player.name}
+                />
+                <AvatarFallback className="text-xs">
+                  {getPlayerInitials(player.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium text-sm truncate">{player.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {player.team} {player.position && `· ${player.position}`}
+                </span>
               </div>
-              <div className="flex items-center gap-3 text-right">
-                <div className="flex flex-col items-end">
-                  <span className="text-xs text-muted-foreground">G / xG</span>
-                  <span className="font-mono text-sm">
-                    {player.goals} / {player.expectedGoals.toFixed(1)}
-                  </span>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="font-mono text-sm tabular-nums">
+                    {player.goals}
+                    <span className="text-muted-foreground mx-1">/</span>
+                    {player.expectedGoals.toFixed(1)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">G / xG</div>
                 </div>
                 <div
-                  className={`flex items-center gap-1 font-mono text-sm ${
+                  className={`font-mono text-sm font-medium tabular-nums text-right ${
                     isHot
                       ? "text-success"
                       : "text-destructive"
                   }`}
                 >
                   {isHot ? (
-                    <TrendingUp className="h-3 w-3" />
+                    <TrendingUp className="h-3 w-3 inline mr-0.5" />
                   ) : (
-                    <TrendingDown className="h-3 w-3" />
+                    <TrendingDown className="h-3 w-3 inline mr-0.5" />
                   )}
                   {isHot ? "+" : ""}
                   {player.differential.toFixed(1)}
@@ -97,14 +97,14 @@ function GoalieOutlierList({ title, description, icon, goalies, variant }: Goali
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-4">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           {icon}
           {title}
         </CardTitle>
-        <CardDescription className="text-xs">{description}</CardDescription>
+        <CardDescription className="text-sm">{description}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-1">
         {goalies.length === 0 ? (
           <p className="text-sm text-muted-foreground">No data available</p>
         ) : (
@@ -113,43 +113,43 @@ function GoalieOutlierList({ title, description, icon, goalies, variant }: Goali
               key={goalie.playerId}
               to="/players/$id"
               params={{ id: goalie.playerId.toString() }}
-              className="flex items-center justify-between py-2 px-2 -mx-2 hover:bg-muted/50 rounded transition-colors"
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-3 hover:bg-muted/50 rounded-lg transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={goalie.headshotUrl || getPlayerHeadshotUrl(goalie.playerId, goalie.team)}
-                    alt={goalie.name}
-                  />
-                  <AvatarFallback className="text-xs">
-                    {getPlayerInitials(goalie.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm">{goalie.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {goalie.team} - G
-                  </span>
-                </div>
+              <Avatar className="h-10 w-10">
+                <AvatarImage
+                  src={goalie.headshotUrl || getPlayerHeadshotUrl(goalie.playerId, goalie.team)}
+                  alt={goalie.name}
+                />
+                <AvatarFallback className="text-xs">
+                  {getPlayerInitials(goalie.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium text-sm truncate">{goalie.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {goalie.team} · G
+                </span>
               </div>
-              <div className="flex items-center gap-3 text-right">
-                <div className="flex flex-col items-end">
-                  <span className="text-xs text-muted-foreground">GA / xGA</span>
-                  <span className="font-mono text-sm">
-                    {goalie.goalsAgainst} / {goalie.expectedGoalsAgainst.toFixed(1)}
-                  </span>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="font-mono text-sm tabular-nums">
+                    {goalie.goalsAgainst}
+                    <span className="text-muted-foreground mx-1">/</span>
+                    {goalie.expectedGoalsAgainst.toFixed(1)}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">GA / xGA</div>
                 </div>
                 <div
-                  className={`flex items-center gap-1 font-mono text-sm ${
+                  className={`font-mono text-sm font-medium tabular-nums text-right ${
                     isHot
                       ? "text-success"
                       : "text-destructive"
                   }`}
                 >
                   {isHot ? (
-                    <TrendingUp className="h-3 w-3" />
+                    <TrendingUp className="h-3 w-3 inline mr-0.5" />
                   ) : (
-                    <TrendingDown className="h-3 w-3" />
+                    <TrendingDown className="h-3 w-3 inline mr-0.5" />
                   )}
                   {isHot ? "+" : ""}
                   {goalie.goalsSavedAboveExpected.toFixed(1)}

@@ -255,7 +255,7 @@ export function GamesSection() {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-hot" />
@@ -270,7 +270,7 @@ export function GamesSection() {
             </CardTitle>
             <CardDescription>NHL game scores and analytics</CardDescription>
           </div>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="self-start sm:self-auto -ml-2 sm:ml-0">
             <Link to="/games" className="text-muted-foreground hover:text-foreground">
               View all games
               <ChevronRight className="h-4 w-4 ml-1" />

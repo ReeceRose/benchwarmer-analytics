@@ -18,8 +18,11 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { X, ExternalLink } from "lucide-react";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+import { useChartSelection } from "@/hooks";
 import type { Rookie } from "@/types";
 
 interface GoalsVsExpectedChartProps {
@@ -36,6 +39,9 @@ interface ChartDataPoint {
   points: number;
 }
 
+const MOBILE_SIZE = 16;
+const DESKTOP_SIZE = 12;
+
 function CustomTooltip({
   active,
   payload,
@@ -43,6 +49,10 @@ function CustomTooltip({
   active?: boolean;
   payload?: Array<{ payload: ChartDataPoint }>;
 }) {
+  if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+    return null;
+  }
+
   if (!active || !payload?.length) return null;
 
   const data = payload[0].payload;
@@ -95,12 +105,15 @@ function CustomDot(props: {
   cx?: number;
   cy?: number;
   payload?: ChartDataPoint;
+  isSelected?: boolean;
 }) {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload, isSelected } = props;
   if (!cx || !cy || !payload) return null;
 
   const isOverperforming = payload.diff > 0;
-  const size = 12;
+  const isMobile =
+    typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const size = isMobile ? MOBILE_SIZE : DESKTOP_SIZE;
 
   return (
     <g>
@@ -118,7 +131,10 @@ function CustomDot(props: {
             height: "100%",
             borderRadius: "50%",
             objectFit: "cover",
-            border: `2px solid ${isOverperforming ? "hsl(142, 76%, 36%)" : "hsl(45, 93%, 47%)"}`,
+            border: isSelected
+              ? "3px solid hsl(var(--primary))"
+              : `2px solid ${isOverperforming ? "hsl(142, 76%, 36%)" : "hsl(45, 93%, 47%)"}`,
+            transition: "border 0.15s",
           }}
         />
       </foreignObject>
@@ -126,8 +142,73 @@ function CustomDot(props: {
   );
 }
 
+function SelectionPanel({
+  data,
+  onClose,
+  onNavigate,
+}: {
+  data: ChartDataPoint;
+  onClose: () => void;
+  onNavigate: () => void;
+}) {
+  const isOverperforming = data.diff > 0;
+
+  return (
+    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Avatar className="h-10 w-10 shrink-0">
+            <AvatarImage
+              src={getPlayerHeadshotUrl(data.playerId, data.team)}
+              alt={data.name}
+            />
+            <AvatarFallback>{getPlayerInitials(data.name)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="font-semibold truncate">
+              {data.name}
+              <span
+                className={`ml-2 text-xs ${isOverperforming ? "text-success" : "text-amber-500"}`}
+              >
+                {isOverperforming ? "Hot" : "Due for more"}
+              </span>
+            </p>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>
+                <span className="text-xs">Goals:</span>{" "}
+                <span className="font-mono">{data.goals}</span>
+              </span>
+              <span>
+                <span className="text-xs">xG:</span>{" "}
+                <span className="font-mono">{data.expectedGoals.toFixed(1)}</span>
+              </span>
+              <span
+                className={`font-mono font-semibold ${isOverperforming ? "text-success" : "text-amber-500"}`}
+              >
+                {isOverperforming ? "+" : ""}
+                {data.diff.toFixed(1)}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button size="sm" variant="default" onClick={onNavigate}>
+            View
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function GoalsVsExpectedChart({ rookies }: GoalsVsExpectedChartProps) {
   const navigate = useNavigate();
+  const { selectedItem, handleSelect, clearSelection } =
+    useChartSelection<ChartDataPoint>();
 
   const chartData: ChartDataPoint[] = rookies
     .filter((r) => r.expectedGoals > 0)
@@ -142,10 +223,23 @@ export function GoalsVsExpectedChart({ rookies }: GoalsVsExpectedChartProps) {
     }));
 
   const handleClick = (data: ChartDataPoint) => {
-    navigate({
-      to: "/players/$id",
-      params: { id: String(data.playerId) },
-    });
+    if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) {
+      handleSelect(data);
+    } else {
+      navigate({
+        to: "/players/$id",
+        params: { id: String(data.playerId) },
+      });
+    }
+  };
+
+  const handleNavigateToPlayer = () => {
+    if (selectedItem) {
+      navigate({
+        to: "/players/$id",
+        params: { id: String(selectedItem.playerId) },
+      });
+    }
   };
 
   if (chartData.length === 0) {
@@ -222,12 +316,26 @@ export function GoalsVsExpectedChart({ rookies }: GoalsVsExpectedChartProps) {
             <Tooltip content={<CustomTooltip />} />
             <Scatter
               data={chartData}
-              shape={<CustomDot />}
+              shape={(props: { cx?: number; cy?: number; payload?: ChartDataPoint }) => (
+                <CustomDot
+                  {...props}
+                  isSelected={selectedItem?.playerId === props.payload?.playerId}
+                />
+              )}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
             />
           </ScatterChart>
         </ResponsiveContainer>
+
+        {selectedItem && (
+          <SelectionPanel
+            data={selectedItem}
+            onClose={clearSelection}
+            onNavigate={handleNavigateToPlayer}
+          />
+        )}
+
         <div className="flex justify-center gap-8 mt-4 text-xs">
           <div className="flex items-center gap-2">
             <span
@@ -248,6 +356,10 @@ export function GoalsVsExpectedChart({ rookies }: GoalsVsExpectedChartProps) {
             </span>
           </div>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
+          Tap a rookie to see details
+        </p>
       </CardContent>
     </Card>
   );

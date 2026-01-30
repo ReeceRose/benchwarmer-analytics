@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Puck - 3D effect -->
-  <ellipse cx="32" cy="40" rx="24" ry="10" fill="#1e293b"/>
-  <rect x="8" y="30" width="48" height="10" fill="#1e293b"/>
-  <ellipse cx="32" cy="30" rx="24" ry="10" fill="#334155"/>
+  <!-- Puck - uses currentColor to adapt to theme -->
+  <ellipse cx="32" cy="40" rx="24" ry="10" fill="currentColor" opacity="0.6"/>
+  <rect x="8" y="30" width="48" height="10" fill="currentColor" opacity="0.6"/>
+  <ellipse cx="32" cy="30" rx="24" ry="10" fill="currentColor" opacity="0.8"/>
 
-  <!-- Simple trend line on top -->
+  <!-- Trend line accent - always green for brand recognition -->
   <polyline
     points="16,32 26,28 36,30 46,24"
     fill="none"
