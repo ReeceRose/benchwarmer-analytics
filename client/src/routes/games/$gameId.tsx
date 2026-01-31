@@ -135,7 +135,6 @@ function GameDetailPage() {
           </div>
         ))}
 
-      {/* Shot Map for completed games with shot data */}
       {game?.gameState === "OFF" &&
         game?.hasShotData &&
         (shotsLoading ? (

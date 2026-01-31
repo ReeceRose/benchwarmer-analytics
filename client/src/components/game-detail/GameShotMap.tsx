@@ -169,7 +169,6 @@ function HalfRink({
           </filter>
         </defs>
 
-        {/* Rink outline */}
         <path
           d={`
             M ${RINK_LENGTH} 0
@@ -187,7 +186,6 @@ function HalfRink({
           className="text-slate-300 dark:text-slate-700"
         />
 
-        {/* Ice surface */}
         <path
           d={`
             M ${RINK_LENGTH - 1} 1
@@ -203,7 +201,6 @@ function HalfRink({
           className="dark:fill-slate-800"
         />
 
-        {/* Goal line */}
         <line
           x1={GOAL_LINE_X}
           y1="0"
@@ -213,7 +210,6 @@ function HalfRink({
           strokeWidth="0.5"
         />
 
-        {/* Blue line */}
         <line
           x1={BLUE_LINE_X}
           y1="0"
@@ -223,7 +219,6 @@ function HalfRink({
           strokeWidth="1"
         />
 
-        {/* Crease */}
         <rect
           x={GOAL_LINE_X}
           y={RINK_HEIGHT / 2 - CREASE_WIDTH / 2}
@@ -236,7 +231,6 @@ function HalfRink({
           rx="1"
         />
 
-        {/* Goal */}
         <rect
           x={GOAL_LINE_X - 4}
           y={RINK_HEIGHT / 2 - 3}
@@ -247,7 +241,6 @@ function HalfRink({
           strokeWidth="0.5"
         />
 
-        {/* Faceoff circles */}
         <circle
           cx={FACEOFF_X}
           cy={RINK_HEIGHT / 2 - FACEOFF_Y_OFFSET}
@@ -277,7 +270,6 @@ function HalfRink({
           fill={RINK_COLOURS.goalLine}
         />
 
-        {/* Non-goal shots */}
         {transformedShots
           .filter(({ shot }) => !shot.isGoal)
           .map(({ shot, x, y, color, size }, idx) => (
@@ -298,7 +290,6 @@ function HalfRink({
             </Tooltip>
           ))}
 
-        {/* Goals (rendered on top) */}
         {transformedShots
           .filter(({ shot }) => shot.isGoal)
           .map(({ shot, x, y, color, size }, idx) => (
@@ -323,7 +314,6 @@ function HalfRink({
           ))}
       </svg>
 
-      {/* Summary stats */}
       <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
         <span>Shots: <span className="font-medium text-foreground">{summary.total}</span></span>
         <span>Goals: <span className="font-medium text-foreground">{summary.goals}</span></span>
@@ -380,7 +370,7 @@ export function GameShotMap({ shotsData }: GameShotMapProps) {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="text-lg">Shot Map</CardTitle>
           <Select value={periodFilter} onValueChange={setPeriodFilter}>
-            <SelectTrigger className="w-[120px] h-8">
+            <SelectTrigger className="w-28 h-8">
               <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
@@ -410,7 +400,6 @@ export function GameShotMap({ shotsData }: GameShotMapProps) {
           />
         </div>
 
-        {/* Period Breakdown */}
         <div className="mt-4 pt-4 border-t">
           <div className="text-sm font-medium mb-2">Period Breakdown</div>
           <div className="overflow-x-auto">
@@ -466,7 +455,6 @@ export function GameShotMap({ shotsData }: GameShotMapProps) {
           </div>
         </div>
 
-        {/* Legend */}
         <div className="mt-4 pt-4 border-t flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-success ring-2 ring-white" />
@@ -497,14 +485,14 @@ export function GameShotMapSkeleton() {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <Skeleton className="h-6 w-24" />
-          <Skeleton className="h-8 w-[120px]" />
+          <Skeleton className="h-8 w-28" />
         </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col items-center">
             <Skeleton className="h-4 w-12 mb-2" />
-            <Skeleton className="w-[280px] h-[238px] rounded-lg" />
+            <Skeleton className="w-72 h-60 rounded-lg" />
             <div className="mt-2 flex gap-4">
               <Skeleton className="h-3 w-16" />
               <Skeleton className="h-3 w-16" />
@@ -513,7 +501,7 @@ export function GameShotMapSkeleton() {
           </div>
           <div className="flex flex-col items-center">
             <Skeleton className="h-4 w-12 mb-2" />
-            <Skeleton className="w-[280px] h-[238px] rounded-lg" />
+            <Skeleton className="w-72 h-60 rounded-lg" />
             <div className="mt-2 flex gap-4">
               <Skeleton className="h-3 w-16" />
               <Skeleton className="h-3 w-16" />
