@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/shared";
+import { usePageTitle } from "@/hooks";
 import { metrics, categoryInfo, categoryOrder } from "@/lib/glossary-data";
 
 export const Route = createFileRoute("/glossary")({
@@ -9,6 +10,8 @@ export const Route = createFileRoute("/glossary")({
 });
 
 function GlossaryPage() {
+  usePageTitle("Metrics Glossary");
+
   return (
     <div className="container py-8 max-w-4xl">
       <BackButton />

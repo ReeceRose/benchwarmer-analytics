@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
+import { usePageTitle } from "@/hooks";
 import { SeasonSelector, SituationSelector } from "@/components/shared";
 import {
   LeaderStripSection,
@@ -23,6 +24,8 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
+  usePageTitle("NHL Analytics");
+
   const { data: seasonsData } = useSeasons();
   const defaultSeason = seasonsData?.seasons?.[0]?.year;
 

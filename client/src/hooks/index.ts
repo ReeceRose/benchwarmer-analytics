@@ -34,3 +34,4 @@ export { useLeaderboard } from "@/hooks/useLeaderboard";
 export { useSortableTable } from "@/hooks/useSortableTable";
 export { useRookies } from "@/hooks/useRookies";
 export { useChartSelection } from "@/hooks/useChartSelection";
+export { usePageTitle } from "@/hooks/usePageTitle";

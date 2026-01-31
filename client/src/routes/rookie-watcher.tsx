@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Baby, Info, Filter, BarChart3, TableIcon } from "lucide-react";
-import { useRookies, useSeasons, useSortableTable } from "@/hooks";
+import { useRookies, useSeasons, useSortableTable, usePageTitle } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +32,8 @@ export const Route = createFileRoute("/rookie-watcher")({
 });
 
 function RookieWatcherPage() {
+  usePageTitle("Rookie Watcher");
+
   const navigate = useNavigate({ from: Route.fullPath });
   const { view: currentView } = Route.useSearch();
 

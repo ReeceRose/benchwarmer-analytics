@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { Trophy, Filter, BarChart3, TableIcon } from "lucide-react";
-import { useLeaderboard, useSeasons } from "@/hooks";
+import { useLeaderboard, useSeasons, usePageTitle } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,6 +73,8 @@ export const Route = createFileRoute("/leaderboards")({
 });
 
 function LeaderboardsPage() {
+  usePageTitle("Leaderboards");
+
   const navigate = useNavigate({ from: Route.fullPath });
   const {
     category = "points",

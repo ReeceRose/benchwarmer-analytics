@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Database, Code2, Server, ExternalLink } from "lucide-react";
+import { usePageTitle } from "@/hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackButton } from "@/components/shared";
 
@@ -26,6 +27,8 @@ const techStack = [
 ];
 
 function AboutPage() {
+  usePageTitle("About");
+
   return (
     <div className="container py-8 max-w-3xl">
       <BackButton />

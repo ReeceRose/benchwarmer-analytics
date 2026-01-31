@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { TrendingUp, Info } from "lucide-react";
-import { useAgeCurves, useAgeDistribution } from "@/hooks";
+import { useAgeCurves, useAgeDistribution, usePageTitle } from "@/hooks";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -43,6 +43,8 @@ const METRICS: { key: MetricKey; label: string }[] = [
 ];
 
 function AgeCurvesPage() {
+  usePageTitle("Age Curves");
+
   const navigate = useNavigate({ from: Route.fullPath });
   const {
     playerIds: urlPlayerIds,

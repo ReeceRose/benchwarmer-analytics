@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Trophy, Info, Filter, BarChart3, TableIcon } from "lucide-react";
-import { usePowerRankings, useSeasons } from "@/hooks";
+import { usePowerRankings, useSeasons, usePageTitle } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -71,6 +71,8 @@ export const Route = createFileRoute("/power-rankings")({
 });
 
 function PowerRankingsPage() {
+  usePageTitle("Power Rankings");
+
   // Use calculated default season immediately - don't wait for API
   const defaultSeason = getCurrentSeason();
   const { data: seasonsData } = useSeasons();

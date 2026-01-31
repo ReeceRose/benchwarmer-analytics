@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Filter } from "lucide-react";
-import { usePlayer, usePlayerStats, useTeams } from "@/hooks";
+import { usePlayer, usePlayerStats, useTeams, usePageTitle } from "@/hooks";
 import { ErrorState, BackButton } from "@/components/shared";
 import {
   PlayerHeader,
@@ -58,6 +58,8 @@ function PlayerDetailPage() {
   const { data: player, isLoading: playerLoading, error, refetch } = usePlayer(playerId);
   const { data: statsData, isLoading: statsLoading } = usePlayerStats(playerId);
   const { data: teamsData } = useTeams();
+
+  usePageTitle(player?.name);
 
   const isGoalie = player?.position === "G";
 

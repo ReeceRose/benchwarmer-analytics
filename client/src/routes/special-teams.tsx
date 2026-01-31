@@ -6,6 +6,7 @@ import {
   useSpecialTeamsPlayerLeaders,
   usePlayerPenaltyStats,
   useSeasons,
+  usePageTitle,
 } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,6 +50,8 @@ export const Route = createFileRoute("/special-teams")({
 });
 
 function SpecialTeamsPage() {
+  usePageTitle("Special Teams");
+
   const defaultSeason = getCurrentSeason();
   const { data: seasonsData } = useSeasons();
   const apiCurrentSeason = seasonsData?.seasons?.[0]?.year;

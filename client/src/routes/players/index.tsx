@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Search, Users } from "lucide-react";
-import { usePlayerSearch } from "@/hooks";
+import { usePlayerSearch, usePageTitle } from "@/hooks";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +29,8 @@ export const Route = createFileRoute("/players/")({
 });
 
 function PlayersPage() {
+  usePageTitle("Players");
+
   const { q: query = "" } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const { data, isLoading, isPlaceholderData, error, refetch } = usePlayerSearch(query, 1, 50);

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { GitCompare, Filter } from "lucide-react";
-import { usePlayerComparison, useSeasons, usePlayers } from "@/hooks";
+import { usePlayerComparison, useSeasons, usePlayers, usePageTitle } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -43,6 +43,8 @@ const SITUATIONS = [
 ] as const;
 
 function ComparePage() {
+  usePageTitle("Compare Players");
+
   // Use calculated default season immediately - don't wait for API
   const calculatedSeason = getCurrentSeason();
   const { data: seasonsData } = useSeasons();

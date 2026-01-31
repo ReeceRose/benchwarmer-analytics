@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GamesGrid } from "@/components/games";
-import { useTodaysGames, useGamesByDate } from "@/hooks";
+import { useTodaysGames, useGamesByDate, usePageTitle } from "@/hooks";
 import { formatGameDateLong } from "@/lib/game-formatters";
 import {
   getYesterdayDate,
@@ -23,6 +23,8 @@ export const Route = createFileRoute("/games/")({
 });
 
 function GamesPage() {
+  usePageTitle("Games");
+
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
 

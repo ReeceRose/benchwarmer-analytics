@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { TrendingUp, Info, Filter, BarChart3, TableIcon } from "lucide-react";
-import { useBreakoutCandidates, useSeasons, useSortableTable } from "@/hooks";
+import { useBreakoutCandidates, useSeasons, useSortableTable, usePageTitle } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,8 @@ type SortKey =
   | "shotsPer60";
 
 function BreakoutCandidatesPage() {
+  usePageTitle("Breakout Candidates");
+
   const navigate = useNavigate({ from: Route.fullPath });
   const { view: currentView } = Route.useSearch();
 

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useTeams } from "@/hooks";
+import { useTeams, usePageTitle } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ErrorState, TeamLogo } from "@/components/shared";
@@ -9,6 +9,8 @@ export const Route = createFileRoute("/teams/")({
 });
 
 function TeamsPage() {
+  usePageTitle("Teams");
+
   const { data, isLoading, error, refetch } = useTeams();
 
   if (error) {

@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { z } from "zod";
 import { Calendar, BarChart3, TableIcon } from "lucide-react";
-import { useTeam, useTeamRoster, useTeamSeasons } from "@/hooks";
+import { useTeam, useTeamRoster, useTeamSeasons, usePageTitle } from "@/hooks";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,6 +65,8 @@ function TeamDetailPage() {
     refetch,
   } = useTeam(abbrev);
   const { data: seasons } = useTeamSeasons(abbrev);
+
+  usePageTitle(team?.name);
 
   // Map seasonType to playoffs param: "regular" -> false, "playoffs" -> true, "all" -> undefined
   const playoffsParam =

@@ -20,6 +20,7 @@ import {
   useGameShots,
   useGamePreview,
   useGoalieRecentForm,
+  usePageTitle,
 } from "@/hooks";
 import { getSeasonFromDate } from "@/lib/date-utils";
 
@@ -39,6 +40,12 @@ function GameDetailPage() {
     error: gameError,
     refetch,
   } = useGame(gameId);
+
+  // Set page title with team matchup
+  const gameTitle = game
+    ? `${game.away.teamCode} @ ${game.home.teamCode}`
+    : undefined;
+  usePageTitle(gameTitle);
 
   const { data: boxscoreData, isLoading: boxscoreLoading } =
     useGameBoxscore(gameId);

@@ -5,6 +5,7 @@ import {
   useOfficialStandings,
   useStandingsAnalytics,
   useSeasons,
+  usePageTitle,
 } from "@/hooks";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +32,8 @@ export const Route = createFileRoute("/standings")({
 });
 
 function StandingsPage() {
+  usePageTitle("Standings");
+
   const { data: seasonsData } = useSeasons();
   const currentSeason = seasonsData?.seasons?.[0]?.year;
 
