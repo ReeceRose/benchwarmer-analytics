@@ -30,7 +30,26 @@ public interface IStatsRepository
         string situation,
         int limit = 5,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SeasonTrendData>> GetLeagueTrendsAsync(
+        string situation,
+        CancellationToken cancellationToken = default);
 }
+
+public record SeasonTrendData(
+    int Season,
+    int TotalPlayers,
+    int TotalGamesPlayed,
+    int TotalGoals,
+    int TotalAssists,
+    int TotalShots,
+    decimal TotalExpectedGoals,
+    decimal AvgCorsiPct,
+    decimal AvgGoalsPerGame,
+    decimal AvgAssistsPerGame,
+    decimal AvgToiPerGame,
+    decimal AvgXgPer60
+);
 
 public record OutliersResult(
     IReadOnlyList<OutlierEntry> SkaterRunningHot,

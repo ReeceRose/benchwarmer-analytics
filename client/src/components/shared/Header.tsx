@@ -107,6 +107,11 @@ const statsItems: NavItem[] = [
     label: "Special Teams",
     description: "PP & PK league stats",
   },
+  {
+    to: "/league-trends",
+    label: "League Trends",
+    description: "Season-over-season stats",
+  },
 ];
 
 const toolsItems: NavItem[] = [

@@ -171,6 +171,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
               <HeaderWithTooltip label="P" tooltip="Points (Goals + Assists)" className="text-right" />
               <HeaderWithTooltip label="Pctl" tooltip="Points per game percentile vs league" className="text-right hidden sm:table-cell" />
               <HeaderWithTooltip label="TOI" tooltip="Total time on ice" className="text-right hidden md:table-cell" />
+              <HeaderWithTooltip label="TOI/GP" tooltip="Average time on ice per game" className="text-right hidden md:table-cell" />
               <HeaderWithTooltip label="S" tooltip="Shots on goal" className="text-right hidden md:table-cell" />
               <HeaderWithTooltip label="xG" tooltip="Expected goals based on shot quality" className="text-right hidden lg:table-cell" />
               <HeaderWithTooltip label="Luck" tooltip="Goals minus expected goals (positive = lucky)" className="text-right hidden lg:table-cell" />
@@ -190,7 +191,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
             {hasPlayoffData && (
               <TableRow className="bg-muted/30">
                 <TableHead colSpan={6} className="text-xs text-muted-foreground py-1">Regular Season</TableHead>
-                <TableHead colSpan={5} className="text-xs text-muted-foreground py-1 hidden md:table-cell" />
+                <TableHead colSpan={6} className="text-xs text-muted-foreground py-1 hidden md:table-cell" />
                 {rows.length >= 2 && (
                   <TableHead className="hidden xl:table-cell" />
                 )}
@@ -228,6 +229,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
                   })()}
                 </TableCell>
                 <TableCell className="text-right tabular-nums hidden md:table-cell">{formatToi(row.toi)}</TableCell>
+                <TableCell className="text-right tabular-nums hidden md:table-cell">{row.gp > 0 ? formatToi(row.toi / row.gp) : "-"}</TableCell>
                 <TableCell className="text-right tabular-nums hidden md:table-cell">{row.shots}</TableCell>
                 <TableCell className="text-right tabular-nums hidden lg:table-cell">{row.xg.toFixed(1)}</TableCell>
                 <TableCell className="text-right hidden lg:table-cell">
@@ -258,6 +260,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
               <TableCell className="text-right tabular-nums">{totals.p}</TableCell>
               <TableCell className="text-right tabular-nums hidden sm:table-cell">-</TableCell>
               <TableCell className="text-right tabular-nums hidden md:table-cell">{formatToi(totals.toi)}</TableCell>
+              <TableCell className="text-right tabular-nums hidden md:table-cell">{totals.gp > 0 ? formatToi(totals.toi / totals.gp) : "-"}</TableCell>
               <TableCell className="text-right tabular-nums hidden md:table-cell">{totals.shots}</TableCell>
               <TableCell className="text-right tabular-nums hidden lg:table-cell">{totals.xg.toFixed(1)}</TableCell>
               <TableCell className="text-right hidden lg:table-cell">

@@ -95,3 +95,23 @@ export interface RookiesResponse {
 }
 
 export type RookiePositionFilter = "all" | "forwards" | "defensemen";
+
+export interface SeasonTrend {
+  season: number;
+  totalPlayers: number;
+  totalGamesPlayed: number;
+  totalGoals: number;
+  totalAssists: number;
+  totalShots: number;
+  totalExpectedGoals: number;
+  avgCorsiPct: number;
+  avgGoalsPerGame: number;
+  avgAssistsPerGame: number;
+  avgToiPerGame: number;
+  avgXgPer60: number;
+}
+
+export interface LeagueTrendsResponse {
+  situation: string;
+  seasons: SeasonTrend[];
+}

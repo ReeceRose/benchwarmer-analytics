@@ -93,6 +93,18 @@ export const metrics: MetricDefinition[] = [
     description:
       "Total time a player spends on the ice during a game or season. Often used to normalize other statistics.",
   },
+  {
+    name: "Time on Ice per Game",
+    abbreviation: "TOI/GP",
+    aliases: ["ATOI", "Avg TOI"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Average time on ice per game played. Indicates a player's typical usage and importance to their team.",
+    formula: "TOI/GP = Total TOI / Games Played",
+    interpretation:
+      "Top-line forwards typically average 18-22 minutes; top defensemen 22-26 minutes. Fourth-line players may average 8-12 minutes.",
+  },
 
   // Possession Metrics
   {

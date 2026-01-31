@@ -46,6 +46,7 @@ import type {
   LeaderboardCategory,
   LeaderboardResponse,
   RookiesResponse,
+  LeagueTrendsResponse,
 } from "@/types";
 
 const api = axios.create({
@@ -533,5 +534,16 @@ export async function getPlayerPenaltyStats(
     "/special-teams/penalty-stats",
     { params: Object.keys(params).length > 0 ? params : undefined }
   );
+  return data;
+}
+
+// League Trends
+
+export async function getLeagueTrends(
+  situation?: string
+): Promise<LeagueTrendsResponse> {
+  const { data } = await api.get<LeagueTrendsResponse>("/stats/league-trends", {
+    params: { situation },
+  });
   return data;
 }

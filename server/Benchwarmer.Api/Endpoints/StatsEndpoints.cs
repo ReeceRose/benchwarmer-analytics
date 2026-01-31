@@ -165,6 +165,21 @@ public static class StatsEndpoints
                 """)
             .Produces<RookiesResponseDto>()
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/league-trends", GetLeagueTrends)
+            .WithName("GetLeagueTrends")
+            .WithSummary("Get league-wide trends across seasons")
+            .WithDescription("""
+                Returns aggregated league statistics for each season to visualize trends over time.
+
+                Includes total goals, assists, shots, expected goals, and per-game averages.
+                Corsi% is weighted by ice time for accurate league-wide representation.
+
+                **Query Parameters:**
+                - `situation`: Game situation filter (5on5, all, 5on4, etc.). Defaults to all.
+                """)
+            .Produces<LeagueTrendsResponseDto>()
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetHomepageData(
@@ -542,6 +557,35 @@ public static class StatsEndpoints
             effectivePosition,
             rookieDtos
         ));
+    }
+
+    private static async Task<IResult> GetLeagueTrends(
+        string? situation,
+        IStatsRepository statsRepository,
+        CancellationToken cancellationToken)
+    {
+        var effectiveSituation = situation ?? "all";
+
+        var trends = await statsRepository.GetLeagueTrendsAsync(
+            effectiveSituation,
+            cancellationToken);
+
+        var seasonDtos = trends.Select(t => new SeasonTrendDto(
+            t.Season,
+            t.TotalPlayers,
+            t.TotalGamesPlayed,
+            t.TotalGoals,
+            t.TotalAssists,
+            t.TotalShots,
+            t.TotalExpectedGoals,
+            t.AvgCorsiPct,
+            t.AvgGoalsPerGame,
+            t.AvgAssistsPerGame,
+            t.AvgToiPerGame,
+            t.AvgXgPer60
+        )).ToList();
+
+        return Results.Ok(new LeagueTrendsResponseDto(effectiveSituation, seasonDtos));
     }
 }
 

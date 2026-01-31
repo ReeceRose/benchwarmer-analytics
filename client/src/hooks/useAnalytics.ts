@@ -1,5 +1,5 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { getBreakoutCandidates, getAgeCurves, getAgeDistribution, getSeasonPercentiles } from "@/lib/api";
+import { getBreakoutCandidates, getAgeCurves, getAgeDistribution, getSeasonPercentiles, getLeagueTrends } from "@/lib/api";
 
 export function useBreakoutCandidates(
   season?: number,
@@ -41,5 +41,14 @@ export function useSeasonPercentiles(season: number | undefined, minGames?: numb
     queryFn: () => getSeasonPercentiles(season!, minGames),
     enabled: season !== undefined,
     staleTime: 1000 * 60 * 30, // 30 min cache (percentiles don't change often)
+  });
+}
+
+export function useLeagueTrends(situation?: string) {
+  return useQuery({
+    queryKey: ["analytics", "league-trends", situation],
+    queryFn: () => getLeagueTrends(situation),
+    staleTime: 1000 * 60 * 10, // 10 min cache
+    placeholderData: keepPreviousData,
   });
 }

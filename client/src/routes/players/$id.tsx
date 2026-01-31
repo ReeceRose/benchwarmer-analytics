@@ -11,6 +11,7 @@ import {
   StatsTableSkeleton,
   PlayerShotMap,
   CareerTrajectory,
+  CareerTotalsChart,
   RollingPerformance,
   GoalieWorkloadMonitor,
   GoalieDangerZoneRadar,
@@ -198,7 +199,10 @@ function PlayerDetailPage() {
       )}
 
       {!isGoalie && !statsLoading && allStats.length > 0 && player && (
-        <CareerTrajectory stats={allStats as SkaterStats[]} />
+        <>
+          <CareerTrajectory stats={allStats as SkaterStats[]} />
+          <CareerTotalsChart stats={allStats as SkaterStats[]} />
+        </>
       )}
 
       {!isGoalie && availableSeasons.length > 0 && (

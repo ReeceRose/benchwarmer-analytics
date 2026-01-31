@@ -647,4 +647,92 @@ public class StatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IStats
 
         return await GetTopLinesInternalAsync(season, situation, limit, minLineToi, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<SeasonTrendData>> GetLeagueTrendsAsync(
+        string situation,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+
+        // Get accurate team-level data from TeamSeason table
+        var teamData = await db.TeamSeasons
+            .Where(t => t.Situation == situation && !t.IsPlayoffs)
+            .GroupBy(t => t.Season)
+            .Select(g => new
+            {
+                Season = g.Key,
+                // Each team-game is one team playing one game
+                TotalTeamGames = g.Sum(t => t.GamesPlayed),
+                TotalGoals = g.Sum(t => t.GoalsFor),
+                TotalShots = g.Sum(t => t.ShotsOnGoalFor),
+                TotalExpectedGoals = g.Sum(t => t.XGoalsFor),
+                // Weighted CF% by ice time
+                WeightedCorsiSum = g.Sum(t => (t.CorsiPercentage ?? 0.50m) * t.IceTime),
+                TotalIceTime = g.Sum(t => t.IceTime),
+            })
+            .OrderBy(g => g.Season)
+            .ToListAsync(cancellationToken);
+
+        // Get player counts and assists from SkaterSeasons
+        var skaterData = await db.SkaterSeasons
+            .Where(s => s.Situation == situation && !s.IsPlayoffs)
+            .GroupBy(s => s.Season)
+            .Select(g => new
+            {
+                Season = g.Key,
+                TotalPlayers = g.Select(s => s.PlayerId).Distinct().Count(),
+                TotalPlayerGames = g.Sum(s => s.GamesPlayed),
+                TotalAssists = g.Sum(s => s.Assists),
+                TotalIceTimeSeconds = g.Sum(s => s.IceTimeSeconds),
+            })
+            .ToListAsync(cancellationToken);
+
+        var skaterBySeason = skaterData.ToDictionary(s => s.Season);
+
+        return teamData.Select(d =>
+        {
+            var skater = skaterBySeason.GetValueOrDefault(d.Season);
+
+            // Goals per team-game (typically ~3.0-3.5)
+            var avgGoalsPerGame = d.TotalTeamGames > 0
+                ? Math.Round((decimal)d.TotalGoals / d.TotalTeamGames, 2)
+                : 0;
+
+            // Assists per team-game
+            var avgAssistsPerGame = d.TotalTeamGames > 0
+                ? Math.Round((decimal)(skater?.TotalAssists ?? 0) / d.TotalTeamGames, 2)
+                : 0;
+
+            // Average TOI per player per game
+            var avgToiPerGame = skater?.TotalPlayerGames > 0
+                ? Math.Round((decimal)skater.TotalIceTimeSeconds / skater.TotalPlayerGames, 1)
+                : 0;
+
+            // CorsiPercentage may be stored as ratio (0.51) or percentage (51.0) - normalize to percentage
+            var rawCorsi = d.TotalIceTime > 0
+                ? d.WeightedCorsiSum / d.TotalIceTime
+                : 0.50m;
+            var avgCorsiPct = rawCorsi < 1 ? Math.Round(rawCorsi * 100, 1) : Math.Round(rawCorsi, 1);
+
+            // xG per 60 minutes of ice time (IceTime is in seconds)
+            var avgXgPer60 = d.TotalIceTime > 0
+                ? Math.Round(d.TotalExpectedGoals / d.TotalIceTime * 3600, 2)
+                : 0;
+
+            return new SeasonTrendData(
+                d.Season,
+                skater?.TotalPlayers ?? 0,
+                skater?.TotalPlayerGames ?? 0,
+                d.TotalGoals,
+                skater?.TotalAssists ?? 0,
+                d.TotalShots,
+                Math.Round(d.TotalExpectedGoals, 1),
+                avgCorsiPct,
+                avgGoalsPerGame,
+                avgAssistsPerGame,
+                avgToiPerGame,
+                avgXgPer60
+            );
+        }).ToList();
+    }
 }
