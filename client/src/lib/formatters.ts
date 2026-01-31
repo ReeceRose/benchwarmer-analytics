@@ -4,8 +4,9 @@
  */
 export function formatToi(seconds: number | null | undefined): string {
   if (seconds == null) return "-";
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
+  const totalSeconds = Math.round(seconds);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
@@ -153,4 +154,29 @@ export function formatIceTimeLong(seconds: number | null | undefined): string {
     return `${hours}h ${minutes}m`;
   }
   return `${minutes}m`;
+}
+
+/**
+ * Format game time (seconds from game start) to period and time format
+ * @example formatGameTime(1320) => "P2 2:00" (2 mins into 2nd period)
+ * @example formatGameTime(600) => "P1 10:00"
+ */
+export function formatGameTime(gameSeconds: number): string {
+  const period = Math.floor(gameSeconds / 1200) + 1;
+  const periodSeconds = gameSeconds % 1200;
+  const mins = Math.floor(periodSeconds / 60);
+  const secs = periodSeconds % 60;
+  return `P${period} ${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Format TOI per game average
+ * @example formatToiPerGame(3600, 3) => "20:00"
+ */
+export function formatToiPerGame(totalSeconds: number, gamesPlayed: number): string {
+  if (gamesPlayed === 0) return "0:00";
+  const perGame = totalSeconds / gamesPlayed;
+  const mins = Math.floor(perGame / 60);
+  const secs = Math.floor(perGame % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }

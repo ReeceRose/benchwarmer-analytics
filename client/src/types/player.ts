@@ -60,6 +60,13 @@ export interface SkaterStats {
   onIceSavePct?: number;
   corsiForPct?: number;
   fenwickForPct?: number;
+  // Shift quality fields
+  shifts?: number;
+  oZoneShiftStarts?: number;
+  dZoneShiftStarts?: number;
+  nZoneShiftStarts?: number;
+  oZoneShiftPct?: number;
+  dZoneShiftPct?: number;
 }
 
 /** Goalie statistics for a season/situation */
@@ -84,6 +91,9 @@ export interface GoalieStats {
   lowDangerGoals: number;
   mediumDangerGoals: number;
   highDangerGoals: number;
+  // Rebound control fields
+  expectedRebounds?: number;
+  rebounds: number;
 }
 
 /** Response from GET /api/players (search) */

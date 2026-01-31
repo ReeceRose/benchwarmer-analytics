@@ -25,6 +25,8 @@ import {
   RosterSkeleton,
   RosterXGScatter,
   AgeDistributionChart,
+  IceTimeDistributionChart,
+  PointsContributionChart,
 } from "@/components/team-detail";
 
 const searchSchema = z.object({
@@ -78,7 +80,8 @@ function TeamDetailPage() {
     location.pathname.includes("/lines") ||
     location.pathname.includes("/chemistry") ||
     location.pathname.includes("/shots") ||
-    location.pathname.includes("/special-teams");
+    location.pathname.includes("/special-teams") ||
+    location.pathname.includes("/builder");
 
   // Determine active tab based on route
   const getActiveTab = () => {
@@ -86,6 +89,7 @@ function TeamDetailPage() {
     if (location.pathname.includes("/chemistry")) return "chemistry";
     if (location.pathname.includes("/shots")) return "shots";
     if (location.pathname.includes("/special-teams")) return "special-teams";
+    if (location.pathname.includes("/builder")) return "builder";
     return "roster";
   };
 
@@ -186,6 +190,15 @@ function TeamDetailPage() {
               Special Teams
             </Link>
           </TabsTrigger>
+          <TabsTrigger value="builder" asChild>
+            <Link
+              to="/teams/$abbrev/builder"
+              params={{ abbrev }}
+              search={{ season }}
+            >
+              Builder
+            </Link>
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -284,6 +297,14 @@ function TeamDetailPage() {
                 teamAbbrev={abbrev}
               />
               <AgeDistributionChart
+                players={roster?.players ?? []}
+                teamAbbrev={abbrev}
+              />
+              <IceTimeDistributionChart
+                players={roster?.players ?? []}
+                teamAbbrev={abbrev}
+              />
+              <PointsContributionChart
                 players={roster?.players ?? []}
                 teamAbbrev={abbrev}
               />

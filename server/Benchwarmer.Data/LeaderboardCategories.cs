@@ -15,7 +15,7 @@ public static class LeaderboardCategories
     /// Goalie stat categories (always use "all" situation).
     /// </summary>
     public static readonly string[] Goalie =
-        ["savepct", "gaa", "gsax", "shotsagainst", "goalietime", "goalsagainst", "xga"];
+        ["savepct", "gaa", "gsax", "shotsagainst", "goalietime", "goalsagainst", "xga", "reboundcontrol"];
 
     /// <summary>
     /// Checks if the category is valid.

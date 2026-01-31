@@ -13,6 +13,7 @@ export const GOALIE_CATEGORIES: LeaderboardCategory[] = [
   "goalieTime",
   "goalsAgainst",
   "xga",
+  "reboundControl",
 ];
 
 export const SKATER_CATEGORIES: LeaderboardCategory[] = [
@@ -38,7 +39,7 @@ export const ALL_CATEGORIES: LeaderboardCategory[] = [
 /**
  * Categories where lower values are better (affects sort direction display).
  */
-export const LOWER_IS_BETTER_CATEGORIES: LeaderboardCategory[] = ["gaa", "goalsAgainst", "xga"];
+export const LOWER_IS_BETTER_CATEGORIES: LeaderboardCategory[] = ["gaa", "goalsAgainst", "xga", "reboundControl"];
 
 export function isGoalieCategory(category: LeaderboardCategory): boolean {
   return GOALIE_CATEGORIES.includes(category);

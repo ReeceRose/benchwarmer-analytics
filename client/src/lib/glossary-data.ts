@@ -154,6 +154,15 @@ export const metrics: MetricDefinition[] = [
       "Lower is better. Comparing xGA to actual goals against helps estimate how much was goaltending vs shot quality.",
   },
   {
+    name: "Expected Rebounds",
+    abbreviation: "xReb",
+    category: "expected",
+    description:
+      "The number of rebounds a goalie is expected to allow based on the quality and quantity of shots faced. Calculated by MoneyPuck's model using shot location, type, and game context.",
+    interpretation:
+      "Used as a baseline to evaluate rebound control. Goalies facing more shots or higher-danger shots will have higher expected rebounds.",
+  },
+  {
     name: "Expected Goals For Percentage",
     abbreviation: "xGF%",
     aliases: ["xG%"],
@@ -440,6 +449,18 @@ export const metrics: MetricDefinition[] = [
     formula: "GSAx = xGA - GA",
     interpretation:
       "Positive is better (saved more than expected). Over small samples, this can be noisy.",
+  },
+  {
+    name: "Rebound Control",
+    abbreviation: "Reb",
+    aliases: ["Rebound Ratio", "ReboundControl"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "A goalie's ratio of actual rebounds allowed vs expected rebounds based on shot quality faced. Lower values indicate better rebound control.",
+    formula: "Rebound Ratio = Actual Rebounds / Expected Rebounds",
+    interpretation:
+      "League average is approximately 1.58x (goalies allow ~60% more rebounds than expected). Values below 1.58x indicate above-average rebound control; values above indicate below-average. Elite goalies typically have ratios below 1.40x.",
   },
   {
     name: "On-Ice Shooting Percentage",

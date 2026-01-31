@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { Grid3X3, Filter, Info } from "lucide-react";
+import { Grid3X3, Filter, Info, ListOrdered } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -14,22 +14,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
-  
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BackButton, SeasonSelector, ErrorState } from "@/components/shared";
-import { useChemistryMatrix, useTeamSeasons, useTeam } from "@/hooks";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SeasonSelector, ErrorState } from "@/components/shared";
+import { useChemistryMatrix, useTeamSeasons } from "@/hooks";
 import {
   ChemistryMatrix,
+  ChemistryTopPairsChart,
   ChemistryLegend,
   buildMatrixData,
 } from "@/components/chemistry";
 import type { Situation, PositionFilter } from "@/types";
 
+type ChemistryView = "grid" | "ranked";
+
 const searchSchema = z.object({
   season: z.number().optional(),
   situation: z.string().optional(),
   position: z.enum(["all", "forward", "defense"]).optional(),
+  display: z.enum(["grid", "ranked"]).optional(),
 });
 
 export const Route = createFileRoute("/teams/$abbrev/chemistry")({
@@ -57,9 +61,6 @@ function TeamChemistryPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
-  // Get team info
-  const { data: team } = useTeam(abbrev);
-
   // Get available seasons for this team
   const { data: seasonsData } = useTeamSeasons(abbrev);
   const defaultSeason = seasonsData?.seasons?.[0]?.year;
@@ -68,6 +69,7 @@ function TeamChemistryPage() {
   const season = search.season ?? defaultSeason;
   const situation = (search.situation as Situation) || "5on5";
   const position = (search.position as PositionFilter) || "all";
+  const display: ChemistryView = search.display || "grid";
 
   // Fetch chemistry data - only pass position if not "all" to avoid unnecessary filtering
   const {
@@ -86,6 +88,7 @@ function TeamChemistryPage() {
     season?: number;
     situation?: Situation;
     position?: PositionFilter;
+    display?: ChemistryView;
   }) => {
     navigate({
       search: (prev) => ({
@@ -102,12 +105,7 @@ function TeamChemistryPage() {
   }, [chemistryData]);
 
   return (
-    <div className="container py-8">
-      <BackButton
-        fallbackPath={`/teams/${abbrev}`}
-        label={team?.name || abbrev}
-      />
-
+    <div className="container pb-8">
       <div className="mb-6 mt-4">
         <h1 className="text-3xl font-bold tracking-tight mb-2">
           Chemistry Matrix
@@ -155,6 +153,21 @@ function TeamChemistryPage() {
             ))}
           </SelectContent>
         </Select>
+        <Tabs
+          value={display}
+          onValueChange={(v) => updateSearch({ display: v as ChemistryView })}
+        >
+          <TabsList className="h-9">
+            <TabsTrigger value="grid" className="text-xs px-3 gap-1.5">
+              <Grid3X3 className="h-3.5 w-3.5" />
+              Grid
+            </TabsTrigger>
+            <TabsTrigger value="ranked" className="text-xs px-3 gap-1.5">
+              <ListOrdered className="h-3.5 w-3.5" />
+              Ranked
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
       {error && (
         <ErrorState
@@ -173,7 +186,9 @@ function TeamChemistryPage() {
       {!season && !isLoading && (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="font-medium">Select a season to view chemistry data</p>
+            <p className="font-medium">
+              Select a season to view chemistry data
+            </p>
           </CardContent>
         </Card>
       )}
@@ -183,25 +198,27 @@ function TeamChemistryPage() {
             <CardTitle className="flex items-center gap-2 text-lg">
               <Grid3X3 className="h-5 w-5" />
               Player Pair xG%
-              
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>
-                      Expected goals percentage when two players are on ice
-                      together. Green indicates the pair generates more offense
-                      than defense, red indicates the opposite.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>
+                    Expected goals percentage when two players are on ice
+                    together. Green indicates the pair generates more offense
+                    than defense, red indicates the opposite.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <ChemistryLegend />
-            <ChemistryMatrix matrixData={matrixData} />
+            {display === "grid" ? (
+              <ChemistryMatrix matrixData={matrixData} />
+            ) : (
+              <ChemistryTopPairsChart matrixData={matrixData} />
+            )}
           </CardContent>
         </Card>
       )}

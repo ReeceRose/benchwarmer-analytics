@@ -18,7 +18,14 @@ public record SkaterStatsDto(
     decimal? OnIceShootingPct,
     decimal? OnIceSavePct,
     decimal? CorsiForPct,
-    decimal? FenwickForPct
+    decimal? FenwickForPct,
+    // Shift quality fields (from SkaterSeasonAdvanced)
+    decimal? Shifts,
+    decimal? OZoneShiftStarts,
+    decimal? DZoneShiftStarts,
+    decimal? NZoneShiftStarts,
+    decimal? OZoneShiftPct,  // Calculated: OZone / (OZone + DZone)
+    decimal? DZoneShiftPct   // Calculated: DZone / (OZone + DZone)
 );
 
 public record PlayerStatsDto(

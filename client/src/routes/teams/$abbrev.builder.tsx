@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { Wrench } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BackButton, SeasonSelector, ErrorState } from "@/components/shared";
+import { SeasonSelector, ErrorState } from "@/components/shared";
 import { LineBuilder } from "@/components/line-builder";
-import { useTeam, useTeamRoster, useChemistryMatrix, useTeamSeasons } from "@/hooks";
+import { useTeamRoster, useChemistryMatrix, useTeamSeasons } from "@/hooks";
 
 const searchSchema = z.object({
   season: z.number().optional(),
@@ -19,9 +19,7 @@ export const Route = createFileRoute("/teams/$abbrev/builder")({
 function TeamLineBuilderPage() {
   const { abbrev } = Route.useParams();
   const search = Route.useSearch();
-
-  // Get team info
-  const { data: team } = useTeam(abbrev);
+  const navigate = useNavigate({ from: Route.fullPath });
 
   // Get available seasons for this team
   const { data: seasonsData } = useTeamSeasons(abbrev);
@@ -51,12 +49,7 @@ function TeamLineBuilderPage() {
   const error = rosterError || chemistryError;
 
   return (
-    <div className="container py-8">
-      <BackButton
-        fallbackPath={`/teams/${abbrev}`}
-        label={team?.name || abbrev}
-      />
-
+    <div className="container pb-8">
       <div className="mb-6 mt-4">
         <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
           <Wrench className="h-8 w-8" />
@@ -71,14 +64,7 @@ function TeamLineBuilderPage() {
         <SeasonSelector
           value={season}
           onValueChange={(s) => {
-            // Update URL with new season
-            window.history.replaceState(
-              null,
-              "",
-              `/teams/${abbrev}/builder?season=${s}`
-            );
-            // Trigger re-render
-            window.location.reload();
+            navigate({ search: { season: s } });
           }}
           teamAbbrev={abbrev}
         />
@@ -109,7 +95,9 @@ function TeamLineBuilderPage() {
       {!season && !isLoading && (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="font-medium">Select a season to start building lines</p>
+            <p className="font-medium">
+              Select a season to start building lines
+            </p>
           </CardContent>
         </Card>
       )}

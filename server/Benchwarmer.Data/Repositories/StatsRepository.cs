@@ -542,6 +542,9 @@ public class StatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IStats
             ("gsax", true) => query.OrderBy(g => g.GoalsSavedAboveExpected),
             ("shotsagainst", false) => query.OrderByDescending(g => g.ShotsAgainst),
             ("shotsagainst", true) => query.OrderBy(g => g.ShotsAgainst),
+            // Rebound control: ratio of actual/expected (lower is better, so asc = best)
+            ("reboundcontrol", false) => query.Where(g => g.ExpectedRebounds > 0).OrderByDescending(g => (decimal)g.Rebounds / g.ExpectedRebounds),
+            ("reboundcontrol", true) => query.Where(g => g.ExpectedRebounds > 0).OrderBy(g => (decimal)g.Rebounds / g.ExpectedRebounds),
             (_, false) => query.OrderByDescending(g => g.SavePercentage),
             (_, true) => query.OrderBy(g => g.SavePercentage)
         };
@@ -567,6 +570,7 @@ public class StatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IStats
                 "goalietime" => g.IceTimeSeconds,
                 "goalsagainst" => g.GoalsAgainst,
                 "xga" => g.ExpectedGoalsAgainst,
+                "reboundcontrol" => g.ExpectedRebounds > 0 ? Math.Round((decimal)g.Rebounds / g.ExpectedRebounds, 2) : 0,
                 _ => g.SavePercentage
             },
             GamesPlayed: g.GamesPlayed,

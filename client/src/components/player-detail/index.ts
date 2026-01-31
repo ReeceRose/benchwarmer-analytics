@@ -8,6 +8,9 @@ export { CareerTrajectory } from "@/components/player-detail/CareerTrajectory";
 export { RollingPerformance } from "@/components/player-detail/RollingPerformance";
 export { GoalieWorkloadMonitor } from "@/components/player-detail/GoalieWorkloadMonitor";
 export { GoalieDangerZoneRadar } from "@/components/player-detail/GoalieDangerZoneRadar";
+export { GoalieReboundControl } from "@/components/player-detail/GoalieReboundControl";
+export { ShiftQualityDashboard } from "@/components/player-detail/ShiftQualityDashboard";
+export { ShiftQualityDashboardSkeleton } from "@/components/player-detail/ShiftQualityDashboardSkeleton";
 
 export {
   buildSkaterSeasonRows,

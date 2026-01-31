@@ -14,6 +14,9 @@ import {
   RollingPerformance,
   GoalieWorkloadMonitor,
   GoalieDangerZoneRadar,
+  GoalieReboundControl,
+  ShiftQualityDashboard,
+  ShiftQualityDashboardSkeleton,
   buildSkaterSeasonRows,
   calculateSkaterTotals,
   buildGoalieSeasonRows,
@@ -98,6 +101,22 @@ function PlayerDetailPage() {
     return Array.from(seasons).sort((a, b) => b - a);
   }, [allStats]);
 
+  // Get current season "all" situation stats for shift quality dashboard (skaters only)
+  const shiftQualityStats = useMemo(() => {
+    if (isGoalie || isGoalieStats(allStats) || availableSeasons.length === 0) return null;
+    const skaterStats = allStats as SkaterStats[];
+    const currentSeason = availableSeasons[0];
+    // Find "all" situation, non-playoff stats for current season
+    const stats = skaterStats.find(
+      (s) => s.season === currentSeason && s.situation === "all" && !s.isPlayoffs
+    );
+    // Only return if we have shift data
+    if (stats?.shifts != null && stats?.oZoneShiftStarts != null) {
+      return stats;
+    }
+    return null;
+  }, [allStats, availableSeasons, isGoalie]);
+
   if (error) {
     return (
       <div className="container py-8">
@@ -156,7 +175,10 @@ function PlayerDetailPage() {
         <>
           <GoalieStatsTable rows={goalieSeasonRows} totals={goalieTotals} />
           {filteredGoalieStats.length > 0 && (
-            <GoalieDangerZoneRadar stats={filteredGoalieStats} className="mt-6" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+              <GoalieDangerZoneRadar stats={filteredGoalieStats} />
+              <GoalieReboundControl stats={filteredGoalieStats} />
+            </div>
           )}
           {availableSeasons.length > 0 && (
             <GoalieWorkloadMonitor playerId={playerId} season={availableSeasons[0]} />
@@ -164,6 +186,13 @@ function PlayerDetailPage() {
         </>
       ) : (
         <SkaterStatsTable rows={skaterSeasonRows} totals={skaterTotals} />
+      )}
+
+      {!isGoalie && statsLoading && (
+        <ShiftQualityDashboardSkeleton className="mt-6" />
+      )}
+      {!isGoalie && !statsLoading && shiftQualityStats && (
+        <ShiftQualityDashboard stats={shiftQualityStats} className="mt-6" />
       )}
 
       {!isGoalie && !statsLoading && allStats.length > 0 && player && (

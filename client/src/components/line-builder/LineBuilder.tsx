@@ -103,24 +103,17 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
 
     const slotId = over.id as string;
 
-    // Determine which line type and slot
     if (slotId.startsWith("forward-")) {
       const slot = slotId.replace("forward-", "") as "lw" | "c" | "rw";
       setLineState((prev) => ({
         ...prev,
-        forward: {
-          ...prev.forward,
-          [slot]: player,
-        },
+        forward: { ...prev.forward, [slot]: player },
       }));
     } else if (slotId.startsWith("defense-")) {
       const slot = slotId.replace("defense-", "") as "ld" | "rd";
       setLineState((prev) => ({
         ...prev,
-        defense: {
-          ...prev.defense,
-          [slot]: player,
-        },
+        defense: { ...prev.defense, [slot]: player },
       }));
     }
   }, []);
@@ -129,18 +122,12 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
     if (lineType === "forward") {
       setLineState((prev) => ({
         ...prev,
-        forward: {
-          ...prev.forward,
-          [slot]: null,
-        },
+        forward: { ...prev.forward, [slot]: null },
       }));
     } else {
       setLineState((prev) => ({
         ...prev,
-        defense: {
-          ...prev.defense,
-          [slot]: null,
-        },
+        defense: { ...prev.defense, [slot]: null },
       }));
     }
   }, []);
@@ -159,7 +146,7 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 border rounded-lg p-4 bg-card h-150">
-          <RosterPanel players={roster} usedPlayerIds={usedPlayerIds} />
+          <RosterPanel players={roster} usedPlayerIds={usedPlayerIds} lineType={lineType} />
         </div>
 
         <div className="lg:col-span-2 space-y-4">

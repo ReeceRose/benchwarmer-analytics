@@ -234,7 +234,9 @@ public static class PlayerEndpoints
                 g.HighDangerShots,
                 g.LowDangerGoals,
                 g.MediumDangerGoals,
-                g.HighDangerGoals
+                g.HighDangerGoals,
+                g.ExpectedRebounds,
+                g.Rebounds
             )).ToList();
 
             return Results.Ok(new GoaliePlayerStatsDto(id, player.Name, goalieDtos));
@@ -242,27 +244,58 @@ public static class PlayerEndpoints
 
         // Return skater stats for non-goalies
         var stats = await skaterStatsRepository.GetByPlayerAsync(id, season, situation, cancellationToken);
+        var advancedStats = await skaterStatsRepository.GetAdvancedByPlayerAsync(id, season, situation, cancellationToken);
 
-        var dtos = stats.Select(s => new SkaterStatsDto(
-            s.Id,
-            s.PlayerId,
-            s.Season,
-            s.Team,
-            s.Situation,
-            s.IsPlayoffs,
-            s.GamesPlayed,
-            s.IceTimeSeconds,
-            s.Goals,
-            s.Assists,
-            s.Goals + s.Assists,
-            s.Shots,
-            s.ExpectedGoals,
-            s.ExpectedGoalsPer60,
-            s.OnIceShootingPct,
-            s.OnIceSavePct,
-            s.CorsiForPct,
-            s.FenwickForPct
-        )).ToList();
+        // Create lookup for advanced stats by (Season, Team, Situation, IsPlayoffs)
+        var advancedLookup = advancedStats.ToDictionary(
+            a => (a.Season, a.Team, a.Situation, a.IsPlayoffs),
+            a => a);
+
+        var dtos = stats.Select(s =>
+        {
+            // Try to find matching advanced stats
+            advancedLookup.TryGetValue((s.Season, s.Team, s.Situation, s.IsPlayoffs), out var adv);
+
+            // Calculate zone start percentages (including neutral zone in denominator)
+            decimal? ozoneShiftPct = null;
+            decimal? dzoneShiftPct = null;
+            if (adv?.IFOZoneShiftStarts != null && adv?.IFDZoneShiftStarts != null && adv?.IFNeutralZoneShiftStarts != null)
+            {
+                var totalZoneStarts = adv.IFOZoneShiftStarts.Value + adv.IFDZoneShiftStarts.Value + adv.IFNeutralZoneShiftStarts.Value;
+                if (totalZoneStarts > 0)
+                {
+                    ozoneShiftPct = Math.Round(adv.IFOZoneShiftStarts.Value / totalZoneStarts * 100, 1);
+                    dzoneShiftPct = Math.Round(adv.IFDZoneShiftStarts.Value / totalZoneStarts * 100, 1);
+                }
+            }
+
+            return new SkaterStatsDto(
+                s.Id,
+                s.PlayerId,
+                s.Season,
+                s.Team,
+                s.Situation,
+                s.IsPlayoffs,
+                s.GamesPlayed,
+                s.IceTimeSeconds,
+                s.Goals,
+                s.Assists,
+                s.Goals + s.Assists,
+                s.Shots,
+                s.ExpectedGoals,
+                s.ExpectedGoalsPer60,
+                s.OnIceShootingPct,
+                s.OnIceSavePct,
+                s.CorsiForPct,
+                s.FenwickForPct,
+                adv?.Shifts,
+                adv?.IFOZoneShiftStarts,
+                adv?.IFDZoneShiftStarts,
+                adv?.IFNeutralZoneShiftStarts,
+                ozoneShiftPct,
+                dzoneShiftPct
+            );
+        }).ToList();
 
         return Results.Ok(new PlayerStatsDto(id, player.Name, dtos));
     }
@@ -690,7 +723,9 @@ public static class PlayerEndpoints
                         latestGoalieStat.HighDangerShots,
                         latestGoalieStat.LowDangerGoals,
                         latestGoalieStat.MediumDangerGoals,
-                        latestGoalieStat.HighDangerGoals
+                        latestGoalieStat.HighDangerGoals,
+                        latestGoalieStat.ExpectedRebounds,
+                        latestGoalieStat.Rebounds
                     ) : null
                 );
             }
@@ -725,7 +760,8 @@ public static class PlayerEndpoints
                         latestStat.OnIceShootingPct,
                         latestStat.OnIceSavePct,
                         latestStat.CorsiForPct,
-                        latestStat.FenwickForPct
+                        latestStat.FenwickForPct,
+                        null, null, null, null, null, null  // Shift quality fields not needed for comparison
                     ) : null,
                     null
                 );

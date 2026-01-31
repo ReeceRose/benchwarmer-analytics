@@ -31,6 +31,32 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<SkaterSeasonAdvanced>> GetAdvancedByPlayerAsync(
+        int playerId,
+        int? season = null,
+        string? situation = null,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var query = db.SkaterSeasonAdvanced
+            .Where(s => s.PlayerId == playerId);
+
+        if (season.HasValue)
+        {
+            query = query.Where(s => s.Season == season.Value);
+        }
+
+        if (!string.IsNullOrEmpty(situation))
+        {
+            query = query.Where(s => s.Situation == situation);
+        }
+
+        return await query
+            .OrderByDescending(s => s.Season)
+            .ThenBy(s => s.Situation)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<SkaterSeason>> GetByTeamSeasonAsync(
         string teamAbbrev,
         int season,

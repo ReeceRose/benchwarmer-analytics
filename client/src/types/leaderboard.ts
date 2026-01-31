@@ -19,7 +19,8 @@ export type LeaderboardCategory =
   | "shotsAgainst"
   | "goalieTime"
   | "goalsAgainst"
-  | "xga";
+  | "xga"
+  | "reboundControl";
 
 export interface LeaderboardEntry {
   rank: number;

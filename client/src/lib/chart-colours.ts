@@ -210,6 +210,41 @@ export function getChemistryHeatColour(
 export const getChemistryHeatColor = getChemistryHeatColour;
 
 /**
+ * Semantic chart colours for data visualisation.
+ * Use these for consistent meaning across all charts.
+ */
+export const SEMANTIC_COLOURS = {
+  /** Success/positive - goals, good performance */
+  success: "hsl(142, 76%, 36%)",
+  /** Danger/negative - against, poor performance */
+  danger: "hsl(0, 72%, 51%)",
+  /** Primary/home team - blue line */
+  primary: "hsl(217, 91%, 60%)",
+  /** Warning/caution - decline, attention needed */
+  warning: "hsl(45, 93%, 47%)",
+  /** Neutral/muted */
+  muted: "#94a3b8",
+} as const;
+
+// Legacy alias
+export const SEMANTIC_COLORS = SEMANTIC_COLOURS;
+
+/**
+ * Age curve phase colours for career trajectory visualisations.
+ */
+export const AGE_PHASE_COLOURS = {
+  /** Development phase (18-23) */
+  development: "hsl(217, 91%, 60%)",
+  /** Prime years (24-29) */
+  prime: "hsl(142, 76%, 36%)",
+  /** Decline phase (30+) */
+  decline: "hsl(45, 93%, 47%)",
+} as const;
+
+// Legacy alias
+export const AGE_PHASE_COLORS = AGE_PHASE_COLOURS;
+
+/**
  * Get shot colour based on outcome and xG value.
  *
  * @param isGoal - Whether the shot resulted in a goal

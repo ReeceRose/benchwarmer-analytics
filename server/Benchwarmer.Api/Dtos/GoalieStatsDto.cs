@@ -20,7 +20,10 @@ public record GoalieStatsDto(
     int HighDangerShots,
     int LowDangerGoals,
     int MediumDangerGoals,
-    int HighDangerGoals
+    int HighDangerGoals,
+    // Rebound control fields
+    decimal? ExpectedRebounds,
+    int Rebounds
 );
 
 public record GoaliePlayerStatsDto(

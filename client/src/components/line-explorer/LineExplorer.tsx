@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Layers } from "lucide-react";
+import { Layers, BarChart3, TableIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,14 @@ import { SeasonSelector, ErrorState } from "@/components/shared";
 import { useLines, useTeamSeasons } from "@/hooks";
 import { LineFilters } from "@/components/line-explorer/LineFilters";
 import { LineTable } from "@/components/line-explorer/LineTable";
+import {
+  LineEffectivenessChart,
+  TOIvsXGScatter,
+  GoalsForAgainstChart,
+} from "@/components/line-explorer/charts";
 import type { LineType, LineSortField, SortDirection } from "@/types";
+
+type ViewMode = "table" | "charts";
 
 interface LineExplorerProps {
   teamAbbrev: string;
@@ -23,6 +30,8 @@ interface LineExplorerProps {
   onSortDirChange: (sortDir: SortDirection) => void;
   page: number;
   onPageChange: (page: number) => void;
+  view: ViewMode;
+  onViewChange: (view: ViewMode) => void;
 }
 
 const PAGE_SIZE = 20;
@@ -41,6 +50,8 @@ export function LineExplorer({
   onSortDirChange,
   page,
   onPageChange,
+  view,
+  onViewChange,
 }: LineExplorerProps) {
   // Get available seasons for this team
   const { data: seasonsData } = useTeamSeasons(teamAbbrev);
@@ -94,6 +105,19 @@ export function LineExplorer({
   const hasNextPage = page < totalPages;
   const hasPrevPage = page > 1;
 
+  const isForwardLine = lineType === "forward";
+
+  const handleSort = (key: LineSortField) => {
+    if (key === sortBy) {
+      // Toggle direction if same column
+      onSortDirChange(sortDir === "desc" ? "asc" : "desc");
+    } else {
+      // New column - default to descending
+      onSortByChange(key);
+      onSortDirChange("desc");
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -102,11 +126,33 @@ export function LineExplorer({
             <Layers className="h-5 w-5" />
             Line Combinations
           </CardTitle>
-          <SeasonSelector
-            value={effectiveSeason}
-            onValueChange={onSeasonChange}
-            teamAbbrev={teamAbbrev}
-          />
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <SeasonSelector
+              value={effectiveSeason}
+              onValueChange={onSeasonChange}
+              teamAbbrev={teamAbbrev}
+            />
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+              <Button
+                variant={view === "charts" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => onViewChange("charts")}
+                className="gap-1 px-2 sm:gap-2 sm:px-3"
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden xs:inline">Charts</span>
+              </Button>
+              <Button
+                variant={view === "table" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => onViewChange("table")}
+                className="gap-1 px-2 sm:gap-2 sm:px-3"
+              >
+                <TableIcon className="h-4 w-4" />
+                <span className="hidden xs:inline">Table</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -115,10 +161,6 @@ export function LineExplorer({
           onLineTypeChange={onLineTypeChange}
           minToi={minToi}
           onMinToiChange={onMinToiChange}
-          sortBy={sortBy}
-          onSortByChange={onSortByChange}
-          sortDir={sortDir}
-          onSortDirChange={onSortDirChange}
         />
         {error && (
           <ErrorState
@@ -137,35 +179,57 @@ export function LineExplorer({
         )}
         {!isLoading && !error && data && (
           <>
-            <LineTable
-              lines={data.lines}
-              teamAvgXgPct={teamAverages.xgPct}
-              teamAvgCfPct={teamAverages.cfPct}
-            />
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Page {page} of {totalPages} ({data.totalCount} lines)
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPageChange(page - 1)}
-                    disabled={!hasPrevPage}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPageChange(page + 1)}
-                    disabled={!hasNextPage}
-                  >
-                    Next
-                  </Button>
-                </div>
+            {view === "charts" ? (
+              <div className="space-y-8">
+                <LineEffectivenessChart
+                  lines={data.lines}
+                  isForwardLine={isForwardLine}
+                />
+                <TOIvsXGScatter
+                  lines={data.lines}
+                  isForwardLine={isForwardLine}
+                />
+                <GoalsForAgainstChart
+                  lines={data.lines}
+                  isForwardLine={isForwardLine}
+                />
               </div>
+            ) : (
+              <>
+                <LineTable
+                  lines={data.lines}
+                  teamAvgXgPct={teamAverages.xgPct}
+                  teamAvgCfPct={teamAverages.cfPct}
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                />
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Page {page} of {totalPages} ({data.totalCount} lines)
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onPageChange(page - 1)}
+                        disabled={!hasPrevPage}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onPageChange(page + 1)}
+                        disabled={!hasNextPage}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

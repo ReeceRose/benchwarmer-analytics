@@ -56,6 +56,7 @@ const categorySchema = z.enum([
   "goalieTime",
   "goalsAgainst",
   "xga",
+  "reboundControl",
 ]);
 
 const searchSchema = z.object({
@@ -575,6 +576,18 @@ function TableView({
                       onSort={onSort}
                       isHighlighted={false}
                       className="w-18"
+                    />
+                    <SortableTableHeader
+                      label="Reb"
+                      tooltip="Rebound control ratio (actual/expected, lower is better)"
+                      metric="Reb"
+                      sortKey="reboundControl"
+                      currentSort={sortKey}
+                      sortDesc={sortDesc}
+                      onSort={onSort}
+                      isHighlighted={sortKey === "reboundControl"}
+                      lowerIsBetter
+                      className="w-16"
                     />
                   </>
                 )}

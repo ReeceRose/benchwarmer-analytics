@@ -165,6 +165,11 @@ export function LeaderboardRow({
                 )
               : "-"}
           </TableCell>
+          <TableCell className={cellClass("reboundControl")}>
+            {entry.rebounds != null && entry.expectedRebounds != null && entry.expectedRebounds > 0
+              ? (entry.rebounds / entry.expectedRebounds).toFixed(2) + "x"
+              : "-"}
+          </TableCell>
         </>
       )}
     </TableRow>

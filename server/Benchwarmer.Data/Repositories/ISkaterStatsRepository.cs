@@ -10,6 +10,12 @@ public interface ISkaterStatsRepository
         string? situation = null,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<SkaterSeasonAdvanced>> GetAdvancedByPlayerAsync(
+        int playerId,
+        int? season = null,
+        string? situation = null,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<SkaterSeason>> GetByTeamSeasonAsync(
         string teamAbbrev,
         int season,

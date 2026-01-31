@@ -8,9 +8,10 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ReferenceArea,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS, AGE_PHASE_COLOURS } from "@/lib/chart-colours";
 
 export interface PlayerInfo {
   playerId: number;
@@ -112,7 +113,7 @@ export function AgeCurvesChart({
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const metricPayload = payload.filter(
-                    (p: { dataKey?: string }) => p.dataKey !== "leagueSample"
+                    (p: { dataKey?: string }) => p.dataKey !== "leagueSample",
                   );
                   return (
                     <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
@@ -136,7 +137,7 @@ export function AgeCurvesChart({
                                 : "-"}
                             </span>
                           </div>
-                        )
+                        ),
                       )}
                       {payload[0]?.payload?.leagueSample > 0 && (
                         <p className="text-xs text-muted-foreground mt-2 border-t pt-2">
@@ -150,6 +151,48 @@ export function AgeCurvesChart({
                 }}
               />
               <Legend />
+              <ReferenceArea
+                x1={18}
+                x2={23}
+                yAxisId="left"
+                fill={AGE_PHASE_COLOURS.development}
+                fillOpacity={0.08}
+                label={{
+                  value: "Development",
+                  position: "insideTopLeft",
+                  fontSize: 10,
+                  fill: CHART_AXIS_COLOURS.tick,
+                  fillOpacity: 0.6,
+                }}
+              />
+              <ReferenceArea
+                x1={24}
+                x2={29}
+                yAxisId="left"
+                fill={AGE_PHASE_COLOURS.prime}
+                fillOpacity={0.08}
+                label={{
+                  value: "Prime",
+                  position: "insideTopLeft",
+                  fontSize: 10,
+                  fill: CHART_AXIS_COLOURS.tick,
+                  fillOpacity: 0.6,
+                }}
+              />
+              <ReferenceArea
+                x1={30}
+                x2={45}
+                yAxisId="left"
+                fill={AGE_PHASE_COLOURS.decline}
+                fillOpacity={0.08}
+                label={{
+                  value: "Decline",
+                  position: "insideTopLeft",
+                  fontSize: 10,
+                  fill: CHART_AXIS_COLOURS.tick,
+                  fillOpacity: 0.6,
+                }}
+              />
               <Area
                 yAxisId="right"
                 type="monotone"

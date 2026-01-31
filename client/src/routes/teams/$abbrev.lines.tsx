@@ -10,6 +10,7 @@ const searchSchema = z.object({
   sortBy: z.string().optional(),
   sortDir: z.string().optional(),
   page: z.number().optional(),
+  view: z.enum(["table", "charts"]).optional(),
 });
 
 export const Route = createFileRoute("/teams/$abbrev/lines")({
@@ -28,6 +29,7 @@ function TeamLinesPage() {
   const sortBy = (search.sortBy as LineSortField) || "toi";
   const sortDir = (search.sortDir as SortDirection) || "desc";
   const page = search.page ?? 1;
+  const view = search.view ?? "table";
 
   const updateSearch = (updates: {
     season?: number;
@@ -36,6 +38,7 @@ function TeamLinesPage() {
     sortBy?: LineSortField;
     sortDir?: SortDirection;
     page?: number;
+    view?: "table" | "charts";
   }) => {
     navigate({
       search: (prev) => ({
@@ -62,6 +65,8 @@ function TeamLinesPage() {
       onSortDirChange={(sortDir) => updateSearch({ sortDir })}
       page={page}
       onPageChange={(page) => updateSearch({ page })}
+      view={view}
+      onViewChange={(view) => updateSearch({ view })}
     />
   );
 }

@@ -8,6 +8,7 @@ import {
   GameBoxscoreTableSkeleton,
   GameShotMap,
   GameShotMapSkeleton,
+  XGProgressionChart,
 } from "@/components/game-detail";
 import {
   GamePreviewSections,
@@ -140,7 +141,10 @@ function GameDetailPage() {
         (shotsLoading ? (
           <GameShotMapSkeleton />
         ) : shotsData ? (
-          <GameShotMap shotsData={shotsData} />
+          <>
+            <GameShotMap shotsData={shotsData} />
+            <XGProgressionChart shotsData={shotsData} />
+          </>
         ) : null)}
     </div>
   );

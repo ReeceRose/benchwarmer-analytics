@@ -54,6 +54,7 @@ const CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
   goalieTime: "Ice Time (min)",
   goalsAgainst: "Goals Against",
   xga: "xGA",
+  reboundControl: "Rebound Control",
 };
 
 // Custom tooltip

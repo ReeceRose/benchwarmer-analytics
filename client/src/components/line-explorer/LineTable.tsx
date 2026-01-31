@@ -7,18 +7,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { HeaderWithTooltip } from "@/components/shared";
+import { SortableTableHeader } from "@/components/shared";
 import { LineRow } from "@/components/line-explorer/LineRow";
 import { LineDetail } from "@/components/line-explorer/LineDetail";
-import type { LineCombination } from "@/types";
+import type { LineCombination, LineSortField, SortDirection } from "@/types";
 
 interface LineTableProps {
   lines: LineCombination[];
   teamAvgXgPct?: number;
   teamAvgCfPct?: number;
+  sortBy: LineSortField;
+  sortDir: SortDirection;
+  onSort: (key: LineSortField) => void;
 }
 
-export function LineTable({ lines, teamAvgXgPct, teamAvgCfPct }: LineTableProps) {
+export function LineTable({
+  lines,
+  teamAvgXgPct,
+  teamAvgCfPct,
+  sortBy,
+  sortDir,
+  onSort,
+}: LineTableProps) {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
   const toggleExpanded = (id: number) => {
@@ -44,6 +54,8 @@ export function LineTable({ lines, teamAvgXgPct, teamAvgCfPct }: LineTableProps)
     );
   }
 
+  const sortDesc = sortDir === "desc";
+
   return (
     <Card className="py-0 gap-0">
       <CardContent className="p-0 overflow-x-auto">
@@ -51,28 +63,77 @@ export function LineTable({ lines, teamAvgXgPct, teamAvgCfPct }: LineTableProps)
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="min-w-70">Players</TableHead>
-              <HeaderWithTooltip label="GP" tooltip="Games played together" className="text-right w-16" />
-              <HeaderWithTooltip label="TOI" tooltip="Total time on ice together" className="text-right w-20" />
-              <HeaderWithTooltip label="GF" tooltip="Goals for while on ice together" className="text-right w-16" />
-              <HeaderWithTooltip label="GA" tooltip="Goals against while on ice together" className="text-right w-16" />
-              <HeaderWithTooltip label="xG%" tooltip="Expected goals percentage — share of expected goals while on ice" className="text-right w-20" />
-              <HeaderWithTooltip label="CF%" tooltip="Corsi For % — shot attempt share while on ice together" className="text-right w-20" />
+              <SortableTableHeader
+                label="GP"
+                tooltip="Games played together"
+                sortKey="gp"
+                currentSort={sortBy}
+                sortDesc={sortDesc}
+                onSort={onSort}
+                className="w-16"
+              />
+              <SortableTableHeader
+                label="TOI"
+                tooltip="Total time on ice together"
+                sortKey="toi"
+                currentSort={sortBy}
+                sortDesc={sortDesc}
+                onSort={onSort}
+                className="w-20"
+              />
+              <SortableTableHeader
+                label="GF"
+                tooltip="Goals for while on ice together"
+                sortKey="gf"
+                currentSort={sortBy}
+                sortDesc={sortDesc}
+                onSort={onSort}
+                className="w-16"
+              />
+              <SortableTableHeader
+                label="GA"
+                tooltip="Goals against while on ice together"
+                sortKey="ga"
+                currentSort={sortBy}
+                sortDesc={sortDesc}
+                onSort={onSort}
+                lowerIsBetter
+                className="w-16"
+              />
+              <SortableTableHeader
+                label="xG%"
+                tooltip="Expected goals percentage — share of expected goals while on ice"
+                sortKey="xgpct"
+                currentSort={sortBy}
+                sortDesc={sortDesc}
+                onSort={onSort}
+                className="w-20"
+              />
+              <SortableTableHeader
+                label="CF%"
+                tooltip="Corsi For % — shot attempt share while on ice together"
+                sortKey="cfpct"
+                currentSort={sortBy}
+                sortDesc={sortDesc}
+                onSort={onSort}
+                className="w-20"
+              />
               <TableHead className="w-10"></TableHead>
             </TableRow>
-        </TableHeader>
-        <TableBody>
-          {lines.map((line) => (
-            <Fragment key={line.id}>
-              <LineRow
-                line={line}
-                isExpanded={expandedIds.has(line.id)}
-                onToggleExpand={() => toggleExpanded(line.id)}
-                teamAvgXgPct={teamAvgXgPct}
-                teamAvgCfPct={teamAvgCfPct}
-              />
-              {expandedIds.has(line.id) && <LineDetail line={line} />}
-            </Fragment>
-          ))}
+          </TableHeader>
+          <TableBody>
+            {lines.map((line) => (
+              <Fragment key={line.id}>
+                <LineRow
+                  line={line}
+                  isExpanded={expandedIds.has(line.id)}
+                  onToggleExpand={() => toggleExpanded(line.id)}
+                  teamAvgXgPct={teamAvgXgPct}
+                  teamAvgCfPct={teamAvgCfPct}
+                />
+                {expandedIds.has(line.id) && <LineDetail line={line} />}
+              </Fragment>
+            ))}
           </TableBody>
         </Table>
       </CardContent>

@@ -72,6 +72,12 @@ client/                     # React frontend (not yet created)
 4. **API** exposes data through REST endpoints
 5. **Frontend** consumes API and renders visualizations
 
+## Code Style
+
+### Frontend (React/TypeScript)
+
+- **No JSX comments**: Do not use `{/* comment */}` syntax in JSX. If a comment is truly needed, use regular JS comments outside of JSX or refactor to make the code self-documenting.
+
 ## Documentation
 
 - `docs/PRD.md` - Full product requirements, database schema, API spec
