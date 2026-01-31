@@ -13,6 +13,7 @@ import {
   CareerTrajectory,
   RollingPerformance,
   GoalieWorkloadMonitor,
+  GoalieDangerZoneRadar,
   buildSkaterSeasonRows,
   calculateSkaterTotals,
   buildGoalieSeasonRows,
@@ -81,6 +82,14 @@ function PlayerDetailPage() {
 
   const goalieTotals = useMemo(() => calculateGoalieTotals(goalieSeasonRows), [goalieSeasonRows]);
 
+  // Filter goalie stats by situation for radar chart (non-playoffs only, matching table)
+  const filteredGoalieStats = useMemo(() => {
+    if (!isGoalie || !isGoalieStats(allStats)) return [];
+    return (allStats as GoalieStats[]).filter(
+      (s) => !s.isPlayoffs && (situation === "all" || s.situation === situation)
+    );
+  }, [allStats, situation, isGoalie]);
+
   const teams = teamsData?.teams;
 
   // Get available seasons from stats data for shot filter (skaters only)
@@ -146,6 +155,9 @@ function PlayerDetailPage() {
       ) : isGoalie ? (
         <>
           <GoalieStatsTable rows={goalieSeasonRows} totals={goalieTotals} />
+          {filteredGoalieStats.length > 0 && (
+            <GoalieDangerZoneRadar stats={filteredGoalieStats} className="mt-6" />
+          )}
           {availableSeasons.length > 0 && (
             <GoalieWorkloadMonitor playerId={playerId} season={availableSeasons[0]} />
           )}

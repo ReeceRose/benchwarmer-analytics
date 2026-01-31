@@ -7,6 +7,7 @@ export { PlayerShotMap } from "@/components/player-detail/PlayerShotMap";
 export { CareerTrajectory } from "@/components/player-detail/CareerTrajectory";
 export { RollingPerformance } from "@/components/player-detail/RollingPerformance";
 export { GoalieWorkloadMonitor } from "@/components/player-detail/GoalieWorkloadMonitor";
+export { GoalieDangerZoneRadar } from "@/components/player-detail/GoalieDangerZoneRadar";
 
 export {
   buildSkaterSeasonRows,
