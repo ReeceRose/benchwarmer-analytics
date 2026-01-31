@@ -62,6 +62,7 @@ public static class GameMappers
             GameSeconds: shot.GameTimeSeconds,
             ShooterName: shot.ShooterName,
             ShooterPlayerId: shot.ShooterPlayerId,
+            ShooterPosition: shot.ShooterPosition,
             XCoord: shot.ArenaAdjustedXCoord ?? shot.XCoord ?? 0,
             YCoord: shot.ArenaAdjustedYCoord ?? shot.YCoord ?? 0,
             XGoal: shot.XGoal ?? 0,
@@ -69,7 +70,12 @@ public static class GameMappers
             ShotWasOnGoal: shot.ShotWasOnGoal,
             ShotType: shot.ShotType,
             ShotDistance: shot.ShotDistance ?? 0,
-            ShotAngle: shot.ShotAngle ?? 0
+            ShotAngle: shot.ShotAngle ?? 0,
+            ShotRebound: shot.ShotRebound,
+            ShotRush: shot.ShotRush,
+            HomeSkatersOnIce: shot.HomeSkatersOnIce,
+            AwaySkatersOnIce: shot.AwaySkatersOnIce,
+            GoalieName: shot.GoalieName
         );
     }
 

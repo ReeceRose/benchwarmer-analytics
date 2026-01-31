@@ -209,3 +209,34 @@ export interface GoalieRecentFormResponse {
   home: GoalieRecentForm[];
   away: GoalieRecentForm[];
 }
+
+// Game Shots types
+export interface GameShotsResponse {
+  gameId: string;
+  homeTeamCode: string;
+  awayTeamCode: string;
+  homeShots: GameShot[];
+  awayShots: GameShot[];
+}
+
+export interface GameShot {
+  period: number;
+  gameSeconds: number;
+  shooterName: string | null;
+  shooterPlayerId: number | null;
+  shooterPosition: string | null;
+  xCoord: number;
+  yCoord: number;
+  xGoal: number;
+  isGoal: boolean;
+  shotWasOnGoal: boolean;
+  shotType: string | null;
+  shotDistance: number;
+  shotAngle: number;
+  // Additional context
+  shotRebound: boolean;
+  shotRush: boolean;
+  homeSkatersOnIce: number;
+  awaySkatersOnIce: number;
+  goalieName: string | null;
+}

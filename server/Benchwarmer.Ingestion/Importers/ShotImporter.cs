@@ -41,7 +41,7 @@ public class ShotImporter(
         {
             // Identifiers
             ShotId = record.ShotId,
-            GameId = record.GameId,
+            GameId = ConvertToNhlGameId(record.GameId, record.Season),
             EventId = (int)record.EventId,
             Season = record.Season,
             IsPlayoffGame = record.IsPlayoffGame != 0,
@@ -214,5 +214,26 @@ public class ShotImporter(
             ShotAnglePlusReboundSpeed = record.ShotAnglePlusReboundSpeed,
             ShotAngleReboundRoyalRoad = record.ShotAngleReboundRoyalRoad != 0
         };
+    }
+
+    /// <summary>
+    /// Converts MoneyPuck game_id format to NHL API game_id format.
+    /// MoneyPuck: "20004" = game type 2 (regular season) + game number 0004
+    /// NHL API: "2025020004" = season 2025 + type 02 + game 0004
+    /// </summary>
+    private static string ConvertToNhlGameId(string moneyPuckGameId, int season)
+    {
+        if (string.IsNullOrEmpty(moneyPuckGameId) || moneyPuckGameId.Length < 2)
+            return moneyPuckGameId;
+
+        // MoneyPuck format: first digit is game type (2=regular, 3=playoff), rest is game number
+        var gameType = moneyPuckGameId[0];
+        var gameNumber = moneyPuckGameId[1..];
+
+        // NHL format: YYYYTTGGGG where YYYY=season, TT=type (02=regular, 03=playoff), GGGG=game number
+        var nhlGameType = gameType == '3' ? "03" : "02";
+        var paddedGameNumber = gameNumber.PadLeft(4, '0');
+
+        return $"{season}{nhlGameType}{paddedGameNumber}";
     }
 }

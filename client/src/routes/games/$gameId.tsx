@@ -6,6 +6,8 @@ import {
   GameDetailHeaderSkeleton,
   GameBoxscoreTable,
   GameBoxscoreTableSkeleton,
+  GameShotMap,
+  GameShotMapSkeleton,
 } from "@/components/game-detail";
 import {
   GamePreviewSections,
@@ -14,6 +16,7 @@ import {
 import {
   useGame,
   useGameBoxscore,
+  useGameShots,
   useGamePreview,
   useGoalieRecentForm,
 } from "@/hooks";
@@ -46,6 +49,13 @@ function GameDetailPage() {
   } = useGamePreview(gameId);
 
   const { data: goalieFormData } = useGoalieRecentForm(gameId);
+
+  // Only fetch shots for completed games that have shot data
+  const shouldFetchShots = game?.hasShotData && game?.gameState === "OFF";
+  const { data: shotsData, isLoading: shotsLoading } = useGameShots(
+    gameId,
+    shouldFetchShots
+  );
 
   // Determine game state for conditional rendering (queries already running)
   const isFutureGame = game?.gameState === "FUT" || game?.gameState === "PRE";
@@ -124,6 +134,15 @@ function GameDetailPage() {
             Box score not available for this game.
           </div>
         ))}
+
+      {/* Shot Map for completed games with shot data */}
+      {game?.gameState === "OFF" &&
+        game?.hasShotData &&
+        (shotsLoading ? (
+          <GameShotMapSkeleton />
+        ) : shotsData ? (
+          <GameShotMap shotsData={shotsData} />
+        ) : null)}
     </div>
   );
 }

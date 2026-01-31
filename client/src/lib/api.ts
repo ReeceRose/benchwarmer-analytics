@@ -25,6 +25,7 @@ import type {
   GamesResponse,
   GameSummary,
   GameBoxscoreResponse,
+  GameShotsResponse,
   GamePreview,
   GoalieRecentFormResponse,
   BreakoutCandidatesResponse,
@@ -282,6 +283,11 @@ export async function getGame(gameId: string): Promise<GameSummary> {
 
 export async function getGameBoxscore(gameId: string): Promise<GameBoxscoreResponse> {
   const { data } = await api.get<GameBoxscoreResponse>(`/games/${gameId}/boxscore`);
+  return data;
+}
+
+export async function getGameShots(gameId: string): Promise<GameShotsResponse> {
+  const { data } = await api.get<GameShotsResponse>(`/games/${gameId}/shots`);
   return data;
 }
 

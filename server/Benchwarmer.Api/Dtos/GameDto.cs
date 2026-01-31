@@ -68,6 +68,7 @@ public record GameShotDto(
     int GameSeconds,
     string? ShooterName,
     int? ShooterPlayerId,
+    string? ShooterPosition,
     decimal XCoord,
     decimal YCoord,
     decimal XGoal,
@@ -75,7 +76,13 @@ public record GameShotDto(
     bool ShotWasOnGoal,
     string? ShotType,
     decimal ShotDistance,
-    decimal ShotAngle
+    decimal ShotAngle,
+    // Additional context
+    bool ShotRebound,
+    bool ShotRush,
+    int HomeSkatersOnIce,
+    int AwaySkatersOnIce,
+    string? GoalieName
 );
 
 public record GameBoxscoreResponseDto(

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getYesterdaysGames, getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getLiveScores, getGamePreview, getGoalieRecentForm } from "@/lib/api";
+import { getYesterdaysGames, getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getGameShots, getLiveScores, getGamePreview, getGoalieRecentForm } from "@/lib/api";
 import type { GamesResponse, GameSummary } from "@/types";
 
 export function useYesterdaysGames() {
@@ -70,6 +70,15 @@ export function useGameBoxscore(gameId: string | undefined) {
     queryFn: () => getGameBoxscore(gameId!),
     enabled: !!gameId,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useGameShots(gameId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["games", gameId, "shots"],
+    queryFn: () => getGameShots(gameId!),
+    enabled: !!gameId && enabled,
+    staleTime: 1000 * 60 * 60, // 1 hour - shot data is static for completed games
   });
 }
 
