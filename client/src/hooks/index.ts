@@ -26,6 +26,7 @@ export {
 export {
   useTeamSpecialTeams,
   useSpecialTeamsPlayers,
+  useSpecialTeamsTrend,
   useSpecialTeamsTeamRankings,
   useSpecialTeamsPlayerLeaders,
   usePlayerPenaltyStats,

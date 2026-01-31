@@ -94,3 +94,46 @@ public record SpecialTeamsPlayersDto(
     string Situation,
     IReadOnlyList<SpecialTeamsPlayerDto> Players
 );
+
+/// <summary>
+/// Per-game special teams statistics for trend analysis.
+/// </summary>
+public record SpecialTeamsGameDto(
+    /// <summary>Game ID.</summary>
+    string GameId,
+    /// <summary>Date of the game.</summary>
+    DateOnly GameDate,
+    /// <summary>Opponent team abbreviation.</summary>
+    string Opponent,
+    /// <summary>Whether this was a home game.</summary>
+    bool IsHome,
+    /// <summary>Power play goals scored in this game.</summary>
+    int PpGoals,
+    /// <summary>Power play expected goals in this game.</summary>
+    decimal PpXGoals,
+    /// <summary>Power play shots in this game.</summary>
+    int PpShots,
+    /// <summary>Penalty kill goals against in this game.</summary>
+    int PkGoalsAgainst,
+    /// <summary>Penalty kill expected goals against in this game.</summary>
+    decimal PkXGoalsAgainst,
+    /// <summary>Penalty kill shots against in this game.</summary>
+    int PkShotsAgainst,
+    /// <summary>Cumulative PP goals through this game.</summary>
+    int CumulativePpGoals,
+    /// <summary>Cumulative PP xG through this game.</summary>
+    decimal CumulativePpXGoals,
+    /// <summary>Cumulative PK goals against through this game.</summary>
+    int CumulativePkGoalsAgainst,
+    /// <summary>Cumulative PK xGA through this game.</summary>
+    decimal CumulativePkXGoalsAgainst
+);
+
+/// <summary>
+/// Response containing game-by-game special teams trend data.
+/// </summary>
+public record SpecialTeamsTrendDto(
+    string TeamAbbreviation,
+    int Season,
+    IReadOnlyList<SpecialTeamsGameDto> Games
+);

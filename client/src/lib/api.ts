@@ -38,6 +38,7 @@ import type {
   SpecialTeamsOverview,
   SpecialTeamsPlayersResponse,
   SpecialTeamsSituation,
+  SpecialTeamsTrendResponse,
   TeamSpecialTeamsRankingsResponse,
   SpecialTeamsPlayerLeadersResponse,
   PlayerPenaltyStatsResponse,
@@ -457,6 +458,22 @@ export async function getSpecialTeamsPlayers(
   const { data } = await api.get<SpecialTeamsPlayersResponse>(
     `/teams/${abbrev}/special-teams/players`,
     { params }
+  );
+  return data;
+}
+
+export async function getSpecialTeamsTrend(
+  abbrev: string,
+  season?: number,
+  playoffs?: boolean
+): Promise<SpecialTeamsTrendResponse> {
+  const params: Record<string, unknown> = {};
+  if (season !== undefined) params.season = season;
+  if (playoffs !== undefined) params.playoffs = playoffs;
+
+  const { data } = await api.get<SpecialTeamsTrendResponse>(
+    `/teams/${abbrev}/special-teams/trend`,
+    { params: Object.keys(params).length > 0 ? params : undefined }
   );
   return data;
 }

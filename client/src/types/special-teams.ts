@@ -153,3 +153,27 @@ export type PenaltySortField =
   | "drawnPer60"
   | "takenPer60"
   | "netPer60";
+
+// Game-by-game special teams trend data
+export interface SpecialTeamsGame {
+  gameId: string;
+  gameDate: string;
+  opponent: string;
+  isHome: boolean;
+  ppGoals: number;
+  ppXGoals: number;
+  ppShots: number;
+  pkGoalsAgainst: number;
+  pkXGoalsAgainst: number;
+  pkShotsAgainst: number;
+  cumulativePpGoals: number;
+  cumulativePpXGoals: number;
+  cumulativePkGoalsAgainst: number;
+  cumulativePkXGoalsAgainst: number;
+}
+
+export interface SpecialTeamsTrendResponse {
+  teamAbbreviation: string;
+  season: number;
+  games: SpecialTeamsGame[];
+}

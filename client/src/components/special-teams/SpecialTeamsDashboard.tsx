@@ -1,6 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Calendar } from "lucide-react";
-import { useTeamSpecialTeams, useTeamSeasons } from "@/hooks";
+import {
+  useTeamSpecialTeams,
+  useTeamSeasons,
+  useSpecialTeamsTrend,
+} from "@/hooks";
 import {
   Select,
   SelectContent,
@@ -8,11 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared";
 import { PowerPlayCard } from "@/components/special-teams/PowerPlayCard";
 import { PenaltyKillCard } from "@/components/special-teams/PenaltyKillCard";
 import { SpecialTeamsPlayerTable } from "@/components/special-teams/SpecialTeamsPlayerTable";
+import {
+  GoalsVsXGChart,
+  SpecialTeamsTrendChart,
+} from "@/components/special-teams/charts";
 
 interface SpecialTeamsDashboardProps {
   abbrev: string;
@@ -50,6 +59,12 @@ export function SpecialTeamsDashboard({
     error,
     refetch,
   } = useTeamSpecialTeams(abbrev, effectiveSeason, false);
+
+  const { data: trendData, isLoading: trendLoading } = useSpecialTeamsTrend(
+    abbrev,
+    effectiveSeason,
+    false,
+  );
 
   const handleSeasonChange = (value: string) => {
     const newSeason = value === "all" ? undefined : parseInt(value, 10);
@@ -95,7 +110,8 @@ export function SpecialTeamsDashboard({
         </Select>
         {effectiveSeason && (
           <span className="text-sm text-muted-foreground">
-            Showing {effectiveSeason}-{(effectiveSeason + 1).toString().slice(-2)} regular season
+            Showing {effectiveSeason}-
+            {(effectiveSeason + 1).toString().slice(-2)} regular season
           </span>
         )}
       </div>
@@ -106,6 +122,22 @@ export function SpecialTeamsDashboard({
             <PowerPlayCard stats={specialTeams.powerPlay} />
             <PenaltyKillCard stats={specialTeams.penaltyKill} />
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Performance Analysis</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <GoalsVsXGChart
+                powerPlay={specialTeams.powerPlay}
+                penaltyKill={specialTeams.penaltyKill}
+              />
+              <SpecialTeamsTrendChart
+                games={trendData?.games ?? []}
+                isLoading={trendLoading}
+              />
+            </CardContent>
+          </Card>
 
           <SpecialTeamsPlayerTable abbrev={abbrev} season={effectiveSeason} />
         </>

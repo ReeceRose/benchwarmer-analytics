@@ -8,7 +8,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Legend,
 } from "recharts";
 import {
   Card,
@@ -42,7 +41,6 @@ interface ChartDataPoint {
 /** Period end times in game seconds (20, 40, 60 minutes) */
 const PERIOD_END_TIMES = [1200, 2400, 3600];
 
-
 function CustomTooltip({
   active,
   payload,
@@ -60,17 +58,28 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         {payload.map((p) => (
           <p key={p.dataKey} className="flex justify-between gap-4">
-            <span style={{ color: p.color }}>{p.dataKey === "homeXG" ? "Home xG:" : "Away xG:"}</span>
+            <span style={{ color: p.color }}>
+              {p.dataKey === "homeXG" ? "Home xG:" : "Away xG:"}
+            </span>
             <span className="font-mono font-semibold">
-              {(p.payload[p.dataKey as keyof ChartDataPoint] as number).toFixed(2)}
+              {(p.payload[p.dataKey as keyof ChartDataPoint] as number).toFixed(
+                2,
+              )}
             </span>
           </p>
         ))}
       </div>
       {data.event && (
         <div className="mt-2 pt-2 border-t text-xs">
-          <p className={data.event.isGoal ? "text-success font-semibold" : "text-muted-foreground"}>
-            {data.event.isGoal ? "GOAL" : "Shot"}: {data.event.shooterName ?? "Unknown"}
+          <p
+            className={
+              data.event.isGoal
+                ? "text-success font-semibold"
+                : "text-muted-foreground"
+            }
+          >
+            {data.event.isGoal ? "GOAL" : "Shot"}:{" "}
+            {data.event.shooterName ?? "Unknown"}
           </p>
           <p className="text-muted-foreground">
             xG: {(data.event.xGoal * 100).toFixed(1)}%
@@ -140,10 +149,13 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
     return data;
   }, [shotsData]);
 
-  const homeTotal = chartData.length > 0 ? chartData[chartData.length - 1].homeXG : 0;
-  const awayTotal = chartData.length > 0 ? chartData[chartData.length - 1].awayXG : 0;
+  const homeTotal =
+    chartData.length > 0 ? chartData[chartData.length - 1].homeXG : 0;
+  const awayTotal =
+    chartData.length > 0 ? chartData[chartData.length - 1].awayXG : 0;
   const xgDiff = Math.abs(homeTotal - awayTotal);
-  const xgWinner = homeTotal > awayTotal ? shotsData.homeTeamCode : shotsData.awayTeamCode;
+  const xgWinner =
+    homeTotal > awayTotal ? shotsData.homeTeamCode : shotsData.awayTeamCode;
 
   // Calculate actual goals
   const homeGoals = shotsData.homeShots.filter((s) => s.isGoal).length;
@@ -154,7 +166,9 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">xG Progression</CardTitle>
-          <CardDescription>No shot data available for this game</CardDescription>
+          <CardDescription>
+            No shot data available for this game
+          </CardDescription>
         </CardHeader>
       </Card>
     );
@@ -165,8 +179,9 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Expected Goals Progression</CardTitle>
         <CardDescription>
-          {xgWinner} led by {xgDiff.toFixed(2)} xG |
-          Final: {shotsData.awayTeamCode} {awayGoals} - {homeGoals} {shotsData.homeTeamCode}
+          {xgWinner} led by {xgDiff.toFixed(2)} xG | Final:{" "}
+          {shotsData.awayTeamCode} {awayGoals} - {homeGoals}{" "}
+          {shotsData.homeTeamCode}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -205,7 +220,6 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
               width={35}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
 
             {PERIOD_END_TIMES.map((time) => (
               <ReferenceLine
@@ -238,23 +252,54 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
           </LineChart>
         </ResponsiveContainer>
 
-        <div className="flex justify-center gap-8 mt-4 text-sm">
+        <div
+          className="mt-2 flex justify-center gap-6 text-xs text-muted-foreground"
+          aria-label="Chart legend"
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-block h-0.5 w-5 rounded-sm"
+              style={{ backgroundColor: SEMANTIC_COLOURS.primary }}
+            />
+            <span>{shotsData.homeTeamCode}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-block h-0.5 w-5 rounded-sm"
+              style={{ backgroundColor: SEMANTIC_COLOURS.danger }}
+            />
+            <span>{shotsData.awayTeamCode}</span>
+          </div>
+        </div>
+
+        <div className="flex justify-center gap-8 mt-8 pt-8 text-sm">
           <div className="text-center">
-            <div className="text-muted-foreground text-xs">{shotsData.homeTeamCode} xG</div>
-            <div className="font-mono font-semibold" style={{ color: SEMANTIC_COLOURS.primary }}>
+            <div className="text-muted-foreground text-xs">
+              {shotsData.homeTeamCode} xG
+            </div>
+            <div
+              className="font-mono font-semibold"
+              style={{ color: SEMANTIC_COLOURS.primary }}
+            >
               {homeTotal.toFixed(2)}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-muted-foreground text-xs">{shotsData.awayTeamCode} xG</div>
-            <div className="font-mono font-semibold" style={{ color: SEMANTIC_COLOURS.danger }}>
+            <div className="text-muted-foreground text-xs">
+              {shotsData.awayTeamCode} xG
+            </div>
+            <div
+              className="font-mono font-semibold"
+              style={{ color: SEMANTIC_COLOURS.danger }}
+            >
               {awayTotal.toFixed(2)}
             </div>
           </div>
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-3">
-          Cumulative expected goals as the game progresses. Dotted lines indicate period breaks.
+          Cumulative expected goals as the game progresses. Dotted lines
+          indicate period breaks.
         </p>
       </CardContent>
     </Card>

@@ -112,6 +112,21 @@ public static class TeamEndpoints
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{abbrev}/special-teams/trend", GetSpecialTeamsTrend)
+            .WithName("GetTeamSpecialTeamsTrend")
+            .WithSummary("Get game-by-game special teams trend data")
+            .WithDescription("""
+                Returns game-by-game special teams statistics for trend visualization.
+                Calculates PP and PK performance from shot data grouped by game.
+
+                **Query Parameters:**
+                - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
+                - `playoffs`: Filter by season type. true = playoffs only, false = regular season only. Defaults to false.
+                """)
+            .Produces<SpecialTeamsTrendDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetAllTeams(
@@ -589,5 +604,137 @@ public static class TeamEndpoints
             .ToList();
 
         return Results.Ok(new SpecialTeamsPlayersDto(abbrev, seasonYear, sit, players));
+    }
+
+    private static async Task<IResult> GetSpecialTeamsTrend(
+        string abbrev,
+        int? season,
+        bool? playoffs,
+        ITeamRepository teamRepository,
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+
+        var seasonYear = season ?? DateTime.Now.Year;
+        var isPlayoffs = playoffs ?? false;
+
+        // Get all games for this team in the season
+        var games = await db.Games
+            .Where(g => g.Season == seasonYear
+                        && (isPlayoffs ? g.GameType == 3 : g.GameType == 2)
+                        && (g.HomeTeamCode == abbrev || g.AwayTeamCode == abbrev)
+                        && g.GameState == "OFF") // Only completed games
+            .OrderBy(g => g.GameDate)
+            .ToListAsync(cancellationToken);
+
+        if (games.Count == 0)
+        {
+            return Results.Ok(new SpecialTeamsTrendDto(abbrev, seasonYear, []));
+        }
+
+        var gameIds = games.Select(g => g.GameId).ToList();
+
+        // Get all shots from these games
+        var shots = await db.Shots
+            .Where(s => gameIds.Contains(s.GameId))
+            .Select(s => new
+            {
+                s.GameId,
+                s.TeamCode,
+                s.HomeTeamCode,
+                s.AwayTeamCode,
+                s.IsHomeTeam,
+                s.HomeSkatersOnIce,
+                s.AwaySkatersOnIce,
+                s.IsGoal,
+                s.XGoal
+            })
+            .ToListAsync(cancellationToken);
+
+        // Group shots by game and calculate PP/PK stats
+        var shotsByGame = shots.GroupBy(s => s.GameId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var gameDtos = new List<SpecialTeamsGameDto>();
+        int cumulativePpGoals = 0;
+        decimal cumulativePpXGoals = 0;
+        int cumulativePkGoalsAgainst = 0;
+        decimal cumulativePkXGoalsAgainst = 0;
+
+        foreach (var game in games)
+        {
+            var isHome = game.HomeTeamCode == abbrev;
+            var opponent = isHome ? game.AwayTeamCode : game.HomeTeamCode;
+
+            if (!shotsByGame.TryGetValue(game.GameId, out var gameShots))
+            {
+                // No shot data for this game, add zero entry
+                gameDtos.Add(new SpecialTeamsGameDto(
+                    game.GameId,
+                    game.GameDate,
+                    opponent,
+                    isHome,
+                    0, 0, 0, 0, 0, 0,
+                    cumulativePpGoals, cumulativePpXGoals,
+                    cumulativePkGoalsAgainst, cumulativePkXGoalsAgainst
+                ));
+                continue;
+            }
+
+            // Power play shots (team has 5 skaters, opponent has 4)
+            // For home team: HomeSkatersOnIce = 5, AwaySkatersOnIce = 4
+            // For away team: AwaySkatersOnIce = 5, HomeSkatersOnIce = 4
+            var ppShots = gameShots.Where(s =>
+                s.TeamCode == abbrev &&
+                (isHome
+                    ? (s.HomeSkatersOnIce == 5 && s.AwaySkatersOnIce == 4)
+                    : (s.AwaySkatersOnIce == 5 && s.HomeSkatersOnIce == 4))
+            ).ToList();
+
+            // Penalty kill shots against (opponent shooting when team has 4, opponent has 5)
+            var pkShots = gameShots.Where(s =>
+                s.TeamCode != abbrev &&
+                (s.HomeTeamCode == abbrev || s.AwayTeamCode == abbrev) &&
+                (isHome
+                    ? (s.HomeSkatersOnIce == 4 && s.AwaySkatersOnIce == 5)
+                    : (s.AwaySkatersOnIce == 4 && s.HomeSkatersOnIce == 5))
+            ).ToList();
+
+            var ppGoals = ppShots.Count(s => s.IsGoal);
+            var ppXGoals = ppShots.Sum(s => s.XGoal ?? 0);
+            var ppShotCount = ppShots.Count;
+
+            var pkGoalsAgainst = pkShots.Count(s => s.IsGoal);
+            var pkXGoalsAgainst = pkShots.Sum(s => s.XGoal ?? 0);
+            var pkShotCount = pkShots.Count;
+
+            cumulativePpGoals += ppGoals;
+            cumulativePpXGoals += ppXGoals;
+            cumulativePkGoalsAgainst += pkGoalsAgainst;
+            cumulativePkXGoalsAgainst += pkXGoalsAgainst;
+
+            gameDtos.Add(new SpecialTeamsGameDto(
+                game.GameId,
+                game.GameDate,
+                opponent,
+                isHome,
+                ppGoals,
+                Math.Round(ppXGoals, 2),
+                ppShotCount,
+                pkGoalsAgainst,
+                Math.Round(pkXGoalsAgainst, 2),
+                pkShotCount,
+                cumulativePpGoals,
+                Math.Round(cumulativePpXGoals, 2),
+                cumulativePkGoalsAgainst,
+                Math.Round(cumulativePkXGoalsAgainst, 2)
+            ));
+        }
+
+        return Results.Ok(new SpecialTeamsTrendDto(abbrev, seasonYear, gameDtos));
     }
 }

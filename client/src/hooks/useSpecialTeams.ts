@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getTeamSpecialTeams,
   getSpecialTeamsPlayers,
+  getSpecialTeamsTrend,
   getSpecialTeamsTeamRankings,
   getSpecialTeamsPlayerLeaders,
   getPlayerPenaltyStats,
@@ -35,6 +36,19 @@ export function useSpecialTeamsPlayers(
     queryKey: ["teams", abbrev, "special-teams", "players", situation, season, playoffs],
     queryFn: () => getSpecialTeamsPlayers(abbrev, situation, season, playoffs),
     enabled: !!abbrev,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  });
+}
+
+export function useSpecialTeamsTrend(
+  abbrev: string,
+  season?: number,
+  playoffs?: boolean
+) {
+  return useQuery({
+    queryKey: ["teams", abbrev, "special-teams", "trend", season, playoffs],
+    queryFn: () => getSpecialTeamsTrend(abbrev, season, playoffs),
+    enabled: !!abbrev && !!season,
     staleTime: 1000 * 60 * 30, // 30 minutes
   });
 }
