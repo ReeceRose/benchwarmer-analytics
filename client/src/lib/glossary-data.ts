@@ -338,7 +338,7 @@ export const metrics: MetricDefinition[] = [
     abbreviation: "HD",
     category: "shooting",
     description:
-      "Shots taken from the most dangerous areas of the ice, primarily the slot and crease area. These shots typically have xG values above 0.10.",
+      "Shots with xG > 0.15 (15%+ chance of scoring). Typically from the slot, crease, or high-percentage areas. Categorized by MoneyPuck based on their xG model.",
     interpretation:
       "Teams that generate more high-danger chances tend to score more goals. This metric filters out low-value shots from the point.",
   },
@@ -385,14 +385,16 @@ export const metrics: MetricDefinition[] = [
     abbreviation: "MD",
     category: "shooting",
     description:
-      "Shots from areas between high and low danger zones, such as the top of the circles or the lower parts of the slot.",
+      "Shots with xG between 0.06–0.15 (6–15% chance of scoring). Typically from the top of the circles or lower slot areas. Categorized by MoneyPuck based on their xG model.",
   },
   {
     name: "Low Danger Chances",
     abbreviation: "LD",
     category: "shooting",
     description:
-      "Shots from low-probability areas like the point or along the boards. These rarely result in goals without deflections or screens.",
+      "Shots with xG < 0.06 (under 6% chance of scoring). Typically from the point, along the boards, or sharp angles. Categorized by MoneyPuck based on their xG model.",
+    interpretation:
+      "These rarely result in goals without deflections or screens. High volume with low conversion.",
   },
   {
     name: "Shooting Percentage",

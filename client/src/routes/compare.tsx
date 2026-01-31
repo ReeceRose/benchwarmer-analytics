@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BackButton, SeasonSelector, ErrorState } from "@/components/shared";
-import { RadarComparison, GoalieComparison } from "@/components/charts";
+import { RadarComparison, GoalieComparison, GoalieDangerZoneComparison } from "@/components/charts";
 import {
   SelectedPlayersCard,
   ComparisonTable,
@@ -214,6 +214,16 @@ function ComparePage() {
             stats: p.goalieStats ?? null,
           }))}
           title="Goalie Comparison"
+          className="mt-6"
+        />
+      )}
+      {hasComparisonData && selectedPositionType === "goalie" && (
+        <GoalieDangerZoneComparison
+          players={comparisonData.players.map((p) => ({
+            name: p.name,
+            stats: p.goalieStats ?? null,
+          }))}
+          title="Danger Zone Comparison"
           className="mt-6"
         />
       )}
