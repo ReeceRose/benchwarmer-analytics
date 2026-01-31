@@ -66,7 +66,11 @@ function RadarChartTooltip({
     value: number;
     dataKey: string;
     color: string;
-    payload: { zone: string; leagueRaw: string; [key: string]: string | number };
+    payload: {
+      zone: string;
+      leagueRaw: string;
+      [key: string]: string | number;
+    };
   }>;
 }) {
   if (!active || !payload?.length) return null;
@@ -123,7 +127,7 @@ export function GoalieDangerZoneComparison({
     (p) =>
       p.stats.lowSvPct !== null ||
       p.stats.medSvPct !== null ||
-      p.stats.highSvPct !== null
+      p.stats.highSvPct !== null,
   );
 
   if (!hasData) {
@@ -137,7 +141,7 @@ export function GoalieDangerZoneComparison({
     if (svPct === null) return 0;
     return Math.max(
       0,
-      Math.min(100, ((svPct - minSvPct) / (maxSvPct - minSvPct)) * 100)
+      Math.min(100, ((svPct - minSvPct) / (maxSvPct - minSvPct)) * 100),
     );
   };
 
@@ -149,7 +153,11 @@ export function GoalieDangerZoneComparison({
       label: "Medium Danger",
       leagueAvg: LEAGUE_AVERAGES.mediumDanger,
     },
-    { key: "high", label: "High Danger", leagueAvg: LEAGUE_AVERAGES.highDanger },
+    {
+      key: "high",
+      label: "High Danger",
+      leagueAvg: LEAGUE_AVERAGES.highDanger,
+    },
   ];
 
   const radarData = zones.map((zone) => {
@@ -204,7 +212,6 @@ export function GoalieDangerZoneComparison({
               tick={false}
               axisLine={false}
             />
-            {/* League average reference */}
             <Radar
               name="League Avg"
               dataKey="league"
@@ -214,7 +221,6 @@ export function GoalieDangerZoneComparison({
               strokeWidth={1}
               strokeDasharray="5 5"
             />
-            {/* Each goalie */}
             {playerStats.map((player, i) => (
               <Radar
                 key={player.name}
@@ -243,7 +249,6 @@ export function GoalieDangerZoneComparison({
           </RadarChart>
         </ResponsiveContainer>
 
-        {/* Summary table */}
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
@@ -261,7 +266,8 @@ export function GoalieDangerZoneComparison({
                     <span
                       className="w-2 h-2 rounded-full"
                       style={{
-                        backgroundColor: CHART_COLOURS[i % CHART_COLOURS.length],
+                        backgroundColor:
+                          CHART_COLOURS[i % CHART_COLOURS.length],
                       }}
                     />
                     {player.name.split(" ").pop()}
