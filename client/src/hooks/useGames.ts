@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getYesterdaysGames, getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getGameShots, getLiveScores, getGamePreview, getGoalieRecentForm } from "@/lib/api";
+import { getYesterdaysGames, getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getGameShots, getLiveScores, getGamePreview, getGoalieRecentForm, getDeserveToWin } from "@/lib/api";
 import type { GamesResponse, GameSummary } from "@/types";
 
 export function useYesterdaysGames() {
@@ -97,5 +97,14 @@ export function useGoalieRecentForm(gameId: string | undefined) {
     queryFn: () => getGoalieRecentForm(gameId!),
     enabled: !!gameId,
     staleTime: 1000 * 60 * 30, // 30 minutes - recent form is relatively stable
+  });
+}
+
+export function useDeserveToWin(gameId: string | undefined) {
+  return useQuery({
+    queryKey: ["games", gameId, "deserve-to-win"],
+    queryFn: () => getDeserveToWin(gameId!),
+    enabled: !!gameId,
+    staleTime: 1000 * 60 * 30, // 30 minutes - static for completed games
   });
 }

@@ -624,11 +624,12 @@ public static class TeamEndpoints
         var isPlayoffs = playoffs ?? false;
 
         // Get all games for this team in the season
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var games = await db.Games
             .Where(g => g.Season == seasonYear
-                        && (isPlayoffs ? g.GameType == 3 : g.GameType == 2)
+                        && (isPlayoffs ? g.GameType == GameState.Playoffs : g.GameType == GameState.RegularSeason)
                         && (g.HomeTeamCode == abbrev || g.AwayTeamCode == abbrev)
-                        && g.GameState == "OFF") // Only completed games
+                        && (g.GameState == GameState.Final || (g.GameDate < today && (g.HomeScore > 0 || g.AwayScore > 0))))
             .OrderBy(g => g.GameDate)
             .ToListAsync(cancellationToken);
 

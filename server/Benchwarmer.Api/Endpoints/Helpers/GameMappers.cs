@@ -1,4 +1,5 @@
 using Benchwarmer.Api.Dtos;
+using Benchwarmer.Data;
 using Benchwarmer.Data.Entities;
 using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Services;
@@ -135,8 +136,8 @@ public static class GameMappers
         string? seasonSeries = null)
     {
         var hasShotData = stats != null;
-        var isLive = game.GameState is "LIVE" or "CRIT";
-        var isCompleted = game.GameState is "OFF" or "FINAL";
+        var isLive = game.GameState is GameState.Live or GameState.Critical;
+        var isCompleted = GameState.IsFinal(game.GameState);
 
         var homeDto = new GameTeamDto(
             TeamCode: game.HomeTeam.Abbrev,
@@ -198,7 +199,7 @@ public static class GameMappers
 
         DateOnly.TryParse(game.GameDate, out var gameDate);
 
-        var normalizedGameState = game.GameState == "FINAL" ? "OFF" : game.GameState;
+        var normalizedGameState = game.GameState == GameState.FinalAlt ? GameState.Final : game.GameState;
 
         return new GameSummaryDto(
             GameId: game.Id.ToString(),
@@ -227,7 +228,7 @@ public static class GameMappers
         List<GameGoalDto>? goals = null)
     {
         var hasShotData = stats != null;
-        var isCompleted = game.GameState == "OFF";
+        var isCompleted = game.GameState == GameState.Final;
         var hasScores = game.HomeScore > 0 || game.AwayScore > 0;
 
         var homeDto = new GameTeamDto(

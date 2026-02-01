@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
 import type { GameShotsResponse } from "@/types";
 
@@ -391,6 +392,25 @@ export function ShotGoalTimelineChart({ shotsData }: ShotGoalTimelineChartProps)
             />
             <span>Goal (diamond)</span>
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function ShotGoalTimelineChartSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-4 w-80 mt-1" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="w-full h-56 rounded-lg" />
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-6">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 w-24" />
         </div>
       </CardContent>
     </Card>

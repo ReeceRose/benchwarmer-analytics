@@ -1,5 +1,7 @@
 using Benchwarmer.Api.Dtos;
 using Benchwarmer.Api.Endpoints.Helpers;
+using Benchwarmer.Api.Services;
+using Benchwarmer.Data;
 using Benchwarmer.Data.Entities;
 using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Services;
@@ -125,6 +127,20 @@ public static class GameEndpoints
             .Produces<GoalieRecentFormResponseDto>()
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{gameId}/deserve-to-win", GetDeserveToWin)
+            .WithName("GetDeserveToWin")
+            .WithSummary("Get deserve-to-win analysis")
+            .WithDescription("""
+                Returns win probability progression using Poisson and Monte Carlo methods.
+                Shows how each team's "deserve to win" probability evolved shot-by-shot.
+
+                Poisson: Analytical model treating goals as Poisson-distributed events.
+                Monte Carlo: 10,000 simulations re-running the game with xG probabilities.
+                """)
+            .Produces<DeserveToWinResponseDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.SemiStaticData);
     }
 
     private static async Task<IResult> GetGamesByDate(
@@ -153,7 +169,7 @@ public static class GameEndpoints
         var games = await gamesTask;
         var standings = await standingsTask;
 
-        var h2hData = await ComputeHeadToHeadForGames(games, gameRepository, cancellationToken);
+        var h2hData = await ComputeHeadToHeadForGames(games, nhlScheduleService, cancellationToken);
         var gameDtos = await EnrichGamesWithStats(games, gameStatsRepository, standings, h2hData, cancellationToken);
 
         return Results.Ok(new GamesResponseDto(targetDate, gameDtos));
@@ -173,10 +189,10 @@ public static class GameEndpoints
         var standingsTask = nhlScheduleService.GetStandingsAsync(cancellationToken);
         await Task.WhenAll(gamesTask, standingsTask);
 
-        var games = (await gamesTask).Where(g => g.GameState == "OFF").ToList();
+        var games = (await gamesTask).Where(g => g.GameState == GameState.Final || (g.HomeScore > 0 || g.AwayScore > 0)).ToList();
         var standings = await standingsTask;
 
-        var h2hData = await ComputeHeadToHeadForGames(games, gameRepository, cancellationToken);
+        var h2hData = await ComputeHeadToHeadForGames(games, nhlScheduleService, cancellationToken);
         var gameDtos = await EnrichGamesWithStats(games, gameStatsRepository, standings, h2hData, cancellationToken);
 
         return Results.Ok(new GamesResponseDto(yesterday, gameDtos));
@@ -220,7 +236,7 @@ public static class GameEndpoints
         {
             allMatchups.Add((g.HomeTeamCode, g.AwayTeamCode, g.Season));
         }
-        var h2hData = await ComputeHeadToHeadForMatchups(allMatchups, gameRepository, cancellationToken);
+        var h2hData = await ComputeHeadToHeadForMatchups(allMatchups, nhlScheduleService, cancellationToken);
 
         var resultDtos = new List<GameSummaryDto>();
 
@@ -313,7 +329,7 @@ public static class GameEndpoints
             var season = GetSeasonFromGameId(gameId);
             var h2hData = await ComputeHeadToHeadForMatchups(
                 [(liveGame.HomeTeam.Abbrev, liveGame.AwayTeam.Abbrev, season)],
-                gameRepository, cancellationToken);
+                nhlScheduleService, cancellationToken);
             var h2hKey = $"{liveGame.HomeTeam.Abbrev}-{liveGame.AwayTeam.Abbrev}";
             h2hData.TryGetValue(h2hKey, out var seasonSeries);
 
@@ -351,10 +367,9 @@ public static class GameEndpoints
         var dbStats = await dbStatsTask;
         var dbStandings = await standingsTask;
 
-        // Run head-to-head query sequentially to avoid DbContext concurrency issues
         var dbH2hData = await ComputeHeadToHeadForMatchups(
             [(game.HomeTeamCode, game.AwayTeamCode, game.Season)],
-            gameRepository, cancellationToken);
+            nhlScheduleService, cancellationToken);
 
         dbStandings.TryGetValue(game.HomeTeamCode, out var dbHomeStandings);
         dbStandings.TryGetValue(game.AwayTeamCode, out var dbAwayStandings);
@@ -362,7 +377,7 @@ public static class GameEndpoints
         dbH2hData.TryGetValue(dbH2hKey, out var dbSeasonSeries);
 
         List<GameGoalDto>? goals = null;
-        if (game.GameState == "OFF")
+        if (game.GameState == GameState.Final)
         {
             var landing = await nhlScheduleService.GetGameLandingAsync(gameId, cancellationToken);
             if (landing?.Summary?.Scoring != null)
@@ -488,7 +503,7 @@ public static class GameEndpoints
 
         var homeTeamGames = await homeTeamGamesTask;
         var headToHeadGames = homeTeamGames
-            .Where(g => g.GameState == "OFF" && g.GameType == 2)
+            .Where(g => GameState.IsFinal(g.GameState) && g.GameType == GameState.RegularSeason)
             .Where(g => g.HomeTeam.Abbrev == awayTeam || g.AwayTeam.Abbrev == awayTeam)
             .OrderByDescending(g => g.GameDate)
             .ToList();
@@ -559,13 +574,13 @@ public static class GameEndpoints
         await Task.WhenAll(homeGamesTask, awayGamesTask);
 
         var homeGames = (await homeGamesTask)
-            .Where(g => g.GameState == "OFF" && g.GameType == 2)
+            .Where(g => GameState.IsFinal(g.GameState) && g.GameType == GameState.RegularSeason)
             .OrderByDescending(g => g.GameDate)
             .Take(5)
             .ToList();
 
         var awayGames = (await awayGamesTask)
-            .Where(g => g.GameState == "OFF" && g.GameType == 2)
+            .Where(g => GameState.IsFinal(g.GameState) && g.GameType == GameState.RegularSeason)
             .OrderByDescending(g => g.GameDate)
             .Take(5)
             .ToList();
@@ -585,6 +600,32 @@ public static class GameEndpoints
         ));
     }
 
+    private static async Task<IResult> GetDeserveToWin(
+        string gameId,
+        IGameRepository gameRepository,
+        IShotRepository shotRepository,
+        IDeserveToWinService deserveToWinService,
+        CancellationToken cancellationToken)
+    {
+        var game = await gameRepository.GetByGameIdAsync(gameId, cancellationToken);
+        if (game == null)
+            return Results.NotFound();
+
+        var shots = await shotRepository.GetByGameAsync(gameId, cancellationToken);
+        if (shots.Count == 0)
+            return Results.NotFound();
+
+        var result = deserveToWinService.Calculate(
+            gameId,
+            game.HomeTeamCode,
+            game.AwayTeamCode,
+            shots,
+            game.HomeScore,
+            game.AwayScore);
+
+        return Results.Ok(result);
+    }
+
     #region Helper Methods
 
     private static async Task<List<Game>> GetGamesForDate(
@@ -598,7 +639,8 @@ public static class GameEndpoints
         var etZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
         var nowEt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, etZone);
         var today = DateOnly.FromDateTime(nowEt);
-        var shouldRefresh = games.Count == 0 || date >= today;
+        var hasUnfinalizedGames = games.Any(g => g.GameState != GameState.Final);
+        var shouldRefresh = games.Count == 0 || date >= today || hasUnfinalizedGames;
 
         if (shouldRefresh)
         {
@@ -625,53 +667,54 @@ public static class GameEndpoints
 
     private static async Task<Dictionary<string, string>> ComputeHeadToHeadForGames(
         List<Game> games,
-        IGameRepository gameRepository,
+        NhlScheduleService nhlScheduleService,
         CancellationToken cancellationToken)
     {
         var matchups = games.Select(g => (g.HomeTeamCode, g.AwayTeamCode, g.Season)).ToList();
-        return await ComputeHeadToHeadForMatchups(matchups, gameRepository, cancellationToken);
+        return await ComputeHeadToHeadForMatchups(matchups, nhlScheduleService, cancellationToken);
     }
 
     private static async Task<Dictionary<string, string>> ComputeHeadToHeadForMatchups(
         List<(string HomeTeam, string AwayTeam, int Season)> matchups,
-        IGameRepository gameRepository,
+        NhlScheduleService nhlScheduleService,
         CancellationToken cancellationToken)
     {
         var result = new Dictionary<string, string>();
         if (matchups.Count == 0) return result;
 
-        var uniqueMatchups = matchups
-            .Select(m => (
-                TeamA: string.Compare(m.HomeTeam, m.AwayTeam, StringComparison.Ordinal) < 0 ? m.HomeTeam : m.AwayTeam,
-                TeamB: string.Compare(m.HomeTeam, m.AwayTeam, StringComparison.Ordinal) < 0 ? m.AwayTeam : m.HomeTeam,
-                m.Season))
+        // Group by team+season to minimize API calls
+        var teamsToFetch = matchups
+            .SelectMany(m => new[] { (Team: m.HomeTeam, m.Season), (Team: m.AwayTeam, m.Season) })
             .Distinct()
             .ToList();
 
-        var h2hResults = new List<(string TeamA, string TeamB, IReadOnlyList<Game> Games)>();
-        foreach (var m in uniqueMatchups)
+        // Fetch season schedules for all teams in parallel
+        var scheduleTasks = teamsToFetch.Select(async t =>
         {
-            var h2hGames = await gameRepository.GetHeadToHeadAsync(m.TeamA, m.TeamB, m.Season, cancellationToken);
-            h2hResults.Add((m.TeamA, m.TeamB, h2hGames));
-        }
+            var games = await nhlScheduleService.GetTeamSeasonGamesAsync(t.Team, t.Season, cancellationToken);
+            return (t.Team, t.Season, Games: games);
+        });
+        var scheduleResults = await Task.WhenAll(scheduleTasks);
+        var schedulesByTeam = scheduleResults.ToDictionary(r => (r.Team, r.Season), r => r.Games);
 
         foreach (var matchup in matchups)
         {
             var key = $"{matchup.HomeTeam}-{matchup.AwayTeam}";
             if (result.ContainsKey(key)) continue;
 
-            var teamA = string.Compare(matchup.HomeTeam, matchup.AwayTeam, StringComparison.Ordinal) < 0 ? matchup.HomeTeam : matchup.AwayTeam;
-            var teamB = string.Compare(matchup.HomeTeam, matchup.AwayTeam, StringComparison.Ordinal) < 0 ? matchup.AwayTeam : matchup.HomeTeam;
-
-            var h2h = h2hResults.FirstOrDefault(r => r.TeamA == teamA && r.TeamB == teamB);
-            if (h2h.Games == null || h2h.Games.Count == 0)
+            // Get schedule for one team and filter for games vs opponent
+            if (!schedulesByTeam.TryGetValue((matchup.HomeTeam, matchup.Season), out var teamGames))
             {
                 result[key] = "";
                 continue;
             }
 
-            var completedGames = h2h.Games.Where(g => g.GameState == "OFF").ToList();
-            if (completedGames.Count == 0)
+            var h2hGames = teamGames
+                .Where(g => GameState.IsFinal(g.GameState) && g.GameType == GameState.RegularSeason)
+                .Where(g => g.HomeTeam.Abbrev == matchup.AwayTeam || g.AwayTeam.Abbrev == matchup.AwayTeam)
+                .ToList();
+
+            if (h2hGames.Count == 0)
             {
                 result[key] = "";
                 continue;
@@ -680,22 +723,21 @@ public static class GameEndpoints
             var homeWins = 0;
             var awayWins = 0;
 
-            foreach (var game in completedGames)
+            foreach (var game in h2hGames)
             {
-                var homeScore = game.HomeScore;
-                var awayScore = game.AwayScore;
+                var gameHomeTeam = game.HomeTeam.Abbrev;
+                var homeScore = game.HomeTeam.Score ?? 0;
+                var awayScore = game.AwayTeam.Score ?? 0;
                 var gameHomeWon = homeScore > awayScore;
 
-                if (game.HomeTeamCode == matchup.HomeTeam)
-                {
-                    if (gameHomeWon) homeWins++;
-                    else awayWins++;
-                }
+                // Determine if today's home team won this historical game
+                var todayHomeTeamWon = (gameHomeTeam == matchup.HomeTeam && gameHomeWon) ||
+                                       (gameHomeTeam == matchup.AwayTeam && !gameHomeWon);
+
+                if (todayHomeTeamWon)
+                    homeWins++;
                 else
-                {
-                    if (gameHomeWon) awayWins++;
-                    else homeWins++;
-                }
+                    awayWins++;
             }
 
             if (homeWins > awayWins)

@@ -1,4 +1,5 @@
 using Benchwarmer.Api;
+using Benchwarmer.Api.Services;
 using Benchwarmer.Data;
 using Benchwarmer.Data.Repositories;
 using Benchwarmer.Api.Endpoints;
@@ -125,6 +126,7 @@ try
     builder.Services.AddScoped<ITeamSeasonRepository, TeamSeasonRepository>();
 
     // Services
+    builder.Services.AddSingleton<IDeserveToWinService, DeserveToWinService>();
     builder.Services.AddHttpClient<MoneyPuckDownloader>();
     builder.Services.AddHttpClient<NhlScheduleService>()
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler

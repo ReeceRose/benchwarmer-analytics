@@ -10,3 +10,4 @@ export * from "@/types/analytics";
 export * from "@/types/standings";
 export * from "@/types/special-teams";
 export * from "@/types/leaderboard";
+export * from "@/types/deserve-to-win";

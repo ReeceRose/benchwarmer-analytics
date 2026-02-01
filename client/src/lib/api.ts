@@ -49,6 +49,7 @@ import type {
   RookiesResponse,
   LeagueTrendsResponse,
   GoalieLeagueBaselinesResponse,
+  DeserveToWinResponse,
 } from "@/types";
 
 const api = axios.create({
@@ -306,6 +307,11 @@ export async function getGamePreview(gameId: string): Promise<GamePreview> {
 
 export async function getGoalieRecentForm(gameId: string): Promise<GoalieRecentFormResponse> {
   const { data } = await api.get<GoalieRecentFormResponse>(`/games/${gameId}/goalie-form`);
+  return data;
+}
+
+export async function getDeserveToWin(gameId: string): Promise<DeserveToWinResponse> {
+  const { data } = await api.get<DeserveToWinResponse>(`/games/${gameId}/deserve-to-win`);
   return data;
 }
 

@@ -138,11 +138,9 @@ export function GameCard({ game }: GameCardProps) {
             isCompleted &&
             game.away.expectedGoals !== null &&
             game.home.expectedGoals !== null && (
-              <div className="pt-2 border-t text-xs text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>xG: {game.away.expectedGoals.toFixed(1)}</span>
-                  <span>xG: {game.home.expectedGoals.toFixed(1)}</span>
-                </div>
+              <div className="pt-2 border-t text-[10px] text-muted-foreground font-mono flex justify-between">
+                <span>{game.away.teamCode} xG: {game.away.expectedGoals.toFixed(1)}</span>
+                <span>{game.home.teamCode} xG: {game.home.expectedGoals.toFixed(1)}</span>
               </div>
             )}
           {isLive && game.goals && game.goals.length > 0 && (

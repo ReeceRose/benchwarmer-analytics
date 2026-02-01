@@ -632,6 +632,45 @@ export const metrics: MetricDefinition[] = [
     interpretation:
       "Removes the bias caused by game state. Especially important for players on teams that are often ahead or behind.",
   },
+
+  // Deserve to Win / Win Probability
+  {
+    name: "Deserve to Win",
+    abbreviation: "DTW",
+    aliases: ["Win Probability", "Deserve to Win Meter"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "A win probability estimate based on shot quality (xG) rather than actual goals. Shows which team 'deserved' to win based on the chances they created.",
+    interpretation:
+      "Useful for identifying games where the result didn't match the underlying play. A team can lose while deserving to win if they created better chances but got unlucky with finishing or goaltending.",
+  },
+  {
+    name: "Monte Carlo Win Probability",
+    abbreviation: "MC Win%",
+    aliases: ["Monte Carlo", "MC"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Win probability estimated by running 10,000 simulations of the game, where each shot either scores or misses based on its xG probability. Handles shot flurries by skipping rebounds after simulated goals.",
+    formula:
+      "For each simulation: replay all shots using random draws vs xG; count wins/losses/ties; OT ties split 50/50",
+    interpretation:
+      "More realistic than Poisson because it respects the actual shot sequence and handles dependent events (rebounds). The gold standard for deserve-to-win analysis.",
+  },
+  {
+    name: "Poisson Win Probability",
+    abbreviation: "Poisson Win%",
+    aliases: ["Poisson"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Win probability calculated analytically by treating goals as Poisson-distributed random variables with λ = total xG for each team.",
+    formula:
+      "P(home wins) = Σ P(home=h) × P(away=a) for all h>a; P(OT win) = P(tie) × 0.5",
+    interpretation:
+      "A fast analytical approximation. Assumes goals are independent events, which slightly overestimates variance compared to Monte Carlo. Shown as dashed line for comparison.",
+  },
 ];
 
 export const categoryInfo = {

@@ -24,8 +24,10 @@ public class GameRepository(IDbContextFactory<AppDbContext> dbFactory) : IGameRe
     public async Task<IReadOnlyList<Game>> GetCompletedByDateAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         return await db.Games
-            .Where(g => g.GameDate == date && g.GameState == "OFF")
+            .Where(g => g.GameDate == date)
+            .Where(g => g.GameState == GameState.Final || (date < today && (g.HomeScore > 0 || g.AwayScore > 0)))
             .OrderBy(g => g.GameId)
             .ToListAsync(cancellationToken);
     }
@@ -107,11 +109,13 @@ public class GameRepository(IDbContextFactory<AppDbContext> dbFactory) : IGameRe
         CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         return await db.Games
-            .Where(g => g.Season == season && g.GameState == "OFF")
+            .Where(g => g.Season == season)
             .Where(g =>
                 (g.HomeTeamCode == teamA && g.AwayTeamCode == teamB) ||
                 (g.HomeTeamCode == teamB && g.AwayTeamCode == teamA))
+            .Where(g => g.GameState == GameState.Final || (g.GameDate < today && (g.HomeScore > 0 || g.AwayScore > 0)))
             .OrderByDescending(g => g.GameDate)
             .ToListAsync(cancellationToken);
     }

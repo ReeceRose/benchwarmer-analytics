@@ -9,7 +9,11 @@ import {
   GameShotMap,
   GameShotMapSkeleton,
   XGProgressionChart,
+  XGProgressionChartSkeleton,
   ShotGoalTimelineChart,
+  ShotGoalTimelineChartSkeleton,
+  DeserveToWinChart,
+  DeserveToWinChartSkeleton,
 } from "@/components/game-detail";
 import {
   GamePreviewSections,
@@ -21,6 +25,7 @@ import {
   useGameShots,
   useGamePreview,
   useGoalieRecentForm,
+  useDeserveToWin,
   usePageTitle,
 } from "@/hooks";
 import { getSeasonFromDate } from "@/lib/date-utils";
@@ -64,6 +69,11 @@ function GameDetailPage() {
   const { data: shotsData, isLoading: shotsLoading } = useGameShots(
     gameId,
     shouldFetchShots
+  );
+
+  // Fetch deserve-to-win data for completed games with shot data
+  const { data: deserveToWinData, isLoading: deserveToWinLoading } = useDeserveToWin(
+    shouldFetchShots ? gameId : undefined
   );
 
   // Determine game state for conditional rendering (queries already running)
@@ -147,11 +157,21 @@ function GameDetailPage() {
       {game?.gameState === "OFF" &&
         game?.hasShotData &&
         (shotsLoading ? (
-          <GameShotMapSkeleton />
+          <>
+            <GameShotMapSkeleton />
+            <XGProgressionChartSkeleton />
+            <DeserveToWinChartSkeleton />
+            <ShotGoalTimelineChartSkeleton />
+          </>
         ) : shotsData ? (
           <>
             <GameShotMap shotsData={shotsData} />
             <XGProgressionChart shotsData={shotsData} />
+            {deserveToWinLoading ? (
+              <DeserveToWinChartSkeleton />
+            ) : deserveToWinData ? (
+              <DeserveToWinChart data={deserveToWinData} />
+            ) : null}
             <ShotGoalTimelineChart shotsData={shotsData} />
           </>
         ) : null)}

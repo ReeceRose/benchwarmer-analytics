@@ -16,6 +16,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
 import { formatGameTime } from "@/lib/formatters";
 import type { GameShotsResponse, GameShot } from "@/types";
@@ -301,6 +302,35 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
           Cumulative expected goals as the game progresses. Dotted lines
           indicate period breaks.
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function XGProgressionChartSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <Skeleton className="h-6 w-56" />
+        <Skeleton className="h-4 w-72 mt-1" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="w-full h-72 rounded-lg" />
+        <div className="mt-2 flex justify-center gap-6">
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-3 w-12" />
+        </div>
+        <div className="flex justify-center gap-8 mt-8 pt-8">
+          <div className="flex flex-col items-center">
+            <Skeleton className="h-3 w-16 mb-1" />
+            <Skeleton className="h-5 w-10" />
+          </div>
+          <div className="flex flex-col items-center">
+            <Skeleton className="h-3 w-16 mb-1" />
+            <Skeleton className="h-5 w-10" />
+          </div>
+        </div>
+        <Skeleton className="h-3 w-72 mx-auto mt-3" />
       </CardContent>
     </Card>
   );
