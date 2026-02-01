@@ -142,7 +142,7 @@ export function ShotHeatMap({
           viewBox={`0 0 ${RINK_LENGTH} ${RINK_HEIGHT}`}
           width={width}
           height={height}
-          className="bg-slate-100 dark:bg-slate-900 rounded-lg border border-border"
+          className="bg-muted rounded-lg border border-border"
           preserveAspectRatio="xMidYMid meet"
         >
           <path
@@ -159,7 +159,7 @@ export function ShotHeatMap({
             fill="none"
             stroke="currentColor"
             strokeWidth="0.5"
-            className="text-slate-300 dark:text-slate-700"
+            className="text-muted-foreground/30"
           />
           <path
             d={`

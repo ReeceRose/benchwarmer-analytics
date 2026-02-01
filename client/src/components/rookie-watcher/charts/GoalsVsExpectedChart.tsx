@@ -82,7 +82,7 @@ function CustomTooltip({
           <span className="text-muted-foreground">Expected Goals:</span>{" "}
           <span className="font-mono">{data.expectedGoals.toFixed(1)}</span>
         </p>
-        <p className={isOverperforming ? "text-success" : "text-amber-500"}>
+        <p className={isOverperforming ? "text-success" : "text-warning"}>
           <span className="text-muted-foreground">G - xG:</span>{" "}
           <span className="font-mono font-semibold">
             {isOverperforming ? "+" : ""}
@@ -168,7 +168,7 @@ function SelectionPanel({
             <p className="font-semibold truncate">
               {data.name}
               <span
-                className={`ml-2 text-xs ${isOverperforming ? "text-success" : "text-amber-500"}`}
+                className={`ml-2 text-xs ${isOverperforming ? "text-success" : "text-warning"}`}
               >
                 {isOverperforming ? "Hot" : "Due for more"}
               </span>
@@ -183,7 +183,7 @@ function SelectionPanel({
                 <span className="font-mono">{data.expectedGoals.toFixed(1)}</span>
               </span>
               <span
-                className={`font-mono font-semibold ${isOverperforming ? "text-success" : "text-amber-500"}`}
+                className={`font-mono font-semibold ${isOverperforming ? "text-success" : "text-warning"}`}
               >
                 {isOverperforming ? "+" : ""}
                 {data.diff.toFixed(1)}

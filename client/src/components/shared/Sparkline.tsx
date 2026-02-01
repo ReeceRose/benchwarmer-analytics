@@ -51,9 +51,9 @@ export function Sparkline({
   const isDowntrend = secondAvg < firstAvg * 0.95;
 
   const defaultColor = isUptrend
-    ? "stroke-green-500"
+    ? "stroke-success"
     : isDowntrend
-      ? "stroke-red-500"
+      ? "stroke-error"
       : "stroke-muted-foreground";
 
   return (

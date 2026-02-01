@@ -29,7 +29,12 @@ public record SkaterStatsDto(
     // Faceoff fields
     decimal? FaceoffsWon,
     decimal? FaceoffsLost,
-    decimal? FaceoffPct  // Calculated: Won / (Won + Lost)
+    decimal? FaceoffPct,  // Calculated: Won / (Won + Lost)
+    // Giveaway/Takeaway fields
+    decimal? Takeaways,
+    decimal? Giveaways,
+    decimal? DZoneGiveaways,
+    decimal? GiveawayDZonePct  // Calculated: DZoneGiveaways / Giveaways * 100
 );
 
 public record PlayerStatsDto(

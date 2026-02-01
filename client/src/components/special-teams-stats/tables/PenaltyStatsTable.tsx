@@ -263,18 +263,18 @@ export function PenaltyStatsTable({ players, season }: PenaltyStatsTableProps) {
               <TableCell className="text-right tabular-nums">
                 {player.iceTimeMinutes.toFixed(0)}
               </TableCell>
-              <TableCell className="text-right tabular-nums text-green-600 dark:text-green-400">
+              <TableCell className="text-right tabular-nums text-success">
                 {player.penaltiesDrawn}
               </TableCell>
-              <TableCell className="text-right tabular-nums text-red-600 dark:text-red-400">
+              <TableCell className="text-right tabular-nums text-error">
                 {player.penaltiesTaken}
               </TableCell>
               <TableCell
                 className={`text-right tabular-nums font-medium ${
                   player.netPenalties > 0
-                    ? "text-green-600 dark:text-green-400"
+                    ? "text-success"
                     : player.netPenalties < 0
-                      ? "text-red-600 dark:text-red-400"
+                      ? "text-error"
                       : ""
                 }`}
               >
@@ -290,9 +290,9 @@ export function PenaltyStatsTable({ players, season }: PenaltyStatsTableProps) {
               <TableCell
                 className={`text-right tabular-nums ${
                   player.netPenaltiesPer60 > 0
-                    ? "text-green-600 dark:text-green-400"
+                    ? "text-success"
                     : player.netPenaltiesPer60 < 0
-                      ? "text-red-600 dark:text-red-400"
+                      ? "text-error"
                       : ""
                 }`}
               >

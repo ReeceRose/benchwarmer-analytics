@@ -180,7 +180,7 @@ function CustomTooltip({
             <span className="text-muted-foreground">Strength</span>
             <span
               className={
-                strength === "PP" ? "text-amber-500" : "text-sky-500"
+                strength === "PP" ? "text-warning" : "text-cold"
               }
             >
               {strength}
@@ -191,12 +191,12 @@ function CustomTooltip({
         {(event.shotRebound || event.shotRush) && (
           <div className="pt-1 flex gap-2">
             {event.shotRebound && (
-              <span className="bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">
+              <span className="bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
                 Rebound
               </span>
             )}
             {event.shotRush && (
-              <span className="bg-sky-500/20 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded font-medium">
+              <span className="bg-cold/20 text-cold px-1.5 py-0.5 rounded font-medium">
                 Rush
               </span>
             )}

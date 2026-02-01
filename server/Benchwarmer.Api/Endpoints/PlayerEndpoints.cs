@@ -280,6 +280,13 @@ public static class PlayerEndpoints
                 }
             }
 
+            // Calculate D-zone giveaway percentage
+            decimal? giveawayDZonePct = null;
+            if (adv?.IFGiveaways != null && adv.IFGiveaways > 0 && adv?.IFDZoneGiveaways != null)
+            {
+                giveawayDZonePct = Math.Round(adv.IFDZoneGiveaways.Value / adv.IFGiveaways.Value * 100, 1);
+            }
+
             return new SkaterStatsDto(
                 s.Id,
                 s.PlayerId,
@@ -307,7 +314,11 @@ public static class PlayerEndpoints
                 dzoneShiftPct,
                 adv?.FaceoffsWon,
                 adv?.FaceoffsLost,
-                faceoffPct
+                faceoffPct,
+                adv?.IFTakeaways,
+                adv?.IFGiveaways,
+                adv?.IFDZoneGiveaways,
+                giveawayDZonePct
             );
         }).ToList();
 
@@ -755,7 +766,8 @@ public static class PlayerEndpoints
                         latestStat.CorsiForPct,
                         latestStat.FenwickForPct,
                         null, null, null, null, null, null,  // Shift quality fields not needed for comparison
-                        null, null, null  // Faceoff fields not needed for comparison
+                        null, null, null,  // Faceoff fields not needed for comparison
+                        null, null, null, null  // Giveaway/Takeaway fields not needed for comparison
                     ) : null,
                     null
                 );

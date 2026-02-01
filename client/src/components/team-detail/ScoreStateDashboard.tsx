@@ -95,20 +95,20 @@ function ScoreStateCard({ state, breakdown, total }: ScoreStateCardProps) {
     leading: {
       label: "When Leading",
       icon: TrendingUp,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10",
+      color: "text-success",
+      bgColor: "bg-success/10",
     },
     trailing: {
       label: "When Trailing",
       icon: TrendingDown,
-      color: "text-red-500",
-      bgColor: "bg-red-500/10",
+      color: "text-error",
+      bgColor: "bg-error/10",
     },
     tied: {
       label: "When Tied",
       icon: Minus,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
+      color: "text-cold",
+      bgColor: "bg-cold/10",
     },
   }[state];
 
@@ -155,8 +155,8 @@ function ScoreStateCard({ state, breakdown, total }: ScoreStateCardProps) {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">xG Differential</span>
             <span className={`font-medium tabular-nums ${
-              breakdown.xgDifferential > 0 ? "text-green-500" :
-              breakdown.xgDifferential < 0 ? "text-red-500" : ""
+              breakdown.xgDifferential > 0 ? "text-success" :
+              breakdown.xgDifferential < 0 ? "text-error" : ""
             }`}>
               {breakdown.xgDifferential > 0 ? "+" : ""}{breakdown.xgDifferential.toFixed(2)}
             </span>
@@ -249,8 +249,8 @@ function ScoreStateTable({ data }: ScoreStateTableProps) {
               <td className="text-right py-2 px-2 tabular-nums">{row.xGoalsFor.toFixed(1)}</td>
               <td className="text-right py-2 px-2 tabular-nums">{row.xGoalsAgainst.toFixed(1)}</td>
               <td className={`text-right py-2 px-2 tabular-nums ${
-                row.xgDifferential > 0 ? "text-green-500" :
-                row.xgDifferential < 0 ? "text-red-500" : ""
+                row.xgDifferential > 0 ? "text-success" :
+                row.xgDifferential < 0 ? "text-error" : ""
               }`}>
                 {row.xgDifferential > 0 ? "+" : ""}{row.xgDifferential.toFixed(2)}
               </td>

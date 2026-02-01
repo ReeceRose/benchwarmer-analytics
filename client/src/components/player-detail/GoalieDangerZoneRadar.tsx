@@ -162,9 +162,9 @@ function RadarChartTooltip({
           <span
             className={`font-mono ${
               data.diff.startsWith("+")
-                ? "text-green-500"
+                ? "text-success"
                 : data.diff.startsWith("-")
-                  ? "text-red-500"
+                  ? "text-error"
                   : ""
             }`}
           >
@@ -327,9 +327,9 @@ export function GoalieDangerZoneRadar({
                   <td
                     className={`text-right font-mono ${
                       d.difference !== null && d.difference >= 0
-                        ? "text-green-500"
+                        ? "text-success"
                         : d.difference !== null && d.difference < 0
-                          ? "text-red-500"
+                          ? "text-error"
                           : ""
                     }`}
                   >

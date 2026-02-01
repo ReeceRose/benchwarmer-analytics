@@ -116,19 +116,19 @@ interface TeamRankingsTableProps {
 
 // Color based on rank (1-32): top 10 = green, bottom 10 = red
 function getRankColor(rank: number): string {
-  if (rank <= 10) return "text-green-600 dark:text-green-400";
-  if (rank >= 23) return "text-red-600 dark:text-red-400";
+  if (rank <= 10) return "text-success";
+  if (rank >= 23) return "text-error";
   return "";
 }
 
 // Color based on percentage thresholds
 function getPctColor(pct: number, isHighGood: boolean): string {
   if (isHighGood) {
-    if (pct >= 25) return "text-green-600 dark:text-green-400";
-    if (pct <= 18) return "text-red-600 dark:text-red-400";
+    if (pct >= 25) return "text-success";
+    if (pct <= 18) return "text-error";
   } else {
-    if (pct >= 85) return "text-green-600 dark:text-green-400";
-    if (pct <= 75) return "text-red-600 dark:text-red-400";
+    if (pct >= 85) return "text-success";
+    if (pct <= 75) return "text-error";
   }
   return "";
 }

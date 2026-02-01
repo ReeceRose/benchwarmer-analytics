@@ -71,6 +71,11 @@ export interface SkaterStats {
   faceoffsWon?: number;
   faceoffsLost?: number;
   faceoffPct?: number;
+  // Giveaway/Takeaway fields
+  takeaways?: number;
+  giveaways?: number;
+  dZoneGiveaways?: number;
+  giveawayDZonePct?: number;
 }
 
 /** Goalie statistics for a season/situation */

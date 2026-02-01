@@ -17,6 +17,8 @@ export { ShiftQualityDashboard } from "@/components/player-detail/ShiftQualityDa
 export { ShiftQualityDashboardSkeleton } from "@/components/player-detail/ShiftQualityDashboardSkeleton";
 export { FaceoffStatsCard } from "@/components/player-detail/FaceoffStatsCard";
 export { FaceoffStatsCardSkeleton } from "@/components/player-detail/FaceoffStatsCardSkeleton";
+export { GiveawayTakeawayCard } from "@/components/player-detail/GiveawayTakeawayCard";
+export { GiveawayTakeawayCardSkeleton } from "@/components/player-detail/GiveawayTakeawayCardSkeleton";
 
 export {
   buildSkaterSeasonRows,

@@ -60,14 +60,14 @@ function getReboundRating(
   if (vsLeague >= 15) {
     return {
       label: "Elite",
-      color: "text-green-500",
+      color: "text-success",
       description: "Controls rebounds significantly better than average",
     };
   }
   if (vsLeague >= 5) {
     return {
       label: "Above Average",
-      color: "text-green-400",
+      color: "text-success",
       description: "Controls rebounds better than most goalies",
     };
   }
@@ -81,13 +81,13 @@ function getReboundRating(
   if (vsLeague >= -15) {
     return {
       label: "Below Average",
-      color: "text-orange-400",
+      color: "text-warning",
       description: "Allows more rebounds than most goalies",
     };
   }
   return {
     label: "Poor",
-    color: "text-red-500",
+    color: "text-error",
     description: "Struggles with rebound control",
   };
 }
@@ -138,7 +138,7 @@ export function GoalieReboundControl({
           <div className="text-center p-3 rounded-lg bg-muted/50">
             <p
               className={`text-2xl font-bold tabular-nums ${
-                vsLeague >= 0 ? "text-green-500" : "text-red-500"
+                vsLeague >= 0 ? "text-success" : "text-error"
               }`}
             >
               {vsLeague >= 0 ? "+" : ""}

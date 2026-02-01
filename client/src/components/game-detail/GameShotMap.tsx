@@ -70,7 +70,7 @@ function ShotTooltip({ shot, isHomeTeam }: { shot: GameShot; isHomeTeam: boolean
         <span>{formatTime(shot.gameSeconds)}</span>
         <span>{shot.shotType || "Shot"}</span>
         {strength && (
-          <span className={strength === "PP" ? "text-amber-500" : "text-sky-500"}>
+          <span className={strength === "PP" ? "text-warning" : "text-cold"}>
             {strength}
           </span>
         )}
@@ -96,12 +96,12 @@ function ShotTooltip({ shot, isHomeTeam }: { shot: GameShot; isHomeTeam: boolean
       {(shot.shotRebound || shot.shotRush) && (
         <div className="flex gap-2 text-xs">
           {shot.shotRebound && (
-            <span className="bg-amber-500/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">
+            <span className="bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
               Rebound
             </span>
           )}
           {shot.shotRush && (
-            <span className="bg-sky-500/20 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded font-medium">
+            <span className="bg-cold/20 text-cold px-1.5 py-0.5 rounded font-medium">
               Rush
             </span>
           )}
@@ -157,7 +157,7 @@ function HalfRink({
         viewBox={`0 0 ${RINK_LENGTH} ${RINK_HEIGHT}`}
         width={width}
         height={height}
-        className="bg-slate-100 dark:bg-slate-900 rounded-lg border border-border"
+        className="bg-muted rounded-lg border border-border"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
@@ -184,7 +184,7 @@ function HalfRink({
           fill="none"
           stroke="currentColor"
           strokeWidth="0.5"
-          className="text-slate-300 dark:text-slate-700"
+          className="text-muted-foreground/30"
         />
 
         <path

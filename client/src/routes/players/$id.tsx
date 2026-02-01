@@ -31,6 +31,8 @@ import {
   ShiftQualityDashboardSkeleton,
   FaceoffStatsCard,
   FaceoffStatsCardSkeleton,
+  GiveawayTakeawayCard,
+  GiveawayTakeawayCardSkeleton,
   buildSkaterSeasonRows,
   calculateSkaterTotals,
   buildGoalieSeasonRows,
@@ -271,9 +273,10 @@ function PlayerDetailPage() {
               </div>
 
               {shiftQualityStats && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <ShiftQualityDashboard stats={shiftQualityStats} />
                   <FaceoffStatsCard stats={shiftQualityStats} baselines={skaterBaselines} />
+                  <GiveawayTakeawayCard stats={shiftQualityStats} />
                 </div>
               )}
 
@@ -309,9 +312,10 @@ function PlayerDetailPage() {
       )}
 
       {!isGoalie && statsLoading && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <ShiftQualityDashboardSkeleton />
           <FaceoffStatsCardSkeleton />
+          <GiveawayTakeawayCardSkeleton />
         </div>
       )}
     </div>

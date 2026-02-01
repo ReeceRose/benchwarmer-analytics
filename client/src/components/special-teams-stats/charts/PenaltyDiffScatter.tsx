@@ -115,20 +115,20 @@ function CustomTooltip({
       </div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
         <span className="text-muted-foreground">Drawn/60:</span>
-        <span className="font-mono text-green-600 dark:text-green-400">
+        <span className="font-mono text-success">
           {data.drawnPer60.toFixed(2)}
         </span>
         <span className="text-muted-foreground">Taken/60:</span>
-        <span className="font-mono text-red-600 dark:text-red-400">
+        <span className="font-mono text-error">
           {data.takenPer60.toFixed(2)}
         </span>
         <span className="text-muted-foreground">Net/60:</span>
         <span
           className={`font-mono font-semibold ${
             data.netPer60 > 0
-              ? "text-green-600 dark:text-green-400"
+              ? "text-success"
               : data.netPer60 < 0
-                ? "text-red-600 dark:text-red-400"
+                ? "text-error"
                 : ""
           }`}
         >
@@ -178,13 +178,13 @@ function SelectionPanel({
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">Drawn/60:</span>{" "}
-                <span className="font-mono text-green-600 dark:text-green-400">
+                <span className="font-mono text-success">
                   {data.drawnPer60.toFixed(2)}
                 </span>
               </span>
               <span>
                 <span className="text-xs">Taken/60:</span>{" "}
-                <span className="font-mono text-red-600 dark:text-red-400">
+                <span className="font-mono text-error">
                   {data.takenPer60.toFixed(2)}
                 </span>
               </span>

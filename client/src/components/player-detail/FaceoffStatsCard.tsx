@@ -33,11 +33,11 @@ export function FaceoffStatsCard({
   // Memoize rating calculation to avoid recalculating on every render
   const rating = useMemo(() => {
     if (faceoffPct == null) return null;
-    if (faceoffPct >= 55) return { label: "Elite", color: "text-emerald-500" };
-    if (faceoffPct >= 52) return { label: "Above Average", color: "text-green-500" };
+    if (faceoffPct >= 55) return { label: "Elite", color: "text-success" };
+    if (faceoffPct >= 52) return { label: "Above Average", color: "text-success" };
     if (faceoffPct >= 48) return { label: "Average", color: "text-muted-foreground" };
-    if (faceoffPct >= 45) return { label: "Below Average", color: "text-orange-500" };
-    return { label: "Poor", color: "text-red-500" };
+    if (faceoffPct >= 45) return { label: "Below Average", color: "text-warning" };
+    return { label: "Poor", color: "text-error" };
   }, [faceoffPct]);
 
   return (
@@ -71,7 +71,7 @@ export function FaceoffStatsCard({
                 </div>
               </div>
               <div className="text-right">
-                <div className={`text-lg font-semibold tabular-nums ${faceoffPct! - leagueAvgFoPct >= 0 ? "text-green-500" : "text-red-500"}`}>
+                <div className={`text-lg font-semibold tabular-nums ${faceoffPct! - leagueAvgFoPct >= 0 ? "text-success" : "text-error"}`}>
                   {faceoffPct! - leagueAvgFoPct >= 0 ? "+" : ""}{(faceoffPct! - leagueAvgFoPct).toFixed(1)}%
                 </div>
                 <div className="text-xs text-muted-foreground">vs league avg ({leagueAvgFoPct.toFixed(1)}%)</div>

@@ -120,8 +120,8 @@ function CustomTooltip({
         <span
           className={`font-mono font-semibold ${
             isHot
-              ? "text-green-600 dark:text-green-400"
-              : "text-red-600 dark:text-red-400"
+              ? "text-success"
+              : "text-error"
           }`}
         >
           {isHot ? "+" : ""}
@@ -169,8 +169,8 @@ function SelectionPanel({
               <span
                 className={`font-mono font-semibold ${
                   isHot
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
+                    ? "text-success"
+                    : "text-error"
                 }`}
               >
                 {isHot ? "+" : ""}

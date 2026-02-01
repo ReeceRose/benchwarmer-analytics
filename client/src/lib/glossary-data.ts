@@ -131,6 +131,47 @@ export const metrics: MetricDefinition[] = [
     interpretation:
       "50% is league average. Elite faceoff specialists win 55%+ of their draws. Winning faceoffs is important for possession, especially in the offensive and defensive zones.",
   },
+  {
+    name: "Takeaways",
+    abbreviation: "TA",
+    category: "basic",
+    description:
+      "The number of times a player takes the puck away from an opponent through stick checks, interceptions, or other defensive plays.",
+    interpretation:
+      "A measure of active defensive contribution. Players with high takeaways tend to be strong forecheckers or defensively responsible.",
+  },
+  {
+    name: "Giveaways",
+    abbreviation: "GA",
+    aliases: ["Giveaway"],
+    category: "basic",
+    description:
+      "The number of times a player loses possession of the puck to an opponent through turnovers, errant passes, or failed plays.",
+    interpretation:
+      "Lower is better. However, high-event players who handle the puck frequently may have more giveaways simply due to volume.",
+  },
+  {
+    name: "D-Zone Giveaways",
+    abbreviation: "DZGA",
+    aliases: ["DZoneGiveaways"],
+    category: "basic",
+    description:
+      "Giveaways that occur in the player's defensive zone. These are more dangerous than giveaways in the neutral or offensive zones.",
+    interpretation:
+      "D-zone giveaways are particularly costly as they can lead directly to scoring chances against. A lower percentage of D-zone giveaways indicates better puck management in dangerous areas.",
+  },
+  {
+    name: "Takeaway/Giveaway Ratio",
+    abbreviation: "TA/GA",
+    aliases: ["TakeawayRatio", "Puck Management"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "The ratio of takeaways to giveaways, measuring a player's net impact on puck possession.",
+    formula: "TA/GA = Takeaways / Giveaways",
+    interpretation:
+      "Higher is better. A ratio of 1.0+ (more takeaways than giveaways) is exceptional. Elite puck managers are above 0.5, while ratios below 0.25 indicate poor puck security.",
+  },
 
   // Possession Metrics
   {
