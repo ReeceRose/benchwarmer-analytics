@@ -101,8 +101,12 @@ function AgeCurvesPage() {
       ageMap.set(point.age, {
         age: point.age,
         league: point[metric],
-        leagueP25: point[`${metric}P25` as keyof typeof point] as number | null | undefined,
-        leagueP75: point[`${metric}P75` as keyof typeof point] as number | null | undefined,
+        leagueP25:
+          ((point[`${metric}P25` as keyof typeof point] as number | null | undefined) ??
+            null),
+        leagueP75:
+          ((point[`${metric}P75` as keyof typeof point] as number | null | undefined) ??
+            null),
         leagueSample: point.sampleSize,
       });
     }
