@@ -1,7 +1,9 @@
 using Benchwarmer.Api.Dtos;
 using Benchwarmer.Api.Endpoints.Helpers;
+using Benchwarmer.Data;
 using Benchwarmer.Data.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Api.Endpoints;
 
@@ -179,6 +181,21 @@ public static class StatsEndpoints
                 - `situation`: Game situation filter (5on5, all, 5on4, etc.). Defaults to all.
                 """)
             .Produces<LeagueTrendsResponseDto>()
+            .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/goalie-league-baselines", GetGoalieLeagueBaselines)
+            .WithName("GetGoalieLeagueBaselines")
+            .WithSummary("Get league baselines for goalie split stats")
+            .WithDescription("""
+                Returns league-wide baseline values for goalie split metrics (danger-zone SV% and rebound ratio),
+                computed from the GoalieSeason table (weighted by shots / expected rebounds).
+
+                **Query Parameters:**
+                - `seasons`: Comma-separated list of seasons to include (e.g., "2022,2023,2024"). Defaults to current season.
+                - `situation`: Game situation filter (all, 5on5, 5on4, 4on5, other). Defaults to "all".
+                - `playoffs`: If true, use playoff rows. Defaults to false.
+                """)
+            .Produces<GoalieLeagueBaselinesDto>()
             .CacheOutput(CachePolicies.TeamData);
     }
 
@@ -598,6 +615,102 @@ public static class StatsEndpoints
         )).ToList();
 
         return Results.Ok(new LeagueTrendsResponseDto(effectiveSituation, seasonDtos));
+    }
+
+    private static async Task<IResult> GetGoalieLeagueBaselines(
+        string? seasons,
+        string? situation,
+        bool? playoffs,
+        IDbContextFactory<AppDbContext> dbFactory,
+        CancellationToken cancellationToken)
+    {
+        var effectiveSituation = string.IsNullOrWhiteSpace(situation) ? "all" : situation!;
+        var effectivePlayoffs = playoffs ?? false;
+
+        var seasonList = new List<int>();
+        if (!string.IsNullOrWhiteSpace(seasons))
+        {
+            seasonList = seasons
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var year) ? (int?)year : null)
+                .Where(x => x.HasValue)
+                .Select(x => x!.Value)
+                .Distinct()
+                .Order()
+                .ToList();
+        }
+
+        if (seasonList.Count == 0)
+        {
+            seasonList.Add(StatsMappers.GetDefaultSeason());
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+
+        var query = db.GoalieSeasons
+            .Where(g =>
+                seasonList.Contains(g.Season) &&
+                g.Situation == effectiveSituation &&
+                g.IsPlayoffs == effectivePlayoffs);
+
+        var totals = await query
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                LowShots = g.Sum(x => x.LowDangerShots),
+                MedShots = g.Sum(x => x.MediumDangerShots),
+                HighShots = g.Sum(x => x.HighDangerShots),
+                LowGoals = g.Sum(x => x.LowDangerGoals),
+                MedGoals = g.Sum(x => x.MediumDangerGoals),
+                HighGoals = g.Sum(x => x.HighDangerGoals),
+                ExpectedRebounds = g.Sum(x => x.ExpectedRebounds ?? 0m),
+                Rebounds = g.Sum(x => x.Rebounds)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (totals is null)
+        {
+            return Results.Ok(new GoalieLeagueBaselinesDto(
+                seasonList,
+                effectiveSituation,
+                effectivePlayoffs,
+                null,
+                null,
+                null,
+                null,
+                0,
+                0,
+                0,
+                0,
+                0
+            ));
+        }
+
+        static decimal? CalcSvPct(int shots, int goals) =>
+            shots > 0 ? (decimal)(shots - goals) / shots : null;
+
+        var lowSv = CalcSvPct(totals.LowShots, totals.LowGoals);
+        var medSv = CalcSvPct(totals.MedShots, totals.MedGoals);
+        var highSv = CalcSvPct(totals.HighShots, totals.HighGoals);
+
+        var reboundRatio = totals.ExpectedRebounds > 0
+            ? totals.Rebounds / totals.ExpectedRebounds
+            : (decimal?)null;
+
+        return Results.Ok(new GoalieLeagueBaselinesDto(
+            seasonList,
+            effectiveSituation,
+            effectivePlayoffs,
+            lowSv,
+            medSv,
+            highSv,
+            reboundRatio,
+            totals.LowShots,
+            totals.MedShots,
+            totals.HighShots,
+            totals.ExpectedRebounds,
+            totals.Rebounds
+        ));
     }
 }
 

@@ -8,6 +8,7 @@ import {
   PeriodBreakdownCard,
 } from "@/components/shot-explorer";
 import { usePlayerShots } from "@/hooks";
+import { MONEYPUCK_DANGER_THRESHOLDS } from "@/lib/danger-zones";
 import { cn } from "@/lib/utils";
 import type { DangerLevel } from "@/types";
 
@@ -52,11 +53,11 @@ export function PlayerShotMap({
       const xg = shot.xGoal ?? 0;
       switch (dangerLevel) {
         case "high":
-          return xg > 0.15;
+          return xg >= MONEYPUCK_DANGER_THRESHOLDS.high;
         case "medium-high":
-          return xg >= 0.06;
+          return xg >= MONEYPUCK_DANGER_THRESHOLDS.medium;
         case "low":
-          return xg < 0.06;
+          return xg < MONEYPUCK_DANGER_THRESHOLDS.medium;
         default:
           return true;
       }

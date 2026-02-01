@@ -10,6 +10,7 @@ import { ShotHeatMap } from "@/components/shot-explorer/ShotHeatMap";
 import { ShotFilters } from "@/components/shot-explorer/ShotFilters";
 import { ShotSummaryCard } from "@/components/shot-explorer/ShotSummaryCard";
 import { useTeamShots, useTeamSeasons, useTeamRoster } from "@/hooks";
+import { MONEYPUCK_DANGER_THRESHOLDS } from "@/lib/danger-zones";
 import type { DangerLevel, ScoreState } from "@/types";
 
 type ViewMode = "shots" | "heatmap";
@@ -82,11 +83,11 @@ export function ShotExplorer({
       const xg = shot.xGoal ?? 0;
       switch (dangerLevel) {
         case "high":
-          return xg > 0.15;
+          return xg >= MONEYPUCK_DANGER_THRESHOLDS.high;
         case "medium-high":
-          return xg >= 0.06;
+          return xg >= MONEYPUCK_DANGER_THRESHOLDS.medium;
         case "low":
-          return xg < 0.06;
+          return xg < MONEYPUCK_DANGER_THRESHOLDS.medium;
         default:
           return true;
       }

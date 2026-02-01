@@ -19,13 +19,19 @@ interface GoalieData {
 
 interface GoalieDangerZoneComparisonProps {
   players: GoalieData[];
+  leagueAverages?: {
+    lowDanger: number;
+    mediumDanger: number;
+    highDanger: number;
+  };
   title?: string;
   className?: string;
 }
 
-// League average baselines for danger zone save percentages
-// Based on MoneyPuck xG thresholds: Low (<0.06), Medium (0.06-0.15), High (>0.15)
-const LEAGUE_AVERAGES = {
+// Fallback baselines if league averages aren't provided by the API.
+// MoneyPuck defines danger zones by xG probability:
+// Low (<0.08), Medium (>=0.08 and <0.20), High (>=0.20).
+const DEFAULT_LEAGUE_AVERAGES = {
   lowDanger: 0.965,
   mediumDanger: 0.915,
   highDanger: 0.865,
@@ -95,11 +101,6 @@ function RadarChartTooltip({
             </span>
           </div>
         ))}
-        <hr className="my-1 border-border" />
-        <div className="flex justify-between gap-4 text-muted-foreground">
-          <span>League Avg:</span>
-          <span className="font-mono">{data.leagueRaw}</span>
-        </div>
       </div>
     </div>
   );
@@ -107,6 +108,7 @@ function RadarChartTooltip({
 
 export function GoalieDangerZoneComparison({
   players,
+  leagueAverages,
   title = "Danger Zone Comparison",
   className,
 }: GoalieDangerZoneComparisonProps) {
@@ -146,17 +148,18 @@ export function GoalieDangerZoneComparison({
   };
 
   // Build radar data with all players
+  const baselines = leagueAverages ?? DEFAULT_LEAGUE_AVERAGES;
   const zones = [
-    { key: "low", label: "Low Danger", leagueAvg: LEAGUE_AVERAGES.lowDanger },
+    { key: "low", label: "Low Danger", leagueAvg: baselines.lowDanger },
     {
       key: "med",
       label: "Medium Danger",
-      leagueAvg: LEAGUE_AVERAGES.mediumDanger,
+      leagueAvg: baselines.mediumDanger,
     },
     {
       key: "high",
       label: "High Danger",
-      leagueAvg: LEAGUE_AVERAGES.highDanger,
+      leagueAvg: baselines.highDanger,
     },
   ];
 
@@ -286,13 +289,13 @@ export function GoalieDangerZoneComparison({
               <tr className="text-muted-foreground">
                 <td className="py-1.5">League Avg</td>
                 <td className="text-right font-mono">
-                  {formatPct(LEAGUE_AVERAGES.lowDanger)}
+                  {formatPct(baselines.lowDanger)}
                 </td>
                 <td className="text-right font-mono">
-                  {formatPct(LEAGUE_AVERAGES.mediumDanger)}
+                  {formatPct(baselines.mediumDanger)}
                 </td>
                 <td className="text-right font-mono">
-                  {formatPct(LEAGUE_AVERAGES.highDanger)}
+                  {formatPct(baselines.highDanger)}
                 </td>
               </tr>
             </tbody>

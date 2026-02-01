@@ -359,7 +359,7 @@ export const metrics: MetricDefinition[] = [
     abbreviation: "HD",
     category: "shooting",
     description:
-      "Shots with xG > 0.15 (15%+ chance of scoring). Typically from the slot, crease, or high-percentage areas. Categorized by MoneyPuck based on their xG model.",
+      "Shots with xG ≥ 0.20 (20%+ chance of scoring). Typically from the slot, crease, or high-percentage areas. Categorized by MoneyPuck based on their xG model.",
     interpretation:
       "Teams that generate more high-danger chances tend to score more goals. This metric filters out low-value shots from the point.",
   },
@@ -406,14 +406,14 @@ export const metrics: MetricDefinition[] = [
     abbreviation: "MD",
     category: "shooting",
     description:
-      "Shots with xG between 0.06–0.15 (6–15% chance of scoring). Typically from the top of the circles or lower slot areas. Categorized by MoneyPuck based on their xG model.",
+      "Shots with xG between 0.08–0.20 (8–20% chance of scoring). Typically from the top of the circles or lower slot areas. Categorized by MoneyPuck based on their xG model.",
   },
   {
     name: "Low Danger Chances",
     abbreviation: "LD",
     category: "shooting",
     description:
-      "Shots with xG < 0.06 (under 6% chance of scoring). Typically from the point, along the boards, or sharp angles. Categorized by MoneyPuck based on their xG model.",
+      "Shots with xG < 0.08 (under 8% chance of scoring). Typically from the point, along the boards, or sharp angles. Categorized by MoneyPuck based on their xG model.",
     interpretation:
       "These rarely result in goals without deflections or screens. High volume with low conversion.",
   },

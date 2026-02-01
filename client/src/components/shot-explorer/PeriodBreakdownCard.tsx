@@ -31,8 +31,9 @@ interface PeriodStats {
 
 function getDangerLevel(xGoal: number | undefined): "high" | "medium" | "low" {
   if (xGoal === undefined) return "low";
-  if (xGoal > 0.15) return "high";
-  if (xGoal >= 0.06) return "medium";
+  // MoneyPuck danger zones: Low (<0.08), Medium (>=0.08 and <0.20), High (>=0.20)
+  if (xGoal >= 0.2) return "high";
+  if (xGoal >= 0.08) return "medium";
   return "low";
 }
 
@@ -112,9 +113,9 @@ export function PeriodBreakdownCard({ shots }: PeriodBreakdownCardProps) {
                 <HeaderWithTooltip label="Sh%" tooltip="Shooting percentage" className="text-right" />
                 <HeaderWithTooltip label="xG" tooltip="Expected goals based on shot quality" className="text-right" />
                 <HeaderWithTooltip label="G-xG" tooltip="Goals minus expected goals — positive means lucky" className="text-right" />
-                <HeaderWithTooltip label="High" tooltip="High danger shots (xG > 0.15)" className="text-right" />
-                <HeaderWithTooltip label="Med" tooltip="Medium danger shots (xG 0.06-0.15)" className="text-right" />
-                <HeaderWithTooltip label="Low" tooltip="Low danger shots (xG < 0.06)" className="text-right" />
+                <HeaderWithTooltip label="High" tooltip="High danger shots (xG ≥ 0.20)" className="text-right" />
+                <HeaderWithTooltip label="Med" tooltip="Medium danger shots (xG 0.08–0.20)" className="text-right" />
+                <HeaderWithTooltip label="Low" tooltip="Low danger shots (xG < 0.08)" className="text-right" />
               </TableRow>
             </TableHeader>
             <TableBody>

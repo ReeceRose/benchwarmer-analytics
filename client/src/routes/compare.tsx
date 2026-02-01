@@ -2,8 +2,15 @@ import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { GitCompare, Filter } from "lucide-react";
-import { usePlayerComparison, useSeasons, usePlayers, usePageTitle } from "@/hooks";
+import {
+  usePlayerComparison,
+  useSeasons,
+  usePlayers,
+  usePageTitle,
+  useGoalieLeagueBaselines,
+} from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
+import { getDangerZoneLeagueAveragesFromGoalieBaselines } from "@/lib/goalie-baselines";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -111,6 +118,17 @@ function ComparePage() {
     const firstPlayer = selectedPlayers[0];
     return firstPlayer?.position === "G" ? "goalie" : "skater";
   }, [selectedPlayers]);
+
+  const baselineSeasons = selectedPositionType === "goalie" ? [season] : [];
+  const { data: goalieBaselines } = useGoalieLeagueBaselines(
+    baselineSeasons,
+    situation,
+    false
+  );
+
+  const dangerLeagueAverages = useMemo(() => {
+    return getDangerZoneLeagueAveragesFromGoalieBaselines(goalieBaselines);
+  }, [goalieBaselines]);
 
   const hasComparisonData =
     !isLoading && !error && comparisonData && comparisonData.players.length >= 2;
@@ -225,6 +243,7 @@ function ComparePage() {
             name: p.name,
             stats: p.goalieStats ?? null,
           }))}
+          leagueAverages={dangerLeagueAverages}
           title="Danger Zone Comparison"
           className="mt-6"
         />

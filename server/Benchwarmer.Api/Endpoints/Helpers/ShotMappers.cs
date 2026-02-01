@@ -1,4 +1,5 @@
 using Benchwarmer.Api.Dtos;
+using Benchwarmer.Data.Constants;
 using Benchwarmer.Data.Entities;
 
 namespace Benchwarmer.Api.Endpoints.Helpers;
@@ -52,9 +53,13 @@ public static class ShotMappers
         var goalsAboveExpected = Math.Round(goals - totalXGoal, 2);
 
         // Danger classification based on xG thresholds
-        var highDanger = shots.Count(s => s.XGoal > 0.15m);
-        var mediumDanger = shots.Count(s => s.XGoal >= 0.06m && s.XGoal <= 0.15m);
-        var lowDanger = shots.Count(s => s.XGoal < 0.06m);
+        var highDanger = shots.Count(s => (s.XGoal ?? 0) >= MoneyPuckDangerZones.HighThreshold);
+        var mediumDanger = shots.Count(s =>
+        {
+            var xg = s.XGoal ?? 0;
+            return xg >= MoneyPuckDangerZones.MediumThreshold && xg < MoneyPuckDangerZones.HighThreshold;
+        });
+        var lowDanger = shots.Count(s => (s.XGoal ?? 0) < MoneyPuckDangerZones.MediumThreshold);
 
         return new ShotSummaryDto(
             totalShots,

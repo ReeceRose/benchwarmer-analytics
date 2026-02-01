@@ -1,8 +1,15 @@
 import { useState, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Filter } from "lucide-react";
-import { usePlayer, usePlayerStats, useTeams, usePageTitle } from "@/hooks";
+import {
+  usePlayer,
+  usePlayerStats,
+  useTeams,
+  usePageTitle,
+  useGoalieLeagueBaselines,
+} from "@/hooks";
 import { ErrorState, BackButton } from "@/components/shared";
+import { getDangerZoneLeagueAveragesFromGoalieBaselines } from "@/lib/goalie-baselines";
 import {
   PlayerHeader,
   PlayerHeaderSkeleton,
@@ -95,9 +102,24 @@ function PlayerDetailPage() {
   const filteredGoalieStats = useMemo(() => {
     if (!isGoalie || !isGoalieStats(allStats)) return [];
     return (allStats as GoalieStats[]).filter(
-      (s) => !s.isPlayoffs && (situation === "all" || s.situation === situation)
+      (s) => !s.isPlayoffs && s.situation === situation
     );
   }, [allStats, situation, isGoalie]);
+
+  const baselineSeasons = useMemo(() => {
+    const seasons = new Set(filteredGoalieStats.map((s) => s.season));
+    return Array.from(seasons).sort((a, b) => a - b);
+  }, [filteredGoalieStats]);
+
+  const { data: goalieBaselines } = useGoalieLeagueBaselines(
+    baselineSeasons,
+    situation,
+    false
+  );
+
+  const dangerLeagueAverages = useMemo(() => {
+    return getDangerZoneLeagueAveragesFromGoalieBaselines(goalieBaselines);
+  }, [goalieBaselines]);
 
   const teams = teamsData?.teams;
 
@@ -185,8 +207,14 @@ function PlayerDetailPage() {
             <section className="space-y-4">
               <h3 className="text-base font-semibold">Goaltending profile</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <GoalieDangerZoneRadar stats={filteredGoalieStats} />
-                <GoalieReboundControl stats={filteredGoalieStats} />
+                <GoalieDangerZoneRadar
+                  stats={filteredGoalieStats}
+                  leagueAverages={dangerLeagueAverages}
+                />
+                <GoalieReboundControl
+                  stats={filteredGoalieStats}
+                  leagueAverageRatio={goalieBaselines?.reboundRatio}
+                />
               </div>
             </section>
           )}

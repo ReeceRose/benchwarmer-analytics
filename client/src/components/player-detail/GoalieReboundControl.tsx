@@ -14,6 +14,7 @@ import type { GoalieStats } from "@/types";
 
 interface GoalieReboundControlProps {
   stats: GoalieStats[];
+  leagueAverageRatio?: number | null;
   className?: string;
 }
 
@@ -23,14 +24,13 @@ interface GoalieReboundControlProps {
  * Calculated from MoneyPuck data: avg expected 16.4, avg actual 25.9 = 1.58x
  * Values below this indicate above-average rebound control.
  */
-const LEAGUE_AVERAGE_REBOUND_RATIO = 1.58;
+const DEFAULT_LEAGUE_AVERAGE_REBOUND_RATIO = 1.58;
 
 interface ReboundData {
   expected: number;
   actual: number;
   difference: number;
   ratio: number;
-  vsLeague: number;
 }
 
 function calculateReboundStats(stats: GoalieStats[]): ReboundData | null {
@@ -45,14 +45,12 @@ function calculateReboundStats(stats: GoalieStats[]): ReboundData | null {
   if (totals.expected === 0) return null;
 
   const ratio = totals.actual / totals.expected;
-  const vsLeague = ((LEAGUE_AVERAGE_REBOUND_RATIO - ratio) / LEAGUE_AVERAGE_REBOUND_RATIO) * 100;
 
   return {
     expected: Math.round(totals.expected * 10) / 10,
     actual: totals.actual,
     difference: totals.actual - totals.expected,
     ratio,
-    vsLeague,
   };
 }
 
@@ -96,6 +94,7 @@ function getReboundRating(
 
 export function GoalieReboundControl({
   stats,
+  leagueAverageRatio,
   className,
 }: GoalieReboundControlProps) {
   const reboundData = useMemo(() => calculateReboundStats(stats), [stats]);
@@ -104,7 +103,12 @@ export function GoalieReboundControl({
     return null;
   }
 
-  const rating = getReboundRating(reboundData.vsLeague);
+  const leagueAvgRatio =
+    leagueAverageRatio != null ? leagueAverageRatio : DEFAULT_LEAGUE_AVERAGE_REBOUND_RATIO;
+  const vsLeague =
+    ((leagueAvgRatio - reboundData.ratio) / leagueAvgRatio) * 100;
+
+  const rating = getReboundRating(vsLeague);
 
   const chartData = [
     { name: "Expected", value: reboundData.expected, fill: "#94a3b8" },
@@ -112,7 +116,6 @@ export function GoalieReboundControl({
   ];
 
   const diffSign = reboundData.difference >= 0 ? "+" : "";
-  const vsLeagueSign = reboundData.vsLeague >= 0 ? "+" : "";
 
   return (
     <Card className={className}>
@@ -135,11 +138,11 @@ export function GoalieReboundControl({
           <div className="text-center p-3 rounded-lg bg-muted/50">
             <p
               className={`text-2xl font-bold tabular-nums ${
-                reboundData.vsLeague >= 0 ? "text-green-500" : "text-red-500"
+                vsLeague >= 0 ? "text-green-500" : "text-red-500"
               }`}
             >
-              {vsLeagueSign}
-              {reboundData.vsLeague.toFixed(1)}%
+              {vsLeague >= 0 ? "+" : ""}
+              {vsLeague.toFixed(1)}%
             </p>
             <p className="text-xs text-muted-foreground">vs League Avg</p>
           </div>
@@ -199,7 +202,7 @@ export function GoalieReboundControl({
         </div>
 
         <p className="text-[10px] text-muted-foreground/70 text-center">
-          League avg: {LEAGUE_AVERAGE_REBOUND_RATIO.toFixed(2)}x (lower is better)
+          League avg: {leagueAvgRatio.toFixed(2)}x (lower is better)
         </p>
       </CardContent>
     </Card>

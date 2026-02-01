@@ -7,6 +7,7 @@ import {
   comparePlayers,
   getPlayerRollingStats,
   getGoalieWorkload,
+  getGoalieLeagueBaselines,
 } from "@/lib/api";
 
 export function usePlayer(id: number) {
@@ -110,5 +111,18 @@ export function useGoalieWorkload(
     queryFn: () => getGoalieWorkload(id, season, games),
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useGoalieLeagueBaselines(
+  seasons: number[],
+  situation?: string,
+  playoffs?: boolean
+) {
+  return useQuery({
+    queryKey: ["stats", "goalie-league-baselines", { seasons, situation, playoffs }],
+    queryFn: () => getGoalieLeagueBaselines(seasons, situation, playoffs),
+    enabled: seasons.length > 0,
+    staleTime: 1000 * 60 * 10,
   });
 }

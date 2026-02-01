@@ -8,6 +8,7 @@ export {
   usePlayerComparison,
   usePlayerRollingStats,
   useGoalieWorkload,
+  useGoalieLeagueBaselines,
 } from "@/hooks/usePlayer";
 export { useLines } from "@/hooks/useLines";
 export { useChemistryMatrix } from "@/hooks/useChemistryMatrix";

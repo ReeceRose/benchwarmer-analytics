@@ -1,12 +1,10 @@
+using Benchwarmer.Data.Constants;
 using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Data.Repositories;
 
 public class GameStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IGameStatsRepository
 {
-    private const decimal HighDangerThreshold = 0.15m;
-    private const decimal MediumDangerThreshold = 0.06m;
-
     public async Task<GameStats?> GetGameStatsAsync(string gameId, CancellationToken cancellationToken = default)
     {
         var stats = await GetGameStatsBatchAsync([gameId], cancellationToken);
@@ -99,13 +97,13 @@ public class GameStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IG
         var avgDistance = shotsWithDistance.Count > 0 ? shotsWithDistance.Average(s => s.ShotDistance!.Value) : 0;
         var avgAngle = shotsWithAngle.Count > 0 ? shotsWithAngle.Average(s => s.ShotAngle!.Value) : 0;
 
-        var highDanger = shots.Count(s => (s.XGoal ?? 0) >= HighDangerThreshold);
+        var highDanger = shots.Count(s => (s.XGoal ?? 0) >= MoneyPuckDangerZones.HighThreshold);
         var mediumDanger = shots.Count(s =>
         {
             var shotXg = s.XGoal ?? 0;
-            return shotXg >= MediumDangerThreshold && shotXg < HighDangerThreshold;
+            return shotXg >= MoneyPuckDangerZones.MediumThreshold && shotXg < MoneyPuckDangerZones.HighThreshold;
         });
-        var lowDanger = shots.Count(s => (s.XGoal ?? 0) < MediumDangerThreshold);
+        var lowDanger = shots.Count(s => (s.XGoal ?? 0) < MoneyPuckDangerZones.MediumThreshold);
 
         return new TeamStats(
             TeamCode: teamCode,

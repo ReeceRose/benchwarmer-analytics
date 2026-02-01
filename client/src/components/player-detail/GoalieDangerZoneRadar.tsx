@@ -14,12 +14,18 @@ import type { GoalieStats } from "@/types";
 
 interface GoalieDangerZoneRadarProps {
   stats: GoalieStats[];
+  leagueAverages?: {
+    lowDanger: number;
+    mediumDanger: number;
+    highDanger: number;
+  };
   className?: string;
 }
 
-// Typical NHL league averages for danger zone save percentages
-// Based on MoneyPuck xG thresholds: Low (<0.06), Medium (0.06-0.15), High (>0.15)
-const LEAGUE_AVERAGES = {
+// Fallback baselines if league averages aren't provided by the API.
+// MoneyPuck defines danger zones by xG probability:
+// Low (<0.08), Medium (>=0.08 and <0.20), High (>=0.20).
+const DEFAULT_LEAGUE_AVERAGES = {
   lowDanger: 0.965,
   mediumDanger: 0.915,
   highDanger: 0.865,
@@ -72,9 +78,9 @@ function calculateDangerZoneStats(stats: GoalieStats[]): DangerZoneData[] {
       goals: totals.lowGoals,
       saves: totals.lowShots - totals.lowGoals,
       savePct: lowSvPct,
-      leagueAvg: LEAGUE_AVERAGES.lowDanger,
+      leagueAvg: DEFAULT_LEAGUE_AVERAGES.lowDanger,
       difference:
-        lowSvPct !== null ? lowSvPct - LEAGUE_AVERAGES.lowDanger : null,
+        lowSvPct !== null ? lowSvPct - DEFAULT_LEAGUE_AVERAGES.lowDanger : null,
     },
     {
       zone: "Medium Danger",
@@ -82,9 +88,11 @@ function calculateDangerZoneStats(stats: GoalieStats[]): DangerZoneData[] {
       goals: totals.medGoals,
       saves: totals.medShots - totals.medGoals,
       savePct: medSvPct,
-      leagueAvg: LEAGUE_AVERAGES.mediumDanger,
+      leagueAvg: DEFAULT_LEAGUE_AVERAGES.mediumDanger,
       difference:
-        medSvPct !== null ? medSvPct - LEAGUE_AVERAGES.mediumDanger : null,
+        medSvPct !== null
+          ? medSvPct - DEFAULT_LEAGUE_AVERAGES.mediumDanger
+          : null,
     },
     {
       zone: "High Danger",
@@ -92,9 +100,11 @@ function calculateDangerZoneStats(stats: GoalieStats[]): DangerZoneData[] {
       goals: totals.highGoals,
       saves: totals.highShots - totals.highGoals,
       savePct: highSvPct,
-      leagueAvg: LEAGUE_AVERAGES.highDanger,
+      leagueAvg: DEFAULT_LEAGUE_AVERAGES.highDanger,
       difference:
-        highSvPct !== null ? highSvPct - LEAGUE_AVERAGES.highDanger : null,
+        highSvPct !== null
+          ? highSvPct - DEFAULT_LEAGUE_AVERAGES.highDanger
+          : null,
     },
   ];
 }
@@ -177,13 +187,29 @@ function RadarChartTooltip({
 
 export function GoalieDangerZoneRadar({
   stats,
+  leagueAverages,
   className,
 }: GoalieDangerZoneRadarProps) {
   if (stats.length === 0) {
     return null;
   }
 
-  const dangerZoneData = calculateDangerZoneStats(stats);
+  const dangerZoneData = calculateDangerZoneStats(stats).map((d) => {
+    const leagueAvg =
+      d.zone === "Low Danger"
+        ? leagueAverages?.lowDanger
+        : d.zone === "Medium Danger"
+          ? leagueAverages?.mediumDanger
+          : leagueAverages?.highDanger;
+
+    if (leagueAvg == null) return d;
+
+    return {
+      ...d,
+      leagueAvg,
+      difference: d.savePct !== null ? d.savePct - leagueAvg : null,
+    };
+  });
 
   // Check if we have any valid data
   const hasData = dangerZoneData.some((d) => d.savePct !== null);
@@ -316,7 +342,9 @@ export function GoalieDangerZoneRadar({
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-3">
-          League averages based on typical NHL performance by danger zone
+          {leagueAverages
+            ? "League averages computed from selected season(s) and situation"
+            : "League averages shown are placeholders (league baseline unavailable)"}
         </p>
       </CardContent>
     </Card>

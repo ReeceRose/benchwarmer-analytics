@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RINK_COLOURS, getShotColour } from "@/lib/chart-colours";
+import { getDangerZoneFromXg } from "@/lib/danger-zones";
 import type { GameShotsResponse, GameShot } from "@/types";
 
 interface GameShotMapProps {
@@ -145,7 +146,7 @@ function HalfRink({
   const summary = useMemo(() => {
     const goals = shots.filter((s) => s.isGoal).length;
     const totalXG = shots.reduce((sum, s) => sum + s.xGoal, 0);
-    const highDanger = shots.filter((s) => s.xGoal >= 0.15).length;
+    const highDanger = shots.filter((s) => getDangerZoneFromXg(s.xGoal) === "high").length;
     return { total: shots.length, goals, totalXG, highDanger };
   }, [shots]);
 

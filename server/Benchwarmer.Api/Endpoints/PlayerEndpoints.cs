@@ -388,29 +388,8 @@ public static class PlayerEndpoints
             s.GameId
         )).ToList();
 
-        // Calculate summary statistics
-        var totalShots = limitedShots.Count;
-        var goals = limitedShots.Count(s => s.IsGoal);
-        var shotsOnGoal = limitedShots.Count(s => s.ShotWasOnGoal);
-        var shootingPct = totalShots > 0 ? Math.Round((decimal)goals / totalShots * 100, 1) : 0;
-        var totalXGoal = limitedShots.Sum(s => s.XGoal ?? 0);
-        var goalsAboveExpected = Math.Round(goals - totalXGoal, 2);
-
-        var highDanger = limitedShots.Count(s => s.XGoal > 0.15m);
-        var mediumDanger = limitedShots.Count(s => s.XGoal >= 0.06m && s.XGoal <= 0.15m);
-        var lowDanger = limitedShots.Count(s => s.XGoal < 0.06m);
-
-        var summary = new ShotSummaryDto(
-            totalShots,
-            goals,
-            shotsOnGoal,
-            shootingPct,
-            Math.Round(totalXGoal, 2),
-            goalsAboveExpected,
-            highDanger,
-            mediumDanger,
-            lowDanger
-        );
+        // Calculate summary statistics (centralized to keep danger thresholds consistent)
+        var summary = ShotMappers.CalculateSummary(limitedShots);
 
         return Results.Ok(new PlayerShotsResponseDto(id, player.Name, season, shotDtos, summary));
     }

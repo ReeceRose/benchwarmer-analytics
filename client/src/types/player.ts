@@ -119,6 +119,22 @@ export interface GoalieStatsResponse {
   stats: GoalieStats[];
 }
 
+/** League baselines for goalie split metrics (danger zones + rebounds) */
+export interface GoalieLeagueBaselinesResponse {
+  seasons: number[];
+  situation: string;
+  isPlayoffs: boolean;
+  lowDangerSavePct: number | null;
+  mediumDangerSavePct: number | null;
+  highDangerSavePct: number | null;
+  reboundRatio: number | null;
+  lowDangerShots: number;
+  mediumDangerShots: number;
+  highDangerShots: number;
+  expectedRebounds: number;
+  rebounds: number;
+}
+
 /** Linemate data for a player */
 export interface Linemate {
   playerId: number;

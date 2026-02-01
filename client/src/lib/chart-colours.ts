@@ -16,6 +16,8 @@
  * - RINK_COLOURS: Hockey rink element colours
  */
 
+import { getDangerZoneFromXg } from "@/lib/danger-zones";
+
 /**
  * Primary chart colour palette for multi-series visualisations.
  * Hockey-inspired colours for comparing players, metrics, or data series.
@@ -71,11 +73,11 @@ export const CHART_AXIS_COLORS = CHART_AXIS_COLOURS;
 export const SHOT_DANGER_COLOURS = {
   /** Goal scored - goal light green */
   goal: "#16a34a", // green-600
-  /** High danger (xG > 15%) - warning orange */
+  /** High danger (xG ≥ 20%) - warning orange */
   highDanger: "#ea580c", // orange-600
-  /** Medium danger (6-15% xG) - caution amber */
+  /** Medium danger (8-20% xG) - caution amber */
   mediumDanger: "#d97706", // amber-600
-  /** Low danger (< 6% xG) - blue line blue */
+  /** Low danger (< 8% xG) - blue line blue */
   lowDanger: "#2563eb", // blue-600
 } as const;
 
@@ -252,8 +254,10 @@ export const AGE_PHASE_COLORS = AGE_PHASE_COLOURS;
  */
 export function getShotColour(isGoal: boolean, xGoal: number): string {
   if (isGoal) return SHOT_DANGER_COLOURS.goal;
-  if (xGoal > 0.15) return SHOT_DANGER_COLOURS.highDanger;
-  if (xGoal >= 0.06) return SHOT_DANGER_COLOURS.mediumDanger;
+
+  const zone = getDangerZoneFromXg(xGoal);
+  if (zone === "high") return SHOT_DANGER_COLOURS.highDanger;
+  if (zone === "medium") return SHOT_DANGER_COLOURS.mediumDanger;
   return SHOT_DANGER_COLOURS.lowDanger;
 }
 

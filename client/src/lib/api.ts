@@ -48,6 +48,7 @@ import type {
   LeaderboardResponse,
   RookiesResponse,
   LeagueTrendsResponse,
+  GoalieLeagueBaselinesResponse,
 } from "@/types";
 
 const api = axios.create({
@@ -562,5 +563,18 @@ export async function getLeagueTrends(
   const { data } = await api.get<LeagueTrendsResponse>("/stats/league-trends", {
     params: { situation },
   });
+  return data;
+}
+
+export async function getGoalieLeagueBaselines(
+  seasons: number[],
+  situation?: string,
+  playoffs?: boolean
+): Promise<GoalieLeagueBaselinesResponse> {
+  const seasonsParam = seasons?.length ? seasons.join(",") : undefined;
+  const { data } = await api.get<GoalieLeagueBaselinesResponse>(
+    "/stats/goalie-league-baselines",
+    { params: { seasons: seasonsParam, situation, playoffs } }
+  );
   return data;
 }

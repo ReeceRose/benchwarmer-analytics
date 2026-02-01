@@ -6,6 +6,7 @@ import { SeasonSelector } from "@/components/shared/SeasonSelector";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { ShotHeatMap } from "@/components/shot-explorer/ShotHeatMap";
 import { useTeamShots, useTeamShotsAgainst, useTeamSeasons } from "@/hooks";
+import { getDangerZoneFromXg } from "@/lib/danger-zones";
 import type { Shot } from "@/types";
 
 interface TeamShotHeatMapsProps {
@@ -36,8 +37,8 @@ function calculateDifferential(
     goalsAgainst: shotsAgainst.filter((s) => s.isGoal).length,
     xgFor: shotsFor.reduce((sum, s) => sum + (s.xGoal ?? 0), 0),
     xgAgainst: shotsAgainst.reduce((sum, s) => sum + (s.xGoal ?? 0), 0),
-    highDangerFor: shotsFor.filter((s) => (s.xGoal ?? 0) > 0.15).length,
-    highDangerAgainst: shotsAgainst.filter((s) => (s.xGoal ?? 0) > 0.15).length,
+    highDangerFor: shotsFor.filter((s) => getDangerZoneFromXg(s.xGoal) === "high").length,
+    highDangerAgainst: shotsAgainst.filter((s) => getDangerZoneFromXg(s.xGoal) === "high").length,
   };
 }
 
