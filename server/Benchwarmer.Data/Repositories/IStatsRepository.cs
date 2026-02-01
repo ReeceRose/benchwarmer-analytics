@@ -171,5 +171,9 @@ public record LeaderboardResultEntry(
     int? LowDangerShots,
     int? LowDangerGoals,
     int? Rebounds,
-    decimal? ExpectedRebounds
+    decimal? ExpectedRebounds,
+    // Faceoff stats (skaters only)
+    decimal? FaceoffsWon,
+    decimal? FaceoffsLost,
+    decimal? FaceoffPct
 );

@@ -140,6 +140,7 @@ try
     builder.Services.AddScoped<PlayerBioImporter>();
     builder.Services.AddScoped<TeamImporter>();
     builder.Services.AddScoped<ShotImporter>();
+    builder.Services.AddScoped<ScoreStateTimeCalculator>();
     builder.Services.AddScoped<InitialSeedJob>();
     builder.Services.AddScoped<NightlySyncJob>();
     builder.Services.AddScoped<WeeklyBioSyncJob>();

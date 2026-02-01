@@ -83,6 +83,7 @@ function TeamDetailPage() {
     location.pathname.includes("/chemistry") ||
     location.pathname.includes("/shots") ||
     location.pathname.includes("/special-teams") ||
+    location.pathname.includes("/score-state") ||
     location.pathname.includes("/builder");
 
   // Determine active tab based on route
@@ -91,6 +92,7 @@ function TeamDetailPage() {
     if (location.pathname.includes("/chemistry")) return "chemistry";
     if (location.pathname.includes("/shots")) return "shots";
     if (location.pathname.includes("/special-teams")) return "special-teams";
+    if (location.pathname.includes("/score-state")) return "score-state";
     if (location.pathname.includes("/builder")) return "builder";
     return "roster";
   };
@@ -190,6 +192,15 @@ function TeamDetailPage() {
               search={{ season }}
             >
               Special Teams
+            </Link>
+          </TabsTrigger>
+          <TabsTrigger value="score-state" asChild>
+            <Link
+              to="/teams/$abbrev/score-state"
+              params={{ abbrev }}
+              search={{ season }}
+            >
+              Score State
             </Link>
           </TabsTrigger>
           <TabsTrigger value="builder" asChild>

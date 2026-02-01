@@ -371,37 +371,59 @@ public class StatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IStats
     {
         var isEvenStrength = situation == "5on5" || situation == "all";
         var minIceTime = isEvenStrength ? MinEvenStrengthIceTimeSeconds : MinSpecialTeamsIceTimeSeconds;
+        const int minFaceoffs = 100; // Minimum faceoffs for faceoff% leaderboard
 
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
 
-        var baseQuery = db.SkaterSeasons
-            .Include(s => s.Player)
-            .Where(s => s.Season == season && s.Situation == situation && !s.IsPlayoffs)
-            .Where(s => s.Player != null);
+        // Join with advanced stats to get faceoff data
+        var baseQuery = from s in db.SkaterSeasons
+            join adv in db.SkaterSeasonAdvanced
+                on new { s.PlayerId, s.Season, s.Situation, s.IsPlayoffs }
+                equals new { adv.PlayerId, adv.Season, adv.Situation, adv.IsPlayoffs }
+                into advJoin
+            from adv in advJoin.DefaultIfEmpty()
+            where s.Season == season && s.Situation == situation && !s.IsPlayoffs && s.Player != null
+            select new { Skater = s, Advanced = adv };
 
         if (category.Equals("corsiPct", StringComparison.OrdinalIgnoreCase))
         {
-            baseQuery = baseQuery.Where(s => s.IceTimeSeconds >= minIceTime);
+            baseQuery = baseQuery.Where(x => x.Skater.IceTimeSeconds >= minIceTime);
         }
 
-        var query = baseQuery.Select(s => new
+        // For faceoff%, require minimum faceoffs taken
+        if (category.Equals("faceoffpct", StringComparison.OrdinalIgnoreCase))
         {
-            s.PlayerId,
-            s.Player!.Name,
-            s.Team,
-            s.Player.Position,
-            s.GamesPlayed,
-            s.Goals,
-            s.Assists,
-            s.Shots,
-            Points = s.Goals + s.Assists,
-            ExpectedGoals = s.ExpectedGoals ?? 0m,
-            s.ExpectedGoalsPer60,
-            CorsiForPct = s.CorsiForPct ?? 0m,
-            s.FenwickForPct,
-            s.OnIceShootingPct,
-            s.OnIceSavePct,
-            s.IceTimeSeconds
+            baseQuery = baseQuery.Where(x =>
+                x.Advanced != null &&
+                x.Advanced.FaceoffsWon != null &&
+                x.Advanced.FaceoffsLost != null &&
+                (x.Advanced.FaceoffsWon + x.Advanced.FaceoffsLost) >= minFaceoffs);
+        }
+
+        var query = baseQuery.Select(x => new
+        {
+            x.Skater.PlayerId,
+            x.Skater.Player!.Name,
+            x.Skater.Team,
+            x.Skater.Player.Position,
+            x.Skater.GamesPlayed,
+            x.Skater.Goals,
+            x.Skater.Assists,
+            x.Skater.Shots,
+            Points = x.Skater.Goals + x.Skater.Assists,
+            ExpectedGoals = x.Skater.ExpectedGoals ?? 0m,
+            x.Skater.ExpectedGoalsPer60,
+            CorsiForPct = x.Skater.CorsiForPct ?? 0m,
+            x.Skater.FenwickForPct,
+            x.Skater.OnIceShootingPct,
+            x.Skater.OnIceSavePct,
+            x.Skater.IceTimeSeconds,
+            FaceoffsWon = x.Advanced != null ? x.Advanced.FaceoffsWon : null,
+            FaceoffsLost = x.Advanced != null ? x.Advanced.FaceoffsLost : null,
+            FaceoffPct = x.Advanced != null && x.Advanced.FaceoffsWon != null && x.Advanced.FaceoffsLost != null
+                && (x.Advanced.FaceoffsWon + x.Advanced.FaceoffsLost) > 0
+                ? x.Advanced.FaceoffsWon / (x.Advanced.FaceoffsWon + x.Advanced.FaceoffsLost) * 100
+                : (decimal?)null
         });
 
         var orderedQuery = (category.ToLowerInvariant(), ascending) switch
@@ -430,6 +452,8 @@ public class StatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IStats
             ("icetime", true) => query.OrderBy(s => s.IceTimeSeconds),
             ("gamesplayed", false) => query.OrderByDescending(s => s.GamesPlayed),
             ("gamesplayed", true) => query.OrderBy(s => s.GamesPlayed),
+            ("faceoffpct", false) => query.OrderByDescending(s => s.FaceoffPct),
+            ("faceoffpct", true) => query.OrderBy(s => s.FaceoffPct),
             (_, false) => query.OrderByDescending(s => s.Points),
             (_, true) => query.OrderBy(s => s.Points)
         };
@@ -460,6 +484,7 @@ public class StatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IStats
                 "oisvpct" => s.OnIceSavePct ?? 0,
                 "icetime" => s.IceTimeSeconds,
                 "gamesplayed" => s.GamesPlayed,
+                "faceoffpct" => s.FaceoffPct ?? 0,
                 _ => s.Points
             },
             GamesPlayed: s.GamesPlayed,
@@ -487,7 +512,10 @@ public class StatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IStats
             LowDangerShots: null,
             LowDangerGoals: null,
             Rebounds: null,
-            ExpectedRebounds: null
+            ExpectedRebounds: null,
+            FaceoffsWon: s.FaceoffsWon,
+            FaceoffsLost: s.FaceoffsLost,
+            FaceoffPct: s.FaceoffPct
         )).ToList();
 
         return new LeaderboardResult(category, totalCount, entries);
@@ -598,7 +626,10 @@ public class StatsRepository(IDbContextFactory<AppDbContext> dbFactory) : IStats
             LowDangerShots: g.LowDangerShots,
             LowDangerGoals: g.LowDangerGoals,
             Rebounds: g.Rebounds,
-            ExpectedRebounds: g.ExpectedRebounds
+            ExpectedRebounds: g.ExpectedRebounds,
+            FaceoffsWon: null,
+            FaceoffsLost: null,
+            FaceoffPct: null
         )).ToList();
 
         return new LeaderboardResult(category, totalCount, entries);

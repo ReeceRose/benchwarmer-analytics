@@ -127,6 +127,20 @@ public static class TeamEndpoints
             .Produces<SpecialTeamsTrendDto>()
             .Produces(StatusCodes.Status404NotFound)
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/{abbrev}/score-state-stats", GetScoreStateStats)
+            .WithName("GetTeamScoreStateStats")
+            .WithSummary("Get score state statistics for a team")
+            .WithDescription("""
+                Returns offensive and defensive statistics broken down by game state (leading, trailing, tied).
+
+                **Query Parameters:**
+                - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
+                - `playoffs`: Filter by season type. true = playoffs only, false = regular season only. Defaults to false.
+                """)
+            .Produces<ScoreStateStatsDto>()
+            .Produces(StatusCodes.Status404NotFound)
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetAllTeams(
@@ -737,5 +751,146 @@ public static class TeamEndpoints
         }
 
         return Results.Ok(new SpecialTeamsTrendDto(abbrev, seasonYear, gameDtos));
+    }
+
+    private static async Task<IResult> GetScoreStateStats(
+        string abbrev,
+        int? season,
+        bool? playoffs,
+        ITeamRepository teamRepository,
+        IDbContextFactory<AppDbContext> dbFactory,
+        CancellationToken cancellationToken)
+    {
+        // Input validation
+        if (string.IsNullOrWhiteSpace(abbrev) || abbrev.Length > 3)
+        {
+            return Results.BadRequest("Invalid team abbreviation");
+        }
+
+        var team = await teamRepository.GetByAbbrevAsync(abbrev, cancellationToken);
+        if (team is null)
+        {
+            return Results.NotFound(ApiError.TeamNotFound);
+        }
+
+        var seasonYear = season ?? DateTime.Now.Year;
+        var isPlayoffs = playoffs ?? false;
+
+        // Run aggregated shots query and time query in parallel (no Task.Run needed for async operations)
+        async Task<List<ShotAggregation>> GetShotAggregationsAsync()
+        {
+            await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+
+            // Aggregate shots in SQL, grouping by whether it's for/against the team and score state
+            // This returns at most 6 rows (3 states × 2 directions) instead of thousands of shot records
+            return await db.Shots
+                .Where(s => s.Season == seasonYear
+                            && s.IsPlayoffGame == isPlayoffs
+                            && (s.TeamCode == abbrev || s.HomeTeamCode == abbrev || s.AwayTeamCode == abbrev))
+                .GroupBy(s => new
+                {
+                    IsFor = s.TeamCode == abbrev,
+                    // Determine score state from team's perspective (not shooting team's perspective)
+                    // When team is home: leading = HomeGoals > AwayGoals
+                    // When team is away: leading = AwayGoals > HomeGoals
+                    State = s.HomeTeamGoals == s.AwayTeamGoals ? "tied" :
+                        // For shots BY our team
+                        (s.TeamCode == abbrev
+                            ? (s.IsHomeTeam
+                                ? (s.HomeTeamGoals > s.AwayTeamGoals ? "leading" : "trailing")
+                                : (s.AwayTeamGoals > s.HomeTeamGoals ? "leading" : "trailing"))
+                            // For shots AGAINST our team (opponent shooting)
+                            : (s.HomeTeamCode == abbrev
+                                ? (s.HomeTeamGoals > s.AwayTeamGoals ? "leading" : "trailing")
+                                : (s.AwayTeamGoals > s.HomeTeamGoals ? "leading" : "trailing")))
+                })
+                .Select(g => new ShotAggregation(
+                    g.Key.IsFor,
+                    g.Key.State,
+                    g.Count(),
+                    g.Count(x => x.IsGoal),
+                    g.Sum(x => x.XGoal ?? 0m)
+                ))
+                .ToListAsync(cancellationToken);
+        }
+
+        async Task<TimeAggregation?> GetTimeAggregationAsync()
+        {
+            await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+            return await db.GameScoreStateTimes
+                .Where(t => t.TeamAbbreviation == abbrev && t.Season == seasonYear && t.IsPlayoffs == isPlayoffs)
+                .GroupBy(_ => 1)
+                .OrderBy(_ => 1) // Silence EF warning - only one group exists
+                .Select(g => new TimeAggregation(
+                    g.Sum(t => t.LeadingSeconds),
+                    g.Sum(t => t.TrailingSeconds),
+                    g.Sum(t => t.TiedSeconds)
+                ))
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        var shotsTask = GetShotAggregationsAsync();
+        var timeTask = GetTimeAggregationAsync();
+
+        await Task.WhenAll(shotsTask, timeTask);
+
+        var shotAggregations = await shotsTask;
+        var timeData = await timeTask;
+
+        // Build breakdowns from aggregated data
+        var leading = CreateBreakdownFromAggregations("leading", shotAggregations, timeData?.LeadingSeconds);
+        var trailing = CreateBreakdownFromAggregations("trailing", shotAggregations, timeData?.TrailingSeconds);
+        var tied = CreateBreakdownFromAggregations("tied", shotAggregations, timeData?.TiedSeconds);
+
+        var totalTime = (timeData?.LeadingSeconds ?? 0) + (timeData?.TrailingSeconds ?? 0) + (timeData?.TiedSeconds ?? 0);
+        var total = CreateBreakdownFromAggregations(null, shotAggregations, totalTime > 0 ? totalTime : null);
+
+        return Results.Ok(new ScoreStateStatsDto(
+            abbrev,
+            seasonYear,
+            isPlayoffs,
+            leading,
+            trailing,
+            tied,
+            total
+        ));
+    }
+
+    private record ShotAggregation(bool IsFor, string State, int ShotCount, int GoalCount, decimal XGoals);
+    private record TimeAggregation(int LeadingSeconds, int TrailingSeconds, int TiedSeconds);
+
+    private static ScoreStateBreakdown CreateBreakdownFromAggregations(
+        string? stateFilter,
+        List<ShotAggregation> aggregations,
+        int? timeSeconds)
+    {
+        // Filter by state if specified, otherwise sum all (for total)
+        var relevantAggs = stateFilter != null
+            ? aggregations.Where(a => a.State == stateFilter).ToList()
+            : aggregations;
+
+        var forAgg = relevantAggs.Where(a => a.IsFor).ToList();
+        var againstAgg = relevantAggs.Where(a => !a.IsFor).ToList();
+
+        var sf = forAgg.Sum(a => a.ShotCount);
+        var sa = againstAgg.Sum(a => a.ShotCount);
+        var gf = forAgg.Sum(a => a.GoalCount);
+        var ga = againstAgg.Sum(a => a.GoalCount);
+        var xgf = forAgg.Sum(a => a.XGoals);
+        var xga = againstAgg.Sum(a => a.XGoals);
+
+        return new ScoreStateBreakdown(
+            stateFilter ?? "total",
+            sf,
+            sa,
+            gf,
+            ga,
+            Math.Round(xgf, 2),
+            Math.Round(xga, 2),
+            sf > 0 ? Math.Round((decimal)gf / sf * 100, 1) : null,
+            sa > 0 ? Math.Round((decimal)(sa - ga) / sa * 100, 1) : null,
+            Math.Round(xgf - xga, 2),
+            timeSeconds
+        );
     }
 }

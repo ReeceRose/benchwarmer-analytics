@@ -105,6 +105,32 @@ export const metrics: MetricDefinition[] = [
     interpretation:
       "Top-line forwards typically average 18-22 minutes; top defensemen 22-26 minutes. Fourth-line players may average 8-12 minutes.",
   },
+  {
+    name: "Faceoffs Won",
+    abbreviation: "FOW",
+    category: "basic",
+    description:
+      "The number of faceoffs won by a player. Typically only centers take a significant number of faceoffs.",
+  },
+  {
+    name: "Faceoffs Lost",
+    abbreviation: "FOL",
+    category: "basic",
+    description:
+      "The number of faceoffs lost by a player.",
+  },
+  {
+    name: "Faceoff Win Percentage",
+    abbreviation: "FO%",
+    aliases: ["FOW%", "Faceoff%"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "The percentage of faceoffs won by a player.",
+    formula: "FO% = Faceoffs Won / (Faceoffs Won + Faceoffs Lost) × 100",
+    interpretation:
+      "50% is league average. Elite faceoff specialists win 55%+ of their draws. Winning faceoffs is important for possession, especially in the offensive and defensive zones.",
+  },
 
   // Possession Metrics
   {

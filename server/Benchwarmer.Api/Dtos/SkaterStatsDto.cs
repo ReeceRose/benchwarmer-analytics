@@ -25,7 +25,11 @@ public record SkaterStatsDto(
     decimal? DZoneShiftStarts,
     decimal? NZoneShiftStarts,
     decimal? OZoneShiftPct,  // Calculated: OZone / (OZone + DZone)
-    decimal? DZoneShiftPct   // Calculated: DZone / (OZone + DZone)
+    decimal? DZoneShiftPct,  // Calculated: DZone / (OZone + DZone)
+    // Faceoff fields
+    decimal? FaceoffsWon,
+    decimal? FaceoffsLost,
+    decimal? FaceoffPct  // Calculated: Won / (Won + Lost)
 );
 
 public record PlayerStatsDto(

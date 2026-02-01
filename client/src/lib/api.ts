@@ -49,7 +49,9 @@ import type {
   RookiesResponse,
   LeagueTrendsResponse,
   GoalieLeagueBaselinesResponse,
+  SkaterLeagueBaselinesResponse,
   DeserveToWinResponse,
+  ScoreStateStatsResponse,
 } from "@/types";
 
 const api = axios.create({
@@ -581,6 +583,37 @@ export async function getGoalieLeagueBaselines(
   const { data } = await api.get<GoalieLeagueBaselinesResponse>(
     "/stats/goalie-league-baselines",
     { params: { seasons: seasonsParam, situation, playoffs } }
+  );
+  return data;
+}
+
+export async function getSkaterLeagueBaselines(
+  seasons: number[],
+  situation?: string,
+  playoffs?: boolean
+): Promise<SkaterLeagueBaselinesResponse> {
+  const seasonsParam = seasons?.length ? seasons.join(",") : undefined;
+  const { data } = await api.get<SkaterLeagueBaselinesResponse>(
+    "/stats/skater-league-baselines",
+    { params: { seasons: seasonsParam, situation, playoffs } }
+  );
+  return data;
+}
+
+// Team Score State Stats
+
+export async function getScoreStateStats(
+  abbrev: string,
+  season?: number,
+  playoffs?: boolean
+): Promise<ScoreStateStatsResponse> {
+  const params: Record<string, unknown> = {};
+  if (season !== undefined) params.season = season;
+  if (playoffs !== undefined) params.playoffs = playoffs;
+
+  const { data } = await api.get<ScoreStateStatsResponse>(
+    `/teams/${abbrev}/score-state-stats`,
+    { params: Object.keys(params).length > 0 ? params : undefined }
   );
   return data;
 }

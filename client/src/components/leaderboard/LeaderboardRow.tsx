@@ -121,6 +121,11 @@ export function LeaderboardRow({
               ? formatToi(entry.iceTimeSeconds)
               : "-"}
           </TableCell>
+          <TableCell className={cellClass("faceoffPct")}>
+            {entry.faceoffPct != null
+              ? `${entry.faceoffPct.toFixed(1)}%`
+              : "-"}
+          </TableCell>
         </>
       ) : (
         <>

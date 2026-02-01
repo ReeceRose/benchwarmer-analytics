@@ -12,6 +12,7 @@ export type LeaderboardCategory =
   | "oiSvPct"
   | "iceTime"
   | "gamesPlayed"
+  | "faceoffPct"
   // Goalie categories
   | "savePct"
   | "gaa"
@@ -57,6 +58,10 @@ export interface LeaderboardEntry {
   lowDangerGoals?: number;
   rebounds?: number;
   expectedRebounds?: number;
+  // Faceoff stats (skaters only)
+  faceoffsWon?: number;
+  faceoffsLost?: number;
+  faceoffPct?: number;
 }
 
 export interface LeaderboardResponse {

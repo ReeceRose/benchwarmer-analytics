@@ -17,6 +17,7 @@ public class NightlySyncJob(
     GoalieImporter goalieImporter,
     TeamImporter teamImporter,
     ShotImporter shotImporter,
+    ScoreStateTimeCalculator scoreStateTimeCalculator,
     ILineRepository lineRepository,
     IGameRepository gameRepository,
     ISkaterStatsRepository skaterStatsRepository,
@@ -29,6 +30,7 @@ public class NightlySyncJob(
     private readonly LineImporter _lineImporter = lineImporter;
     private readonly TeamImporter _teamImporter = teamImporter;
     private readonly ShotImporter _shotImporter = shotImporter;
+    private readonly ScoreStateTimeCalculator _scoreStateTimeCalculator = scoreStateTimeCalculator;
     private readonly ILineRepository _lineRepository = lineRepository;
     private readonly IGameRepository _gameRepository = gameRepository;
     private readonly ISkaterStatsRepository _skaterStatsRepository = skaterStatsRepository;
@@ -63,6 +65,10 @@ public class NightlySyncJob(
 
         // Shots don't have separate playoff files
         totalRecords += await DownloadAndImportShotsAsync(season, cancellationToken);
+
+        // Calculate score state times after shots are imported
+        _logger.LogInformation("Calculating score state times...");
+        await _scoreStateTimeCalculator.CalculateForSeasonAsync(season, cancellationToken);
 
         // Refresh materialized views after import
         _logger.LogInformation("Refreshing materialized views...");

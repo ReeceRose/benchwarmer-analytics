@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<LineCombination> LineCombinations => Set<LineCombination>();
   public DbSet<Shot> Shots => Set<Shot>();
   public DbSet<Game> Games => Set<Game>();
+  public DbSet<GameScoreStateTime> GameScoreStateTimes => Set<GameScoreStateTime>();
 
   // Materialized views (read-only)
   public DbSet<ChemistryPairView> ChemistryPairs => Set<ChemistryPairView>();
@@ -126,6 +127,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
       e.HasIndex(g => g.GameDate);
       e.HasIndex(g => new { g.GameDate, g.GameState });
       e.HasIndex(g => g.Season);
+    });
+
+    // GameScoreStateTime
+    modelBuilder.Entity<GameScoreStateTime>(e =>
+    {
+      e.HasIndex(g => new { g.GameId, g.TeamAbbreviation }).IsUnique();
+      e.HasIndex(g => new { g.TeamAbbreviation, g.Season, g.IsPlayoffs });
     });
 
     // ChemistryPairView (materialized view - read only)

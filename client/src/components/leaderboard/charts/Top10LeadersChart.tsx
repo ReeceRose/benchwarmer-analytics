@@ -47,6 +47,7 @@ const CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
   oiSvPct: "On-Ice Sv%",
   iceTime: "Ice Time (min)",
   gamesPlayed: "Games Played",
+  faceoffPct: "FO%",
   savePct: "Save %",
   gaa: "GAA",
   gsax: "GSAx",

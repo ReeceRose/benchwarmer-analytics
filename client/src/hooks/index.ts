@@ -1,4 +1,4 @@
-export { useTeams, useTeam, useTeamRoster } from "@/hooks/useTeams";
+export { useTeams, useTeam, useTeamRoster, useScoreStateStats } from "@/hooks/useTeams";
 export {
   usePlayer,
   usePlayers,
@@ -9,6 +9,7 @@ export {
   usePlayerRollingStats,
   useGoalieWorkload,
   useGoalieLeagueBaselines,
+  useSkaterLeagueBaselines,
 } from "@/hooks/usePlayer";
 export { useLines } from "@/hooks/useLines";
 export { useChemistryMatrix } from "@/hooks/useChemistryMatrix";

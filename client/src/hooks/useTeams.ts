@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getTeams, getTeam, getTeamRoster } from "@/lib/api";
+import { getTeams, getTeam, getTeamRoster, getScoreStateStats } from "@/lib/api";
 
 export function useTeams() {
   return useQuery({
@@ -24,5 +24,14 @@ export function useTeamRoster(abbrev: string, season?: number, playoffs?: boolea
     queryFn: () => getTeamRoster(abbrev, season, playoffs),
     enabled: !!abbrev,
     staleTime: 1000 * 60 * 5, // Rosters may change more often
+  });
+}
+
+export function useScoreStateStats(abbrev: string, season?: number, playoffs?: boolean) {
+  return useQuery({
+    queryKey: ["teams", abbrev, "score-state-stats", season, playoffs],
+    queryFn: () => getScoreStateStats(abbrev, season, playoffs),
+    enabled: !!abbrev,
+    staleTime: 1000 * 60 * 5,
   });
 }

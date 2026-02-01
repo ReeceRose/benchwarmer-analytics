@@ -29,6 +29,7 @@ export const SKATER_CATEGORIES: LeaderboardCategory[] = [
   "oiSvPct",
   "iceTime",
   "gamesPlayed",
+  "faceoffPct",
 ];
 
 export const ALL_CATEGORIES: LeaderboardCategory[] = [

@@ -48,6 +48,7 @@ const categorySchema = z.enum([
   "oiSvPct",
   "iceTime",
   "gamesPlayed",
+  "faceoffPct",
   // Goalie categories
   "savePct",
   "gaa",
@@ -488,6 +489,17 @@ function TableView({
                       onSort={onSort}
                       isHighlighted={sortKey === "iceTime"}
                       className="w-20"
+                    />
+                    <SortableTableHeader
+                      label="FO%"
+                      tooltip="Faceoff win percentage"
+                      metric="FO%"
+                      sortKey="faceoffPct"
+                      currentSort={sortKey}
+                      sortDesc={sortDesc}
+                      onSort={onSort}
+                      isHighlighted={sortKey === "faceoffPct"}
+                      className="w-16"
                     />
                   </>
                 ) : (

@@ -15,6 +15,8 @@ export { GoalieDangerZoneRadar } from "@/components/player-detail/GoalieDangerZo
 export { GoalieReboundControl } from "@/components/player-detail/GoalieReboundControl";
 export { ShiftQualityDashboard } from "@/components/player-detail/ShiftQualityDashboard";
 export { ShiftQualityDashboardSkeleton } from "@/components/player-detail/ShiftQualityDashboardSkeleton";
+export { FaceoffStatsCard } from "@/components/player-detail/FaceoffStatsCard";
+export { FaceoffStatsCardSkeleton } from "@/components/player-detail/FaceoffStatsCardSkeleton";
 
 export {
   buildSkaterSeasonRows,

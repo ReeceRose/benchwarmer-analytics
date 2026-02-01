@@ -67,6 +67,10 @@ export interface SkaterStats {
   nZoneShiftStarts?: number;
   oZoneShiftPct?: number;
   dZoneShiftPct?: number;
+  // Faceoff fields
+  faceoffsWon?: number;
+  faceoffsLost?: number;
+  faceoffPct?: number;
 }
 
 /** Goalie statistics for a season/situation */
@@ -117,6 +121,16 @@ export interface GoalieStatsResponse {
   playerId: number;
   playerName: string;
   stats: GoalieStats[];
+}
+
+/** League baselines for skater metrics (faceoffs) */
+export interface SkaterLeagueBaselinesResponse {
+  seasons: number[];
+  situation: string;
+  isPlayoffs: boolean;
+  faceoffPct: number | null;
+  totalFaceoffsWon: number;
+  totalFaceoffsLost: number;
 }
 
 /** League baselines for goalie split metrics (danger zones + rebounds) */

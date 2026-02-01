@@ -7,6 +7,7 @@ import {
   useTeams,
   usePageTitle,
   useGoalieLeagueBaselines,
+  useSkaterLeagueBaselines,
 } from "@/hooks";
 import { ErrorState, BackButton } from "@/components/shared";
 import { getDangerZoneLeagueAveragesFromGoalieBaselines } from "@/lib/goalie-baselines";
@@ -28,6 +29,8 @@ import {
   GoalieReboundControl,
   ShiftQualityDashboard,
   ShiftQualityDashboardSkeleton,
+  FaceoffStatsCard,
+  FaceoffStatsCardSkeleton,
   buildSkaterSeasonRows,
   calculateSkaterTotals,
   buildGoalieSeasonRows,
@@ -120,6 +123,19 @@ function PlayerDetailPage() {
   const dangerLeagueAverages = useMemo(() => {
     return getDangerZoneLeagueAveragesFromGoalieBaselines(goalieBaselines);
   }, [goalieBaselines]);
+
+  // Skater baselines (for faceoff stats)
+  const skaterBaselineSeasons = useMemo(() => {
+    if (isGoalie || isGoalieStats(allStats)) return [];
+    const seasons = new Set((allStats as SkaterStats[]).filter(s => !s.isPlayoffs).map((s) => s.season));
+    return Array.from(seasons).sort((a, b) => a - b);
+  }, [allStats, isGoalie]);
+
+  const { data: skaterBaselines } = useSkaterLeagueBaselines(
+    skaterBaselineSeasons,
+    "all", // Faceoffs are typically reported for all situations
+    false
+  );
 
   const teams = teamsData?.teams;
 
@@ -255,7 +271,10 @@ function PlayerDetailPage() {
               </div>
 
               {shiftQualityStats && (
-                <ShiftQualityDashboard stats={shiftQualityStats} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <ShiftQualityDashboard stats={shiftQualityStats} />
+                  <FaceoffStatsCard stats={shiftQualityStats} baselines={skaterBaselines} />
+                </div>
               )}
 
               <SituationBreakdownChart
@@ -290,7 +309,10 @@ function PlayerDetailPage() {
       )}
 
       {!isGoalie && statsLoading && (
-        <ShiftQualityDashboardSkeleton className="mt-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <ShiftQualityDashboardSkeleton />
+          <FaceoffStatsCardSkeleton />
+        </div>
       )}
     </div>
   );

@@ -8,6 +8,7 @@ import {
   getPlayerRollingStats,
   getGoalieWorkload,
   getGoalieLeagueBaselines,
+  getSkaterLeagueBaselines,
 } from "@/lib/api";
 
 export function usePlayer(id: number) {
@@ -122,6 +123,19 @@ export function useGoalieLeagueBaselines(
   return useQuery({
     queryKey: ["stats", "goalie-league-baselines", { seasons, situation, playoffs }],
     queryFn: () => getGoalieLeagueBaselines(seasons, situation, playoffs),
+    enabled: seasons.length > 0,
+    staleTime: 1000 * 60 * 10,
+  });
+}
+
+export function useSkaterLeagueBaselines(
+  seasons: number[],
+  situation?: string,
+  playoffs?: boolean
+) {
+  return useQuery({
+    queryKey: ["stats", "skater-league-baselines", { seasons, situation, playoffs }],
+    queryFn: () => getSkaterLeagueBaselines(seasons, situation, playoffs),
     enabled: seasons.length > 0,
     staleTime: 1000 * 60 * 10,
   });

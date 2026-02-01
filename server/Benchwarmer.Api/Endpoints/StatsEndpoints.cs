@@ -197,6 +197,21 @@ public static class StatsEndpoints
                 """)
             .Produces<GoalieLeagueBaselinesDto>()
             .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/skater-league-baselines", GetSkaterLeagueBaselines)
+            .WithName("GetSkaterLeagueBaselines")
+            .WithSummary("Get league baselines for skater stats")
+            .WithDescription("""
+                Returns league-wide baseline values for skater metrics (faceoff win percentage),
+                computed from the SkaterSeasonAdvanced table.
+
+                **Query Parameters:**
+                - `seasons`: Comma-separated list of seasons to include (e.g., "2022,2023,2024"). Defaults to current season.
+                - `situation`: Game situation filter (all, 5on5, 5on4, 4on5, other). Defaults to "all".
+                - `playoffs`: If true, use playoff rows. Defaults to false.
+                """)
+            .Produces<SkaterLeagueBaselinesDto>()
+            .CacheOutput(CachePolicies.TeamData);
     }
 
     private static async Task<IResult> GetHomepageData(
@@ -710,6 +725,80 @@ public static class StatsEndpoints
             totals.HighShots,
             totals.ExpectedRebounds,
             totals.Rebounds
+        ));
+    }
+
+    private static async Task<IResult> GetSkaterLeagueBaselines(
+        string? seasons,
+        string? situation,
+        bool? playoffs,
+        IDbContextFactory<AppDbContext> dbFactory,
+        CancellationToken cancellationToken)
+    {
+        var effectiveSituation = string.IsNullOrWhiteSpace(situation) ? "all" : situation!;
+        var effectivePlayoffs = playoffs ?? false;
+
+        var seasonList = new List<int>();
+        if (!string.IsNullOrWhiteSpace(seasons))
+        {
+            seasonList = seasons
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var year) ? (int?)year : null)
+                .Where(x => x.HasValue)
+                .Select(x => x!.Value)
+                .Distinct()
+                .Order()
+                .ToList();
+        }
+
+        if (seasonList.Count == 0)
+        {
+            seasonList.Add(StatsMappers.GetDefaultSeason());
+        }
+
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+
+        var query = db.SkaterSeasonAdvanced
+            .Where(s =>
+                seasonList.Contains(s.Season) &&
+                s.Situation == effectiveSituation &&
+                s.IsPlayoffs == effectivePlayoffs &&
+                s.FaceoffsWon != null &&
+                s.FaceoffsLost != null);
+
+        var totals = await query
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                FaceoffsWon = g.Sum(x => x.FaceoffsWon ?? 0m),
+                FaceoffsLost = g.Sum(x => x.FaceoffsLost ?? 0m)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (totals is null)
+        {
+            return Results.Ok(new SkaterLeagueBaselinesDto(
+                seasonList,
+                effectiveSituation,
+                effectivePlayoffs,
+                null,
+                0,
+                0
+            ));
+        }
+
+        var totalFaceoffs = totals.FaceoffsWon + totals.FaceoffsLost;
+        var faceoffPct = totalFaceoffs > 0
+            ? Math.Round(totals.FaceoffsWon / totalFaceoffs * 100, 2)
+            : (decimal?)null;
+
+        return Results.Ok(new SkaterLeagueBaselinesDto(
+            seasonList,
+            effectiveSituation,
+            effectivePlayoffs,
+            faceoffPct,
+            totals.FaceoffsWon,
+            totals.FaceoffsLost
         ));
     }
 }

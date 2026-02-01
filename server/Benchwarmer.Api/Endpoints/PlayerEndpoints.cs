@@ -269,6 +269,17 @@ public static class PlayerEndpoints
                 }
             }
 
+            // Calculate faceoff percentage
+            decimal? faceoffPct = null;
+            if (adv?.FaceoffsWon != null && adv?.FaceoffsLost != null)
+            {
+                var totalFaceoffs = adv.FaceoffsWon.Value + adv.FaceoffsLost.Value;
+                if (totalFaceoffs > 0)
+                {
+                    faceoffPct = Math.Round(adv.FaceoffsWon.Value / totalFaceoffs * 100, 1);
+                }
+            }
+
             return new SkaterStatsDto(
                 s.Id,
                 s.PlayerId,
@@ -293,7 +304,10 @@ public static class PlayerEndpoints
                 adv?.IFDZoneShiftStarts,
                 adv?.IFNeutralZoneShiftStarts,
                 ozoneShiftPct,
-                dzoneShiftPct
+                dzoneShiftPct,
+                adv?.FaceoffsWon,
+                adv?.FaceoffsLost,
+                faceoffPct
             );
         }).ToList();
 
@@ -740,7 +754,8 @@ public static class PlayerEndpoints
                         latestStat.OnIceSavePct,
                         latestStat.CorsiForPct,
                         latestStat.FenwickForPct,
-                        null, null, null, null, null, null  // Shift quality fields not needed for comparison
+                        null, null, null, null, null, null,  // Shift quality fields not needed for comparison
+                        null, null, null  // Faceoff fields not needed for comparison
                     ) : null,
                     null
                 );
