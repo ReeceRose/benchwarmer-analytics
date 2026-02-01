@@ -114,7 +114,7 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<(int Age, decimal PointsPer60, decimal GoalsPer60, decimal XgPer60, int PlayerCount)>> GetLeagueAgeCurveAsync(
+    public async Task<IReadOnlyList<LeagueAgeCurvePoint>> GetLeagueAgeCurveAsync(
         int minGames = 20,
         bool useMedian = false,
         CancellationToken cancellationToken = default)
@@ -130,6 +130,12 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
                   ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY points_per_60)::numeric, 2) as "PointsPer60",
                   ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY goals_per_60)::numeric, 2) as "GoalsPer60",
                   ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY xg_per_60)::numeric, 2) as "XgPer60",
+                  ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY points_per_60)::numeric, 2) as "PointsPer60P25",
+                  ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY points_per_60)::numeric, 2) as "PointsPer60P75",
+                  ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY goals_per_60)::numeric, 2) as "GoalsPer60P25",
+                  ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY goals_per_60)::numeric, 2) as "GoalsPer60P75",
+                  ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY xg_per_60)::numeric, 2) as "XgPer60P25",
+                  ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY xg_per_60)::numeric, 2) as "XgPer60P75",
                   COUNT(*)::int as "PlayerCount"
               FROM (
                   SELECT
@@ -155,6 +161,12 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
                   ROUND(AVG(points_per_60)::numeric, 2) as "PointsPer60",
                   ROUND(AVG(goals_per_60)::numeric, 2) as "GoalsPer60",
                   ROUND(AVG(xg_per_60)::numeric, 2) as "XgPer60",
+                  ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY points_per_60)::numeric, 2) as "PointsPer60P25",
+                  ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY points_per_60)::numeric, 2) as "PointsPer60P75",
+                  ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY goals_per_60)::numeric, 2) as "GoalsPer60P25",
+                  ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY goals_per_60)::numeric, 2) as "GoalsPer60P75",
+                  ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY xg_per_60)::numeric, 2) as "XgPer60P25",
+                  ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY xg_per_60)::numeric, 2) as "XgPer60P75",
                   COUNT(*)::int as "PlayerCount"
               FROM (
                   SELECT
@@ -180,7 +192,19 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
             .ToListAsync(cancellationToken);
 
         return results
-            .Select(r => (r.Age, r.PointsPer60, r.GoalsPer60, r.XgPer60, r.PlayerCount))
+            .Select(r => new LeagueAgeCurvePoint(
+                r.Age,
+                r.PointsPer60,
+                r.GoalsPer60,
+                r.XgPer60,
+                r.PointsPer60P25,
+                r.PointsPer60P75,
+                r.GoalsPer60P25,
+                r.GoalsPer60P75,
+                r.XgPer60P25,
+                r.XgPer60P75,
+                r.PlayerCount
+            ))
             .ToList();
     }
 
@@ -190,6 +214,12 @@ public class SkaterStatsRepository(IDbContextFactory<AppDbContext> dbFactory) : 
         public decimal PointsPer60 { get; init; }
         public decimal GoalsPer60 { get; init; }
         public decimal XgPer60 { get; init; }
+        public decimal PointsPer60P25 { get; init; }
+        public decimal PointsPer60P75 { get; init; }
+        public decimal GoalsPer60P25 { get; init; }
+        public decimal GoalsPer60P75 { get; init; }
+        public decimal XgPer60P25 { get; init; }
+        public decimal XgPer60P75 { get; init; }
         public int PlayerCount { get; init; }
     }
 

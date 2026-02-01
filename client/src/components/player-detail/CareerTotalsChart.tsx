@@ -19,10 +19,12 @@ import {
 } from "@/components/ui/select";
 import { formatSeason, formatToi } from "@/lib/formatters";
 import { CHART_COLOURS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { cn } from "@/lib/utils";
 import type { SkaterStats } from "@/types";
 
 interface CareerTotalsChartProps {
   stats: SkaterStats[];
+  className?: string;
 }
 
 type ViewMode = "totals" | "perGame" | "toi";
@@ -62,7 +64,7 @@ const VIEWS: { key: ViewMode; label: string; description: string }[] = [
   },
 ];
 
-export function CareerTotalsChart({ stats }: CareerTotalsChartProps) {
+export function CareerTotalsChart({ stats, className }: CareerTotalsChartProps) {
   const [view, setView] = useState<ViewMode>("totals");
 
   const chartData = useMemo(() => {
@@ -138,7 +140,7 @@ export function CareerTotalsChart({ stats }: CareerTotalsChartProps) {
   }
 
   return (
-    <Card className="mt-6">
+    <Card className={cn(className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base font-semibold">Career Stats</CardTitle>
         <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>

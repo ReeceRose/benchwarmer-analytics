@@ -13,6 +13,9 @@ import {
   CareerTrajectory,
   CareerTotalsChart,
   RollingPerformance,
+  SkaterPercentilePanel,
+  SeasonComparisonRadar,
+  SituationBreakdownChart,
   GoalieWorkloadMonitor,
   GoalieDangerZoneRadar,
   GoalieReboundControl,
@@ -151,8 +154,8 @@ function PlayerDetailPage() {
         />
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 className="text-lg font-semibold">Career Statistics</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 mt-6">
+        <h2 className="text-lg font-semibold">Career statistics</h2>
         {availableSituations.length > 1 && (
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
@@ -175,42 +178,91 @@ function PlayerDetailPage() {
       {statsLoading ? (
         <StatsTableSkeleton />
       ) : isGoalie ? (
-        <>
+        <div className="space-y-8">
           <GoalieStatsTable rows={goalieSeasonRows} totals={goalieTotals} />
+
           {filteredGoalieStats.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              <GoalieDangerZoneRadar stats={filteredGoalieStats} />
-              <GoalieReboundControl stats={filteredGoalieStats} />
-            </div>
+            <section className="space-y-4">
+              <h3 className="text-base font-semibold">Goaltending profile</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <GoalieDangerZoneRadar stats={filteredGoalieStats} />
+                <GoalieReboundControl stats={filteredGoalieStats} />
+              </div>
+            </section>
           )}
+
           {availableSeasons.length > 0 && (
-            <GoalieWorkloadMonitor playerId={playerId} season={availableSeasons[0]} />
+            <section className="space-y-4">
+              <h3 className="text-base font-semibold">Workload</h3>
+              <GoalieWorkloadMonitor
+                playerId={playerId}
+                season={availableSeasons[0]}
+                className="mt-0"
+              />
+            </section>
           )}
-        </>
+        </div>
       ) : (
-        <SkaterStatsTable rows={skaterSeasonRows} totals={skaterTotals} />
+        <div className="space-y-8">
+          <SkaterStatsTable rows={skaterSeasonRows} totals={skaterTotals} />
+
+          {availableSeasons.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <h3 className="text-base font-semibold">Current season insights</h3>
+                <p className="text-xs text-muted-foreground">
+                  Regular season • all situations (unless noted)
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SkaterPercentilePanel
+                  stats={allStats as SkaterStats[]}
+                  season={availableSeasons[0]}
+                />
+                <SeasonComparisonRadar
+                  stats={allStats as SkaterStats[]}
+                  season={availableSeasons[0]}
+                />
+              </div>
+
+              {shiftQualityStats && (
+                <ShiftQualityDashboard stats={shiftQualityStats} />
+              )}
+
+              <SituationBreakdownChart
+                stats={allStats as SkaterStats[]}
+                season={availableSeasons[0]}
+              />
+
+              <RollingPerformance playerId={playerId} season={availableSeasons[0]} className="mt-0" />
+            </section>
+          )}
+
+          {!statsLoading && allStats.length > 0 && (
+            <section className="space-y-4">
+              <h3 className="text-base font-semibold">Career trends</h3>
+              <CareerTrajectory stats={allStats as SkaterStats[]} className="mt-0" />
+              <CareerTotalsChart stats={allStats as SkaterStats[]} className="mt-0" />
+            </section>
+          )}
+
+          {availableSeasons.length > 0 && (
+            <section className="space-y-4">
+              <h3 className="text-base font-semibold">Shot profile</h3>
+              <PlayerShotMap
+                playerId={playerId}
+                availableSeasons={availableSeasons}
+                playerTeamAbbreviation={player?.currentTeamAbbreviation}
+                className="mt-0"
+              />
+            </section>
+          )}
+        </div>
       )}
 
       {!isGoalie && statsLoading && (
         <ShiftQualityDashboardSkeleton className="mt-6" />
-      )}
-      {!isGoalie && !statsLoading && shiftQualityStats && (
-        <ShiftQualityDashboard stats={shiftQualityStats} className="mt-6" />
-      )}
-
-      {!isGoalie && !statsLoading && allStats.length > 0 && player && (
-        <>
-          <CareerTrajectory stats={allStats as SkaterStats[]} />
-          <CareerTotalsChart stats={allStats as SkaterStats[]} />
-        </>
-      )}
-
-      {!isGoalie && availableSeasons.length > 0 && (
-        <RollingPerformance playerId={playerId} season={availableSeasons[0]} />
-      )}
-
-      {!isGoalie && availableSeasons.length > 0 && (
-        <PlayerShotMap playerId={playerId} availableSeasons={availableSeasons} playerTeamAbbreviation={player?.currentTeamAbbreviation} />
       )}
     </div>
   );

@@ -28,6 +28,12 @@ export interface AgeDataPoint {
   goalsPer60: number;
   xgPer60: number;
   sampleSize: number;
+  pointsPer60P25?: number | null;
+  pointsPer60P75?: number | null;
+  goalsPer60P25?: number | null;
+  goalsPer60P75?: number | null;
+  xgPer60P25?: number | null;
+  xgPer60P75?: number | null;
 }
 
 export interface PlayerAgeCurve {

@@ -16,11 +16,13 @@ import {
   ShotsAgainstChart,
   SavePercentageChart,
 } from "@/components/goalie-workload";
+import { cn } from "@/lib/utils";
 import type { GoalieGameStats } from "@/types";
 
 interface GoalieWorkloadMonitorProps {
   playerId: number;
   season: number;
+  className?: string;
 }
 
 const GAME_LIMITS = [
@@ -53,6 +55,7 @@ const TREND_CONFIG = {
 export function GoalieWorkloadMonitor({
   playerId,
   season,
+  className,
 }: GoalieWorkloadMonitorProps) {
   const [gameLimit, setGameLimit] = useState("10");
 
@@ -78,7 +81,7 @@ export function GoalieWorkloadMonitor({
 
   if (isLoading) {
     return (
-      <Card className="mt-6">
+      <Card className={cn(className)}>
         <CardHeader>
           <CardTitle className="text-base font-semibold">
             Workload Monitor
@@ -101,7 +104,7 @@ export function GoalieWorkloadMonitor({
   const TrendIcon = trend.icon;
 
   return (
-    <Card className="mt-6">
+    <Card className={cn(className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-3">
           <CardTitle className="text-base font-semibold">

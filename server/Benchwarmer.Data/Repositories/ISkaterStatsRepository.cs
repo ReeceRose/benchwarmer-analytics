@@ -35,7 +35,7 @@ public interface ISkaterStatsRepository
         int limit = 50,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<(int Age, decimal PointsPer60, decimal GoalsPer60, decimal XgPer60, int PlayerCount)>> GetLeagueAgeCurveAsync(
+    Task<IReadOnlyList<LeagueAgeCurvePoint>> GetLeagueAgeCurveAsync(
         int minGames = 20,
         bool useMedian = false,
         CancellationToken cancellationToken = default);
@@ -83,6 +83,20 @@ public interface ISkaterStatsRepository
         string? position = null,
         CancellationToken cancellationToken = default);
 }
+
+public record LeagueAgeCurvePoint(
+    int Age,
+    decimal PointsPer60,
+    decimal GoalsPer60,
+    decimal XgPer60,
+    decimal PointsPer60P25,
+    decimal PointsPer60P75,
+    decimal GoalsPer60P25,
+    decimal GoalsPer60P75,
+    decimal XgPer60P25,
+    decimal XgPer60P75,
+    int PlayerCount
+);
 
 /// <summary>
 /// Percentile thresholds for a season. Each array contains 99 values (1st to 99th percentile).

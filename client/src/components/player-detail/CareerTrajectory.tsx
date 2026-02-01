@@ -19,10 +19,12 @@ import {
 } from "@/components/ui/select";
 import { formatSeason } from "@/lib/formatters";
 import { CHART_COLOURS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { cn } from "@/lib/utils";
 import type { SkaterStats } from "@/types";
 
 interface CareerTrajectoryProps {
   stats: SkaterStats[];
+  className?: string;
 }
 
 type MetricKey = "pointsPer60" | "goalsPer60" | "assistsPer60" | "xgPer60" | "corsiPct";
@@ -70,7 +72,7 @@ const METRICS: { key: MetricKey; label: string; description: string; format: (v:
 
 const MIN_GAMES_FOR_FULL_SEASON = 20;
 
-export function CareerTrajectory({ stats }: CareerTrajectoryProps) {
+export function CareerTrajectory({ stats, className }: CareerTrajectoryProps) {
   const [metric, setMetric] = useState<MetricKey>("pointsPer60");
 
   // Process stats into trajectory data
@@ -195,7 +197,7 @@ export function CareerTrajectory({ stats }: CareerTrajectoryProps) {
   }
 
   return (
-    <Card className="mt-6">
+    <Card className={cn(className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base font-semibold">Career Trajectory</CardTitle>
         <Select value={metric} onValueChange={(v) => setMetric(v as MetricKey)}>

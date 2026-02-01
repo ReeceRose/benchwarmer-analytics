@@ -8,15 +8,22 @@ import {
   PeriodBreakdownCard,
 } from "@/components/shot-explorer";
 import { usePlayerShots } from "@/hooks";
+import { cn } from "@/lib/utils";
 import type { DangerLevel } from "@/types";
 
 interface PlayerShotMapProps {
   playerId: number;
   availableSeasons: number[];
   playerTeamAbbreviation?: string;
+  className?: string;
 }
 
-export function PlayerShotMap({ playerId, availableSeasons, playerTeamAbbreviation }: PlayerShotMapProps) {
+export function PlayerShotMap({
+  playerId,
+  availableSeasons,
+  playerTeamAbbreviation,
+  className,
+}: PlayerShotMapProps) {
   const [shotSeason, setShotSeason] = useState<number | null>(null);
   const [shotPeriod, setShotPeriod] = useState<number | undefined>(undefined);
   const [shotType, setShotType] = useState<string | undefined>(undefined);
@@ -58,7 +65,7 @@ export function PlayerShotMap({ playerId, availableSeasons, playerTeamAbbreviati
 
   if (effectiveShotSeason === null) {
     return (
-      <Card className="mt-6">
+      <Card className={cn(className)}>
         <CardHeader>
           <CardTitle>Shot Map</CardTitle>
         </CardHeader>
@@ -72,7 +79,7 @@ export function PlayerShotMap({ playerId, availableSeasons, playerTeamAbbreviati
   }
 
   return (
-    <Card className="mt-6">
+    <Card className={cn(className)}>
       <CardHeader>
         <CardTitle>Shot Map</CardTitle>
       </CardHeader>

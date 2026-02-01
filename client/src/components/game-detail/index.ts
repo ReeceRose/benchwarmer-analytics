@@ -3,3 +3,4 @@ export { GameDetailHeader, GameDetailHeaderSkeleton } from "@/components/game-de
 export { GameBoxscoreTable, GameBoxscoreTableSkeleton } from "@/components/game-detail/GameSkatersTable";
 export { GameShotMap, GameShotMapSkeleton } from "@/components/game-detail/GameShotMap";
 export { XGProgressionChart } from "@/components/game-detail/XGProgressionChart";
+export { ShotGoalTimelineChart } from "@/components/game-detail/ShotGoalTimelineChart";

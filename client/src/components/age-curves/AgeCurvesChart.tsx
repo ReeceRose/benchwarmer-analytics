@@ -23,6 +23,10 @@ export interface PlayerInfo {
 export interface ChartDataPoint {
   age: number;
   league: number | null;
+  leagueP25?: number | null;
+  leagueP75?: number | null;
+  leagueBandBase?: number | null;
+  leagueBandRange?: number | null;
   leagueSample: number;
   [key: string]: number | null | undefined;
 }
@@ -113,11 +117,28 @@ export function AgeCurvesChart({
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const metricPayload = payload.filter(
-                    (p: { dataKey?: string }) => p.dataKey !== "leagueSample",
+                    (p: { dataKey?: string }) =>
+                      p.dataKey !== "leagueSample" &&
+                      p.dataKey !== "leagueBandBase" &&
+                      p.dataKey !== "leagueBandRange",
                   );
+                  const row = payload[0]?.payload as ChartDataPoint | undefined;
                   return (
                     <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
                       <p className="font-semibold mb-2">Age {label}</p>
+                      {row?.leagueP25 != null &&
+                        row?.leagueP75 != null &&
+                        row.leagueP75 >= row.leagueP25 && (
+                          <div className="flex justify-between gap-4 text-xs mb-2">
+                            <span className="text-muted-foreground">
+                              Typical range (25–75%)
+                            </span>
+                            <span className="font-medium">
+                              {row.leagueP25.toFixed(2)} –{" "}
+                              {row.leagueP75.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       {metricPayload.map(
                         (p: {
                           dataKey?: string;
@@ -201,6 +222,27 @@ export function AgeCurvesChart({
                 fill={CHART_AXIS_COLOURS.reference}
                 stroke="none"
                 fillOpacity={0.1}
+                legendType="none"
+              />
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="leagueBandBase"
+                stackId="leagueBand"
+                stroke="none"
+                fill="transparent"
+                isAnimationActive={false}
+                legendType="none"
+              />
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="leagueBandRange"
+                stackId="leagueBand"
+                stroke="none"
+                fill={CHART_AXIS_COLOURS.reference}
+                fillOpacity={0.12}
+                isAnimationActive={false}
                 legendType="none"
               />
               <Line

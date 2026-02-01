@@ -22,11 +22,13 @@ import { Flame, Snowflake, Minus } from "lucide-react";
 import { usePlayerRollingStats } from "@/hooks";
 import { CHART_AXIS_COLOURS, CHART_GRADIENT_COLOURS } from "@/lib/chart-colours";
 import { formatPercent } from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 import type { GameStats } from "@/types";
 
 interface RollingPerformanceProps {
   playerId: number;
   season: number;
+  className?: string;
 }
 
 type MetricKey = "goals" | "shots" | "expectedGoals" | "shootingPct";
@@ -55,6 +57,7 @@ const GAME_WINDOWS = [
 export function RollingPerformance({
   playerId,
   season,
+  className,
 }: RollingPerformanceProps) {
   const [metric, setMetric] = useState<MetricKey>("goals");
   const [games, setGames] = useState("10");
@@ -96,7 +99,7 @@ export function RollingPerformance({
 
   if (isLoading) {
     return (
-      <Card className="mt-6">
+      <Card className={cn(className)}>
         <CardHeader>
           <CardTitle className="text-base font-semibold">
             Rolling Performance
@@ -131,7 +134,7 @@ export function RollingPerformance({
         : "bg-muted text-muted-foreground";
 
   return (
-    <Card className="mt-6">
+    <Card className={cn(className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-3">
           <CardTitle className="text-base font-semibold">

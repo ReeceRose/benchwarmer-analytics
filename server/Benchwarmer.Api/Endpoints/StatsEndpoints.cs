@@ -384,7 +384,13 @@ public static class StatsEndpoints
             c.PointsPer60,
             c.GoalsPer60,
             c.XgPer60,
-            c.PlayerCount
+            c.PlayerCount,
+            c.PointsPer60P25,
+            c.PointsPer60P75,
+            c.GoalsPer60P25,
+            c.GoalsPer60P75,
+            c.XgPer60P25,
+            c.XgPer60P75
         )).ToList();
 
         // Fetch player curves sequentially (DbContext is not thread-safe)
@@ -404,7 +410,13 @@ public static class StatsEndpoints
                     p.PointsPer60,
                     p.GoalsPer60,
                     p.XgPer60,
-                    p.GamesPlayed
+                    p.GamesPlayed,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                 )).ToList()
             ));
         }
@@ -628,7 +640,13 @@ public record AgeDataPointDto(
     decimal PointsPer60,
     decimal GoalsPer60,
     decimal XgPer60,
-    int SampleSize // PlayerCount for league, GamesPlayed for individual
+    int SampleSize, // PlayerCount for league, GamesPlayed for individual
+    decimal? PointsPer60P25,
+    decimal? PointsPer60P75,
+    decimal? GoalsPer60P25,
+    decimal? GoalsPer60P75,
+    decimal? XgPer60P25,
+    decimal? XgPer60P75
 );
 
 public record PlayerAgeCurveDto(

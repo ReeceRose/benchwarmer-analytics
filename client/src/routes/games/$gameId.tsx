@@ -9,6 +9,7 @@ import {
   GameShotMap,
   GameShotMapSkeleton,
   XGProgressionChart,
+  ShotGoalTimelineChart,
 } from "@/components/game-detail";
 import {
   GamePreviewSections,
@@ -151,6 +152,7 @@ function GameDetailPage() {
           <>
             <GameShotMap shotsData={shotsData} />
             <XGProgressionChart shotsData={shotsData} />
+            <ShotGoalTimelineChart shotsData={shotsData} />
           </>
         ) : null)}
     </div>

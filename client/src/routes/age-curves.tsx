@@ -101,6 +101,8 @@ function AgeCurvesPage() {
       ageMap.set(point.age, {
         age: point.age,
         league: point[metric],
+        leagueP25: point[`${metric}P25` as keyof typeof point] as number | null | undefined,
+        leagueP75: point[`${metric}P75` as keyof typeof point] as number | null | undefined,
         leagueSample: point.sampleSize,
       });
     }
@@ -119,9 +121,24 @@ function AgeCurvesPage() {
       }
     }
 
-    return Array.from(ageMap.values()).sort(
+    const sorted = Array.from(ageMap.values()).sort(
       (a, b) => (a.age as number) - (b.age as number)
     ) as ChartDataPoint[];
+
+    // Precompute band helpers for Recharts stacked-area technique
+    for (const row of sorted) {
+      const p25 = typeof row.leagueP25 === "number" ? row.leagueP25 : null;
+      const p75 = typeof row.leagueP75 === "number" ? row.leagueP75 : null;
+      if (p25 != null && p75 != null && p75 >= p25) {
+        row.leagueBandBase = p25;
+        row.leagueBandRange = p75 - p25;
+      } else {
+        row.leagueBandBase = null;
+        row.leagueBandRange = null;
+      }
+    }
+
+    return sorted;
   }, [data, metric]);
 
   // Map player IDs to names and colors
