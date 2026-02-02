@@ -3,6 +3,7 @@ using Benchwarmer.Api.Endpoints.Helpers;
 using Benchwarmer.Data;
 using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Benchwarmer.Api.Endpoints;
@@ -70,6 +71,25 @@ public static class StandingsEndpoints
                 - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
                 """)
             .Produces<StandingsAnalyticsResponse>()
+            .CacheOutput(CachePolicies.TeamData);
+
+        group.MapGet("/category-rankings", GetCategoryRankings)
+            .WithName("GetCategoryRankings")
+            .WithSummary("Get team category rankings (1-32) across multiple stats")
+            .WithDescription("""
+                Returns each team's rank (1-32) across multiple statistical categories.
+
+                Categories include:
+                - Points, Goals For, Goals Against, Goal Differential
+                - xG%, Corsi%
+                - PP%, PK%
+                - High Danger Chances For/Against
+
+                **Query Parameters:**
+                - `season`: Season year (e.g., 2024 for 2024-25 season). Defaults to current season.
+                - `team`: Optional team abbreviation (e.g., "TOR") to filter to a single team.
+                """)
+            .Produces<CategoryRankingsResponse>()
             .CacheOutput(CachePolicies.TeamData);
     }
 
@@ -281,5 +301,229 @@ public static class StandingsEndpoints
         // Wildcard position is conference rank minus top 6 (3 from each division)
         var wildcardPosition = standings.ConferenceSequence - 6;
         return wildcardPosition > 0 ? wildcardPosition : 0;
+    }
+
+    private static async Task<IResult> GetCategoryRankings(
+        [FromQuery] int? season,
+        [FromQuery] string? team,
+        ITeamSeasonRepository teamSeasonRepository,
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        // Get the latest season if not specified
+        var targetSeason = season ?? await db.TeamSeasons
+            .Select(ts => ts.Season)
+            .Distinct()
+            .OrderByDescending(s => s)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (targetSeason == 0)
+        {
+            return Results.Ok(new CategoryRankingsResponse(targetSeason, []));
+        }
+
+        // Fetch MoneyPuck "all" situation data (has GF, GA, xG%, Corsi%, HD chances)
+        var teamSeasons = await teamSeasonRepository.GetBySeasonAsync(targetSeason, "all", isPlayoffs: false, cancellationToken);
+
+        if (teamSeasons.Count == 0)
+        {
+            return Results.Ok(new CategoryRankingsResponse(targetSeason, []));
+        }
+
+        // Fetch special teams data
+        var ppStats = await teamSeasonRepository.GetBySeasonAsync(targetSeason, "5on4", isPlayoffs: false, cancellationToken);
+        var pkStats = await teamSeasonRepository.GetBySeasonAsync(targetSeason, "4on5", isPlayoffs: false, cancellationToken);
+
+        var ppByTeam = ppStats.ToDictionary(s => s.TeamAbbreviation, TeamMappers.CalculatePPPercentage);
+        var pkByTeam = pkStats.ToDictionary(s => s.TeamAbbreviation, TeamMappers.CalculatePKPercentage);
+
+        // Build raw data using MoneyPuck TeamSeason as the base
+        var teamData = teamSeasons.Select(ts =>
+        {
+            var abbrev = ts.TeamAbbreviation;
+            var teamName = ts.Team?.Name ?? abbrev;
+
+            // Calculate shooting percentage: goals / shots on goal * 100
+            decimal? shootingPct = ts.ShotsOnGoalFor > 0
+                ? (decimal)ts.GoalsFor / ts.ShotsOnGoalFor * 100
+                : null;
+
+            // Calculate save percentage: (shots against - goals against) / shots against * 100
+            decimal? savePct = ts.ShotsOnGoalAgainst > 0
+                ? (decimal)(ts.ShotsOnGoalAgainst - ts.GoalsAgainst) / ts.ShotsOnGoalAgainst * 100
+                : null;
+
+            // Calculate faceoff percentage
+            var totalFaceoffs = ts.FaceOffsWonFor + ts.FaceOffsWonAgainst;
+            decimal? faceoffPct = totalFaceoffs > 0
+                ? (decimal)ts.FaceOffsWonFor / totalFaceoffs * 100
+                : null;
+
+            return new
+            {
+                Abbreviation = abbrev,
+                Name = teamName,
+                GoalsFor = ts.GoalsFor,
+                GoalsAgainst = ts.GoalsAgainst,
+                GoalDifferential = ts.GoalsFor - ts.GoalsAgainst,
+                XGoalsFor = ts.XGoalsFor,
+                XGoalsAgainst = ts.XGoalsAgainst,
+                XGoalsPct = ts.XGoalsPercentage,
+                CorsiPct = ts.CorsiPercentage,
+                FenwickPct = ts.FenwickPercentage,
+                PpPct = ppByTeam.GetValueOrDefault(abbrev),
+                PkPct = pkByTeam.GetValueOrDefault(abbrev),
+                HighDangerChancesFor = ts.HighDangerShotsFor,
+                HighDangerChancesAgainst = ts.HighDangerShotsAgainst,
+                ShootingPct = shootingPct,
+                SavePct = savePct,
+                FaceoffPct = faceoffPct,
+                PenaltiesDrawn = ts.PenaltiesAgainst,
+                PenaltiesTaken = ts.PenaltiesFor,
+                PenaltyDifferential = ts.PenaltiesAgainst - ts.PenaltiesFor,
+                Hits = ts.HitsFor,
+                HitsAgainst = ts.HitsAgainst,
+                Takeaways = ts.TakeawaysFor,
+                Giveaways = ts.GiveawaysFor,
+                BlockedShots = ts.BlockedShotAttemptsFor
+            };
+        }).ToList();
+
+        // Calculate ranks for each category
+        var goalsForRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.GoalsFor, descending: true);
+        var goalsAgainstRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.GoalsAgainst, descending: false);
+        var goalDiffRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.GoalDifferential, descending: true);
+        var xgForRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.XGoalsFor, descending: true);
+        var xgAgainstRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.XGoalsAgainst, descending: false);
+        var xgPctRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.XGoalsPct ?? 0, descending: true);
+        var corsiRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.CorsiPct ?? 0, descending: true);
+        var fenwickRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.FenwickPct ?? 0, descending: true);
+        var ppRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.PpPct, descending: true);
+        var pkRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.PkPct, descending: true);
+        var hdForRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.HighDangerChancesFor, descending: true);
+        var hdAgainstRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.HighDangerChancesAgainst, descending: false);
+        var shootingPctRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.ShootingPct ?? 0, descending: true);
+        var savePctRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.SavePct ?? 0, descending: true);
+        var faceoffRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.FaceoffPct ?? 0, descending: true);
+        var penDrawnRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.PenaltiesDrawn, descending: true);
+        var penTakenRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.PenaltiesTaken, descending: false);
+        var penDiffRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.PenaltyDifferential, descending: true);
+        var hitsRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.Hits, descending: true);
+        var hitsAgainstRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.HitsAgainst, descending: false);
+        var takeawaysRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.Takeaways, descending: true);
+        var giveawaysRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.Giveaways, descending: false);
+        var blockedShotsRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.BlockedShots, descending: true);
+
+        // Calculate weighted overall score (lower is better)
+        // Weights: High (3x) = xG%, Goal Diff; Medium (2x) = CF%, FF%, PP%, PK%, Sv%, HD; Standard (1x) = everything else
+        var overallScores = teamData.ToDictionary(
+            t => t.Abbreviation,
+            t =>
+            {
+                var abbrev = t.Abbreviation;
+                // High weight (3x)
+                var highWeight = (xgPctRanks[abbrev] + goalDiffRanks[abbrev]) * 3m;
+                // Medium weight (2x)
+                var mediumWeight = (corsiRanks[abbrev] + fenwickRanks[abbrev] + ppRanks[abbrev] +
+                                   pkRanks[abbrev] + savePctRanks[abbrev] + hdForRanks[abbrev] +
+                                   hdAgainstRanks[abbrev]) * 2m;
+                // Standard weight (1x)
+                var standardWeight = goalsForRanks[abbrev] + goalsAgainstRanks[abbrev] +
+                                    xgForRanks[abbrev] + xgAgainstRanks[abbrev] +
+                                    shootingPctRanks[abbrev] + faceoffRanks[abbrev] +
+                                    penDrawnRanks[abbrev] + penTakenRanks[abbrev] + penDiffRanks[abbrev] +
+                                    hitsRanks[abbrev] + hitsAgainstRanks[abbrev] +
+                                    takeawaysRanks[abbrev] + giveawaysRanks[abbrev] + blockedShotsRanks[abbrev];
+
+                var totalWeight = (2 * 3m) + (7 * 2m) + 14m; // 6 + 14 + 14 = 34
+                return (highWeight + mediumWeight + standardWeight) / totalWeight;
+            });
+
+        // Rank by overall score (lower score = better rank)
+        var overallRanks = overallScores
+            .OrderBy(kvp => kvp.Value)
+            .Select((kvp, index) => (kvp.Key, Rank: index + 1))
+            .ToDictionary(x => x.Key, x => x.Rank);
+
+        // Build final DTOs
+        var results = teamData.Select(t => new TeamCategoryRanksDto(
+            t.Abbreviation,
+            t.Name,
+            t.GoalsFor,
+            t.GoalsAgainst,
+            t.GoalDifferential,
+            t.XGoalsFor,
+            t.XGoalsAgainst,
+            t.XGoalsPct,
+            t.CorsiPct,
+            t.FenwickPct,
+            t.PpPct,
+            t.PkPct,
+            t.HighDangerChancesFor,
+            t.HighDangerChancesAgainst,
+            t.ShootingPct,
+            t.SavePct,
+            t.FaceoffPct,
+            t.PenaltiesDrawn,
+            t.PenaltiesTaken,
+            t.PenaltyDifferential,
+            t.Hits,
+            t.HitsAgainst,
+            t.Takeaways,
+            t.Giveaways,
+            t.BlockedShots,
+            overallRanks[t.Abbreviation],
+            Math.Round(overallScores[t.Abbreviation], 2),
+            goalsForRanks[t.Abbreviation],
+            goalsAgainstRanks[t.Abbreviation],
+            goalDiffRanks[t.Abbreviation],
+            xgForRanks[t.Abbreviation],
+            xgAgainstRanks[t.Abbreviation],
+            xgPctRanks[t.Abbreviation],
+            corsiRanks[t.Abbreviation],
+            fenwickRanks[t.Abbreviation],
+            ppRanks[t.Abbreviation],
+            pkRanks[t.Abbreviation],
+            hdForRanks[t.Abbreviation],
+            hdAgainstRanks[t.Abbreviation],
+            shootingPctRanks[t.Abbreviation],
+            savePctRanks[t.Abbreviation],
+            faceoffRanks[t.Abbreviation],
+            penDrawnRanks[t.Abbreviation],
+            penTakenRanks[t.Abbreviation],
+            penDiffRanks[t.Abbreviation],
+            hitsRanks[t.Abbreviation],
+            hitsAgainstRanks[t.Abbreviation],
+            takeawaysRanks[t.Abbreviation],
+            giveawaysRanks[t.Abbreviation],
+            blockedShotsRanks[t.Abbreviation]
+        )).OrderBy(t => t.OverallRank).ToList();
+
+        // Filter to single team if requested
+        if (!string.IsNullOrEmpty(team))
+        {
+            results = results.Where(t => t.Abbreviation.Equals(team, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        return Results.Ok(new CategoryRankingsResponse(targetSeason, results));
+    }
+
+    private static Dictionary<string, int> CalculateRanks<T, TKey>(
+        IReadOnlyList<T> items,
+        Func<T, string> abbreviationSelector,
+        Func<T, TKey> keySelector,
+        bool descending)
+    {
+        var sorted = descending
+            ? items.OrderByDescending(keySelector).ToList()
+            : items.OrderBy(keySelector).ToList();
+
+        var ranks = new Dictionary<string, int>();
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            var abbrev = abbreviationSelector(sorted[i]);
+            ranks[abbrev] = i + 1;
+        }
+        return ranks;
     }
 }

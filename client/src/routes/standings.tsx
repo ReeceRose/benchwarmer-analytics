@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { TableIcon, Info, BarChart3 } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { TableIcon, Info, BarChart3, Trophy } from "lucide-react";
 import {
   useOfficialStandings,
   useStandingsAnalytics,
@@ -78,9 +78,17 @@ function StandingsPage() {
   return (
     <div className="container py-8">
       <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <TableIcon className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">NHL Standings</h1>
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <div className="flex items-center gap-3">
+            <TableIcon className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold tracking-tight">NHL Standings</h1>
+          </div>
+          <Button variant="outline" asChild>
+            <Link to="/category-rankings">
+              <Trophy className="h-4 w-4 mr-2" />
+              Category Rankings
+            </Link>
+          </Button>
         </div>
         <p className="text-muted-foreground max-w-2xl">
           Official NHL standings with advanced analytics overlay. View by
@@ -177,6 +185,7 @@ function StandingsPage() {
             teams={teamsWithAnalytics}
             grouping={grouping}
             analyticsLoading={analyticsLoading}
+            season={currentSeason}
           />
         )
       ) : (

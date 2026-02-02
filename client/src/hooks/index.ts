@@ -24,6 +24,7 @@ export {
   usePowerRankings,
   useOfficialStandings,
   useStandingsAnalytics,
+  useCategoryRankings,
 } from "@/hooks/useStandings";
 export {
   useTeamSpecialTeams,

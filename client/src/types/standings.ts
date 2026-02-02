@@ -129,3 +129,69 @@ export type StandingsGrouping = "league" | "conference" | "division";
 export interface StandingsWithAnalytics extends OfficialStandings {
   analytics?: StandingsAnalytics;
 }
+
+/** Category rankings for a team, showing both raw values and ranks (1-32) */
+export interface TeamCategoryRanks {
+  abbreviation: string;
+  name: string;
+
+  // Raw values (for tooltips)
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifferential: number;
+  xGoalsFor: number;
+  xGoalsAgainst: number;
+  xGoalsPct?: number;
+  corsiPct?: number;
+  fenwickPct?: number;
+  ppPct?: number;
+  pkPct?: number;
+  highDangerChancesFor: number;
+  highDangerChancesAgainst: number;
+  shootingPct?: number;
+  savePct?: number;
+  faceoffPct?: number;
+  penaltiesDrawn: number;
+  penaltiesTaken: number;
+  penaltyDifferential: number;
+  hits: number;
+  hitsAgainst: number;
+  takeaways: number;
+  giveaways: number;
+  blockedShots: number;
+
+  // Overall composite rank (weighted average of all ranks)
+  overallRank: number;
+  overallScore: number;
+
+  // Ranks (1-32)
+  goalsForRank: number;
+  goalsAgainstRank: number;
+  goalDifferentialRank: number;
+  xGoalsForRank: number;
+  xGoalsAgainstRank: number;
+  xGoalsPctRank: number;
+  corsiPctRank: number;
+  fenwickPctRank: number;
+  ppPctRank: number;
+  pkPctRank: number;
+  highDangerForRank: number;
+  highDangerAgainstRank: number;
+  shootingPctRank: number;
+  savePctRank: number;
+  faceoffPctRank: number;
+  penaltiesDrawnRank: number;
+  penaltiesTakenRank: number;
+  penaltyDifferentialRank: number;
+  hitsRank: number;
+  hitsAgainstRank: number;
+  takeawaysRank: number;
+  giveawaysRank: number;
+  blockedShotsRank: number;
+}
+
+/** Response from GET /api/standings/category-rankings */
+export interface CategoryRankingsResponse {
+  season: number;
+  teams: TeamCategoryRanks[];
+}

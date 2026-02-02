@@ -205,3 +205,21 @@ export function getXgDiffColour(diff: number | null | undefined): string {
 
 // Legacy alias
 export const getXgDiffColor = getXgDiffColour;
+
+const NHL_TEAM_COUNT = 32;
+const TOP_TIER_THRESHOLD = 10;
+const BOTTOM_TIER_THRESHOLD = NHL_TEAM_COUNT - TOP_TIER_THRESHOLD + 1; // 23
+
+/**
+ * Rank colour - top 10 is good (green), bottom 10 is bad (red).
+ * For league rankings where 1 is best and 32 is worst.
+ */
+export function getRankColour(rank: number | null | undefined): string {
+  if (rank == null) return "text-muted-foreground";
+  if (rank <= TOP_TIER_THRESHOLD) return "text-success";
+  if (rank >= BOTTOM_TIER_THRESHOLD) return "text-error";
+  return "text-foreground";
+}
+
+// Legacy alias
+export const getRankColor = getRankColour;

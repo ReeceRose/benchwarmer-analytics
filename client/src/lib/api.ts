@@ -35,6 +35,7 @@ import type {
   PowerRankingsResponse,
   OfficialStandingsResponse,
   StandingsAnalyticsResponse,
+  CategoryRankingsResponse,
   SpecialTeamsOverview,
   SpecialTeamsPlayersResponse,
   SpecialTeamsSituation,
@@ -432,6 +433,21 @@ export async function getStandingsAnalytics(
   const { data } = await api.get<StandingsAnalyticsResponse>(
     "/standings/analytics",
     { params: { season } }
+  );
+  return data;
+}
+
+export async function getCategoryRankings(
+  season?: number,
+  team?: string
+): Promise<CategoryRankingsResponse> {
+  const params: Record<string, unknown> = {};
+  if (season !== undefined) params.season = season;
+  if (team !== undefined) params.team = team;
+
+  const { data } = await api.get<CategoryRankingsResponse>(
+    "/standings/category-rankings",
+    { params: Object.keys(params).length > 0 ? params : undefined }
   );
   return data;
 }

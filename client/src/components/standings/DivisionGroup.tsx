@@ -14,12 +14,14 @@ interface DivisionGroupProps {
   title: string;
   teams: StandingsWithAnalytics[];
   analyticsLoading?: boolean;
+  season?: number;
 }
 
 export function DivisionGroup({
   title,
   teams,
   analyticsLoading,
+  season,
 }: DivisionGroupProps) {
   return (
     <Card className="py-0 gap-0">
@@ -171,6 +173,7 @@ export function DivisionGroup({
                 key={team.abbreviation}
                 team={team}
                 analyticsLoading={analyticsLoading}
+                season={season}
               />
             ))}
           </TableBody>

@@ -16,6 +16,7 @@ interface StandingsTableProps {
   teams: StandingsWithAnalytics[];
   grouping: StandingsGrouping;
   analyticsLoading?: boolean;
+  season?: number;
 }
 
 // Division order within each conference
@@ -30,6 +31,7 @@ export function StandingsTable({
   teams,
   grouping,
   analyticsLoading,
+  season,
 }: StandingsTableProps) {
   // Group teams by division or conference
   const groupedTeams = useMemo(() => {
@@ -89,6 +91,7 @@ export function StandingsTable({
                     title={division}
                     teams={divisionTeams}
                     analyticsLoading={analyticsLoading}
+                    season={season}
                   />
                 );
               })}
@@ -112,6 +115,7 @@ export function StandingsTable({
               title={`${conference} Conference`}
               teams={conferenceTeams}
               analyticsLoading={analyticsLoading}
+              season={season}
             />
           );
         })}
@@ -276,6 +280,7 @@ export function StandingsTable({
                   divisionRank: index + 1, // Use league rank in league view
                 }}
                 analyticsLoading={analyticsLoading}
+                season={season}
               />
             ))}
           </TableBody>

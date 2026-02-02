@@ -161,6 +161,48 @@ export const metrics: MetricDefinition[] = [
       "D-zone giveaways are particularly costly as they can lead directly to scoring chances against. A lower percentage of D-zone giveaways indicates better puck management in dangerous areas.",
   },
   {
+    name: "Hits",
+    abbreviation: "Hits",
+    aliases: ["HIT"],
+    category: "basic",
+    description:
+      "The number of legal body checks delivered by a player or team that separate an opponent from the puck.",
+    interpretation:
+      "A measure of physical play. Teams with high hit totals tend to play a more aggressive, physical style. However, hits can also indicate chasing the play (you can't hit if you have the puck).",
+  },
+  {
+    name: "Hits Against",
+    abbreviation: "HitA",
+    aliases: ["HitsAgainst"],
+    category: "basic",
+    description:
+      "The number of hits received by a player or team from opponents.",
+    interpretation:
+      "Lower is generally better as it may indicate better puck possession (harder to hit a team that controls the puck). However, context matters - skilled puck carriers may draw more hits.",
+  },
+  {
+    name: "Blocked Shots",
+    abbreviation: "Blk",
+    aliases: ["BLK", "Blocks", "ShotBlocks"],
+    category: "basic",
+    description:
+      "The number of opponent shot attempts blocked by a player or team before reaching the goalie.",
+    interpretation:
+      "Can indicate defensive commitment, but context matters. Teams that block many shots may also be defending more often (giving up more shot attempts). For defensemen, blocking shots is an important skill.",
+  },
+  {
+    name: "Penalty Differential",
+    abbreviation: "Pen±",
+    aliases: ["PenDiff", "PenaltyDiff"],
+    category: "basic",
+    isCalculated: true,
+    description:
+      "The difference between penalties drawn and penalties taken. Positive values mean a team draws more penalties than it takes.",
+    formula: "Pen± = Penalties Drawn - Penalties Taken",
+    interpretation:
+      "Higher is better. A positive differential means more power play opportunities than penalty kills. Disciplined teams that also draw penalties have a significant special teams advantage.",
+  },
+  {
     name: "Takeaway/Giveaway Ratio",
     abbreviation: "TA/GA",
     aliases: ["TakeawayRatio", "Puck Management"],
@@ -171,6 +213,18 @@ export const metrics: MetricDefinition[] = [
     formula: "TA/GA = Takeaways / Giveaways",
     interpretation:
       "Higher is better. A ratio of 1.0+ (more takeaways than giveaways) is exceptional. Elite puck managers are above 0.5, while ratios below 0.25 indicate poor puck security.",
+  },
+  {
+    name: "Overall Rank",
+    abbreviation: "OVR",
+    aliases: ["OverallRank", "Composite"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "A weighted composite ranking (1-32) combining all statistical categories. Lower rank is better.",
+    formula: "Weighted average of all category ranks: High weight (3×) for xG% and Goal Differential; Medium weight (2×) for CF%, FF%, PP%, PK%, Sv%, and High Danger chances; Standard weight (1×) for all other categories.",
+    interpretation:
+      "Provides a single number summarizing team strength across all metrics. The weighting favors process-driven analytics (expected goals, possession) over results that can be noisy (hits, blocked shots). A team ranked #1 overall is elite across the board.",
   },
 
   // Possession Metrics

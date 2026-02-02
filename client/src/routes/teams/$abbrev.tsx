@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { z } from "zod";
 import { Calendar, BarChart3, TableIcon } from "lucide-react";
-import { useTeam, useTeamRoster, useTeamSeasons, usePageTitle } from "@/hooks";
+import { useTeam, useTeamRoster, useTeamSeasons, usePageTitle, useCategoryRankings } from "@/hooks";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,7 @@ import {
   IceTimeDistributionChart,
   PointsContributionChart,
 } from "@/components/team-detail";
+import { TeamRankingSummary } from "@/components/category-rankings";
 
 const searchSchema = z.object({
   season: z.number().optional(),
@@ -75,6 +76,11 @@ function TeamDetailPage() {
     abbrev,
     selectedSeason,
     playoffsParam,
+  );
+
+  const { data: categoryRankings, isLoading: rankingsLoading } = useCategoryRankings(
+    selectedSeason,
+    abbrev,
   );
 
   // Check if we're on a child route
@@ -146,6 +152,15 @@ function TeamDetailPage() {
       <div className="mb-6">
         <TeamHeader team={team} abbrev={abbrev} isLoading={teamLoading} />
       </div>
+
+      {selectedSeason && (
+        <div className="mb-6">
+          <TeamRankingSummary
+            rankings={categoryRankings?.teams[0]}
+            isLoading={rankingsLoading}
+          />
+        </div>
+      )}
 
       <Tabs value={getActiveTab()} className="mb-8">
         <TabsList>

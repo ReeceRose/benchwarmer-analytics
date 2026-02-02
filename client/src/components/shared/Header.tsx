@@ -93,6 +93,11 @@ const statsItems: NavItem[] = [
     description: "League & division standings",
   },
   {
+    to: "/category-rankings",
+    label: "Category Rankings",
+    description: "Team ranks across all stats",
+  },
+  {
     to: "/leaderboards",
     label: "Leaders",
     description: "Statistical leaderboards",

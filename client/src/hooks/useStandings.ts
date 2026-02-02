@@ -3,6 +3,7 @@ import {
   getPowerRankings,
   getOfficialStandings,
   getStandingsAnalytics,
+  getCategoryRankings,
 } from "@/lib/api";
 
 export function usePowerRankings(season?: number) {
@@ -29,5 +30,16 @@ export function useStandingsAnalytics(season?: number) {
     queryFn: () => getStandingsAnalytics(season),
     staleTime: 1000 * 60 * 30, // 30 minutes - daily data
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useCategoryRankings(season?: number, team?: string) {
+  return useQuery({
+    queryKey: ["standings", "category-rankings", season, team],
+    queryFn: () => getCategoryRankings(season, team),
+    staleTime: 1000 * 60 * 30, // 30 minutes - daily data
+    // Only use keepPreviousData for full rankings list, not team-specific queries
+    // (showing another team's data as placeholder would be confusing)
+    placeholderData: team ? undefined : keepPreviousData,
   });
 }

@@ -18,9 +18,10 @@ import type { StandingsWithAnalytics } from "@/types";
 interface StandingsRowProps {
   team: StandingsWithAnalytics;
   analyticsLoading?: boolean;
+  season?: number;
 }
 
-export function StandingsRow({ team, analyticsLoading }: StandingsRowProps) {
+export function StandingsRow({ team, analyticsLoading, season }: StandingsRowProps) {
   const analytics = team.analytics;
 
   // Computed values
@@ -49,6 +50,7 @@ export function StandingsRow({ team, analyticsLoading }: StandingsRowProps) {
         <Link
           to="/teams/$abbrev"
           params={{ abbrev: team.abbreviation }}
+          search={{ season }}
           className="hover:underline font-medium"
         >
           {team.name}
