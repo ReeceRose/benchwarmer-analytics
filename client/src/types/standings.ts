@@ -160,6 +160,10 @@ export interface TeamCategoryRanks {
   giveaways: number;
   blockedShots: number;
 
+  // Points vs Overall Rank (over/under performance) - only for current season
+  points?: number;
+  pointsRank?: number;
+
   // Overall composite rank (weighted average of all ranks)
   overallRank: number;
   overallScore: number;

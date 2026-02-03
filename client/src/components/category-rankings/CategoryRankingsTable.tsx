@@ -67,6 +67,40 @@ const columns = [
   { key: "giveawaysRank" as const, label: "GvA", valueKey: "giveaways" as const, format: (v: number) => String(v), tooltip: "Giveaways (fewer is better)" },
 ];
 
+interface RankDiffBadgeProps {
+  pointsRank: number;
+  overallRank: number;
+  points?: number;
+}
+
+function RankDiffBadge({ pointsRank, overallRank, points }: RankDiffBadgeProps) {
+  const diff = overallRank - pointsRank;
+  if (diff === 0) return null;
+
+  const isOverperforming = diff > 0;
+  const colorClass = isOverperforming
+    ? "text-emerald-500"
+    : "text-red-500";
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={`text-xs font-medium cursor-help ${colorClass}`}>
+          {isOverperforming ? `+${diff}` : diff}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p className="text-xs font-medium">
+          {isOverperforming ? "Overperforming" : "Underperforming"} by {Math.abs(diff)} {Math.abs(diff) === 1 ? "spot" : "spots"}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          #{pointsRank} in points ({points?.toLocaleString()}) vs #{overallRank} in analytics
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 interface SortableHeaderProps {
   field: SortField;
   label: string;
@@ -115,6 +149,8 @@ function SortableHeader({
 export function CategoryRankingsTable({ teams, isLoading, isError, season }: CategoryRankingsTableProps) {
   const [sortField, setSortField] = useState<SortField>("overallRank");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  const hasPointsData = teams.length > 0 && teams[0].pointsRank != null;
 
   const handleSort = (field: SortField) => {
     if (field === sortField) {
@@ -214,15 +250,24 @@ export function CategoryRankingsTable({ teams, isLoading, isError, season }: Cat
             {sortedTeams.map((team) => (
               <TableRow key={team.abbreviation}>
                 <TableCell>
-                  <Link
-                    to="/teams/$abbrev"
-                    params={{ abbrev: team.abbreviation }}
-                    search={{ season }}
-                    className="flex items-center gap-2 hover:underline"
-                  >
-                    <TeamLogo abbrev={team.abbreviation} size="sm" />
-                    <span className="font-medium">{team.name}</span>
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to="/teams/$abbrev"
+                      params={{ abbrev: team.abbreviation }}
+                      search={{ season }}
+                      className="flex items-center gap-2 hover:underline"
+                    >
+                      <TeamLogo abbrev={team.abbreviation} size="sm" />
+                      <span className="font-medium">{team.name}</span>
+                    </Link>
+                    {hasPointsData && team.pointsRank != null && (
+                      <RankDiffBadge
+                        pointsRank={team.pointsRank}
+                        overallRank={team.overallRank}
+                        points={team.points}
+                      />
+                    )}
+                  </div>
                 </TableCell>
                 {columns.map(({ key, valueKey, format, tooltip }) => {
                   const rank = team[key] as number;

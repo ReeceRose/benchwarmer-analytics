@@ -307,19 +307,37 @@ public static class StandingsEndpoints
         [FromQuery] int? season,
         [FromQuery] string? team,
         ITeamSeasonRepository teamSeasonRepository,
+        NhlScheduleService nhlScheduleService,
         AppDbContext db,
         CancellationToken cancellationToken)
     {
         // Get the latest season if not specified
-        var targetSeason = season ?? await db.TeamSeasons
+        var latestSeason = await db.TeamSeasons
             .Select(ts => ts.Season)
             .Distinct()
             .OrderByDescending(s => s)
             .FirstOrDefaultAsync(cancellationToken);
 
+        var targetSeason = season ?? latestSeason;
+
         if (targetSeason == 0)
         {
             return Results.Ok(new CategoryRankingsResponse(targetSeason, []));
+        }
+
+        // Check if this is the current season (for points data)
+        var isCurrentSeason = targetSeason == latestSeason;
+
+        // Fetch NHL standings for current season only (to get actual points)
+        Dictionary<string, int> actualPointsByTeam = [];
+        if (isCurrentSeason)
+        {
+            var standings = await nhlScheduleService.GetStandingsAsync(cancellationToken);
+            actualPointsByTeam = standings.Values
+                .Where(s => !string.IsNullOrEmpty(s.TeamAbbrev?.Default))
+                .ToDictionary(
+                    s => s.TeamAbbrev!.Default!,
+                    s => s.Points);
         }
 
         // Fetch MoneyPuck "all" situation data (has GF, GA, xG%, Corsi%, HD chances)
@@ -359,6 +377,9 @@ public static class StandingsEndpoints
                 ? (decimal)ts.FaceOffsWonFor / totalFaceoffs * 100
                 : null;
 
+            // Points data only available for current season
+            int? points = actualPointsByTeam.TryGetValue(abbrev, out var actualPts) ? actualPts : null;
+
             return new
             {
                 Abbreviation = abbrev,
@@ -385,7 +406,8 @@ public static class StandingsEndpoints
                 HitsAgainst = ts.HitsAgainst,
                 Takeaways = ts.TakeawaysFor,
                 Giveaways = ts.GiveawaysFor,
-                BlockedShots = ts.BlockedShotAttemptsFor
+                BlockedShots = ts.BlockedShotAttemptsFor,
+                Points = points
             };
         }).ToList();
 
@@ -413,6 +435,17 @@ public static class StandingsEndpoints
         var takeawaysRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.Takeaways, descending: true);
         var giveawaysRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.Giveaways, descending: false);
         var blockedShotsRanks = CalculateRanks(teamData, t => t.Abbreviation, t => t.BlockedShots, descending: true);
+
+        // Points ranks only for current season (when we have actual points from NHL API)
+        Dictionary<string, int>? pointsRanks = null;
+        if (isCurrentSeason && teamData.Any(t => t.Points.HasValue))
+        {
+            pointsRanks = CalculateRanks(
+                teamData.Where(t => t.Points.HasValue).ToList(),
+                t => t.Abbreviation,
+                t => t.Points!.Value,
+                descending: true);
+        }
 
         // Calculate weighted overall score (lower is better)
         // Weights: High (3x) = xG%, Goal Diff; Medium (2x) = CF%, FF%, PP%, PK%, Sv%, HD; Standard (1x) = everything else
@@ -472,6 +505,8 @@ public static class StandingsEndpoints
             t.Takeaways,
             t.Giveaways,
             t.BlockedShots,
+            t.Points,
+            t.Points.HasValue && pointsRanks?.TryGetValue(t.Abbreviation, out var ptsRank) == true ? ptsRank : null,
             overallRanks[t.Abbreviation],
             Math.Round(overallScores[t.Abbreviation], 2),
             goalsForRanks[t.Abbreviation],

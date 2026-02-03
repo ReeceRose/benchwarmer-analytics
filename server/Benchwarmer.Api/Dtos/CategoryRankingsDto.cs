@@ -32,6 +32,10 @@ public record TeamCategoryRanksDto(
     int Giveaways,
     int BlockedShots,
 
+    // Points vs Overall Rank (over/under performance) - only for current season
+    int? Points,
+    int? PointsRank,
+
     // Overall composite rank (weighted average of all ranks)
     int OverallRank,
     decimal OverallScore,
