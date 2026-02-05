@@ -163,71 +163,73 @@ function TeamDetailPage() {
       )}
 
       <Tabs value={getActiveTab()} className="mb-8">
-        <TabsList>
-          <TabsTrigger value="roster" asChild>
-            <Link
-              to="/teams/$abbrev"
-              params={{ abbrev }}
-              search={{ season, type }}
-            >
-              Roster
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="lines" asChild>
-            <Link
-              to="/teams/$abbrev/lines"
-              params={{ abbrev }}
-              search={{ season }}
-            >
-              Lines
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="chemistry" asChild>
-            <Link
-              to="/teams/$abbrev/chemistry"
-              params={{ abbrev }}
-              search={{ season }}
-            >
-              Chemistry
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="shots" asChild>
-            <Link
-              to="/teams/$abbrev/shots"
-              params={{ abbrev }}
-              search={{ season }}
-            >
-              Shots
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="special-teams" asChild>
-            <Link
-              to="/teams/$abbrev/special-teams"
-              params={{ abbrev }}
-              search={{ season }}
-            >
-              Special Teams
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="score-state" asChild>
-            <Link
-              to="/teams/$abbrev/score-state"
-              params={{ abbrev }}
-              search={{ season }}
-            >
-              Score State
-            </Link>
-          </TabsTrigger>
-          <TabsTrigger value="builder" asChild>
-            <Link
-              to="/teams/$abbrev/builder"
-              params={{ abbrev }}
-              search={{ season }}
-            >
-              Builder
-            </Link>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="w-max md:w-auto">
+            <TabsTrigger value="roster" asChild>
+              <Link
+                to="/teams/$abbrev"
+                params={{ abbrev }}
+                search={{ season, type }}
+              >
+                Roster
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger value="lines" asChild>
+              <Link
+                to="/teams/$abbrev/lines"
+                params={{ abbrev }}
+                search={{ season }}
+              >
+                Lines
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger value="chemistry" asChild>
+              <Link
+                to="/teams/$abbrev/chemistry"
+                params={{ abbrev }}
+                search={{ season }}
+              >
+                Chemistry
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger value="shots" asChild>
+              <Link
+                to="/teams/$abbrev/shots"
+                params={{ abbrev }}
+                search={{ season }}
+              >
+                Shots
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger value="special-teams" asChild>
+              <Link
+                to="/teams/$abbrev/special-teams"
+                params={{ abbrev }}
+                search={{ season }}
+              >
+                Special Teams
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger value="score-state" asChild>
+              <Link
+                to="/teams/$abbrev/score-state"
+                params={{ abbrev }}
+                search={{ season }}
+              >
+                Score State
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger value="builder" asChild>
+              <Link
+                to="/teams/$abbrev/builder"
+                params={{ abbrev }}
+                search={{ season }}
+              >
+                Builder
+              </Link>
+            </TabsTrigger>
+          </TabsList>
+        </div>
       </Tabs>
 
       <Outlet />

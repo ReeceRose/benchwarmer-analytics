@@ -131,7 +131,7 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
   const startTime = startTimeUtc ? formatGameTime(startTimeUtc) : null;
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6">
       <div className="text-center space-y-4">
         <div className="text-sm text-muted-foreground uppercase tracking-wide">
           {isLive && game ? (
@@ -166,7 +166,7 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
           )}
         </div>
 
-        <div className="flex items-center justify-center gap-8">
+        <div className="flex items-center justify-center gap-3 sm:gap-8">
           <Link
             to="/teams/$abbrev"
             params={{ abbrev: awayTeamCode }}
@@ -175,7 +175,7 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
               isCompleted ? (awayWins ? "" : "opacity-70") : ""
             }`}
           >
-            <div className="text-2xl font-bold hover:text-primary transition-colors">
+            <div className="text-xl sm:text-2xl font-bold hover:text-primary transition-colors">
               {awayTeamCode}
             </div>
             {awayTeamName && (
@@ -194,17 +194,17 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
           {isFuture ? (
             <span className="text-2xl text-muted-foreground">@</span>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <span
-                className={`text-5xl font-bold tabular-nums ${
+                className={`text-4xl sm:text-5xl font-bold tabular-nums ${
                   isCompleted ? (awayWins ? "" : "text-muted-foreground") : ""
                 }`}
               >
                 {awayGoals ?? "-"}
               </span>
-              <span className="text-2xl text-muted-foreground">-</span>
+              <span className="text-xl sm:text-2xl text-muted-foreground">-</span>
               <span
-                className={`text-5xl font-bold tabular-nums ${
+                className={`text-4xl sm:text-5xl font-bold tabular-nums ${
                   isCompleted ? (homeWins ? "" : "text-muted-foreground") : ""
                 }`}
               >
@@ -221,7 +221,7 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
               isCompleted ? (homeWins ? "" : "opacity-70") : ""
             }`}
           >
-            <div className="text-2xl font-bold hover:text-primary transition-colors">
+            <div className="text-xl sm:text-2xl font-bold hover:text-primary transition-colors">
               {homeTeamCode}
             </div>
             {homeTeamName && (
@@ -306,22 +306,22 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
 
 export function GameDetailHeaderSkeleton() {
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6">
       <div className="text-center space-y-4">
         <Skeleton className="h-4 w-24 mx-auto" />
-        <div className="flex items-center justify-center gap-8">
+        <div className="flex items-center justify-center gap-3 sm:gap-8">
           <div className="text-center space-y-2">
-            <Skeleton className="h-8 w-16 mx-auto" />
-            <Skeleton className="h-4 w-24 mx-auto" />
+            <Skeleton className="h-6 sm:h-8 w-12 sm:w-16 mx-auto" />
+            <Skeleton className="h-3 sm:h-4 w-16 sm:w-24 mx-auto" />
           </div>
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-12 w-12" />
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Skeleton className="h-10 w-10 sm:h-12 sm:w-12" />
             <Skeleton className="h-6 w-4" />
-            <Skeleton className="h-12 w-12" />
+            <Skeleton className="h-10 w-10 sm:h-12 sm:w-12" />
           </div>
           <div className="text-center space-y-2">
-            <Skeleton className="h-8 w-16 mx-auto" />
-            <Skeleton className="h-4 w-24 mx-auto" />
+            <Skeleton className="h-6 sm:h-8 w-12 sm:w-16 mx-auto" />
+            <Skeleton className="h-3 sm:h-4 w-16 sm:w-24 mx-auto" />
           </div>
         </div>
         <Skeleton className="h-4 w-48 mx-auto" />

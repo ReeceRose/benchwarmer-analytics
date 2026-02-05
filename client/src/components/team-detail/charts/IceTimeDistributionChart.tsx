@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CHART_COLOURS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { formatIceTimeLong, formatToiPerGame } from "@/lib/formatters";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+import { useMediaQuery } from "@/hooks";
 import type { RosterPlayer } from "@/types/player";
 
 interface IceTimeDistributionChartProps {
@@ -97,6 +98,7 @@ export function IceTimeDistributionChart({
   teamAbbrev,
 }: IceTimeDistributionChartProps) {
   const navigate = useNavigate();
+  const isMobile = !useMediaQuery("(min-width: 640px)");
 
   // Filter to skaters with ice time data, sort by TOI descending, take top 15
   const chartData: ChartDataPoint[] = players
@@ -151,7 +153,7 @@ export function IceTimeDistributionChart({
           <BarChart
             data={chartData}
             layout="vertical"
-            margin={{ top: 10, right: 30, bottom: 10, left: 100 }}
+            margin={{ top: 10, right: isMobile ? 10 : 30, bottom: 10, left: isMobile ? 80 : 100 }}
           >
             <CartesianGrid
               strokeDasharray="3 3"
@@ -170,12 +172,13 @@ export function IceTimeDistributionChart({
             <YAxis
               type="category"
               dataKey="name"
-              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
+              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: isMobile ? 10 : 11 }}
               stroke={CHART_AXIS_COLOURS.grid}
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-              width={95}
+              width={isMobile ? 75 : 95}
               tickLine={false}
               axisLine={false}
+              tickFormatter={(name: string) => isMobile && name.length > 12 ? name.slice(0, 11) + "…" : name}
             />
             <Tooltip
               content={<CustomTooltip />}

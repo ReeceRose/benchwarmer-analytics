@@ -114,6 +114,10 @@ function ScoreStateCard({ state, breakdown, total }: ScoreStateCardProps) {
 
   const Icon = config.icon;
 
+  // Check if this state has any meaningful data
+  const hasData = breakdown.shotsFor > 0 || breakdown.shotsAgainst > 0 ||
+    breakdown.goalsFor > 0 || breakdown.goalsAgainst > 0;
+
   // Calculate percentages of total
   const shotShareFor = total.shotsFor > 0
     ? (breakdown.shotsFor / total.shotsFor * 100).toFixed(1)
@@ -136,60 +140,68 @@ function ScoreStateCard({ state, breakdown, total }: ScoreStateCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-2xl font-bold tabular-nums">
-              {breakdown.goalsFor}
-            </div>
-            <div className="text-xs text-muted-foreground">Goals For</div>
+        {!hasData ? (
+          <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+            No time spent in this state
           </div>
-          <div>
-            <div className="text-2xl font-bold tabular-nums">
-              {breakdown.goalsAgainst}
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-2xl font-bold tabular-nums">
+                  {breakdown.goalsFor}
+                </div>
+                <div className="text-xs text-muted-foreground">Goals For</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold tabular-nums">
+                  {breakdown.goalsAgainst}
+                </div>
+                <div className="text-xs text-muted-foreground">Goals Against</div>
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground">Goals Against</div>
-          </div>
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">xG Differential</span>
-            <span className={`font-medium tabular-nums ${
-              breakdown.xgDifferential > 0 ? "text-success" :
-              breakdown.xgDifferential < 0 ? "text-error" : ""
-            }`}>
-              {breakdown.xgDifferential > 0 ? "+" : ""}{breakdown.xgDifferential.toFixed(2)}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Shooting %</span>
-            <span className="font-medium tabular-nums">
-              {breakdown.shootingPct?.toFixed(1) ?? "-"}%
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Save %</span>
-            <span className="font-medium tabular-nums">
-              {breakdown.savePct?.toFixed(1) ?? "-"}%
-            </span>
-          </div>
-        </div>
-
-        <div className="pt-2 border-t text-xs text-muted-foreground space-y-1">
-          {breakdown.timeSeconds != null && (
-            <div className="flex justify-between">
-              <span>Time in state</span>
-              <span className="font-medium tabular-nums">
-                {formatTime(breakdown.timeSeconds)}
-                {timeSharePct && ` (${timeSharePct}%)`}
-              </span>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">xG Differential</span>
+                <span className={`font-medium tabular-nums ${
+                  breakdown.xgDifferential > 0 ? "text-success" :
+                  breakdown.xgDifferential < 0 ? "text-error" : ""
+                }`}>
+                  {breakdown.xgDifferential > 0 ? "+" : ""}{breakdown.xgDifferential.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Shooting %</span>
+                <span className="font-medium tabular-nums">
+                  {breakdown.shootingPct != null ? `${breakdown.shootingPct.toFixed(1)}%` : "N/A"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Save %</span>
+                <span className="font-medium tabular-nums">
+                  {breakdown.savePct != null ? `${breakdown.savePct.toFixed(1)}%` : "N/A"}
+                </span>
+              </div>
             </div>
-          )}
-          <div className="flex justify-between">
-            <span>{shotShareFor}% of shots</span>
-            <span>{goalShareFor}% of goals</span>
-          </div>
-        </div>
+
+            <div className="pt-2 border-t text-xs text-muted-foreground space-y-1">
+              {breakdown.timeSeconds != null && (
+                <div className="flex justify-between">
+                  <span>Time in state</span>
+                  <span className="font-medium tabular-nums">
+                    {formatTime(breakdown.timeSeconds)}
+                    {timeSharePct && ` (${timeSharePct}%)`}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>{shotShareFor}% of shots</span>
+                <span>{goalShareFor}% of goals</span>
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
