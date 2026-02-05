@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -8,13 +9,15 @@ import {
 } from "@/components/ui/table";
 import { HeaderWithTooltip } from "@/components/shared";
 import { StandingsRow } from "@/components/standings/StandingsRow";
-import type { StandingsWithAnalytics } from "@/types";
+import { getPlayoffStatus, getPlayoffCutoffIndex } from "@/lib/playoff";
+import type { StandingsWithAnalytics, StandingsGrouping } from "@/types";
 
 interface DivisionGroupProps {
   title: string;
   teams: StandingsWithAnalytics[];
   analyticsLoading?: boolean;
   season?: number;
+  grouping?: StandingsGrouping;
 }
 
 export function DivisionGroup({
@@ -22,7 +25,10 @@ export function DivisionGroup({
   teams,
   analyticsLoading,
   season,
+  grouping = "division",
 }: DivisionGroupProps) {
+  const playoffCutoffIndex = getPlayoffCutoffIndex(teams, grouping);
+
   return (
     <Card className="py-0 gap-0">
       <CardHeader className="py-3 px-4 border-b">
@@ -168,14 +174,29 @@ export function DivisionGroup({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {teams.map((team) => (
-              <StandingsRow
-                key={team.abbreviation}
-                team={team}
-                analyticsLoading={analyticsLoading}
-                season={season}
-              />
-            ))}
+            {teams.map((team, index) => {
+              const position = index + 1;
+              // For division view, show divisionRank. For conference view, show sequential position.
+              const displayRank = grouping === "division" ? team.divisionRank : position;
+              return (
+                <Fragment key={team.abbreviation}>
+                  {index === playoffCutoffIndex && (
+                    <TableRow className="hover:bg-transparent h-1">
+                      <td colSpan={100} className="p-0">
+                        <div className="border-t-2 border-dashed border-muted-foreground/30" />
+                      </td>
+                    </TableRow>
+                  )}
+                  <StandingsRow
+                    team={team}
+                    analyticsLoading={analyticsLoading}
+                    season={season}
+                    playoffStatus={getPlayoffStatus(team, grouping, position)}
+                    displayRank={displayRank}
+                  />
+                </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>

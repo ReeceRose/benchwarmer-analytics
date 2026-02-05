@@ -99,16 +99,32 @@ function StandingsPage() {
       <Card className="mb-6 py-3 px-4">
         <div className="flex items-start gap-3">
           <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Key Metrics: </span>
-            <strong>Pts%</strong> (points earned / possible),{" "}
-            <strong>xGF/xGA</strong> (expected goals for/against),{" "}
-            <strong>xG±</strong> (expected goal differential),{" "}
-            <strong>xPts</strong> (expected points), <strong>xG%</strong>{" "}
-            (expected goals share), <strong>CF%/FF%</strong> (shot attempt
-            share), <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
-            <strong>PDO</strong> (Sh% + Sv% - values near 100 are sustainable),{" "}
-            <strong>Pts±</strong> (actual - expected points).
+          <div className="text-sm text-muted-foreground space-y-2">
+            <div>
+              <span className="font-medium text-foreground">Playoffs: </span>
+              <span className="inline-flex items-center gap-1 mx-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                Division top 3
+              </span>
+              <span className="text-muted-foreground/50 mx-1">|</span>
+              <span className="inline-flex items-center gap-1 mx-1">
+                <span className="text-[10px] px-1 py-0 border border-chart-4 text-chart-4 rounded font-medium">
+                  WC
+                </span>
+                Wildcard (2 per conf)
+              </span>
+            </div>
+            <div>
+              <span className="font-medium text-foreground">Metrics: </span>
+              <strong>Pts%</strong> (points earned / possible),{" "}
+              <strong>xGF/xGA</strong> (expected goals for/against),{" "}
+              <strong>xG±</strong> (expected goal differential),{" "}
+              <strong>xPts</strong> (expected points), <strong>xG%</strong>{" "}
+              (expected goals share), <strong>CF%/FF%</strong> (shot attempt
+              share), <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
+              <strong>PDO</strong> (Sh% + Sv% - values near 100 are sustainable),{" "}
+              <strong>Pts±</strong> (actual - expected points).
+            </div>
           </div>
         </div>
       </Card>

@@ -10,6 +10,7 @@ import {
 import { HeaderWithTooltip } from "@/components/shared";
 import { DivisionGroup } from "@/components/standings/DivisionGroup";
 import { StandingsRow } from "@/components/standings/StandingsRow";
+import { getPlayoffStatus } from "@/lib/playoff";
 import type { StandingsGrouping, StandingsWithAnalytics } from "@/types";
 
 interface StandingsTableProps {
@@ -63,9 +64,14 @@ export function StandingsTable({
         groups.get(conference)!.push(team);
       });
 
-      // Sort each conference by conference rank
+      // Sort by points (not conferenceRank) to match league view and ensure
+      // consistent playoff cutoff positioning across all grouping modes
       groups.forEach((conferenceTeams) => {
-        conferenceTeams.sort((a, b) => a.conferenceRank - b.conferenceRank);
+        conferenceTeams.sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points;
+          if (b.wins !== a.wins) return b.wins - a.wins;
+          return a.gamesPlayed - b.gamesPlayed;
+        });
       });
     }
 
@@ -92,6 +98,7 @@ export function StandingsTable({
                     teams={divisionTeams}
                     analyticsLoading={analyticsLoading}
                     season={season}
+                    grouping="division"
                   />
                 );
               })}
@@ -116,6 +123,7 @@ export function StandingsTable({
               teams={conferenceTeams}
               analyticsLoading={analyticsLoading}
               season={season}
+              grouping="conference"
             />
           );
         })}
@@ -275,12 +283,11 @@ export function StandingsTable({
             {sortedTeams.map((team, index) => (
               <StandingsRow
                 key={team.abbreviation}
-                team={{
-                  ...team,
-                  divisionRank: index + 1, // Use league rank in league view
-                }}
+                team={team}
                 analyticsLoading={analyticsLoading}
                 season={season}
+                playoffStatus={getPlayoffStatus(team, "league")}
+                displayRank={index + 1}
               />
             ))}
           </TableBody>

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { formatPercent, formatSavePct } from "@/lib/formatters";
 import {
   getPdoColour,
@@ -13,16 +14,28 @@ import {
   getSavePctColour,
   getXgDiffColour,
 } from "@/lib/stat-colours";
+import type { PlayoffStatus } from "@/lib/playoff";
 import type { StandingsWithAnalytics } from "@/types";
+
+export type { PlayoffStatus };
 
 interface StandingsRowProps {
   team: StandingsWithAnalytics;
   analyticsLoading?: boolean;
   season?: number;
+  playoffStatus?: PlayoffStatus;
+  displayRank?: number;
 }
 
-export function StandingsRow({ team, analyticsLoading, season }: StandingsRowProps) {
+export function StandingsRow({
+  team,
+  analyticsLoading,
+  season,
+  playoffStatus,
+  displayRank,
+}: StandingsRowProps) {
   const analytics = team.analytics;
+  const rank = displayRank ?? team.divisionRank;
 
   // Computed values
   const pointsPct = team.pointPctg ?? (team.gamesPlayed > 0 ? team.points / (team.gamesPlayed * 2) : 0);
@@ -44,20 +57,42 @@ export function StandingsRow({ team, analyticsLoading, season }: StandingsRowPro
   return (
     <TableRow>
       <TableCell className="font-medium text-muted-foreground">
-        {team.divisionRank}
+        <span className="flex items-center gap-1">
+          {rank}
+          {playoffStatus === "division" && (
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-success"
+              title="Playoff position"
+              role="img"
+              aria-label="In playoff position"
+            />
+          )}
+        </span>
       </TableCell>
       <TableCell>
-        <Link
-          to="/teams/$abbrev"
-          params={{ abbrev: team.abbreviation }}
-          search={{ season }}
-          className="hover:underline font-medium"
-        >
-          {team.name}
-        </Link>
-        <span className="text-muted-foreground text-xs ml-2">
-          {team.abbreviation}
-        </span>
+        <div className="flex items-center gap-2">
+          <div>
+            <Link
+              to="/teams/$abbrev"
+              params={{ abbrev: team.abbreviation }}
+              search={{ season }}
+              className="hover:underline font-medium"
+            >
+              {team.name}
+            </Link>
+            <span className="text-muted-foreground text-xs ml-2">
+              {team.abbreviation}
+            </span>
+          </div>
+          {playoffStatus === "wildcard" && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 h-4 font-medium border-chart-4 text-chart-4 shrink-0"
+            >
+              WC{team.wildcardRank}
+            </Badge>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-right tabular-nums">{team.gamesPlayed}</TableCell>
       <TableCell className="text-right tabular-nums">{team.wins}</TableCell>

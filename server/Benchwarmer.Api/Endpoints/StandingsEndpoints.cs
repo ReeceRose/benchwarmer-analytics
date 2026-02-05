@@ -195,7 +195,7 @@ public static class StandingsEndpoints
                 s.DivisionSequence,
                 s.ConferenceSequence,
                 0, // League rank will be set below
-                CalculateWildcardRank(s)
+                s.WildcardSequence
             ))
             .ToList();
 
@@ -290,17 +290,6 @@ public static class StandingsEndpoints
         if (string.IsNullOrEmpty(code) || count == 0)
             return null;
         return $"{code}{count}";
-    }
-
-    private static int CalculateWildcardRank(NhlTeamStandings standings)
-    {
-        // Division top 3 are not in wildcard
-        if (standings.DivisionSequence <= 3)
-            return 0;
-
-        // Wildcard position is conference rank minus top 6 (3 from each division)
-        var wildcardPosition = standings.ConferenceSequence - 6;
-        return wildcardPosition > 0 ? wildcardPosition : 0;
     }
 
     private static async Task<IResult> GetCategoryRankings(
