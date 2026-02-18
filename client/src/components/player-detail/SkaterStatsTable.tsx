@@ -191,7 +191,9 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
             {hasPlayoffData && (
               <TableRow className="bg-muted/30">
                 <TableHead colSpan={6} className="text-xs text-muted-foreground py-1">Regular Season</TableHead>
-                <TableHead colSpan={6} className="text-xs text-muted-foreground py-1 hidden md:table-cell" />
+                <TableHead className="py-1 hidden sm:table-cell" />
+                <TableHead colSpan={3} className="py-1 hidden md:table-cell" />
+                <TableHead colSpan={3} className="py-1 hidden lg:table-cell" />
                 {rows.length >= 2 && (
                   <TableHead className="hidden xl:table-cell" />
                 )}
