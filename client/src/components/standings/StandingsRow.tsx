@@ -57,8 +57,8 @@ export function StandingsRow({
   return (
     <TableRow>
       <TableCell className="font-medium text-muted-foreground">
-        <span className="flex items-center gap-1">
-          {rank}
+        <span className="flex items-center gap-2">
+          <span>{rank}</span>
           {playoffStatus === "division" && (
             <span
               className="w-1.5 h-1.5 rounded-full bg-success"
@@ -67,31 +67,29 @@ export function StandingsRow({
               aria-label="In playoff position"
             />
           )}
-        </span>
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-2">
-          <div>
-            <Link
-              to="/teams/$abbrev"
-              params={{ abbrev: team.abbreviation }}
-              search={{ season }}
-              className="hover:underline font-medium"
-            >
-              {team.name}
-            </Link>
-            <span className="text-muted-foreground text-xs ml-2">
-              {team.abbreviation}
-            </span>
-          </div>
           {playoffStatus === "wildcard" && (
             <Badge
               variant="outline"
-              className="text-[10px] px-1.5 py-0 h-4 font-medium border-chart-4 text-chart-4 shrink-0"
+              className="h-4 px-1.5 text-[9px] font-semibold tracking-wide rounded-full border-chart-4/70 text-chart-4 bg-chart-4/10"
             >
               WC{team.wildcardRank}
             </Badge>
           )}
+        </span>
+      </TableCell>
+      <TableCell>
+        <div className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-2">
+          <Link
+            to="/teams/$abbrev"
+            params={{ abbrev: team.abbreviation }}
+            search={{ season }}
+            className="hover:underline font-medium truncate min-w-0"
+          >
+            {team.name}
+          </Link>
+          <span className="text-muted-foreground text-xs text-right tabular-nums">
+            {team.abbreviation}
+          </span>
         </div>
       </TableCell>
       <TableCell className="text-right tabular-nums">{team.gamesPlayed}</TableCell>

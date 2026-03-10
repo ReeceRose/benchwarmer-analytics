@@ -38,7 +38,7 @@ export function DivisionGroup({
         <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">#</TableHead>
+              <TableHead className="w-16">#</TableHead>
               <TableHead className="w-48">Team</TableHead>
               <HeaderWithTooltip
                 label="GP"
