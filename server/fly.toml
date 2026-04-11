@@ -7,7 +7,9 @@ primary_region = "yyz"
 [env]
   ASPNETCORE_ENVIRONMENT = "Production"
   ASPNETCORE_URLS = "http://+:8080"
-  DOTNET_GCConserveMemory = "7"
+  DOTNET_GCConserveMemory = "9"
+  DOTNET_gcServer = "0"
+  DOTNET_GCHeapHardLimitPercent = "70"
 
 [http_service]
   internal_port = 8080

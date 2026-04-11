@@ -52,6 +52,50 @@ public class MoneyPuckDownloader(HttpClient httpClient, ILogger<MoneyPuckDownloa
         return await DownloadZipFileAsync("shots", season, url, cancellationToken);
     }
 
+    /// <summary>
+    /// Downloads the shots ZIP and returns a streaming CSV reader. The caller must dispose the result.
+    /// Avoids loading the entire CSV into memory as a string.
+    /// </summary>
+    public async Task<ShotCsvDownload?> StreamShotsCsvAsync(int season, CancellationToken cancellationToken = default)
+    {
+        var url = $"https://peter-tanner.com/moneypuck/downloads/shots_{season}.zip";
+        _logger.LogInformation("Streaming shots ZIP for season {Season}", season);
+
+        try
+        {
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Shot download failed: HTTP {StatusCode}", response.StatusCode);
+                return null;
+            }
+
+            // ZipArchive requires a seekable stream, so buffer the compressed ZIP (much smaller than the CSV)
+            var zipBuffer = new MemoryStream();
+            await response.Content.CopyToAsync(zipBuffer, cancellationToken);
+            zipBuffer.Position = 0;
+
+            var archive = new ZipArchive(zipBuffer, ZipArchiveMode.Read, leaveOpen: false);
+            var csvEntry = archive.Entries.FirstOrDefault(e => e.Name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase));
+
+            if (csvEntry == null)
+            {
+                _logger.LogWarning("No CSV file found in shots ZIP for season {Season}", season);
+                archive.Dispose();
+                return null;
+            }
+
+            _logger.LogInformation("Opened shots CSV stream for season {Season} ({CompressedSize:N0} bytes compressed)", season, csvEntry.CompressedLength);
+            return new ShotCsvDownload(archive, csvEntry.Open());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception streaming shots for season {Season}", season);
+            return null;
+        }
+    }
+
     private async Task<DownloadResult> DownloadZipFileAsync(string dataset, int season, string url, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting ZIP download for {Dataset} (season: {Season}) from {Url}", dataset, season, url);
@@ -174,4 +218,18 @@ public class DownloadResult
     public string? Content { get; init; }
     public int RecordCount { get; init; }
     public string? ErrorMessage { get; init; }
+}
+
+/// <summary>
+/// Wraps a streaming CSV from a ZIP archive. Dispose after use to release the archive and buffer.
+/// </summary>
+public sealed class ShotCsvDownload(ZipArchive archive, Stream csvStream) : IDisposable
+{
+    public Stream CsvStream { get; } = csvStream;
+
+    public void Dispose()
+    {
+        CsvStream.Dispose();
+        archive.Dispose();
+    }
 }

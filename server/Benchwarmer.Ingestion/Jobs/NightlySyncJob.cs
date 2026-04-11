@@ -119,22 +119,17 @@ public class NightlySyncJob(
 
     private async Task<int> DownloadAndImportShotsAsync(int season, CancellationToken cancellationToken)
     {
-        var result = await _downloader.DownloadShotsAsync(season, cancellationToken);
+        using var download = await _downloader.StreamShotsCsvAsync(season, cancellationToken);
 
-        if (result.Success && result.Content != null)
+        if (download == null)
         {
-            var records = CsvParser.Parse<ShotRecord>(result.Content);
-            var importedCount = await _shotImporter.ImportAsync(records, cancellationToken);
-            _logger.LogInformation("shots: imported {Count} records", importedCount);
-            return importedCount;
+            _logger.LogWarning("shots: download failed");
+            return 0;
         }
 
-        if (!result.Success)
-        {
-            _logger.LogWarning("shots: failed - {Error}", result.ErrorMessage);
-        }
-
-        return 0;
+        var importedCount = await _shotImporter.ImportFromStreamAsync(download.CsvStream, cancellationToken);
+        _logger.LogInformation("shots: imported {Count} records", importedCount);
+        return importedCount;
     }
 
     private async Task<int> ImportDatasetAsync(string dataset, string content, bool playoffs)

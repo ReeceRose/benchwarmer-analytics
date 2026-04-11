@@ -1,7 +1,10 @@
 using Benchwarmer.Data.Entities;
 using Benchwarmer.Data.Repositories;
 using Benchwarmer.Ingestion.Parsers;
+using CsvHelper;
+using CsvHelper.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace Benchwarmer.Ingestion.Importers;
 
@@ -17,12 +20,10 @@ public class ShotImporter(
     public async Task<int> ImportAsync(IEnumerable<ShotRecord> shots, CancellationToken cancellationToken = default)
     {
         var totalCount = 0;
-        var shotsList = shots.ToList();
 
-        _logger.LogInformation("Starting import of {Count} shot records", shotsList.Count);
+        _logger.LogInformation("Starting import of shot records");
 
-        // Process in batches to manage memory
-        foreach (var batch in shotsList.Chunk(BatchSize))
+        foreach (var batch in shots.Chunk(BatchSize))
         {
             var entities = batch.Select(ConvertToEntity).ToList();
             var upsertedCount = await _shotRepository.UpsertBatchAsync(entities, cancellationToken);
@@ -32,6 +33,37 @@ public class ShotImporter(
         }
 
         _logger.LogInformation("Completed import of {Count} shot records", totalCount);
+        return totalCount;
+    }
+
+    /// <summary>
+    /// Streams shot records from a CSV stream, processing one batch at a time.
+    /// Avoids loading the entire CSV or all parsed records into memory simultaneously.
+    /// </summary>
+    public async Task<int> ImportFromStreamAsync(Stream csvStream, CancellationToken cancellationToken = default)
+    {
+        var totalCount = 0;
+
+        _logger.LogInformation("Starting streaming import of shot records");
+
+        using var reader = new StreamReader(csvStream, leaveOpen: true);
+        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            MissingFieldFound = null,
+            HeaderValidated = null
+        });
+
+        foreach (var batch in csv.GetRecords<ShotRecord>().Chunk(BatchSize))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var entities = batch.Select(ConvertToEntity).ToList();
+            var upsertedCount = await _shotRepository.UpsertBatchAsync(entities, cancellationToken);
+            totalCount += upsertedCount;
+
+            _logger.LogDebug("Imported batch of {Count} shots, total: {Total}", upsertedCount, totalCount);
+        }
+
+        _logger.LogInformation("Completed streaming import of {Count} shot records", totalCount);
         return totalCount;
     }
 

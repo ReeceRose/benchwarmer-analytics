@@ -133,22 +133,17 @@ public class InitialSeedJob(
 
     private async Task<int> DownloadAndImportShotsAsync(int season, CancellationToken cancellationToken)
     {
-        var result = await _downloader.DownloadShotsAsync(season, cancellationToken);
+        using var download = await _downloader.StreamShotsCsvAsync(season, cancellationToken);
 
-        if (result.Success && result.Content != null)
+        if (download == null)
         {
-            var records = CsvParser.Parse<ShotRecord>(result.Content);
-            var importedCount = await _shotImporter.ImportAsync(records, cancellationToken);
-            _logger.LogInformation("  shots {Season}: imported {Count} records", season, importedCount);
-            return importedCount;
+            _logger.LogWarning("  shots {Season}: download failed", season);
+            return 0;
         }
 
-        if (!result.Success)
-        {
-            _logger.LogWarning("  shots {Season}: failed - {Error}", season, result.ErrorMessage);
-        }
-
-        return 0;
+        var importedCount = await _shotImporter.ImportFromStreamAsync(download.CsvStream, cancellationToken);
+        _logger.LogInformation("  shots {Season}: imported {Count} records", season, importedCount);
+        return importedCount;
     }
 
     private async Task<int> ImportDatasetAsync(string dataset, string content, bool playoffs)
