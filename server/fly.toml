@@ -9,7 +9,7 @@ primary_region = "yyz"
   ASPNETCORE_URLS = "http://+:8080"
   DOTNET_GCConserveMemory = "9"
   DOTNET_gcServer = "0"
-  DOTNET_GCHeapHardLimitPercent = "70"
+  DOTNET_GCHeapHardLimitPercent = "60"
 
 [http_service]
   internal_port = 8080

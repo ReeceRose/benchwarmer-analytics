@@ -75,6 +75,7 @@ try
 
     builder.Services.AddOutputCache(options =>
     {
+        options.SizeLimit = 25 * 1024 * 1024; // 25 MB cap
         options.AddPolicy(CachePolicies.StaticData, b => b.Expire(TimeSpan.FromHours(24)));
         options.AddPolicy(CachePolicies.SemiStaticData, b => b.Expire(TimeSpan.FromHours(6)));
         options.AddPolicy(CachePolicies.TeamData, b => b
@@ -110,7 +111,10 @@ try
                 // Initial seed can take hours - prevent job re-queue during long-running imports
                 InvisibilityTimeout = TimeSpan.FromHours(4)
             }));
-    builder.Services.AddHangfireServer();
+    builder.Services.AddHangfireServer(options =>
+    {
+        options.WorkerCount = 1;
+    });
 
     // Repositories
     builder.Services.AddScoped<ITeamRepository, TeamRepository>();
