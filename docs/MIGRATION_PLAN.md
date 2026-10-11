@@ -54,6 +54,22 @@ Decisions:
 2. Record a baseline of Neon usage (compute hours/day, storage) from the Neon console for later comparison.
 3. Snapshot API responses for parity testing: write `scripts/snapshot-api.ts` that hits every endpoint (list below) against `https://benchwarmer-api.fly.dev` with representative params and saves JSON to `parity/fixtures/`. **Note:** responses only match if data is unchanged, so take the snapshot and run parity checks against the same DB state. Pause ingestion during the parity window.
 
+## Phase 0.5: New Neon project (replaces the Azure-region Neon DB)
+
+The current DB is Neon in Azure `eastus2` (PG 17.11, 1.6 GB, only the `plpgsql` extension). Baseline usage for the current period: 16.97 CU-hrs compute, 1.91 GB storage, 0.09 GB transfer.
+
+1. **(User)** Create a new Neon project on **AWS `us-east-1`** (same area as Vercel's default `iad1` region), **Postgres 17**. Either create it directly at neon.tech or through the Vercel Marketplace integration. Enable scale-to-zero with the smallest compute size (0.25 CU).
+2. Copy the data with `pg_dump`/`pg_restore` (local pg_dump is 18.6, which can dump PG 17). **Exclude the `hangfire` schema.** Include materialized views and `__EFMigrationsHistory`, unchanged:
+   ```bash
+   pg_dump "$OLD_URL" -Fc --no-owner --no-acl --exclude-schema=hangfire -f benchwarmer.dump
+   pg_restore -d "$NEW_URL" --no-owner --no-acl -j 4 benchwarmer.dump
+   ```
+   Use the **direct** (non-pooled) connection strings for dump/restore.
+3. Verify: row counts per table match, `REFRESH MATERIALIZED VIEW` works, sizes look right.
+4. Keep the old Azure DB **read-only and untouched** as the parity baseline until cutover. The C# API on Fly keeps using it, so Phase 2 parity fixtures come from the old stack.
+5. The new app (and `drizzle-kit pull`) points at the **new** DB. Its data will drift as nightly syncs run on the old DB, so take parity fixtures and the dump at the same time, or re-dump before parity runs.
+6. At cutover (Phase 4): do a final fresh dump/restore (or let the new cron catch up), then delete the Azure Neon project.
+
 ## Phase 1: Scaffold
 
 1. Create the TanStack Start app. Preferred approach: convert `client/` in place (rename to `app/` or keep `client/`) rather than a new copy, so git history follows the files.
