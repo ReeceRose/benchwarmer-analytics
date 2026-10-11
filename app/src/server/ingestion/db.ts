@@ -1,3 +1,4 @@
+import { attachDatabasePool } from "@vercel/functions";
 import pg from "pg";
 import { getTableColumns, getTableName, type Table } from "drizzle-orm";
 
@@ -18,6 +19,10 @@ export function getPool(): pg.Pool {
     // Without a listener that error would crash the process; the pool simply
     // replaces the client on next use.
     pool.on("error", (error) => console.warn(`postgres pool: idle client error: ${error.message}`));
+    // On Vercel (Fluid compute), keep the instance alive until idle clients
+    // time out, so suspended instances don't hold Neon connections open.
+    // No-op elsewhere (backfill CLI, local dev).
+    attachDatabasePool(pool);
   }
   return pool;
 }
