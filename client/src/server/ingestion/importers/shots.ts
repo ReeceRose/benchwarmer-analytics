@@ -41,7 +41,7 @@ export async function importShots(db: Queryable, csv: Readable | string, options
   let batch: UpsertRow<typeof shots>[] = [];
   const result: ShotImportResult = { written: 0, rowsRead: 0, rowsConsidered: 0, gameIds: new Set() };
   const flush = async () => {
-    result.written += await upsert(db, shots, batch, { conflict: ["shotId"], batchSize: BATCH_SIZE });
+    result.written += await upsert(db, shots, batch, { conflict: ["season", "shotId"], batchSize: BATCH_SIZE });
     batch = [];
   };
 

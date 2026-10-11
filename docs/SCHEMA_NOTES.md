@@ -15,7 +15,7 @@ migrations. No C# code was run and no existing database was read.
   parsed snapshot.
 - Primary keys (`id`), foreign keys and their delete rules (cascade where EF
   had a required relationship; `line_combinations.player3_id` is NO ACTION).
-- Unique natural keys used for upserts.
+- Unique natural keys used for upserts (except `shots`, see below).
 - `chemistry_pairs` and `season_percentiles` view SQL and indexes, copied
   verbatim from `AddPositionsToChemistryPairs` and
   `AddSeasonPercentilesMaterializedView`.
@@ -28,6 +28,7 @@ C# API emitted), e.g. `IFXFreeze` → `ifxFreeze`, `XGoalsFor` → `xGoalsFor`.
 | Change | Why |
 |---|---|
 | `line_combinations` unique key is a `UNIQUE NULLS NOT DISTINCT` constraint | `player3_id` is NULL for defense pairs. With default NULL semantics, `ON CONFLICT` upserts never match D-pairs and insert duplicates. The C# importer avoided this with in-memory dedup; the TS importers will use `ON CONFLICT`. |
+| `shots` unique key is `(season, shot_id)` (EF: `shot_id` alone). Migration `0001` | MoneyPuck shot IDs aren't globally unique: 2008-2017 are numbered continuously, but every season from 2018 on restarts at 0. With a `shot_id`-only key, each import overwrote other seasons' shots. The old production DB (~1.1M rows) had lost most of 2018-2024 this way. |
 | `players.id` is a plain primary key (EF: identity) | It holds the MoneyPuck/NHL player ID and is always supplied explicitly. |
 | `teams.abbreviation`: one unique constraint (EF: unique index **and** alternate key) | The two were redundant; the constraint also serves as the FK target for `team_seasons`. |
 | Dropped indexes `shots(season)`, `shots(shooter_player_id)`, `shots(goalie_player_id)`, `line_combinations(season, team)`, `games(game_date)` | Each is a leading-column prefix of another index on the same table, so it adds storage and write cost (notably on `shots`, the largest table) without serving any extra query. |

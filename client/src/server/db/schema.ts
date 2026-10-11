@@ -578,7 +578,8 @@ export const shots = pgTable(
   },
   (t) => [
     index("ix_shots_game_id").on(t.gameId),
-    uniqueIndex("ix_shots_shot_id").on(t.shotId),
+    // MoneyPuck shot IDs restart at 0 every season, so they are only unique per season.
+    uniqueIndex("ix_shots_season_shot_id").on(t.season, t.shotId),
     index("ix_shots_goalie_player_id_season").on(t.goaliePlayerId, t.season),
     index("ix_shots_season_is_goal").on(t.season, t.isGoal),
     index("ix_shots_season_team_code").on(t.season, t.teamCode),
