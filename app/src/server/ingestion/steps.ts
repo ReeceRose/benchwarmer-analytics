@@ -88,10 +88,13 @@ export function syncSeasonGames(db: Queryable, season: number, logger = consoleL
   return syncGames(db, start, end, season, logger);
 }
 
-// Yesterday and today (ET), like the C# nightly job.
+// Yesterday (ET) through the next 7 days. The C# nightly job synced
+// yesterday and today; the C# API also stored upcoming games as pages were
+// viewed. The API is read-only now, so the cron stores the coming week up
+// front (game previews and goalie form look games up by ID).
 export function syncRecentGames(db: Queryable, logger = consoleLogger) {
   const today = todayEastern();
-  return syncGames(db, addDays(today, -1), today, null, logger);
+  return syncGames(db, addDays(today, -1), addDays(today, 7), null, logger);
 }
 
 export function syncScoreStates(db: Queryable, season: number, gameIds?: string[], logger = consoleLogger) {

@@ -4,6 +4,9 @@
 // Response types list only the fields the API reads; C# deserialization
 // defaulted missing numbers to 0 and strings to "", so callers do the same.
 
+import { addDays } from "@/server/api/format";
+import { scheduleToGames, type NhlScheduleResponse, type ScheduledGame } from "@/server/ingestion/nhl";
+
 const NHL_API = "https://api-web.nhle.com/v1";
 const USER_AGENT = "benchwarmer-analytics (personal hockey analytics project)";
 const TIMEOUT_MS = 10_000;
@@ -234,4 +237,63 @@ export interface NhlLiveScores {
 
 export function getLiveScores(): Promise<NhlLiveScores | null> {
   return getJson<NhlLiveScores>(`${NHL_API}/score/now`);
+}
+
+// Schedule week starting at `date` (YYYY-MM-DD), as game rows.
+export async function getScheduleWeek(date: string): Promise<ScheduledGame[]> {
+  const response = await getJson<NhlScheduleResponse>(`${NHL_API}/schedule/${date}`);
+  return response ? scheduleToGames(response) : [];
+}
+
+// Games dated within [start, end], a week per request, by date then ID.
+export async function getGamesForDateRange(start: string, end: string): Promise<ScheduledGame[]> {
+  const starts: string[] = [];
+  for (let date = start; date <= end; date = addDays(date, 7)) starts.push(date);
+  const weeks = await Promise.all(starts.map(getScheduleWeek));
+  const byId = new Map<string, ScheduledGame>();
+  for (const game of weeks.flat()) {
+    if (game.gameDate >= start && game.gameDate <= end && !byId.has(game.gameId)) byId.set(game.gameId, game);
+  }
+  return [...byId.values()].sort((a, b) => a.gameDate.localeCompare(b.gameDate) || a.gameId.localeCompare(b.gameId));
+}
+
+const STATS_API = "https://api.nhle.com/stats/rest/en";
+
+// The stats API keys teams by full name.
+const TEAM_NAME_TO_ABBREV: Record<string, string> = {
+  "Anaheim Ducks": "ANA", "Boston Bruins": "BOS", "Buffalo Sabres": "BUF", "Calgary Flames": "CGY",
+  "Carolina Hurricanes": "CAR", "Chicago Blackhawks": "CHI", "Colorado Avalanche": "COL",
+  "Columbus Blue Jackets": "CBJ", "Dallas Stars": "DAL", "Detroit Red Wings": "DET", "Edmonton Oilers": "EDM",
+  "Florida Panthers": "FLA", "Los Angeles Kings": "LAK", "Minnesota Wild": "MIN", "Montréal Canadiens": "MTL",
+  "Nashville Predators": "NSH", "New Jersey Devils": "NJD", "New York Islanders": "NYI", "New York Rangers": "NYR",
+  "Ottawa Senators": "OTT", "Philadelphia Flyers": "PHI", "Pittsburgh Penguins": "PIT", "San Jose Sharks": "SJS",
+  "Seattle Kraken": "SEA", "St. Louis Blues": "STL", "Tampa Bay Lightning": "TBL", "Toronto Maple Leafs": "TOR",
+  "Utah Hockey Club": "UTA", "Vancouver Canucks": "VAN", "Vegas Golden Knights": "VGK",
+  "Washington Capitals": "WSH", "Winnipeg Jets": "WPG",
+};
+
+export interface NhlTeamSpecialTeams {
+  powerPlayPct: number | null;
+  penaltyKillPct: number | null;
+  faceoffWinPct: number | null;
+}
+
+// Official regular-season PP%/PK% (fractions) by team abbreviation.
+export async function getTeamSpecialTeams(season: number): Promise<Map<string, NhlTeamSpecialTeams>> {
+  const seasonId = `${season}${season + 1}`;
+  const response = await getJson<{
+    data?: { teamFullName?: string | null; powerPlayPct?: number | null; penaltyKillPct?: number | null; faceoffWinPct?: number | null }[];
+  }>(`${STATS_API}/team/summary?cayenneExp=seasonId=${seasonId}&cayenneExp=gameTypeId=2`);
+  const result = new Map<string, NhlTeamSpecialTeams>();
+  for (const t of response?.data ?? []) {
+    if (!t.teamFullName) continue;
+    // Unknown names fall back to their first three letters, as in the C#.
+    const abbrev = TEAM_NAME_TO_ABBREV[t.teamFullName] ?? t.teamFullName.slice(0, 3).toUpperCase();
+    result.set(abbrev, {
+      powerPlayPct: t.powerPlayPct ?? null,
+      penaltyKillPct: t.penaltyKillPct ?? null,
+      faceoffWinPct: t.faceoffWinPct ?? null,
+    });
+  }
+  return result;
 }

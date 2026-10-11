@@ -4,7 +4,7 @@ import { fetchWithRetry } from "@/server/ingestion/moneypuck";
 
 const NHL_API = "https://api-web.nhle.com/v1";
 
-interface NhlScheduleResponse {
+export interface NhlScheduleResponse {
   gameWeek?: {
     date: string;
     games: {
@@ -22,6 +22,21 @@ interface NhlScheduleResponse {
 
 export type GameRow = UpsertRow<typeof games> & { gameId: string; gameDate: string };
 
+// A schedule entry, typed precisely (it is also a valid GameRow).
+export interface ScheduledGame {
+  gameId: string;
+  season: number;
+  gameType: number;
+  gameDate: string;
+  startTimeUtc: Date | null;
+  homeTeamCode: string;
+  awayTeamCode: string;
+  homeScore: number;
+  awayScore: number;
+  gameState: string;
+  periodType: string | null;
+}
+
 const addDays = (date: string, days: number) => {
   const d = new Date(`${date}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -32,8 +47,11 @@ const addDays = (date: string, days: number) => {
 export async function fetchScheduleWeek(date: string): Promise<GameRow[]> {
   const response = await fetchWithRetry(`${NHL_API}/schedule/${date}`);
   if (!response) return [];
-  const schedule = (await response.json()) as NhlScheduleResponse;
-  const rows: GameRow[] = [];
+  return scheduleToGames((await response.json()) as NhlScheduleResponse);
+}
+
+export function scheduleToGames(schedule: NhlScheduleResponse): ScheduledGame[] {
+  const rows: ScheduledGame[] = [];
   for (const day of schedule.gameWeek ?? []) {
     for (const game of day.games) {
       rows.push({
