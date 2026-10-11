@@ -63,3 +63,6 @@ docs/temp/
 .env.local
 *\\* 
 app/src/routeTree.gen.ts
+
+# Vercel project link
+.vercel
