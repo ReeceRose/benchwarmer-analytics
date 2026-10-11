@@ -3,7 +3,7 @@
 ## Goals
 
 - Remove all C#/.NET code. One TypeScript codebase.
-- Keep **Neon Postgres** as the database (no data migration, no schema changes during the port).
+- **Neon Postgres**, in a **brand-new project** (AWS us-east-1) seeded from scratch. The old DB is never read or migrated. Schema names stay identical to the EF model during the port.
 - Host on **Vercel**. Ingestion runs on **Vercel Cron**.
 - Cut Neon cost: no background polling, no duplicate syncs, no full-season re-upserts.
 - Zero visible change for users: same URLs, same API responses, same UI.
@@ -23,7 +23,7 @@
 app/ (TanStack Start, deployed to Vercel)
 ├── src/routes/            # existing UI routes (moved from client/src/routes)
 ├── src/routes/api/        # server routes reproducing /api/* REST contract
-├── src/server/db/         # Drizzle schema (pulled from Neon) + client
+├── src/server/db/         # Drizzle schema + client (migrations in drizzle/)
 ├── src/server/queries/    # ports of C# repositories
 ├── src/server/services/   # ports of Api/Endpoints/Helpers + DeserveToWinService
 ├── src/server/ingestion/  # downloaders, CSV parsers, importers, sync steps
@@ -34,7 +34,7 @@ Decisions:
 
 - **Keep the REST contract.** Implement `/api/*` as TanStack Start server routes so `client/src/lib/api.ts` and all hooks work unchanged, and responses can be diffed against the C# API. Converting to server functions can happen later, optionally.
 - **Start in SPA mode** (or SSR off for most routes) to minimize UI changes. SSR can be enabled per-route later.
-- **Drizzle ORM** with `drizzle-kit pull` to introspect the live schema. Drizzle does **not** own migrations initially. The EF `__EFMigrationsHistory` table stays untouched until cutover.
+- **Drizzle ORM owns the schema and migrations from the start**: one baseline migration (`0000_init.sql`) for the new DB, names identical to the EF model. See Phase 0.5.
 - **DB driver:** `@neondatabase/serverless` (HTTP/WebSocket) via `drizzle-orm/neon-http` for request handlers. Use the **pooled** Neon connection string.
 - **Caching:** replace ASP.NET OutputCache with `Cache-Control` headers (`s-maxage` + `stale-while-revalidate`) so Vercel's CDN absorbs repeat reads and Neon sleeps more. Map the existing policies:
   | C# policy | TTL | Header |
@@ -52,29 +52,31 @@ Decisions:
 
 1. Stop the duplicate trigger: disable `.github/workflows/scheduled-sync.yml` **or** remove the Hangfire `RecurringJob` registrations (pick one, ideally the GH workflow, until cutover).
 2. Record a baseline of Neon usage (compute hours/day, storage) from the Neon console for later comparison.
-3. Snapshot API responses for parity testing: write `scripts/snapshot-api.ts` that hits every endpoint (list below) against `https://benchwarmer-api.fly.dev` with representative params and saves JSON to `parity/fixtures/`. **Note:** responses only match if data is unchanged, so take the snapshot and run parity checks against the same DB state. Pause ingestion during the parity window.
+3. Snapshot API responses for parity testing: write `scripts/snapshot-api.ts` that hits every endpoint (list below) on the **C# API running locally against the new DB** with representative params and saves JSON to `parity/fixtures/`. Don't run ingestion between taking fixtures and running parity checks.
 
-## Phase 0.5: New Neon project (replaces the Azure-region Neon DB)
+## Phase 0.5: New database (net new, old DB is out of scope)
 
-The current DB is Neon in Azure `eastus2` (PG 17.11, 1.6 GB, only the `plpgsql` extension). Baseline usage for the current period: 16.97 CU-hrs compute, 1.91 GB storage, 0.09 GB transfer.
+We start from a **brand-new Neon project** and never read from or migrate the old Azure-region DB. Its data is not trusted (the nightly sync has been failing).
 
-1. **(User)** Create a new Neon project on **AWS `us-east-1`** (same area as Vercel's default `iad1` region), **Postgres 17**. Either create it directly at neon.tech or through the Vercel Marketplace integration. Enable scale-to-zero with the smallest compute size (0.25 CU).
-2. Populate the new DB by **running the existing C# seed locally** rather than copying data. The nightly sync has been failing, so the old data isn't trusted.
+1. **(User)** Create a new Neon project on **AWS `us-east-1`** (close to Vercel `iad1`), **Postgres 17**, scale-to-zero, 0.25 CU min.
+2. **Drizzle owns the schema from day one, as a single baseline migration** (`drizzle/0000_init.sql`):
+   - Derive the schema from the **EF model, not a live DB**: `dotnet ef migrations script --project server/Benchwarmer.Data --startup-project server/Benchwarmer.Api -o /tmp/ef-final.sql` (works offline). Apply it to a throwaway local Postgres (`docker compose`), `drizzle-kit pull` from there, then tidy `schema.ts`.
+   - Table/column/index names must stay **identical** to the EF model, because the C# app is still used against this DB for seeding and the parity baseline. EF doesn't auto-migrate on startup (no `Migrate()` call), so it runs fine on a Drizzle-created schema.
+   - The materialized views (`chemistry_pairs`, `season_percentiles`, from the EF migrations `AddChemistryPairsMaterializedView`, `AddPositionsToChemistryPairs`, `AddSeasonPercentilesMaterializedView`) and their unique indexes go into the same baseline as custom SQL.
+   - Run `drizzle-kit generate` once → `0000_init.sql`. Apply with `drizzle-kit migrate`. No `__EFMigrationsHistory`, and EF migrations are never run against the new DB.
+3. **Seed with the existing C# job, locally**, against the new DB:
    ```bash
    export ConnectionStrings__DefaultConnection="<new direct conn string, Npgsql format>"
    export AdminApiKey="<any local key>"
-   dotnet ef database update --project server/Benchwarmer.Data --startup-project server/Benchwarmer.Api   # schema + materialized views
    ASPNETCORE_ENVIRONMENT=Development dotnet run --project server/Benchwarmer.Api
    curl -X POST localhost:<port>/api/admin/seed -H "X-API-Key: $AdminApiKey"   # 2008 → current, hours
-   curl -X POST localhost:<port>/api/admin/sync -H "X-API-Key: $AdminApiKey"   # after seed: games + score-state times (current season)
+   curl -X POST localhost:<port>/api/admin/sync -H "X-API-Key: $AdminApiKey"   # then: games + score-state (current season)
    ```
-   - The seed does **not** populate `games` or `game_score_state_times`. Only the nightly sync does, and only for the current season. The old DB has games for 2025 and 2026, so 2025 games/score-state would be missing unless backfilled (a one-off season parameter, or accept the gap).
-   - Hangfire `InvisibilityTimeout` is 4h. If the seed runs longer, Hangfire may re-queue it, but `[DisableConcurrentExecution(0)]` + `[AutomaticRetry(0)]` make the duplicate fail fast instead of running twice. A logged failure there is harmless.
-   - Running locally also shows whether the nightly sync logic itself works when it isn't OOM-constrained.
-3. Verify: compare row counts per table vs the old DB (expect differences where MoneyPuck revised data or the old sync was stale), and spot-check recent games.
-4. **Parity baseline = the C# API running locally against the new DB.** Both stacks read the same data, so any diff is a porting bug. The old Azure DB is no longer needed for parity.
-5. The new app (and `drizzle-kit pull`) points at the **new** DB. Fly production can keep using the old DB until cutover.
-6. At cutover (Phase 4): point production at the new DB, then delete the Azure Neon project. Drop the `hangfire` schema from the new DB in Phase 5.
+   - The seed doesn't populate `games`/`game_score_state_times`. Only the nightly sync does, for the current season only. Prior-season games are out of scope unless needed.
+   - Hangfire will create a `hangfire` schema in the new DB. Drop it in Phase 5.
+   - Running locally (no OOM) also shows whether the sync logic itself is broken.
+4. **Parity baseline = the C# API running locally against the new DB.** Both stacks read identical data, so any diff is a porting bug.
+5. Production on Fly keeps whatever it has until cutover. At cutover, production points only at the new DB, and the old Neon project is deleted.
 
 ## Phase 1: Scaffold
 
@@ -83,7 +85,7 @@ The current DB is Neon in Azure `eastus2` (PG 17.11, 1.6 GB, only the `plpgsql` 
    - Move `main.tsx`/`App.tsx` bootstrapping into Start's `router.tsx` + `__root.tsx` conventions. Keep QueryClient provider and contexts.
    - Remove the dev proxy to `localhost:5000` and the `VITE_API_URL` default (API becomes same-origin `/api`).
    - Configure the Vercel target (Nitro `vercel` preset / per current TanStack Start docs).
-2. Add Drizzle: `drizzle.config.ts`, run `drizzle-kit pull` against Neon, commit generated schema into `src/server/db/schema.ts`. Exclude the `hangfire` schema and `__EFMigrationsHistory`.
+2. Add Drizzle: `drizzle.config.ts`, `src/server/db/schema.ts`, and the single baseline migration `drizzle/0000_init.sql`, built as described in Phase 0.5 (from the EF model via a throwaway local Postgres, never from the old DB).
 3. Add `src/server/db/client.ts` (neon-http driver). Env: `DATABASE_URL` (pooled).
 4. Add `/api/health` server route that runs `select 1`.
 5. Deploy a preview to Vercel and confirm UI loads (still calling the Fly API is fine at this point via an env override).
@@ -170,7 +172,7 @@ Source: `server/Benchwarmer.Ingestion/` (Jobs, Importers, Parsers, Services) + `
 
 1. Drop the Hangfire schema: `DROP SCHEMA hangfire CASCADE;`
 2. Delete `server/`, `server/fly.toml`, `infra/` (Azure bicep), C# parts of `docker-compose.yml`/`docker/`, `deploy.yml` steps for .NET/Fly/SWA. Update `ci.yml` to lint/typecheck/test the TS app.
-3. Decide on migrations ownership: adopt `drizzle-kit` migrations from the pulled baseline, and drop `__EFMigrationsHistory`.
+3. Delete the EF migrations along with `server/` (Drizzle already owns the schema).
 4. Update `CLAUDE.md`, `README.md`, `docs/PRD.md`, `docs/TODO.md` for the new stack.
 5. Destroy the Fly app and remove secrets (`FLY_API_TOKEN`, `SWA_DEPLOYMENT_TOKEN`, `API_KEY`). Rotate/retire `ADMIN_API_KEY`.
 
