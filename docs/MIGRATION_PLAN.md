@@ -59,16 +59,22 @@ Decisions:
 The current DB is Neon in Azure `eastus2` (PG 17.11, 1.6 GB, only the `plpgsql` extension). Baseline usage for the current period: 16.97 CU-hrs compute, 1.91 GB storage, 0.09 GB transfer.
 
 1. **(User)** Create a new Neon project on **AWS `us-east-1`** (same area as Vercel's default `iad1` region), **Postgres 17**. Either create it directly at neon.tech or through the Vercel Marketplace integration. Enable scale-to-zero with the smallest compute size (0.25 CU).
-2. Copy the data with `pg_dump`/`pg_restore` (local pg_dump is 18.6, which can dump PG 17). **Exclude the `hangfire` schema.** Include materialized views and `__EFMigrationsHistory`, unchanged:
+2. Populate the new DB by **running the existing C# seed locally** rather than copying data. The nightly sync has been failing, so the old data isn't trusted.
    ```bash
-   pg_dump "$OLD_URL" -Fc --no-owner --no-acl --exclude-schema=hangfire -f benchwarmer.dump
-   pg_restore -d "$NEW_URL" --no-owner --no-acl -j 4 benchwarmer.dump
+   export ConnectionStrings__DefaultConnection="<new direct conn string, Npgsql format>"
+   export AdminApiKey="<any local key>"
+   dotnet ef database update --project server/Benchwarmer.Data --startup-project server/Benchwarmer.Api   # schema + materialized views
+   ASPNETCORE_ENVIRONMENT=Development dotnet run --project server/Benchwarmer.Api
+   curl -X POST localhost:<port>/api/admin/seed -H "X-API-Key: $AdminApiKey"   # 2008 → current, hours
+   curl -X POST localhost:<port>/api/admin/sync -H "X-API-Key: $AdminApiKey"   # after seed: games + score-state times (current season)
    ```
-   Use the **direct** (non-pooled) connection strings for dump/restore.
-3. Verify: row counts per table match, `REFRESH MATERIALIZED VIEW` works, sizes look right.
-4. Keep the old Azure DB **read-only and untouched** as the parity baseline until cutover. The C# API on Fly keeps using it, so Phase 2 parity fixtures come from the old stack.
-5. The new app (and `drizzle-kit pull`) points at the **new** DB. Its data will drift as nightly syncs run on the old DB, so take parity fixtures and the dump at the same time, or re-dump before parity runs.
-6. At cutover (Phase 4): do a final fresh dump/restore (or let the new cron catch up), then delete the Azure Neon project.
+   - The seed does **not** populate `games` or `game_score_state_times`. Only the nightly sync does, and only for the current season. The old DB has games for 2025 and 2026, so 2025 games/score-state would be missing unless backfilled (a one-off season parameter, or accept the gap).
+   - Hangfire `InvisibilityTimeout` is 4h. If the seed runs longer, Hangfire may re-queue it, but `[DisableConcurrentExecution(0)]` + `[AutomaticRetry(0)]` make the duplicate fail fast instead of running twice. A logged failure there is harmless.
+   - Running locally also shows whether the nightly sync logic itself works when it isn't OOM-constrained.
+3. Verify: compare row counts per table vs the old DB (expect differences where MoneyPuck revised data or the old sync was stale), and spot-check recent games.
+4. **Parity baseline = the C# API running locally against the new DB.** Both stacks read the same data, so any diff is a porting bug. The old Azure DB is no longer needed for parity.
+5. The new app (and `drizzle-kit pull`) points at the **new** DB. Fly production can keep using the old DB until cutover.
+6. At cutover (Phase 4): point production at the new DB, then delete the Azure Neon project. Drop the `hangfire` schema from the new DB in Phase 5.
 
 ## Phase 1: Scaffold
 
