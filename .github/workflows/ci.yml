@@ -45,13 +45,13 @@ jobs:
         env:
           ConnectionStrings__DefaultConnection: Host=localhost;Database=benchwarmer_test;Username=postgres;Password=postgres
 
-  client:
-    name: Client (Build & Lint)
+  app:
+    name: App (Lint, Typecheck, Test & Build)
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: client
+        working-directory: app
 
     steps:
       - uses: actions/checkout@v4
@@ -61,13 +61,16 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: client/package-lock.json
+          cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Lint
         run: npm run lint
+
+      - name: Test
+        run: npm test
 
       - name: Build
         run: npm run build

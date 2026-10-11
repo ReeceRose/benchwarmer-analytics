@@ -1,7 +1,7 @@
 import { config } from 'dotenv'
 import { defineConfig } from 'drizzle-kit'
 
-// client/.env.local wins over the repo-root .env.local written by `neon link`.
+// app/.env.local wins over the repo-root .env.local written by `neon link`.
 config({ path: ['.env.local', '../.env.local'], quiet: true })
 
 // Migrations should use a direct (non-pooled) connection; fall back to

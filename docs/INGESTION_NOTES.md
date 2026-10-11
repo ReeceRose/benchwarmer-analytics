@@ -1,7 +1,7 @@
 # Ingestion notes
 
 TypeScript port of `server/Benchwarmer.Ingestion` (code in
-`client/src/server/ingestion/`). This records how it works and where it
+`app/src/server/ingestion/`). This records how it works and where it
 deliberately differs from the C# jobs.
 
 ## Sources
@@ -39,7 +39,7 @@ skater rows (name fallback only), and score-state reads shots.
 
 ## Cron (Vercel)
 
-Defined in `client/vite.config.ts` and emitted into the Vercel build output.
+Defined in `app/vite.config.ts` and emitted into the Vercel build output.
 Every route requires `Authorization: Bearer $CRON_SECRET` (Vercel Cron sends
 it) and accepts `?season=YYYY` for manual re-runs.
 
@@ -63,7 +63,7 @@ previous one, and the shots route computes score-state itself.
 ## Backfill
 
 ```bash
-cd client
+cd app
 npm run backfill -- --yes                         # 2008 → current, every step
 npm run backfill -- --from-season 2024 --dataset shots,score_state --force --yes
 ```

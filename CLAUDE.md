@@ -17,7 +17,7 @@ Benchwarmer Analytics is a hockey analytics platform for exploring NHL data, lin
 
 ## Commands
 
-All commands run from `client/`:
+All commands run from `app/`:
 
 ```bash
 npm ci                  # install
@@ -45,7 +45,7 @@ DATABASE_URL=postgresql://postgres:scratch@localhost:55432/benchwarmer npm run d
 ## Architecture
 
 ```
-client/                       # the app (TanStack Start)
+app/                          # the app (TanStack Start)
 ├── src/router.tsx            # getRouter(): router + per-router QueryClient
 ├── src/start.ts              # createStart(): defaultSsr: false (SPA-style rendering)
 ├── src/routes/               # UI routes; __root.tsx is the HTML shell + providers
@@ -68,7 +68,7 @@ docs/INGESTION_NOTES.md       # ingestion steps, cron, backfill, and fixes vs th
 
 ## Key Configuration
 
-- **Environment** (see `client/.env.example`): `DATABASE_URL` (pooled), `DATABASE_URL_UNPOOLED` (direct, for migrations and backfill), `CRON_SECRET`. Locally, put them in `.env.local` at the repo root (where `neon link` writes it) or in `client/.env.local` (which takes precedence).
+- **Environment** (see `app/.env.example`): `DATABASE_URL` (pooled), `DATABASE_URL_UNPOOLED` (direct, for migrations and backfill), `CRON_SECRET`. Locally, put them in `.env.local` at the repo root (where `neon link` writes it) or in `app/.env.local` (which takes precedence).
 - `getDb()` uses neon-http for Neon URLs and node-postgres for localhost URLs, so a scratch docker Postgres works in development.
 - Rendering: routes are client-rendered (`defaultSsr: false`); only the root shell is server-rendered. Components may use `window`/`localStorage` freely.
 - `/api` routes must set an explicit handler for each method they support, plus `ANY: methodNotAllowed`, so wrong-method requests don't fall through to the HTML shell.

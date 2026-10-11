@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import { config } from 'dotenv'
 
-// Server-side env for local dev. client/.env.local wins over the repo-root
+// Server-side env for local dev. app/.env.local wins over the repo-root
 // .env.local written by `neon link`. Vercel provides env vars directly.
 config({ path: ['.env.local', '../.env.local'], quiet: true })
 

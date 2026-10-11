@@ -1,7 +1,7 @@
 # Schema notes
 
-The Drizzle schema (`client/src/server/db/schema.ts`) and baseline migration
-(`client/drizzle/0000_init.sql`) were derived by reading the C# EF Core model:
+The Drizzle schema (`app/src/server/db/schema.ts`) and baseline migration
+(`app/drizzle/0000_init.sql`) were derived by reading the C# EF Core model:
 `server/Benchwarmer.Data/Entities/*`, `AppDbContext.cs`, the latest
 `Migrations/AppDbContextModelSnapshot.cs`, and the three materialized-view
 migrations. No C# code was run and no existing database was read.

@@ -27,7 +27,7 @@ show_help() {
     echo ""
     echo "Then in separate terminals:"
     echo "  dotnet watch run --project server/Benchwarmer.Api --no-hot-reload"
-    echo "  cd client && npm run dev"
+    echo "  cd app && npm run dev"
 }
 
 start_postgres() {
@@ -53,7 +53,7 @@ cmd_start() {
     echo ""
     echo -e "${GREEN}Next steps:${NC}"
     echo "  Terminal 1: dotnet watch run --project server/Benchwarmer.Api --no-hot-reload"
-    echo "  Terminal 2: cd client && npm run dev"
+    echo "  Terminal 2: cd app && npm run dev"
 }
 
 cmd_stop() {
