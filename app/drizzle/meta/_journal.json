@@ -15,6 +15,13 @@
       "when": 1791739257381,
       "tag": "0001_shots_unique_per_season",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791740734550,
+      "tag": "0002_shots_key_game_event",
+      "breakpoints": true
     }
   ]
 }

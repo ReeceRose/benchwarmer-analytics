@@ -41,15 +41,20 @@ export async function importShots(db: Queryable, csv: Readable | string, options
   let batch: UpsertRow<typeof shots>[] = [];
   const result: ShotImportResult = { written: 0, rowsRead: 0, rowsConsidered: 0, gameIds: new Set() };
   const flush = async () => {
-    result.written += await upsert(db, shots, batch, { conflict: ["season", "shotId"], batchSize: BATCH_SIZE });
+    result.written += await upsert(db, shots, batch, { conflict: ["gameId", "eventId"], batchSize: BATCH_SIZE });
     batch = [];
   };
 
+  // MoneyPuck repeats some events under a new shotID (2008); the first wins.
+  const seen = new Set<string>();
   for await (const record of parseCsv(csv, shotFields)) {
     result.rowsRead++;
     const row = mapShot(record);
     const gameId = row.gameId as string;
     if (options.includeGame && !options.includeGame(gameId)) continue;
+    const key = `${gameId}|${row.eventId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
     result.rowsConsidered++;
     result.gameIds.add(gameId);
     batch.push(row);

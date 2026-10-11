@@ -577,9 +577,10 @@ export const shots = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index("ix_shots_game_id").on(t.gameId),
-    // MoneyPuck shot IDs restart at 0 every season, so they are only unique per season.
-    uniqueIndex("ix_shots_season_shot_id").on(t.season, t.shotId),
+    // Natural key: the NHL event within its game (game_id encodes the season).
+    // MoneyPuck shotID is not usable: it restarts every season since 2018 and is
+    // renumbered mid-season, and 2008 has events duplicated under new shotIDs.
+    uniqueIndex("ix_shots_game_id_event_id").on(t.gameId, t.eventId),
     index("ix_shots_goalie_player_id_season").on(t.goaliePlayerId, t.season),
     index("ix_shots_season_is_goal").on(t.season, t.isGoal),
     index("ix_shots_season_team_code").on(t.season, t.teamCode),

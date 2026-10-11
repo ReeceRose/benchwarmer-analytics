@@ -76,12 +76,13 @@ backfill also loads games and score-state for every season.
 
 Bugs fixed:
 
-0. **Shots from different seasons overwrote each other.** MoneyPuck's
-   `shotID` restarts at 0 every season from 2018 on (2008-2017 are numbered
-   continuously), but the C# schema and upsert keyed shots on `shot_id`
-   alone. Each season's import replaced earlier seasons' rows with the same
-   IDs, which is why production held ~1.1M shots instead of ~2M. Shots are now
-   keyed on `(season, shot_id)`.
+0. **Shots overwrote each other.** The C# schema and upsert keyed shots on
+   MoneyPuck's `shotID`, which isn't unique: it restarts at 0 every season
+   since 2018 (2008-2017 are numbered continuously), restarts mid-file in the
+   in-progress season's file, and the 2008 file repeats some events under new
+   shotIDs. Each season's import replaced other seasons' shots, which is why
+   production held ~1.1M shots instead of ~2M. Shots are now keyed on
+   `(game_id, event_id)`, and repeated events in a file are imported once.
 1. **Score-state used the wrong clock.** MoneyPuck's `time` column is seconds
    since the start of the game (period 2 runs 1200-2400), but
    `ScoreStateTimeCalculator` treated it as time within the period. Every
