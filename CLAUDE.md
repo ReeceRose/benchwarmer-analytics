@@ -49,11 +49,12 @@ app/                          # the app (TanStack Start)
 ├── src/router.tsx            # getRouter(): router + per-router QueryClient
 ├── src/start.ts              # createStart(): defaultSsr: false (SPA-style rendering)
 ├── src/routes/               # UI routes; __root.tsx is the HTML shell + providers
-├── src/routes/api/           # /api/* server routes ($.ts = JSON 404 for unported paths)
+├── src/routes/api/           # /api/* server routes: thin wrappers around src/server/api ($.ts = JSON 404)
 ├── src/routes/api/cron/      # ingestion cron jobs (schedules in vite.config.ts)
 ├── src/server/db/            # schema.ts (Drizzle) + client.ts (getDb)
 ├── src/server/ingestion/     # MoneyPuck/NHL downloads, CSV specs, importers, steps
 ├── src/server/cron.ts        # cron route auth/wrapper (CRON_SECRET)
+├── src/server/api/           # API handlers by group, NHL API client, query/error/cache helpers
 ├── src/server/http.ts        # shared Response helpers
 ├── src/lib/api.ts            # axios client for same-origin /api (contract the UI depends on)
 ├── src/types/                # response shapes: source of truth for the /api contract
@@ -64,6 +65,7 @@ server/                       # legacy C# (reference only, see above)
 docs/MIGRATION_PLAN.md        # migration phases
 docs/SCHEMA_NOTES.md          # how the schema maps to the EF model, and deliberate differences
 docs/INGESTION_NOTES.md       # ingestion steps, cron, backfill, and fixes vs the C# jobs
+docs/API_NOTES.md             # API structure, cache tiers, and differences from the C# API
 ```
 
 ## Key Configuration
@@ -72,6 +74,7 @@ docs/INGESTION_NOTES.md       # ingestion steps, cron, backfill, and fixes vs th
 - `getDb()` uses neon-http for Neon URLs and node-postgres for localhost URLs, so a scratch docker Postgres works in development.
 - Rendering: routes are client-rendered (`defaultSsr: false`); only the root shell is server-rendered. Components may use `window`/`localStorage` freely.
 - `/api` routes must set an explicit handler for each method they support, plus `ANY: methodNotAllowed`, so wrong-method requests don't fall through to the HTML shell.
+- API handlers live in `src/server/api/<group>.ts` and are wrapped with `apiHandler(CacheTier.x, fn)` (query parsing, `{ error, code }` errors, CDN cache header). GET handlers are read-only. Use `round()` from `format.ts` wherever the C# used `Math.Round`.
 
 ## Database
 
@@ -99,5 +102,6 @@ docs/INGESTION_NOTES.md       # ingestion steps, cron, backfill, and fixes vs th
 - `docs/MIGRATION_PLAN.md` - C# → TypeScript migration plan
 - `docs/SCHEMA_NOTES.md` - schema derivation and differences from the EF model
 - `docs/INGESTION_NOTES.md` - ingestion steps, cron schedule, backfill, and fixes vs the C# jobs
+- `docs/API_NOTES.md` - API structure, cache tiers, and differences from the C# API
 - `docs/PRD.md` - Product requirements (pre-migration)
 - `docs/TODO.md` - Implementation checklist (pre-migration)

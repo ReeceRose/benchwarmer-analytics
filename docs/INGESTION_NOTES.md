@@ -45,7 +45,7 @@ it) and accepts `?season=YYYY` for manual re-runs.
 
 | Route | UTC | Work |
 |---|---|---|
-| `/api/cron/schedule` | 09:00 daily | games for yesterday + today (ET) |
+| `/api/cron/schedule` | 09:00 daily | games from yesterday through the next 7 days (ET) |
 | `/api/cron/season-stats` | 09:15 daily | teams, skaters, goalies, lines for the current season |
 | `/api/cron/shots` | 09:30 daily | incremental shots + score-state for the touched games |
 | `/api/cron/derived` | 09:45 daily | full-season score-state (only changes written) + view refresh |
@@ -73,6 +73,9 @@ Resumable: (step, season) pairs that already succeeded are skipped unless
 backfill also loads games and score-state for every season.
 
 ## Differences from the C# ingestion
+
+The schedule cron covers the coming week because the API no longer stores
+games while serving requests (the C# API did; see `API_NOTES.md`).
 
 Bugs fixed:
 
