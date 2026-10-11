@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import type { SQL } from "drizzle-orm";
 import { drizzle as drizzleNeonHttp } from "drizzle-orm/neon-http";
 import { drizzle as drizzleNodePg } from "drizzle-orm/node-postgres";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
@@ -30,4 +31,11 @@ function createDb(): Database {
 export function getDb(): Database {
   instance ??= createDb();
   return instance;
+}
+
+// Raw SQL rows. Both drivers return `{ rows }`, but PgDatabase's generic
+// execute() type can't express that. Note numeric/bigint arrive as strings.
+export async function queryRows<T>(db: Database, query: SQL): Promise<T[]> {
+  const result = (await db.execute(query)) as unknown as { rows: T[] };
+  return result.rows;
 }
