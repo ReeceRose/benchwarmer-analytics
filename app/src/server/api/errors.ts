@@ -4,11 +4,14 @@ export interface ApiErrorBody {
   code: string;
 }
 
+// A few C# endpoints returned other shapes (a bare string, `{ error }`).
+export type ErrorBody = ApiErrorBody | { error: string } | string;
+
 export class HttpError extends Error {
   readonly status: number;
-  readonly body: unknown;
+  readonly body: ErrorBody;
 
-  constructor(status: number, body: ApiErrorBody | string) {
+  constructor(status: number, body: ErrorBody) {
     super(typeof body === "string" ? body : body.error);
     this.status = status;
     this.body = body;
@@ -42,10 +45,10 @@ export const ApiError = {
   invalidParameter: (name: string) => error(`Invalid or missing query parameter '${name}'`, "INVALID_PARAMETER"),
 };
 
-export function notFound(body: ApiErrorBody | string): never {
+export function notFound(body: ErrorBody): never {
   throw new HttpError(404, body);
 }
 
-export function badRequest(body: ApiErrorBody | string): never {
+export function badRequest(body: ErrorBody): never {
   throw new HttpError(400, body);
 }

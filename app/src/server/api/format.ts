@@ -49,3 +49,18 @@ export function groupBy<T, K>(items: readonly T[], key: (item: T) => K): Map<K, 
 export function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DAY_ONE = Date.parse("0001-01-01T00:00:00Z");
+
+// C# DateOnly.MinValue, used where a game date is unknown.
+export const MIN_DATE = "0001-01-01";
+
+// C# DateOnly.DayNumber: days since 0001-01-01.
+export function dayNumber(date: string): number {
+  return Math.round((Date.parse(`${date}T00:00:00Z`) - DAY_ONE) / DAY_MS);
+}
+
+export function addDays(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
+}
