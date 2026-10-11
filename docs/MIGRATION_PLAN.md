@@ -2,192 +2,163 @@
 
 ## Goals
 
-- Remove all C#/.NET code. One TypeScript codebase.
-- **Neon Postgres**, in a **brand-new project** (AWS us-east-1) seeded from scratch. The old DB is never read or migrated. Schema names stay identical to the EF model during the port.
-- Host on **Vercel**. Ingestion runs on **Vercel Cron**.
-- Cut Neon cost: no background polling, no duplicate syncs, no full-season re-upserts.
-- Zero visible change for users: same URLs, same API responses, same UI.
+- **Wholesale replacement.** The C# app is not run again, for any reason. It serves only as **reference source code** for the logic being ported. It currently doesn't work in production.
+- One TypeScript codebase: **TanStack Start** on **Vercel**, **Drizzle** on a **brand-new Neon project**, ingestion via **Vercel Cron**.
+- Net-new database: never read from or migrate the old DB. Data comes from a fresh TS backfill.
+- Keep the user-facing app the same: same URLs, same `/api/*` contract the client expects (as defined by `client/src/types` + `client/src/lib/api.ts`), same UI.
+- Cheap to run: no background polling, no full-season re-upserts, CDN caching so Neon can scale to zero.
 
-## Why (findings from 2026-10-11)
+## Context (2026-10-11)
 
-- Nightly Hangfire sync has **failed every night since at least 2026-09-12**.
-- 748 Hangfire server registrations → the Fly app (256 MB) is crash-looping from OOM.
-- Hangfire continuously writes to Postgres (55k+ `lock` row inserts), keeping Neon compute awake.
-- The sync is triggered **twice**: Hangfire's `RecurringJob` *and* `.github/workflows/scheduled-sync.yml` curling `/api/admin/sync`.
-- Shots are re-downloaded and re-upserted for the **whole season** every night (`team_seasons` shows ~10 rewrites per row).
-- DB size: 1.6 GB total, `shots` = 1.38 GB (1.1M rows). Everything else ≈ 220 MB.
+- The production C# app on Fly (256 MB) crash-loops from OOM. The nightly Hangfire sync has failed every night since at least 2026-09-12.
+- Hangfire's constant DB writes kept Neon awake. The sync was also triggered twice (Hangfire recurring job + GH Actions curl), and re-upserted every shot for the whole season each night.
+- Old DB size for reference: ~1.6 GB, of which `shots` = 1.38 GB (~1.1M rows, 2008 → present).
 
 ## Target architecture
 
 ```
-app/ (TanStack Start, deployed to Vercel)
-├── src/routes/            # existing UI routes (moved from client/src/routes)
-├── src/routes/api/        # server routes reproducing /api/* REST contract
-├── src/server/db/         # Drizzle schema + client (migrations in drizzle/)
+client/ (converted in place to TanStack Start; rename to app/ optional)
+├── src/routes/            # existing UI routes
+├── src/routes/api/        # server routes implementing /api/*
+├── src/server/db/         # Drizzle schema + client
 ├── src/server/queries/    # ports of C# repositories
 ├── src/server/services/   # ports of Api/Endpoints/Helpers + DeserveToWinService
 ├── src/server/ingestion/  # downloaders, CSV parsers, importers, sync steps
-└── scripts/               # backfill / seed CLI (run locally or in GH Actions)
+├── drizzle/               # migrations, starting with a single 0000_init.sql
+└── scripts/               # backfill CLI
 ```
 
 Decisions:
 
-- **Keep the REST contract.** Implement `/api/*` as TanStack Start server routes so `client/src/lib/api.ts` and all hooks work unchanged, and responses can be diffed against the C# API. Converting to server functions can happen later, optionally.
-- **Start in SPA mode** (or SSR off for most routes) to minimize UI changes. SSR can be enabled per-route later.
-- **Drizzle ORM owns the schema and migrations from the start**: one baseline migration (`0000_init.sql`) for the new DB, names identical to the EF model. See Phase 0.5.
-- **DB driver:** `@neondatabase/serverless` (HTTP/WebSocket) via `drizzle-orm/neon-http` for request handlers. Use the **pooled** Neon connection string.
-- **Caching:** replace ASP.NET OutputCache with `Cache-Control` headers (`s-maxage` + `stale-while-revalidate`) so Vercel's CDN absorbs repeat reads and Neon sleeps more. Map the existing policies:
-  | C# policy | TTL | Header |
-  |---|---|---|
-  | StaticData | 24h | `public, s-maxage=86400, stale-while-revalidate=86400` |
-  | SemiStaticData | 6h | `s-maxage=21600, swr=21600` |
-  | TeamData | 30m | `s-maxage=1800, swr=3600` |
-  | SearchResults | 5m | `s-maxage=300, swr=600` |
-  | LiveData | 15s | `s-maxage=15, swr=30` |
-- **Validation:** `zod` for query params (replaces minimal API binding and route constraints such as `{id:int}`).
-- **CSV:** `csv-parse` (streaming) for MoneyPuck files. `fflate`/`unzipper` if any download is zipped.
-- **Tests:** Vitest. Port the existing xUnit tests (few) and add parity tests.
+- **Keep the REST contract.** `/api/*` implemented as TanStack Start server routes, so `client/src/lib/api.ts` and the hooks stay unchanged. The client's TS types are the source of truth for response shapes.
+- **SPA mode first** (SSR off) to minimize UI changes. SSR per-route later, optionally.
+- **Drizzle owns the schema** from day one, as one baseline migration.
+- **DB driver:** `@neondatabase/serverless` via `drizzle-orm/neon-http` in request handlers, using the pooled connection string. The backfill CLI can use a direct connection (`postgres`/`pg`) for bulk speed.
+- **Caching:** `Cache-Control` with `s-maxage` + `stale-while-revalidate` per route, so Vercel's CDN absorbs repeat reads. Reuse the C# tiers:
+  | Tier | Header |
+  |---|---|
+  | Static (24h) | `public, s-maxage=86400, stale-while-revalidate=86400` |
+  | Semi-static (6h) | `public, s-maxage=21600, stale-while-revalidate=21600` |
+  | Team data (30m) | `public, s-maxage=1800, stale-while-revalidate=3600` |
+  | Search (5m) | `public, s-maxage=300, stale-while-revalidate=600` |
+  | Live (15s) | `public, s-maxage=15, stale-while-revalidate=30` |
+  Look up each endpoint's tier from its `CacheOutput(...)` in the C# source.
+- **Validation:** `zod` for query/path params.
+- **CSV:** `csv-parse` (streaming).
+- **Tests:** Vitest.
 
-## Phase 0: Preparation (on current production)
+## Phase 1: Scaffold + schema
 
-1. Stop the duplicate trigger: disable `.github/workflows/scheduled-sync.yml` **or** remove the Hangfire `RecurringJob` registrations (pick one, ideally the GH workflow, until cutover).
-2. Record a baseline of Neon usage (compute hours/day, storage) from the Neon console for later comparison.
-3. Snapshot API responses for parity testing: write `scripts/snapshot-api.ts` that hits every endpoint (list below) on the **C# API running locally against the new DB** with representative params and saves JSON to `parity/fixtures/`. Don't run ingestion between taking fixtures and running parity checks.
+1. Convert `client/` in place to TanStack Start (keep git history):
+   - `vite.config.ts`: `tanstackStart()` + react + tailwind, keep the `@` alias, drop the `/api` dev proxy to `localhost:5000`.
+   - Move bootstrapping (`main.tsx`/`App.tsx`) into Start's `router.tsx`/`__root.tsx` conventions. Keep QueryClient + contexts.
+   - API base URL becomes same-origin `/api` (drop the `VITE_API_URL` default).
+   - Configure the Vercel deployment target per current TanStack Start docs.
+2. Design the Drizzle schema in `src/server/db/schema.ts`, **using the C# EF model as the reference** (`server/Benchwarmer.Data/Entities/*`, `AppDbContext.cs`, and the latest `AppDbContextModelSnapshot.cs` for exact column types, keys, and indexes). Read the source directly; no need to run `dotnet`.
+   - Keep table and column names close to the existing ones (snake_case), so ported queries and raw SQL in `LineRepository`/`SkaterStatsRepository` translate directly. Improvements are allowed where clearly beneficial; note each one.
+   - Port both materialized views (`chemistry_pairs`, `season_percentiles`) and their unique indexes (required for `REFRESH ... CONCURRENTLY`) from the EF migrations `AddChemistryPairsMaterializedView`, `AddPositionsToChemistryPairs`, `AddSeasonPercentilesMaterializedView` as custom SQL.
+   - Add a `sync_runs` table (step, season, started_at, finished_at, status, rows_written, error) for ingestion visibility.
+   - No Hangfire tables and no `__EFMigrationsHistory`.
+3. `drizzle-kit generate` → a single `drizzle/0000_init.sql` (with the custom view SQL appended). Verify it applies cleanly to a throwaway local Postgres 17 (`docker compose`).
+4. `src/server/db/client.ts` (neon-http, `DATABASE_URL`). `/api/health` runs `select 1`.
+5. Update `CLAUDE.md`, `package.json` scripts (`db:generate`, `db:migrate`, `backfill`), `.env.example` (`DATABASE_URL`, `DATABASE_URL_DIRECT`, `CRON_SECRET`).
 
-## Phase 0.5: New database (net new, old DB is out of scope)
+**Exit criteria:** app builds and runs locally, `0000_init.sql` applies to a fresh local Postgres, `/api/health` works against it.
 
-We start from a **brand-new Neon project** and never read from or migrate the old Azure-region DB. Its data is not trusted (the nightly sync has been failing).
+## Phase 2: New Neon project + ingestion + backfill
 
-1. **(User)** Create a new Neon project on **AWS `us-east-1`** (close to Vercel `iad1`), **Postgres 17**, scale-to-zero, 0.25 CU min.
-2. **Drizzle owns the schema from day one, as a single baseline migration** (`drizzle/0000_init.sql`):
-   - Derive the schema from the **EF model, not a live DB**: `dotnet ef migrations script --project server/Benchwarmer.Data --startup-project server/Benchwarmer.Api -o /tmp/ef-final.sql` (works offline). Apply it to a throwaway local Postgres (`docker compose`), `drizzle-kit pull` from there, then tidy `schema.ts`.
-   - Table/column/index names must stay **identical** to the EF model, because the C# app is still used against this DB for seeding and the parity baseline. EF doesn't auto-migrate on startup (no `Migrate()` call), so it runs fine on a Drizzle-created schema.
-   - The materialized views (`chemistry_pairs`, `season_percentiles`, from the EF migrations `AddChemistryPairsMaterializedView`, `AddPositionsToChemistryPairs`, `AddSeasonPercentilesMaterializedView`) and their unique indexes go into the same baseline as custom SQL.
-   - Run `drizzle-kit generate` once → `0000_init.sql`. Apply with `drizzle-kit migrate`. No `__EFMigrationsHistory`, and EF migrations are never run against the new DB.
-3. **Seed with the existing C# job, locally**, against the new DB:
-   ```bash
-   export ConnectionStrings__DefaultConnection="<new direct conn string, Npgsql format>"
-   export AdminApiKey="<any local key>"
-   ASPNETCORE_ENVIRONMENT=Development dotnet run --project server/Benchwarmer.Api
-   curl -X POST localhost:<port>/api/admin/seed -H "X-API-Key: $AdminApiKey"   # 2008 → current, hours
-   curl -X POST localhost:<port>/api/admin/sync -H "X-API-Key: $AdminApiKey"   # then: games + score-state (current season)
-   ```
-   - The seed doesn't populate `games`/`game_score_state_times`. Only the nightly sync does, for the current season only. Prior-season games are out of scope unless needed.
-   - Hangfire will create a `hangfire` schema in the new DB. Drop it in Phase 5.
-   - Running locally (no OOM) also shows whether the sync logic itself is broken.
-4. **Parity baseline = the C# API running locally against the new DB.** Both stacks read identical data, so any diff is a porting bug.
-5. Production on Fly keeps whatever it has until cutover. At cutover, production points only at the new DB, and the old Neon project is deleted.
+Ingestion comes **before** the API, because there's no data until the TS backfill runs.
 
-## Phase 1: Scaffold
+**(User)** Create a Neon project on **AWS `us-east-1`** (near Vercel `iad1`), Postgres 17, scale-to-zero, 0.25 CU minimum. Provide pooled + direct connection strings. Apply `0000_init.sql` with `drizzle-kit migrate`.
 
-1. Create the TanStack Start app. Preferred approach: convert `client/` in place (rename to `app/` or keep `client/`) rather than a new copy, so git history follows the files.
-   - Replace `vite.config.ts` plugins with `tanstackStart()` (+ `react`, `tailwindcss`), keeping the `@` alias.
-   - Move `main.tsx`/`App.tsx` bootstrapping into Start's `router.tsx` + `__root.tsx` conventions. Keep QueryClient provider and contexts.
-   - Remove the dev proxy to `localhost:5000` and the `VITE_API_URL` default (API becomes same-origin `/api`).
-   - Configure the Vercel target (Nitro `vercel` preset / per current TanStack Start docs).
-2. Add Drizzle: `drizzle.config.ts`, `src/server/db/schema.ts`, and the single baseline migration `drizzle/0000_init.sql`, built as described in Phase 0.5 (from the EF model via a throwaway local Postgres, never from the old DB).
-3. Add `src/server/db/client.ts` (neon-http driver). Env: `DATABASE_URL` (pooled).
-4. Add `/api/health` server route that runs `select 1`.
-5. Deploy a preview to Vercel and confirm UI loads (still calling the Fly API is fine at this point via an env override).
-6. Update `CLAUDE.md`, root `package.json` scripts, `.env.example` (`DATABASE_URL`, `CRON_SECRET`).
+Reference source: `server/Benchwarmer.Ingestion/` (Jobs, Importers, Parsers, Services) + `TeamAbbreviationNormalizer.cs`.
 
-**Exit criteria:** app builds, runs locally with `npm run dev`, preview deploy works, `/api/health` hits Neon.
+1. **Parsers:** typed row mappers over `csv-parse` streams. Match the MoneyPuck column mappings in the `*Record.cs` files (`ShotRecord` is ~125 columns).
+2. **Downloaders:** port `MoneyPuckDownloader` and `NhlScheduleService` with `fetch` + streaming. Be polite to MoneyPuck: sequential downloads, retry with backoff.
+3. **Importers:** batched `INSERT ... ON CONFLICT DO UPDATE` (~1000 rows/batch), with `WHERE ... IS DISTINCT FROM ...` so unchanged rows aren't rewritten. Port any normalization logic exactly (team abbreviations, game ID conversion in `ShotImporter`, etc.).
+4. **Shots:** incremental by default. Only insert shots for games not already present, plus games from the last N days to catch MoneyPuck corrections.
+5. **Derived data:** port `ScoreStateTimeCalculator` and materialized view refreshes (`REFRESH MATERIALIZED VIEW CONCURRENTLY`).
+6. **Backfill CLI** (`scripts/backfill.ts`, port of `InitialSeedJob`, which goes 2008 → current). Options: `--from-season`, `--to-season`, `--dataset`. Resumable: records progress in `sync_runs`, and skips completed season/dataset pairs unless `--force`. Runs locally against the direct connection, with no time limits.
+   - Unlike the C# seed, the backfill **also syncs the NHL schedule/games and computes score-state times** for every season it loads, so historical seasons are complete.
+7. **Cron routes**, each idempotent and well under Vercel's function duration limit:
+   | Route | Work | Schedule (UTC) |
+   |---|---|---|
+   | `/api/cron/schedule` | NHL schedule/games sync | 09:00 daily |
+   | `/api/cron/season-stats` | teams, skaters, goalies, lines (reg + playoffs) | 09:15 daily |
+   | `/api/cron/shots` | incremental shots | 09:30 daily |
+   | `/api/cron/derived` | score-state + view refresh | 09:45 daily |
+   | `/api/cron/bios` | player bios (`WeeklyBioSyncJob`) | Sun 10:00 |
+   Protected by `Authorization: Bearer ${CRON_SECRET}`. `maxDuration` set per route. Check current Vercel plan limits (duration, cron frequency, Hobby = non-commercial) before finalizing.
+8. **Verify data** (no C# baseline exists):
+   - Row counts per season/dataset equal the source CSV row counts (minus intentional filters).
+   - Spot-check a handful of players/teams/games against MoneyPuck and NHL.com.
+   - Re-running a cron step immediately writes ~0 rows.
+   - Unit tests for parsers and normalizers using small CSV fixtures.
 
-## Phase 2: Port the read API
+**Exit criteria:** full backfill completed on the new Neon DB, all cron steps succeed locally against it within time limits, and data spot-checks pass.
 
-Port one group at a time, each in its own PR-sized commit. For each: port repository queries → helpers/mappers → route handler → parity check against fixtures.
+## Phase 3: Port the read API
 
-Source files:
+Port one group at a time (one commit each): queries → helpers/mappers → route → tests → check the corresponding UI pages locally.
+
+Reference source:
 - Endpoints: `server/Benchwarmer.Api/Endpoints/*.cs`
 - Helpers: `server/Benchwarmer.Api/Endpoints/Helpers/*.cs` (GameMappers, GamePreviewBuilder, GoalieWorkloadBuilder, LeaderboardBuilder, PlayerHelpers, ShotMappers, SpecialTeamsStatsMappers, StandingsMappers, StatsMappers, TeamMappers)
 - Service: `server/Benchwarmer.Api/Services/DeserveToWinService.cs`
-- Repositories: `server/Benchwarmer.Data/Repositories/*.cs` (raw SQL in `LineRepository`, `SkaterStatsRepository`)
+- Repositories: `server/Benchwarmer.Data/Repositories/*.cs`
 - Constants: `server/Benchwarmer.Data/{NhlConstants,GameState,LeaderboardCategories}.cs`, `Constants/`
-- DTOs: `server/Benchwarmer.Api/Dtos/`, compare against `client/src/types/` (reuse client types as the source of truth where they match)
+- Response shapes: `client/src/types/` (source of truth), cross-checked with `server/Benchwarmer.Api/Dtos/`
 
-Suggested order (simple → complex):
+Order (simple → complex):
 
 1. **Seasons** `/api/seasons`: `/`
 2. **Teams** `/api/teams`: `/`, `/{abbrev}`, `/{abbrev}/roster`, `/{abbrev}/seasons`, `/{abbrev}/lines`, `/{abbrev}/chemistry-matrix`, `/{abbrev}/score-state-stats`, `/{abbrev}/special-teams`, `/{abbrev}/special-teams/players`, `/{abbrev}/special-teams/trend`
 3. **Team shots** `/api/teams/{abbrev}/shots`: `/`, `/against`, `/shooters`
 4. **Players** `/api/players`: `/` (search), `/{id}`, `/{id}/stats`, `/{id}/linemates`, `/{id}/shots`, `/{id}/rolling-stats`, `/{id}/workload`, `/compare`
-5. **Standings** `/api/standings`: `/`, `/analytics`, `/power-rankings`, `/team-rankings` (verify exact mapping in `StandingsEndpoints.cs`)
-6. **Special teams** `/api/special-teams`: 3 endpoints
+5. **Standings** `/api/standings`
+6. **Special teams** `/api/special-teams`
 7. **Stats** `/api/stats`: `/homepage`, `/leaderboards`, `/category-rankings`, `/player-leaders`, `/top-lines`, `/outliers`, `/rookies`, `/breakout-candidates`, `/age-curves`, `/age-distribution/{age}`, `/league-trends`, `/season-percentiles/{season}`, `/skater-league-baselines`, `/goalie-league-baselines`, `/penalty-stats`
 8. **Games** `/api/games`: `/`, `/today`, `/yesterday`, `/live`, `/{gameId}`, `/{gameId}/boxscore`, `/{gameId}/preview`, `/{gameId}/shots`, `/{gameId}/goalie-form`, `/{gameId}/deserve-to-win`
 
-> The list above was compiled from `MapGet` calls. Confirm each group/prefix pairing in the source before porting.
+> Compiled from `MapGet` calls. Confirm group/prefix pairings in the source.
 
 Porting notes:
-- EF Core LINQ → Drizzle query builder. For heavy aggregations, prefer `sql` templates copied from the generated EF SQL (enable EF logging locally if needed) to guarantee identical results.
-- Watch for **numeric semantics**: C# `decimal`/`double` rounding, integer division, `Math.Round` (banker's rounding by default!) vs JS `Math.round`. Write a shared `roundHalfEven` helper if C# code uses default `Math.Round`.
-- Watch for **JSON casing and nulls**: ASP.NET emits camelCase and includes nulls. Match exactly.
-- Watch for **date handling**: `DateOnly`/`DateTime` serialization formats and timezone (UTC) assumptions.
-- Postgres `numeric` comes back as string from the driver. Convert explicitly where C# used `decimal`.
-- The C# app used `DbContextFactory` for **parallel queries** in some handlers. Use `Promise.all` but keep concurrency modest (Neon pooler).
-- Set `Cache-Control` per the policy table on every route, matching the C# `CacheOutput(...)` attribute for that endpoint.
-- Error shape: match C# `Results.NotFound()`/`BadRequest` status codes.
+- **Rounding:** C# `Math.Round` defaults to banker's rounding. Use a shared `roundHalfEven` helper wherever the C# used it.
+- Integer division in C# (`int / int`) truncates. Replicate it where intended.
+- JSON: camelCase, and nulls included where the client types expect them.
+- Dates: match `DateOnly`/`DateTime` formats and UTC assumptions the client relies on.
+- Postgres `numeric` arrives as a string from the driver. Convert explicitly.
+- Parallel queries: `Promise.all`, with modest fan-out.
+- Every GET route sets its cache tier header.
+- Status codes: 404/400 where the C# returned `NotFound`/`BadRequest`.
+- Unit tests (Vitest) for non-trivial calculations: deserve-to-win, percentiles, leaderboards, rolling stats, goalie workload, power rankings. Derive expected values by reading the C# logic.
 
-Parity tooling:
-- `scripts/parity.ts`: for each fixture, call the new local/preview endpoint, deep-diff JSON (ignore key order, tolerate float diffs < 1e-9), print a report. Run it after each group.
+**Exit criteria:** every endpoint used by `client/src/hooks` is implemented, and every page renders correctly locally against the new DB.
 
-**Exit criteria:** all GET endpoints pass parity. Client points at the same-origin API.
+## Phase 4: Deploy + cutover
 
-## Phase 3: Port ingestion (incremental, Vercel Cron)
-
-Source: `server/Benchwarmer.Ingestion/` (Jobs, Importers, Parsers, Services) + `TeamAbbreviationNormalizer.cs`.
-
-1. Port parsers (`CsvParser`, `*Record`) as typed row mappers over `csv-parse` streams. Keep column name mapping identical (`ShotRecord` has ~125 columns).
-2. Port `MoneyPuckDownloader` and `NhlScheduleService` using `fetch` (streaming bodies).
-3. Port importers with batched `INSERT ... ON CONFLICT DO UPDATE` (chunks of ~1000 rows). **Only update rows whose values changed:** add `WHERE (excluded.*) IS DISTINCT FROM (table.*)` on the relevant columns to avoid needless writes.
-4. **Incremental shots:** before importing, query existing `game_id`s for the season. Only insert shots for games not yet present (plus games from the last N days to catch MoneyPuck corrections). This drops nightly writes from the full season to a few thousand rows.
-5. Port `ScoreStateTimeCalculator` (scope to games changed in this run if possible) and the materialized view refreshes (`REFRESH MATERIALIZED VIEW CONCURRENTLY chemistry_pairs` / `season_percentiles`, matching existing names).
-6. Split the nightly job into independent cron routes, each well under the Vercel duration limit and each idempotent:
-   | Route | Work |
-   |---|---|
-   | `/api/cron/schedule` | NHL schedule / games sync |
-   | `/api/cron/season-stats` | teams, skaters, goalies, lines (regular + playoffs) |
-   | `/api/cron/shots` | incremental shots |
-   | `/api/cron/derived` | score-state times + materialized view refresh |
-   | `/api/cron/bios` | weekly player bio sync (`WeeklyBioSyncJob`) |
-   Stagger them in `vercel.json` `crons` (e.g. 09:00, 09:15, 09:30, 09:45 UTC; bios Sundays 10:00 UTC). Set `maxDuration` per route.
-7. Auth: each cron route requires `Authorization: Bearer ${CRON_SECRET}` (Vercel sends this automatically).
-8. Add a lightweight `sync_runs` log (step, started_at, finished_at, status, rows, error), or reuse an existing ingestion log table if one exists, so failures are visible. Vercel logs are short-lived.
-9. **Backfill/seed CLI** (`scripts/seed.ts`, port of `InitialSeedJob`): runs locally or via a `workflow_dispatch` GitHub Action. No duration limits. Supports `--season`, `--dataset`.
-10. Verify against a Neon **branch** (copy-on-write, cheap): run every cron step against the branch, compare row counts and spot-check values vs main.
-
-> Check current Vercel plan limits (function max duration, cron frequency, Hobby = non-commercial) before finalizing schedules.
-
-**Exit criteria:** all cron steps succeed on a Neon branch within time limits. A second run produces ~0 writes.
-
-## Phase 4: Cutover
-
-1. Set Vercel env vars: `DATABASE_URL` (pooled), `CRON_SECRET`.
-2. Point the production domain to Vercel (replaces Azure Static Web App + Fly API).
-3. Stop the Fly app (`fly scale count 0`), and leave it for a few days as a rollback option.
-4. Disable `.github/workflows/scheduled-sync.yml`.
-5. Monitor for 3 to 5 nights: cron success, Neon compute hours vs the Phase 0 baseline, error logs.
+1. **(User approval)** Create the Vercel project and set env vars: `DATABASE_URL` (pooled), `CRON_SECRET`. Deploy a preview and smoke-test every page.
+2. Point the production domain at Vercel (replacing Azure Static Web App + Fly).
+3. Enable crons. Watch 3 to 5 nightly runs via `sync_runs` and Vercel logs. Watch Neon compute hours.
 
 ## Phase 5: Cleanup
 
-1. Drop the Hangfire schema: `DROP SCHEMA hangfire CASCADE;`
-2. Delete `server/`, `server/fly.toml`, `infra/` (Azure bicep), C# parts of `docker-compose.yml`/`docker/`, `deploy.yml` steps for .NET/Fly/SWA. Update `ci.yml` to lint/typecheck/test the TS app.
-3. Delete the EF migrations along with `server/` (Drizzle already owns the schema).
-4. Update `CLAUDE.md`, `README.md`, `docs/PRD.md`, `docs/TODO.md` for the new stack.
-5. Destroy the Fly app and remove secrets (`FLY_API_TOKEN`, `SWA_DEPLOYMENT_TOKEN`, `API_KEY`). Rotate/retire `ADMIN_API_KEY`.
+1. Delete `server/`, `infra/` (Azure bicep), the .NET/Fly/SWA parts of `docker-compose.yml`, `docker/`, `.github/workflows/deploy.yml` and `scheduled-sync.yml`. Make `ci.yml` lint/typecheck/test/build the TS app.
+2. Update `CLAUDE.md`, `README.md`, `docs/PRD.md`, `docs/TODO.md`.
+3. **(User)** Destroy the Fly app, the Azure Static Web App, and the old Neon project. Remove stale secrets (`FLY_API_TOKEN`, `SWA_DEPLOYMENT_TOKEN`, `API_KEY`, `NEON_CONNECTION_STRING`).
 
 ## Later / optional
 
-- Shrink `shots` (1.38 GB): audit which of the ~125 columns the UI uses and drop or archive the rest. This could fit Neon's cheaper tiers.
-- Convert REST calls to TanStack Start server functions + route loaders, and enable SSR for SEO on player/team pages.
-- Re-evaluate the DB host once storage is reduced.
+- Shrink `shots` by dropping columns the UI never uses. This could fit a cheaper Neon tier.
+- Move to server functions + loaders, and SSR for player/team pages (SEO).
 
 ## Risks
 
 | Risk | Mitigation |
 |---|---|
-| Subtle stat differences after port | Fixture parity diffs per endpoint, `roundHalfEven`, copy EF-generated SQL for heavy queries |
-| Cron step exceeds duration limit | Incremental shots, split steps, per-step `maxDuration`, backfill CLI for heavy work |
-| Neon connection limits from serverless | Pooled connection string, neon-http driver, modest `Promise.all` fan-out |
-| Neon kept awake by traffic | CDN `s-maxage`/`swr` caching on all GET routes |
-| Rollback | Fly app scaled to 0 but intact until Phase 5 |
+| Ported logic subtly differs from C# | Read C# carefully, unit tests for calculations, rounding helper, spot-check against MoneyPuck/NHL.com |
+| No working baseline to compare against | Client types define shapes. External sources (MoneyPuck, NHL.com) validate values. |
+| Backfill is long or interrupted | Resumable per season/dataset via `sync_runs` |
+| Cron step exceeds duration limit | Incremental shots, split steps, per-route `maxDuration` |
+| Serverless connection limits | Neon pooled connection + neon-http driver |
+| Neon kept awake | CDN caching on all GET routes, no polling |
