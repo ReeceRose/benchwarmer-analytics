@@ -85,9 +85,9 @@ export function convertValue(raw: string, type: FieldType): number | string | nu
 }
 
 export interface ParseOptions {
-  // For index-bound specs: the header name expected at each index, so a
+  // For index-bound specs: the header name(s) accepted at each index, so a
   // MoneyPuck column reorder fails loudly instead of shifting data.
-  expectedHeaders?: Record<number, string>;
+  expectedHeaders?: Record<number, string | readonly string[]>;
   // Called once with header names the spec expects but the file lacks.
   onMissingColumns?: (columns: string[]) => void;
 }
@@ -145,8 +145,9 @@ function resolveColumns(header: string[], fields: readonly FieldSpec[], options:
 
   for (const [index, expected] of Object.entries(options.expectedHeaders ?? {})) {
     const actual = header[Number(index)];
-    if (actual !== expected) {
-      throw new CsvValueError(`expected header "${expected}" at column ${index}, found "${actual ?? "<none>"}"`);
+    const accepted = typeof expected === "string" ? [expected] : expected;
+    if (!accepted.includes(actual)) {
+      throw new CsvValueError(`expected header "${accepted.join('" or "')}" at column ${index}, found "${actual ?? "<none>"}"`);
     }
   }
 

@@ -558,8 +558,9 @@ export const shotFields = [
 ] as const satisfies readonly FieldSpec[];
 
 // Header names at each teams.csv index (including MoneyPuck typos such as
-// "penalityMinutesFor"), verified against the 2024 file.
-export const teamExpectedHeaders: Record<number, string> = {
+// "penalityMinutesFor"), verified against every season's file 2008-2026. The
+// 2018 regular-season file alone spells "penalitiesFor"/"penalitiesAgainst".
+export const teamExpectedHeaders: Record<number, string | readonly string[]> = {
   0: "team",
   1: "season",
   2: "name",
@@ -593,7 +594,7 @@ export const teamExpectedHeaders: Record<number, string> = {
   31: "playContinuedOutsideZoneFor",
   32: "savedShotsOnGoalFor",
   33: "savedUnblockedShotAttemptsFor",
-  34: "penaltiesFor",
+  34: ["penaltiesFor", "penalitiesFor"],
   35: "penalityMinutesFor",
   36: "faceOffsWonFor",
   37: "hitsFor",
@@ -641,7 +642,7 @@ export const teamExpectedHeaders: Record<number, string> = {
   79: "playContinuedOutsideZoneAgainst",
   80: "savedShotsOnGoalAgainst",
   81: "savedUnblockedShotAttemptsAgainst",
-  82: "penaltiesAgainst",
+  82: ["penaltiesAgainst", "penalitiesAgainst"],
   83: "penalityMinutesAgainst",
   84: "faceOffsWonAgainst",
   85: "hitsAgainst",

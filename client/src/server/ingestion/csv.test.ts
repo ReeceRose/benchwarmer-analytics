@@ -69,6 +69,7 @@ describe("parseCsv", () => {
       /expected header "z" at column 1/,
     );
     expect(await collect(parseCsv("x,y\n1,2\n", byIndex, { expectedHeaders: { 1: "y" } }))).toEqual([{ a: "2" }]);
+    expect(await collect(parseCsv("x,yy\n1,2\n", byIndex, { expectedHeaders: { 1: ["y", "yy"] } }))).toEqual([{ a: "2" }]);
   });
 
   it("parses the real teams.csv layout (duplicate team header) by index", async () => {
