@@ -66,6 +66,7 @@ docs/MIGRATION_PLAN.md        # migration phases
 docs/SCHEMA_NOTES.md          # how the schema maps to the EF model, and deliberate differences
 docs/INGESTION_NOTES.md       # ingestion steps, cron, backfill, and fixes vs the C# jobs
 docs/API_NOTES.md             # API structure, cache tiers, and differences from the C# API
+docs/DEPLOY_NOTES.md          # Vercel project, env vars, plan limits, rollback
 ```
 
 ## Key Configuration
@@ -103,5 +104,6 @@ docs/API_NOTES.md             # API structure, cache tiers, and differences from
 - `docs/SCHEMA_NOTES.md` - schema derivation and differences from the EF model
 - `docs/INGESTION_NOTES.md` - ingestion steps, cron schedule, backfill, and fixes vs the C# jobs
 - `docs/API_NOTES.md` - API structure, cache tiers, and differences from the C# API
+- `docs/DEPLOY_NOTES.md` - Vercel project, env vars, plan limits, caching, rollback
 - `docs/PRD.md` - Product requirements (pre-migration)
 - `docs/TODO.md` - Implementation checklist (pre-migration)
