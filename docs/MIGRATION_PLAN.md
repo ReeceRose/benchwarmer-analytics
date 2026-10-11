@@ -59,9 +59,9 @@ Decisions:
    - Port both materialized views (`chemistry_pairs`, `season_percentiles`) and their unique indexes (required for `REFRESH ... CONCURRENTLY`) from the EF migrations `AddChemistryPairsMaterializedView`, `AddPositionsToChemistryPairs`, `AddSeasonPercentilesMaterializedView` as custom SQL.
    - Add a `sync_runs` table (step, season, started_at, finished_at, status, rows_written, error) for ingestion visibility.
    - No Hangfire tables and no `__EFMigrationsHistory`.
-3. `drizzle-kit generate` → a single `drizzle/0000_init.sql` (with the custom view SQL appended). Verify it applies cleanly to a throwaway local Postgres 17 (`docker compose`).
+3. `drizzle-kit generate` → a single `drizzle/0000_init.sql` (with the custom view SQL appended). Verify it applies cleanly to a throwaway local Postgres 18 (`docker compose`).
 4. `src/server/db/client.ts` (neon-http, `DATABASE_URL`). `/api/health` runs `select 1`.
-5. Update `CLAUDE.md`, `package.json` scripts (`db:generate`, `db:migrate`, `backfill`), `.env.example` (`DATABASE_URL`, `DATABASE_URL_DIRECT`, `CRON_SECRET`).
+5. Update `CLAUDE.md`, `package.json` scripts (`db:generate`, `db:migrate`, `backfill`), `.env.example` (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `CRON_SECRET`).
 
 **Exit criteria:** app builds and runs locally, `0000_init.sql` applies to a fresh local Postgres, `/api/health` works against it.
 
@@ -69,7 +69,7 @@ Decisions:
 
 Ingestion comes **before** the API, because there's no data until the TS backfill runs.
 
-**(User)** Create a Neon project on **AWS `us-east-1`** (near Vercel `iad1`), Postgres 17, scale-to-zero, 0.25 CU minimum. Provide pooled + direct connection strings. Apply `0000_init.sql` with `drizzle-kit migrate`.
+**Done:** Neon project `odd-paper-57411301` (AWS `us-east-1`, Postgres 18, branch `production`), linked via `neon link`. `.env.local` has `DATABASE_URL` (pooled) and `DATABASE_URL_UNPOOLED`. Apply `0000_init.sql` with `drizzle-kit migrate`.
 
 Reference source: `server/Benchwarmer.Ingestion/` (Jobs, Importers, Parsers, Services) + `TeamAbbreviationNormalizer.cs`.
 
