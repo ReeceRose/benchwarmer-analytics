@@ -1,54 +1,26 @@
 import { defineConfig } from 'vite'
+import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import { nitro } from 'nitro/vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import path from 'path'
+import { config } from 'dotenv'
 
-// https://vite.dev/config/
+// Server-side env for local dev. client/.env.local wins over the repo-root
+// .env.local written by `neon link`. Vercel provides env vars directly.
+config({ path: ['.env.local', '../.env.local'], quiet: true })
+
+// https://tanstack.com/start/latest/docs/framework/react/guide/hosting
 export default defineConfig({
   plugins: [
-    tanstackRouter({
-      target: 'react',
-      routesDirectory: './src/routes',
-      generatedRouteTree: './src/routeTree.gen.ts',
-      autoCodeSplitting: true,
-    }),
+    tanstackStart(),
+    nitro(),
     react(),
     tailwindcss(),
   ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-    },
-  },
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-    },
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id: string) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react-dom') || id.includes('/react/')) {
-              return 'vendor-react'
-            }
-            if (id.includes('@tanstack/react-router') || id.includes('@tanstack/react-query')) {
-              return 'vendor-router'
-            }
-            if (id.includes('recharts') || id.includes('d3')) {
-              return 'vendor-charts'
-            }
-            if (id.includes('@radix-ui')) {
-              return 'vendor-ui'
-            }
-          }
-        },
-      },
     },
   },
 })

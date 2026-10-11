@@ -101,7 +101,7 @@ const noArbitraryTailwind = {
 }
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', '.output', '.nitro', '.tanstack', 'src/routeTree.gen.ts']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
