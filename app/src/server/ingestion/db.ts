@@ -12,7 +12,13 @@ export function ingestionDatabaseUrl(): string {
 let pool: pg.Pool | undefined;
 
 export function getPool(): pg.Pool {
-  pool ??= new pg.Pool({ connectionString: ingestionDatabaseUrl(), max: 3 });
+  if (!pool) {
+    pool = new pg.Pool({ connectionString: ingestionDatabaseUrl(), max: 3 });
+    // Neon can terminate idle connections (compute restarts, scale-to-zero).
+    // Without a listener that error would crash the process; the pool simply
+    // replaces the client on next use.
+    pool.on("error", (error) => console.warn(`postgres pool: idle client error: ${error.message}`));
+  }
   return pool;
 }
 
