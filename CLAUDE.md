@@ -61,10 +61,9 @@ app/                          # the app (TanStack Start)
 ├── drizzle/                  # migrations; 0000_init.sql is the baseline (incl. materialized views)
 └── scripts/                  # CLI scripts (backfill.ts)
 
-docs/MIGRATION_PLAN.md        # migration phases
-docs/SCHEMA_NOTES.md          # how the schema maps to the EF model, and deliberate differences
-docs/INGESTION_NOTES.md       # ingestion steps, cron, backfill, and fixes vs the C# jobs
-docs/API_NOTES.md             # API structure, cache tiers, and differences from the C# API
+docs/SCHEMA_NOTES.md          # schema design decisions, type mapping, materialized views
+docs/INGESTION_NOTES.md       # ingestion sources, steps, cron, backfill, data quirks
+docs/API_NOTES.md             # API structure, cache tiers, behavior notes
 docs/DEPLOY_NOTES.md          # Vercel project, env vars, plan limits, rollback
 ```
 
@@ -74,18 +73,18 @@ docs/DEPLOY_NOTES.md          # Vercel project, env vars, plan limits, rollback
 - `getDb()` uses neon-http for Neon URLs and node-postgres for localhost URLs, so a scratch docker Postgres works in development.
 - Rendering: routes are client-rendered (`defaultSsr: false`); only the root shell is server-rendered. Components may use `window`/`localStorage` freely.
 - `/api` routes must set an explicit handler for each method they support, plus `ANY: methodNotAllowed`, so wrong-method requests don't fall through to the HTML shell.
-- API handlers live in `src/server/api/<group>.ts` and are wrapped with `apiHandler(CacheTier.x, fn)` (query parsing, `{ error, code }` errors, CDN cache header). GET handlers are read-only. Use `round()` from `format.ts` for rounded outputs (banker's rounding, matching the original C# `Math.Round`).
+- API handlers live in `src/server/api/<group>.ts` and are wrapped with `apiHandler(CacheTier.x, fn)` (query parsing, `{ error, code }` errors, CDN cache header). GET handlers are read-only. Use `round()` from `format.ts` for rounded outputs (banker's rounding on the value's decimal form).
 
 ## Database
 
 - Drizzle owns the schema. Change `src/server/db/schema.ts`, then `npm run db:generate`. Never edit an applied migration.
-- Table/column names intentionally match the old EF model (including quirks like `went_to_o_t`). See `docs/SCHEMA_NOTES.md`.
+- Table/column names are snake_case and keep some odd spellings (e.g. `went_to_o_t`, `i_f_x_freeze`) that queries and raw SQL depend on. See `docs/SCHEMA_NOTES.md`.
 - Materialized views (`chemistry_pairs`, `season_percentiles`) are `.existing()` in the schema; their DDL is hand-written SQL in migrations. Refresh with `REFRESH MATERIALIZED VIEW CONCURRENTLY`.
 - `numeric` columns are mapped to JS numbers (`mode: "number"`). Ingestion writes exact decimal text instead (see `UpsertRow` in `src/server/ingestion/db.ts`).
 
 ## Ingestion
 
-- MoneyPuck CSV field specs live in `src/server/ingestion/records.ts` (mirrors the old C# `*Record.cs`). Importers copy same-named fields generically (`map.ts`) and hand-write only the exceptions.
+- MoneyPuck CSV field specs live in `src/server/ingestion/records.ts`. Importers copy same-named fields generically (`map.ts`) and hand-write only the exceptions.
 - All writes go through `upsert()` (`db.ts`): batched `INSERT ... ON CONFLICT DO UPDATE ... WHERE ... IS DISTINCT FROM`, so re-runs write ~0 rows. Keep it that way: Neon cost depends on it.
 - Every step runs inside `runStep()` so it's logged in `sync_runs`.
 - Be polite to MoneyPuck: sequential downloads only.
@@ -99,8 +98,7 @@ docs/DEPLOY_NOTES.md          # Vercel project, env vars, plan limits, rollback
 
 ## Documentation
 
-- `docs/MIGRATION_PLAN.md` - C# → TypeScript migration plan
-- `docs/SCHEMA_NOTES.md` - schema derivation and differences from the EF model
-- `docs/INGESTION_NOTES.md` - ingestion steps, cron schedule, backfill, and fixes vs the C# jobs
-- `docs/API_NOTES.md` - API structure, cache tiers, and differences from the C# API
+- `docs/SCHEMA_NOTES.md` - schema design decisions, type mapping, materialized views
+- `docs/INGESTION_NOTES.md` - ingestion sources, steps, cron schedule, backfill, data quirks
+- `docs/API_NOTES.md` - API structure, cache tiers, behavior notes
 - `docs/DEPLOY_NOTES.md` - Vercel project, env vars, plan limits, caching, rollback

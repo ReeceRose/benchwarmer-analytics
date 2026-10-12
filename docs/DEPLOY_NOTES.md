@@ -1,6 +1,6 @@
 # Deploy notes
 
-How the TypeScript app is deployed (Phase 4 of `MIGRATION_PLAN.md`).
+How the app is deployed.
 
 ## Vercel project
 
@@ -73,5 +73,3 @@ cd app && npm run db:migrate   # uses DATABASE_URL_UNPOOLED from .env.local
 - Bad deploy: `npx vercel@latest rollback` (or promote an earlier deployment
   in the dashboard). Crons follow the production deployment.
 - Stop ingestion: Project Settings → Cron Jobs → Disable.
-- There is no older stack to fall back to: the Fly app, the Azure Static Web
-  App and the old Neon project have been deleted.
