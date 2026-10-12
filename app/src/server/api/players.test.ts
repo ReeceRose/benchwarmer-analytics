@@ -107,7 +107,7 @@ describe("goalie workload", () => {
     expect(workloadWindow(games, "2025-01-01", 7).gamesPlayed).toBe(0);
   });
 
-  it("unknown dates sort last as DateOnly.MinValue and stay out of windows", () => {
+  it("unknown dates sort last as MIN_DATE and stay out of windows", () => {
     const games = goaliePerGameStats(shots, new Map([["2024020001", "2024-10-08"]]));
     expect(games[0].gameId).toBe("2024020001");
     expect(games[2].gameDate).toBe(MIN_DATE);
@@ -127,7 +127,7 @@ describe("goalie workload", () => {
     expect(estimateGameDate("x", 2024)).toBeUndefined();
   });
 
-  it("dayNumber matches C# DateOnly.DayNumber", () => {
+  it("dayNumber counts days since 0001-01-01", () => {
     expect(dayNumber("0001-01-01")).toBe(0);
     expect(dayNumber("2024-01-01")).toBe(738885);
   });

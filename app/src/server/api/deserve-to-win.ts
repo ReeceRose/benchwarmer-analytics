@@ -1,4 +1,4 @@
-// Port of DeserveToWinService: who "deserved" to win from shot quality.
+// Who "deserved" to win from shot quality.
 // Poisson: goals per team ~ Poisson(cumulative xG), OT a coin flip.
 // Monte Carlo: each shot is a goal with probability xG; after a simulated
 // goal on a shot that generated a rebound, the following rebound shots are
@@ -45,8 +45,8 @@ export function poissonWinProbability(homeXg: number, awayXg: number): number {
   return Math.min(1, Math.max(0, homeWin + tie * 0.5));
 }
 
-// Small seeded PRNG (mulberry32) so a game's result is reproducible. The C#
-// used an unseeded RNG, so each request returned slightly different values.
+// Small seeded PRNG (mulberry32) so a game's result is reproducible across
+// requests.
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -72,8 +72,8 @@ export interface MonteCarloPrefix {
 
 // Monte Carlo results for every prefix of the shot list (index k = first
 // k+1 shots). Each simulation is causal, so one pass yields the outcome after
-// every shot; per-prefix results have the same distribution as the C#'s
-// separate simulation per prefix, in O(sims x shots) instead of O(sims x shots²).
+// every shot; per-prefix results have the same distribution as a separate
+// simulation per prefix, in O(sims x shots) instead of O(sims x shots²).
 export function monteCarloByPrefix(
   shots: readonly Pick<DeserveToWinShot, "xGoal" | "isHomeTeam" | "shotRebound" | "shotGeneratedRebound">[],
   random: () => number,

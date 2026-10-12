@@ -204,7 +204,7 @@ export async function getRoster({ db, params, query }: ApiContext) {
   return { teamAbbreviation: abbrev, players: dtos, season, playoffs: playoffs ?? null };
 }
 
-// SkaterStatsRepository.GetByTeamSeasonAsync (with Player), most ice time first.
+// A team's skater season rows (with player info), most ice time first.
 export function getSkaterSeasonsForTeam(
   db: Database,
   team: string,
@@ -227,7 +227,7 @@ export function getSkaterSeasonsForTeam(
     .orderBy(desc(skaterSeasons.iceTimeSeconds), asc(skaterSeasons.id));
 }
 
-// GoalieStatsRepository.GetByTeamSeasonAsync (with Player), most ice time first.
+// A team's goalie season rows (with player info), most ice time first.
 export function getGoalieSeasonsForTeam(
   db: Database,
   team: string,
@@ -317,7 +317,7 @@ export async function getLines({ db, params, query }: ApiContext) {
 
   const minToiSeconds = (minToi ?? 0) * 60;
   const filters: (SQL | undefined)[] = [eq(lineCombinations.team, abbrev), eq(lineCombinations.season, season)];
-  // Situation is matched exactly (case-sensitive), as in the C# repository.
+  // Situation is matched exactly (case-sensitive).
   if (situation) filters.push(eq(lineCombinations.situation, situation));
   if (lineType?.toLowerCase() === "forward") filters.push(isNotNull(lineCombinations.player3Id));
   if (lineType?.toLowerCase() === "defense") filters.push(isNull(lineCombinations.player3Id));
@@ -341,7 +341,7 @@ export async function getLines({ db, params, query }: ApiContext) {
     .leftJoin(p2, eq(p2.id, lineCombinations.player2Id))
     .leftJoin(p3, eq(p3.id, lineCombinations.player3Id))
     .where(where)
-    // Postgres puts NULLs first for DESC, as the C# query did.
+    // Postgres puts NULLs first for DESC.
     .orderBy(descending ? desc(sortColumn) : asc(sortColumn), asc(lineCombinations.id))
     .$dynamic();
   if (paging) linesQuery.limit(paging.pageSize).offset((paging.page - 1) * paging.pageSize);
@@ -376,7 +376,7 @@ export async function getLines({ db, params, query }: ApiContext) {
   };
 }
 
-// LineRepository.CalculatePercentage: share of for+against, 1 dp.
+// Share of for+against as a percentage, 1 dp.
 export function pairPercentage(forValue: number, againstValue: number): number | null {
   const total = forValue + againstValue;
   return total > 0 ? round((forValue / total) * 100, 1) : null;
@@ -438,7 +438,7 @@ export async function getTeamSeasons({ db, params }: ApiContext) {
   return { seasons: rows.map((r) => ({ year: r.season, label: seasonLabel(r.season) })) };
 }
 
-// TeamMappers: opportunities are estimated as one per 2 minutes of PP/PK time.
+// Opportunities are estimated as one per 2 minutes of PP/PK time.
 function opportunities(stats: TeamSeasonRow): number {
   return Math.trunc(stats.iceTime / 120);
 }
@@ -500,7 +500,7 @@ export function penaltyKillSummary(stats: TeamSeasonRow | undefined, rank: numbe
     xGoalsAgainst: round(stats.xGoalsAgainst, 1),
     xGoalsAgainstPer60: round(xgaPer60, 2),
     shotsAgainst: stats.shotsOnGoalAgainst,
-    // A 0-1 fraction rounded to 1 dp, exactly as the C# did.
+    // A 0-1 fraction rounded to 1 dp (see API_NOTES.md).
     savePct: round(savePct, 1),
     highDangerAgainst: stats.highDangerShotsAgainst,
     highDangerGoalsAgainst: stats.highDangerGoalsAgainst,
@@ -509,8 +509,8 @@ export function penaltyKillSummary(stats: TeamSeasonRow | undefined, rank: numbe
   };
 }
 
-// TeamSeasonRepository.GetBySeasonAsync: ordered by xG% (NULLs first, as
-// Postgres sorts DESC), which is the tiebreak for the stable re-sorts below.
+// Every team's season row, ordered by xG% (NULLs first, as Postgres sorts
+// DESC), which is the tiebreak for the stable re-sorts below.
 export function getTeamSeasonsForSeason(db: Database, season: number, situation: string, playoffs: boolean) {
   return db
     .select()
@@ -543,7 +543,7 @@ export async function getSpecialTeams({ db, params, query }: ApiContext) {
   return {
     teamAbbreviation: abbrev,
     season,
-    // C# GetValueOrDefault on a missing team gave rank 0.
+    // A team with no row for the situation gets rank 0.
     powerPlay: powerPlaySummary(ppStats, ppRanks.get(abbrev) ?? 0),
     penaltyKill: penaltyKillSummary(pkStats, pkRanks.get(abbrev) ?? 0),
   };
@@ -663,7 +663,7 @@ export async function getSpecialTeamsTrend({ db, params, query }: ApiContext) {
     const opponent = isHome ? game.awayTeamCode : game.homeTeamCode;
     const stats = byGame.get(game.gameId);
     if (!stats) {
-      // No shot data for this game: zero entry, cumulative values unrounded (as C#).
+      // No shot data for this game: zero entry, cumulative values unrounded.
       return {
         gameId: game.gameId, gameDate: game.gameDate, opponent, isHome,
         ppGoals: 0, ppXGoals: 0, ppShots: 0, pkGoalsAgainst: 0, pkXGoalsAgainst: 0, pkShotsAgainst: 0,
@@ -787,7 +787,7 @@ export async function getScoreStateStats({ db, params, query }: ApiContext) {
     goalCount: r.goal_count,
     xGoals: Number(r.x_goals),
   }));
-  // No score-state rows → null times (C# FirstOrDefault on an empty group).
+  // No score-state rows → null times.
   const hasTime = time.count > 0;
   const totalTime = time.leading + time.trailing + time.tied;
 

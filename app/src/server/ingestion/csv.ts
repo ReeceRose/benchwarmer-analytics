@@ -1,14 +1,14 @@
 import { Readable } from "node:stream";
 import { parse } from "csv-parse";
 
-// Field types mirror the C# CsvHelper record property types:
-// - int: Int32 (strict integer text)
-// - decimal: System.Decimal, kept as the exact source text so numeric columns
-//   are stored without a float round-trip
-// - double: System.Double, parsed to a JS number
+// Field types:
+// - int: 32-bit integer (strict integer text)
+// - decimal: kept as the exact source text so numeric columns are stored
+//   without a float round-trip
+// - double: parsed to a JS number
 // - string
-// A trailing "?" marks a nullable property: empty text becomes null. For a
-// non-nullable property, empty text is an error (CsvHelper threw too).
+// A trailing "?" marks a nullable field: empty text becomes null. For a
+// non-nullable field, empty text is an error.
 export type FieldType =
   | "int"
   | "int?"
@@ -39,8 +39,8 @@ const DECIMAL_RE = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
 
 export class CsvValueError extends Error {}
 
-// Value used when a column is missing from the file entirely. CsvHelper
-// (MissingFieldFound = null) leaves the property at its C# default.
+// Value used when a column is missing from the file entirely: null for
+// nullable fields, otherwise zero or an empty string.
 function defaultValue(type: FieldType): number | string | null {
   if (type.endsWith("?")) return null;
   if (type === "string") return "";

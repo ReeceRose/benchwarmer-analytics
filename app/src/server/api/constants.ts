@@ -1,5 +1,4 @@
-// Ports of Benchwarmer.Data/{GameState,NhlConstants,LeaderboardCategories}.cs
-// and Constants/MoneyPuckDangerZones.cs.
+// Game states, NHL rules, leaderboard categories and MoneyPuck danger zones.
 
 export const GameState = {
   future: "FUT",

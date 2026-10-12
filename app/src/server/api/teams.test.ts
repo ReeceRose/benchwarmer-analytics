@@ -19,7 +19,7 @@ function teamSeason(values: Partial<TeamSeasonRow>): TeamSeasonRow {
 }
 
 describe("round", () => {
-  it("rounds half to even like C# Math.Round(decimal)", () => {
+  it("rounds half to even on the decimal value", () => {
     expect(round(0.125, 2)).toBe(0.12);
     expect(round(0.135, 2)).toBe(0.14);
     expect(round(2.5)).toBe(2);
@@ -81,7 +81,7 @@ describe("special teams summaries", () => {
     });
   });
 
-  it("penalty kill keeps the C# 0-1 save fraction rounded to 1 dp", () => {
+  it("penalty kill save % is a 0-1 fraction rounded to 1 dp", () => {
     const pk = teamSeason({
       iceTime: 21600,
       goalsAgainst: 48,

@@ -2,8 +2,7 @@ import { ApiError, badRequest } from "@/server/api/errors";
 
 const INT = /^[+-]?\d+$/;
 
-// Query-string binding with ASP.NET minimal-API semantics: names are
-// case-insensitive, empty values count as missing, and values that don't
+// Query-string binding: names are case-insensitive, empty values count as missing, and values that don't
 // parse are a 400 rather than being silently ignored.
 export class QueryParams {
   private readonly values = new Map<string, string[]>();
@@ -72,8 +71,7 @@ function parseIntParam(name: string, raw: string): number {
   return value;
 }
 
-// Route params constrained to `{id:int}` in the C# routes: anything else was
-// a 404 (no route matched).
+// Integer route params (`{id}`, `{age}`, `{season}`): anything else is a 404.
 export function intRouteParam(raw: string | undefined): number | undefined {
   if (raw === undefined || !INT.test(raw)) return undefined;
   const value = Number(raw);

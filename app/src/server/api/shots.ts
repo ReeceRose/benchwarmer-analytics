@@ -36,7 +36,7 @@ export const shotColumns = {
 
 export type ShotRow = { [K in keyof typeof shotColumns]: (typeof shots.$inferSelect)[K] };
 
-// ShotMappers.MapToDto. `shotId` is `{gameId}-{eventId}`: MoneyPuck's shotID
+// `shotId` is `{gameId}-{eventId}`: MoneyPuck's shotID
 // isn't unique (it restarts every season), and the UI uses this as a React key.
 export function toShotDto(s: ShotRow) {
   return {
@@ -63,7 +63,7 @@ export function toShotDto(s: ShotRow) {
   };
 }
 
-// ShotMappers.CalculateSummary. Danger zones by shot xG (missing xG = low).
+// Shot totals. Danger zones by shot xG (missing xG = low).
 export function shotSummary(rows: readonly Pick<ShotRow, "isGoal" | "shotWasOnGoal" | "xGoal">[]) {
   const totalShots = rows.length;
   const goals = rows.filter((s) => s.isGoal).length;
@@ -149,8 +149,8 @@ async function selectShots(ctx: ApiContext, where: SQL | undefined, limit: numbe
   return query;
 }
 
-// goalsOnly is applied in SQL before the limit. (C# applied it in memory after
-// the limit, so `limit` + `goalsOnly` returned fewer goals than asked for.)
+// goalsOnly is applied in SQL before the limit, so `limit` + `goalsOnly`
+// returns up to `limit` goals.
 export async function getTeamShots(ctx: ApiContext) {
   const abbrev = ctx.params.abbrev;
   const f = parseShotFilters(ctx);
@@ -209,7 +209,7 @@ export async function getShotsAgainst(ctx: ApiContext) {
 }
 
 // Per-shooter totals for the team's shots, most shots first (ties in order of
-// each shooter's first shot, as the C# in-memory grouping produced).
+// each shooter's first shot).
 export async function getShooterStats({ db, params, query }: ApiContext) {
   const abbrev = params.abbrev;
   const season = query.requiredInt("season");

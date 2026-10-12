@@ -1,10 +1,10 @@
-// Port of Benchwarmer.Api/Dtos/ApiError.cs: `{ error, code }` bodies.
+// `{ error, code }` error bodies.
 export interface ApiErrorBody {
   error: string;
   code: string;
 }
 
-// A few C# endpoints returned other shapes (a bare string, `{ error }`).
+// A few endpoints return other shapes (a bare string, `{ error }`).
 export type ErrorBody = ApiErrorBody | { error: string } | string;
 
 export class HttpError extends Error {
@@ -40,8 +40,7 @@ export const ApiError = {
     error(`Invalid sortBy. Valid values: ${valid.join(", ")}`, "INVALID_SORT_FIELD"),
   invalidShotType: (valid: readonly string[]) =>
     error(`Invalid shotType. Valid values: ${valid.join(", ")}`, "INVALID_SHOT_TYPE"),
-  // ASP.NET rejected unparseable or missing required parameters before the
-  // handler ran (400, empty body in production). Name the parameter instead.
+  // Unparseable or missing required query parameters.
   invalidParameter: (name: string) => error(`Invalid or missing query parameter '${name}'`, "INVALID_PARAMETER"),
 };
 

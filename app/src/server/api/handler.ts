@@ -2,9 +2,8 @@ import { getDb, type Database } from "@/server/db/client";
 import { HttpError } from "@/server/api/errors";
 import { QueryParams } from "@/server/api/query";
 
-// CDN cache lifetimes, ported from the C# output-cache policies
-// (CachePolicies.cs / Program.cs). Vercel's CDN keys on the full URL, so the
-// C# vary-by-query lists aren't needed.
+// CDN cache lifetimes per tier. Vercel's CDN keys on the full URL, so every
+// query-string variant is cached separately.
 export const CacheTier = {
   static: 24 * 60 * 60,
   semiStatic: 6 * 60 * 60,

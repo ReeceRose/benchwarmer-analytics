@@ -10,7 +10,7 @@ import { pkPercentage, ppPercentage } from "@/server/api/teams";
 type TeamSeasonRow = typeof teamSeasons.$inferSelect;
 type TeamInfo = { name: string; division: string | null; conference: string | null };
 
-// Latest season with team stats (0 when there is none, as the C# did).
+// Latest season with team stats (0 when there is none).
 export async function latestTeamSeason(db: Database): Promise<number> {
   const [row] = await db
     .select({ season: teamSeasons.season })
@@ -20,7 +20,7 @@ export async function latestTeamSeason(db: Database): Promise<number> {
   return row?.season ?? 0;
 }
 
-// TeamSeasonRepository.GetBySeasonAsync with the Team included.
+// Every team's season row for a situation, with team name and alignment.
 export async function teamSeasonsWithTeam(db: Database, season: number, situation: string, playoffs = false) {
   const rows = await db
     .select({ ts: teamSeasons, team: { name: teams.name, division: teams.division, conference: teams.conference } })
@@ -31,7 +31,7 @@ export async function teamSeasonsWithTeam(db: Database, season: number, situatio
   return rows as { ts: TeamSeasonRow; team: TeamInfo | null }[];
 }
 
-// C# Math.Round(double) to an int (banker's rounding).
+// Rounds to an int (banker's rounding).
 function roundInt(value: number): number {
   return round(value, 0);
 }
@@ -110,7 +110,7 @@ export function ordinal(n: number): string {
 }
 
 function regressionCandidate(r: PowerRanking) {
-  // C# "F1" formatting rounds half away from zero.
+  // One decimal place, rounding half away from zero.
   const pdo = new Decimal(r.pdo).toFixed(1, Decimal.ROUND_HALF_UP);
   return {
     abbreviation: r.abbreviation,
@@ -140,7 +140,7 @@ export function likelyToRegress(rankings: readonly PowerRanking[], max = 4) {
     .map(regressionCandidate);
 }
 
-// Descending sort key treating null as smallest (LINQ OrderByDescending).
+// Descending sort comparator treating null as smallest.
 function descNullsLast(a: number | null, b: number | null): number {
   if (a === b) return 0;
   if (a === null) return 1;
@@ -258,7 +258,7 @@ export async function getStandingsAnalytics({ db, query }: ApiContext) {
   };
 }
 
-// 1-based ranks by a key; ties keep input order (stable LINQ OrderBy).
+// 1-based ranks by a key; ties keep input order (stable sort).
 export function ranks<T extends { abbreviation: string }>(
   items: readonly T[],
   key: (item: T) => number,

@@ -43,7 +43,7 @@ const addDays = (date: string, days: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-// One schedule week starting at `date`. Port of NhlScheduleService.GetGamesForDateAsync.
+// One schedule week starting at `date`.
 export async function fetchScheduleWeek(date: string): Promise<GameRow[]> {
   const response = await fetchWithRetry(`${NHL_API}/schedule/${date}`);
   if (!response) return [];
@@ -74,7 +74,7 @@ export function scheduleToGames(schedule: NhlScheduleResponse): ScheduledGame[] 
 }
 
 // Games dated within [start, end] (inclusive, YYYY-MM-DD), fetched a week at a
-// time. Port of NhlScheduleService.GetGamesForDateRangeAsync.
+// time.
 export async function fetchGames(start: string, end: string): Promise<GameRow[]> {
   const byId = new Map<string, GameRow>();
   for (let date = start; date <= end; date = addDays(date, 7)) {

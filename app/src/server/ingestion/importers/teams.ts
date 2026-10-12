@@ -6,7 +6,7 @@ import { normalizeTeam } from "@/server/ingestion/normalize";
 import { teamExpectedHeaders, teamFields } from "@/server/ingestion/records";
 
 // Division/conference by team (current alignment, historical teams at their
-// last alignment). Port of TeamImporter.TeamDivisions.
+// last alignment).
 const TEAM_DIVISIONS: Record<string, [division: string, conference: string]> = {
   BOS: ["Atlantic", "Eastern"],
   BUF: ["Atlantic", "Eastern"],
@@ -65,9 +65,8 @@ function teamSeasonMapper(isPlayoffs: boolean) {
   });
 }
 
-// Port of TeamImporter. teams.csv mixes team totals with per-player rows; only
-// "Team Level" rows are imported. Unlike the C# nightly job, the playoffs flag
-// is always passed through (the nightly job wrote playoff rows as regular season).
+// teams.csv mixes team totals with per-player rows; only "Team Level" rows
+// are imported, into teams and team_seasons.
 export async function importTeams(db: Queryable, csv: string, isPlayoffs: boolean): Promise<number> {
   const map = teamSeasonMapper(isPlayoffs);
   const teamRows = new Map<string, UpsertRow<typeof teams>>();
