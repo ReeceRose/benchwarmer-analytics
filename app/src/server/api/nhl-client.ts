@@ -1,0 +1,299 @@
+// Live NHL API reads used by request handlers. Port of the request-time parts
+// of NhlScheduleService. Like the C#, a failed request (HTTP error, network
+// error, timeout) yields null / empty instead of failing the endpoint.
+// Response types list only the fields the API reads; C# deserialization
+// defaulted missing numbers to 0 and strings to "", so callers do the same.
+
+import { addDays } from "@/server/api/format";
+import { scheduleToGames, type NhlScheduleResponse, type ScheduledGame } from "@/server/ingestion/nhl";
+
+const NHL_API = "https://api-web.nhle.com/v1";
+const USER_AGENT = "benchwarmer-analytics (personal hockey analytics project)";
+const TIMEOUT_MS = 10_000;
+
+async function getJson<T>(url: string): Promise<T | null> {
+  try {
+    const response = await fetch(url, { headers: { "user-agent": USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    if (!response.ok) {
+      console.warn(`NHL API ${url}: HTTP ${response.status}`);
+      return null;
+    }
+    return (await response.json()) as T;
+  } catch (error) {
+    console.warn(`NHL API ${url}: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
+  }
+}
+
+export interface Localized {
+  default?: string | null;
+}
+
+export interface NhlTeamStandings {
+  teamAbbrev?: Localized | null;
+  teamName?: Localized | null;
+  gamesPlayed?: number;
+  wins?: number;
+  losses?: number;
+  otLosses?: number;
+  points?: number;
+  pointPctg?: number | null;
+  goalFor?: number;
+  goalAgainst?: number;
+  goalDifferential?: number;
+  streakCode?: string | null;
+  streakCount?: number;
+  homeWins?: number;
+  homeLosses?: number;
+  homeOtLosses?: number;
+  roadWins?: number;
+  roadLosses?: number;
+  roadOtLosses?: number;
+  l10Wins?: number;
+  l10Losses?: number;
+  l10OtLosses?: number;
+  divisionName?: string | null;
+  divisionSequence?: number;
+  conferenceName?: string | null;
+  conferenceSequence?: number;
+  leagueSequence?: number;
+  wildcardSequence?: number;
+}
+
+// Current standings keyed by team abbreviation (always "now": the NHL API's
+// historical standings were unreliable).
+export async function getStandings(): Promise<Map<string, NhlTeamStandings>> {
+  const response = await getJson<{ standings?: NhlTeamStandings[] }>(`${NHL_API}/standings/now`);
+  const standings = new Map<string, NhlTeamStandings>();
+  for (const team of response?.standings ?? []) {
+    const abbrev = team.teamAbbrev?.default;
+    if (abbrev) standings.set(abbrev, team);
+  }
+  return standings;
+}
+
+export interface NhlPlayerName {
+  default?: string;
+}
+
+export interface NhlSkaterStats {
+  playerId?: number;
+  sweaterNumber?: number;
+  name?: NhlPlayerName;
+  position?: string;
+  goals?: number;
+  assists?: number;
+  points?: number;
+  plusMinus?: number;
+  pim?: number;
+  hits?: number;
+  powerPlayGoals?: number;
+  sog?: number;
+  faceoffWinningPctg?: number;
+  toi?: string;
+  blockedShots?: number;
+  shifts?: number;
+  giveaways?: number;
+  takeaways?: number;
+}
+
+export interface NhlGoalieStats {
+  playerId?: number;
+  sweaterNumber?: number;
+  name?: NhlPlayerName;
+  position?: string;
+  evenStrengthShotsAgainst?: string;
+  powerPlayShotsAgainst?: string;
+  shorthandedShotsAgainst?: string;
+  saveShotsAgainst?: string;
+  savePctg?: number | null;
+  goalsAgainst?: number;
+  toi?: string;
+  starter?: boolean;
+  decision?: string | null;
+  shotsAgainst?: number;
+  saves?: number;
+  pim?: number;
+}
+
+export interface NhlTeamPlayerStats {
+  forwards?: NhlSkaterStats[];
+  defense?: NhlSkaterStats[];
+  goalies?: NhlGoalieStats[];
+}
+
+export interface NhlBoxscore {
+  id?: number;
+  gameState?: string;
+  awayTeam?: { id?: number; abbrev?: string; score?: number; sog?: number };
+  homeTeam?: { id?: number; abbrev?: string; score?: number; sog?: number };
+  playerByGameStats?: { awayTeam?: NhlTeamPlayerStats; homeTeam?: NhlTeamPlayerStats } | null;
+}
+
+export function getBoxscore(gameId: string): Promise<NhlBoxscore | null> {
+  return getJson<NhlBoxscore>(`${NHL_API}/gamecenter/${encodeURIComponent(gameId)}/boxscore`);
+}
+
+export interface NhlGoalAssist {
+  playerId?: number;
+  name?: NhlPlayerName | null;
+  assistsToDate?: number | null;
+}
+
+export interface NhlScoringGoal {
+  period?: number;
+  timeInPeriod?: string;
+  playerId?: number;
+  name?: NhlPlayerName | null;
+  firstName?: NhlPlayerName | null;
+  lastName?: NhlPlayerName | null;
+  teamAbbrev?: NhlPlayerName | null;
+  goalsToDate?: number | null;
+  awayScore?: number;
+  homeScore?: number;
+  strength?: string | null;
+  assists?: NhlGoalAssist[];
+}
+
+export interface NhlGameLanding {
+  id?: number;
+  gameState?: string;
+  gameDate?: string;
+  awayTeam?: { abbrev?: string; score?: number | null };
+  homeTeam?: { abbrev?: string; score?: number | null };
+  summary?: {
+    scoring?: { periodDescriptor?: { periodType?: string | null } | null; goals?: NhlScoringGoal[] }[];
+  } | null;
+}
+
+export function getGameLanding(gameId: string): Promise<NhlGameLanding | null> {
+  return getJson<NhlGameLanding>(`${NHL_API}/gamecenter/${encodeURIComponent(gameId)}/landing`);
+}
+
+export interface NhlClubScheduleGame {
+  id?: number;
+  season?: number;
+  gameType?: number;
+  gameDate?: string;
+  gameState?: string;
+  homeTeam?: { abbrev?: string; score?: number | null };
+  awayTeam?: { abbrev?: string; score?: number | null };
+  periodDescriptor?: { periodType?: string | null } | null;
+}
+
+// A team's full season schedule (season code like 20242025).
+export async function getTeamSeasonGames(team: string, season: number): Promise<NhlClubScheduleGame[]> {
+  const response = await getJson<{ games?: NhlClubScheduleGame[] }>(
+    `${NHL_API}/club-schedule-season/${encodeURIComponent(team)}/${season}${season + 1}`,
+  );
+  return response?.games ?? [];
+}
+
+export interface NhlLiveGoal {
+  period?: number;
+  timeInPeriod?: string;
+  playerId?: number;
+  name?: NhlPlayerName | null;
+  firstName?: NhlPlayerName | null;
+  lastName?: NhlPlayerName | null;
+  goalModifier?: string | null;
+  assists?: NhlGoalAssist[];
+  awayScore?: number;
+  homeScore?: number;
+  teamAbbrev?: string | null;
+  strength?: string | null;
+}
+
+export interface NhlLiveTeam {
+  id?: number;
+  name?: { default?: string } | null;
+  abbrev?: string;
+  score?: number | null;
+  sog?: number | null;
+  record?: string | null;
+  logo?: string | null;
+}
+
+export interface NhlLiveGame {
+  id?: number;
+  season?: number;
+  gameType?: number;
+  gameDate?: string;
+  startTimeUTC?: string | null;
+  gameState?: string;
+  gameScheduleState?: string;
+  period?: number | null;
+  periodDescriptor?: { number?: number | null; periodType?: string | null } | null;
+  clock?: { timeRemaining?: string | null; secondsRemaining?: number | null; running?: boolean; inIntermission?: boolean } | null;
+  awayTeam?: NhlLiveTeam;
+  homeTeam?: NhlLiveTeam;
+  goals?: NhlLiveGoal[];
+}
+
+export interface NhlLiveScores {
+  currentDate?: string;
+  games?: NhlLiveGame[];
+}
+
+export function getLiveScores(): Promise<NhlLiveScores | null> {
+  return getJson<NhlLiveScores>(`${NHL_API}/score/now`);
+}
+
+// Schedule week starting at `date` (YYYY-MM-DD), as game rows.
+export async function getScheduleWeek(date: string): Promise<ScheduledGame[]> {
+  const response = await getJson<NhlScheduleResponse>(`${NHL_API}/schedule/${date}`);
+  return response ? scheduleToGames(response) : [];
+}
+
+// Games dated within [start, end], a week per request, by date then ID.
+export async function getGamesForDateRange(start: string, end: string): Promise<ScheduledGame[]> {
+  const starts: string[] = [];
+  for (let date = start; date <= end; date = addDays(date, 7)) starts.push(date);
+  const weeks = await Promise.all(starts.map(getScheduleWeek));
+  const byId = new Map<string, ScheduledGame>();
+  for (const game of weeks.flat()) {
+    if (game.gameDate >= start && game.gameDate <= end && !byId.has(game.gameId)) byId.set(game.gameId, game);
+  }
+  return [...byId.values()].sort((a, b) => a.gameDate.localeCompare(b.gameDate) || a.gameId.localeCompare(b.gameId));
+}
+
+const STATS_API = "https://api.nhle.com/stats/rest/en";
+
+// The stats API keys teams by full name.
+const TEAM_NAME_TO_ABBREV: Record<string, string> = {
+  "Anaheim Ducks": "ANA", "Boston Bruins": "BOS", "Buffalo Sabres": "BUF", "Calgary Flames": "CGY",
+  "Carolina Hurricanes": "CAR", "Chicago Blackhawks": "CHI", "Colorado Avalanche": "COL",
+  "Columbus Blue Jackets": "CBJ", "Dallas Stars": "DAL", "Detroit Red Wings": "DET", "Edmonton Oilers": "EDM",
+  "Florida Panthers": "FLA", "Los Angeles Kings": "LAK", "Minnesota Wild": "MIN", "Montréal Canadiens": "MTL",
+  "Nashville Predators": "NSH", "New Jersey Devils": "NJD", "New York Islanders": "NYI", "New York Rangers": "NYR",
+  "Ottawa Senators": "OTT", "Philadelphia Flyers": "PHI", "Pittsburgh Penguins": "PIT", "San Jose Sharks": "SJS",
+  "Seattle Kraken": "SEA", "St. Louis Blues": "STL", "Tampa Bay Lightning": "TBL", "Toronto Maple Leafs": "TOR",
+  "Utah Hockey Club": "UTA", "Vancouver Canucks": "VAN", "Vegas Golden Knights": "VGK",
+  "Washington Capitals": "WSH", "Winnipeg Jets": "WPG",
+};
+
+export interface NhlTeamSpecialTeams {
+  powerPlayPct: number | null;
+  penaltyKillPct: number | null;
+  faceoffWinPct: number | null;
+}
+
+// Official regular-season PP%/PK% (fractions) by team abbreviation.
+export async function getTeamSpecialTeams(season: number): Promise<Map<string, NhlTeamSpecialTeams>> {
+  const seasonId = `${season}${season + 1}`;
+  const response = await getJson<{
+    data?: { teamFullName?: string | null; powerPlayPct?: number | null; penaltyKillPct?: number | null; faceoffWinPct?: number | null }[];
+  }>(`${STATS_API}/team/summary?cayenneExp=seasonId=${seasonId}&cayenneExp=gameTypeId=2`);
+  const result = new Map<string, NhlTeamSpecialTeams>();
+  for (const t of response?.data ?? []) {
+    if (!t.teamFullName) continue;
+    // Unknown names fall back to their first three letters, as in the C#.
+    const abbrev = TEAM_NAME_TO_ABBREV[t.teamFullName] ?? t.teamFullName.slice(0, 3).toUpperCase();
+    result.set(abbrev, {
+      powerPlayPct: t.powerPlayPct ?? null,
+      penaltyKillPct: t.penaltyKillPct ?? null,
+      faceoffWinPct: t.faceoffWinPct ?? null,
+    });
+  }
+  return result;
+}

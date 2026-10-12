@@ -1,0 +1,12 @@
+# CLI deploys upload only the app (the project's Root Directory is app/).
+# Unlike Git deploys, the CLI doesn't apply .gitignore, so local build
+# output and env files are excluded explicitly.
+/*
+!/app
+/app/node_modules
+/app/.output
+/app/.nitro
+/app/.tanstack
+/app/.vercel
+/app/*.local
+/app/.env*

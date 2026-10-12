@@ -131,7 +131,7 @@ Benchwarmer Analytics provides interactive tools for analyzing NHL player and li
 
 6. **Start the frontend** (Terminal 2)
    ```bash
-   cd client && npm run dev
+   cd app && npm run dev
    ```
 
 7. **Access the application**
@@ -201,7 +201,7 @@ benchwarmer-analytics/
 │   ├── Benchwarmer.Data/          # EF Core entities and repositories
 │   ├── Benchwarmer.Ingestion/     # Data download and import jobs
 │   └── Benchwarmer.Tests/         # Unit and integration tests
-├── client/
+├── app/
 │   ├── src/
 │   │   ├── components/            # React components
 │   │   ├── hooks/                 # TanStack Query hooks

@@ -62,4 +62,7 @@ docs/PRD.md
 docs/temp/
 .env.local
 *\\* 
-client/src/routeTree.gen.ts
+app/src/routeTree.gen.ts
+
+# Vercel project link
+.vercel
