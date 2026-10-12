@@ -141,9 +141,13 @@ Porting notes:
 2. Point the production domain at Vercel (replacing Azure Static Web App + Fly).
 3. Enable crons. Watch 3 to 5 nightly runs via `sync_runs` and Vercel logs. Watch Neon compute hours.
 
+**Status (2026-10-12):** Cut over. `benchwarmer.reecerose.com` points at Vercel, the GitHub integration deploys `main` to production (PR #1), and the old `Deploy` workflow is disabled. Remaining: watch the first nightly cron runs.
+
 **Progress (2026-10-11):** Vercel project `reeceroses-projects/benchwarmer-analytics` created (Hobby, root `app/`, Node 24); see `DEPLOY_NOTES.md`. Production and Preview env vars both use the Neon `production` branch. The app is live in production at `benchwarmer-analytics.vercel.app` and crons are registered. Every API endpoint and UI page was smoke-tested there, and each cron route was triggered once (all succeeded, ~0 rows rewritten). Remaining: `benchwarmer.reecerose.com` DNS (it currently has no record; the old Fly app no longer resolves), Git integration, and watching the nightly runs.
 
 ## Phase 5: Cleanup
+
+**Status (2026-10-12):** Step 2 done for `CLAUDE.md` and `README.md` (`docs/PRD.md` and `docs/TODO.md` aren't in the repo: `PRD.md` is gitignored and `TODO.md` doesn't exist). Step 3 done by the user. Step 1 pending.
 
 1. Delete `server/`, `infra/` (Azure bicep), the .NET/Fly/SWA parts of `docker-compose.yml`, `docker/`, `.github/workflows/deploy.yml` and `scheduled-sync.yml`. Make `ci.yml` lint/typecheck/test/build the TS app.
 2. Update `CLAUDE.md`, `README.md`, `docs/PRD.md`, `docs/TODO.md`.

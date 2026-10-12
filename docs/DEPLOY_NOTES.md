@@ -17,8 +17,13 @@ The build produces two functions: `__server` (UI shell + `/api/*`) and
 `api/cron/[...]` (`/api/cron/*`, `maxDuration: 300`). Cron schedules and the
 cron `maxDuration` come from `app/vite.config.ts`; there is no `vercel.json`.
 
-CLI deploys run from the repo root (`npx vercel@latest deploy`), not from
-`app/`. The CLI doesn't apply `.gitignore`, so the root `.vercelignore`
+Deploys come from the GitHub integration: pull requests get preview
+deployments and merges to `main` deploy production. Production is served at
+`benchwarmer.reecerose.com` (Cloudflare DNS, CNAME to Vercel, DNS only) and
+`benchwarmer-analytics.vercel.app`.
+
+Manual CLI deploys run from the repo root (`npx vercel@latest deploy`), not
+from `app/`. The CLI doesn't apply `.gitignore`, so the root `.vercelignore`
 limits the upload to `app/` minus local build output and env files.
 
 ## Environment variables
@@ -68,5 +73,5 @@ cd app && npm run db:migrate   # uses DATABASE_URL_UNPOOLED from .env.local
 - Bad deploy: `npx vercel@latest rollback` (or promote an earlier deployment
   in the dashboard). Crons follow the production deployment.
 - Stop ingestion: Project Settings → Cron Jobs → Disable.
-- The old stack can't be rolled back to: the Fly app no longer exists and the
-  Azure Static Web App served a client that depended on it.
+- There is no older stack to fall back to: the Fly app, the Azure Static Web
+  App and the old Neon project have been deleted.

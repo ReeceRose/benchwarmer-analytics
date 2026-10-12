@@ -4,18 +4,24 @@ A hockey analytics platform for exploring NHL data, line combinations, and playe
 
 *"Analysis from the cheap seats"*
 
+Live at [benchwarmer.reecerose.com](https://benchwarmer.reecerose.com).
+
 ---
 
 ## Overview
 
-Benchwarmer Analytics provides interactive tools for analyzing NHL player and line performance using advanced statistics. The platform ingests data from MoneyPuck and presents it through a modern web interface with visualizations including shot maps, chemistry matrices, and trend analysis.
+Benchwarmer Analytics provides interactive tools for analyzing NHL player, line and team performance using advanced statistics. It ingests data from MoneyPuck and the NHL API every night and presents it through a web interface with visualizations including shot maps, chemistry matrices, and trend analysis.
 
 ### Key Features
 
+- **Games** — Daily scoreboard, box scores, game previews, shot maps, and a "deserve to win" model based on expected goals
 - **Line/Pairing Explorer** — Sortable, filterable tables of forward lines and defensive pairings with on-ice metrics
 - **Chemistry Heat Map** — Matrix visualization showing how player pairs perform together
-- **Shot Maps** — Rink visualizations with expected goal (xG) probability coloring
-- **Player Comparison** — Side-by-side statistical comparison with radar charts
+- **Line Builder** — Build hypothetical lines from a team's roster and compare them
+- **Shot Maps** — Rink visualizations with expected goal (xG) probability coloring, for teams, players and games
+- **Player Pages and Comparison** — Career stats, rolling form, goalie workload, linemates, and side-by-side radar charts
+- **Standings and Rankings** — Official standings, power rankings, and category rankings
+- **League Views** — Leaderboards, special teams, league trends, age curves, breakout candidates, and a rookie watcher
 
 ### Questions This Tool Answers
 
@@ -28,66 +34,46 @@ Benchwarmer Analytics provides interactive tools for analyzing NHL player and li
 
 ## Tech Stack
 
-### Backend
-
 | Technology | Purpose |
 |------------|---------|
-| .NET 10 / ASP.NET Core | REST API with Minimal APIs |
-| Entity Framework Core 10 | ORM and data access |
-| PostgreSQL 17 | Relational database |
-| Hangfire | Background job scheduling for data ingestion |
-| CsvHelper | CSV parsing for MoneyPuck data |
-| Serilog | Structured logging |
-
-### Frontend
-
-| Technology | Purpose |
-|------------|---------|
-| React 19 | UI framework |
-| TypeScript 5.7 | Type safety |
-| Vite | Build tooling |
-| TanStack Query | Server state management |
-| TanStack Router | Type-safe routing |
-| shadcn/ui + Tailwind CSS | Component library and styling |
-| Recharts + D3.js | Data visualization |
-
-### Infrastructure
-
-| Technology | Purpose |
-|------------|---------|
-| Docker | Containerization |
-| Azure Container Apps | Application hosting |
-| Azure Database for PostgreSQL | Managed database |
-| GitHub Actions | CI/CD pipelines |
+| [TanStack Start](https://tanstack.com/start) (React 19, TypeScript, Vite) | App framework: UI routes and `/api/*` server routes |
+| TanStack Router + Query | Routing and server state |
+| shadcn/ui + Tailwind CSS | Components and styling |
+| Recharts + D3 | Data visualization |
+| [Neon](https://neon.com) Postgres 18 | Database (serverless, scales to zero) |
+| Drizzle ORM | Schema, migrations, and queries |
+| Vercel | Hosting (Nitro build), CDN caching, and Cron for nightly ingestion |
+| Vitest | Tests |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   MoneyPuck     │     │    NHL API      │     │   React SPA     │
-│   CSV Data      │     │  (Player Bios)  │     │                 │
-└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
-         │                       │                       │
-         ▼                       ▼                       │
-┌─────────────────────────────────────────┐              │
-│         Ingestion Service               │              │
-│  (Hangfire Jobs + CsvHelper Parsers)    │              │
-└────────────────────┬────────────────────┘              │
-                     │                                   │
-                     ▼                                   ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      ASP.NET Core API                           │
-│                     (Minimal API Endpoints)                     │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     PostgreSQL Database                         │
-│  (Players, Teams, SkaterStats, LineCombinations, Shots)         │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────┐   ┌─────────────────┐
+│   MoneyPuck     │   │    NHL API      │
+│   CSVs + shots  │   │  schedule, bios │
+└────────┬────────┘   └────────┬────────┘
+         │                     │
+         ▼                     ▼
+┌─────────────────────────────────────────┐
+│  Vercel Cron → /api/cron/* (nightly)    │
+│  Local backfill CLI (scripts/backfill)  │
+└────────────────────┬────────────────────┘
+                     │ upserts (only changed rows)
+                     ▼
+┌─────────────────────────────────────────┐
+│   Neon Postgres (Drizzle schema)        │
+└────────────────────┬────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────┐      ┌──────────────┐
+│  TanStack Start on Vercel               │ ◀──▶ │  Vercel CDN  │ ◀── browser
+│  /api/* server routes + React UI        │      │ (s-maxage)   │
+└─────────────────────────────────────────┘      └──────────────┘
 ```
+
+API responses carry CDN cache headers (15 seconds to 24 hours depending on the data), so repeat reads don't reach the database and Neon can scale to zero between requests.
 
 ---
 
@@ -95,71 +81,50 @@ Benchwarmer Analytics provides interactive tools for analyzing NHL player and li
 
 ### Prerequisites
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Node.js 22+](https://nodejs.org/)
-- [Docker](https://www.docker.com/products/docker-desktop/)
+- [Node.js 24](https://nodejs.org/)
+- A Neon database, or [Docker](https://www.docker.com/products/docker-desktop/) for a local Postgres
 
 ### Local Development
 
-1. **Clone the repository**
+All commands run from `app/`.
+
+1. **Install dependencies**
    ```bash
-   git clone https://github.com/reecerose/benchwarmer-analytics.git
-   cd benchwarmer-analytics
+   cd app
+   npm ci
    ```
 
-2. **Configure the database connection**
+2. **Configure the database** (see `app/.env.example`)
 
-   Create a `.env.local` file in the project root with your connection string:
+   Put `DATABASE_URL` (pooled), `DATABASE_URL_UNPOOLED` (direct) and `CRON_SECRET` in `.env.local`, either at the repo root (where `neon link` writes it) or in `app/`.
+
+   Or use a throwaway local Postgres:
    ```bash
-   ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=benchwarmer;Username=benchwarmer;Password=benchwarmer
+   docker run -d --rm --name bw-pg18-scratch -e POSTGRES_PASSWORD=scratch -e POSTGRES_DB=benchwarmer -p 55432:5432 postgres:18
+   export DATABASE_URL=postgresql://postgres:scratch@localhost:55432/benchwarmer
    ```
 
-3. **Start PostgreSQL**
+3. **Apply migrations and load data**
    ```bash
-   ./scripts/dev.sh
+   npm run db:migrate
+   npm run backfill -- --from-season 2025 --yes   # or omit --from-season for 2008 → current
    ```
 
-4. **Run database migrations** (after creating them in Phase 3)
+4. **Run the app**
    ```bash
-   ./scripts/dev.sh migrate
+   npm run dev   # http://localhost:3000
    ```
 
-5. **Start the API** (Terminal 1)
-   ```bash
-   export $(cat .env.local | xargs) && ASPNETCORE_ENVIRONMENT=Development dotnet watch run --project server/Benchwarmer.Api --no-hot-reload
-   ```
-
-6. **Start the frontend** (Terminal 2)
-   ```bash
-   cd app && npm run dev
-   ```
-
-7. **Access the application**
-   - Frontend: http://localhost:5173
-   - API: http://localhost:5000
-   - Swagger: http://localhost:5000/swagger
-   - Hangfire Dashboard: http://localhost:5000/hangfire
-
-### Development Script
-
-Database and infrastructure tasks are handled by `./scripts/dev.sh`:
+### Commands
 
 | Command | Description |
 |---------|-------------|
-| `./scripts/dev.sh` | Start PostgreSQL |
-| `./scripts/dev.sh stop` | Stop all Docker containers |
-| `./scripts/dev.sh migrate` | Apply EF Core database migrations |
-| `./scripts/dev.sh reset` | Drop and recreate databases (destroys data) |
-
-### Database Connection
-
-| Setting | Value |
-|---------|-------|
-| Host | `localhost` |
-| Port | `5432` |
-| Database | `benchwarmer` |
-| Username | `benchwarmer` |
-| Password | `benchwarmer` |
+| `npm run dev` | Dev server on port 3000 |
+| `npm run build` | Production build + typecheck |
+| `npm run lint` / `npm run typecheck` / `npm test` | Checks |
+| `npm run db:generate` | Generate a migration from `src/server/db/schema.ts` |
+| `npm run db:migrate` | Apply migrations |
+| `npm run backfill -- --yes` | Load historical data (resumable) |
 
 ---
 
@@ -167,28 +132,16 @@ Database and infrastructure tasks are handled by `./scripts/dev.sh`:
 
 | Source | Data Provided | Update Frequency |
 |--------|---------------|------------------|
-| [MoneyPuck](https://moneypuck.com) | Advanced stats, line combinations, shot data, expected goals (xG) | Nightly |
-| [NHL API](https://api-web.nhle.com) | Schedules, box scores, game stats, player bios, rosters | Real-time / Weekly |
+| [MoneyPuck](https://moneypuck.com) | Advanced stats, line combinations, shot data, expected goals (xG), player bios | Nightly (bios weekly) |
+| [NHL API](https://api-web.nhle.com) | Schedules, scores, box scores, standings | Nightly for schedules; on request for live data |
 
-The ingestion service runs nightly at 4:00 AM EST to pull the latest statistics from MoneyPuck. NHL API data is fetched on-demand for game schedules and box scores.
+Vercel Cron runs the ingestion steps between 09:00 and 10:00 UTC (around 5 AM Eastern). See [docs/INGESTION_NOTES.md](docs/INGESTION_NOTES.md).
 
 ---
 
-## API Endpoints
+## API
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/teams` | List all NHL teams |
-| `GET /api/teams/{abbrev}` | Team details with roster |
-| `GET /api/teams/{abbrev}/lines` | Line combinations with filters |
-| `GET /api/teams/{abbrev}/chemistry-matrix` | Player pair performance matrix |
-| `GET /api/players/{id}` | Player details |
-| `GET /api/players/{id}/stats` | Player statistics by season/situation |
-| `GET /api/players/{id}/shots` | Shot location data for visualizations |
-| `GET /api/players/compare` | Multi-player comparison |
-| `GET /api/seasons` | Available seasons |
-
-See the [Swagger documentation](http://localhost:5000/swagger) for full API details.
+The UI reads everything through a REST API under `/api`: seasons, teams, players, standings, special teams, stats, and games. See [docs/API_NOTES.md](docs/API_NOTES.md) for the endpoint groups and caching, and `app/src/types/` for response shapes.
 
 ---
 
@@ -196,37 +149,24 @@ See the [Swagger documentation](http://localhost:5000/swagger) for full API deta
 
 ```
 benchwarmer-analytics/
-├── server/
-│   ├── Benchwarmer.Api/           # ASP.NET Core Minimal API
-│   ├── Benchwarmer.Data/          # EF Core entities and repositories
-│   ├── Benchwarmer.Ingestion/     # Data download and import jobs
-│   └── Benchwarmer.Tests/         # Unit and integration tests
 ├── app/
 │   ├── src/
-│   │   ├── components/            # React components
-│   │   ├── hooks/                 # TanStack Query hooks
-│   │   ├── routes/                # TanStack Router pages
-│   │   └── lib/                   # Utilities and API client
-│   └── public/                    # Static assets
-├── docker-compose.yml
-└── docs/
-    └── PRD.md                     # Product requirements document
+│   │   ├── routes/            # UI routes, plus /api/* and /api/cron/* server routes
+│   │   ├── server/            # API handlers, Drizzle schema, ingestion
+│   │   ├── components/        # React components
+│   │   ├── hooks/             # TanStack Query hooks
+│   │   ├── lib/               # Utilities and API client
+│   │   └── types/             # API response types
+│   ├── drizzle/               # SQL migrations
+│   └── scripts/               # Backfill CLI
+└── docs/                      # Schema, ingestion, API, and deploy notes
 ```
 
 ---
 
 ## Deployment
 
-The application is deployed to Azure using GitHub Actions:
-
-1. **On push to `main`**: Build and test both API and client
-2. **On successful build**: Push container images to Azure Container Registry
-3. **Deploy**: Update Azure Container Apps with new images
-
-Infrastructure:
-- **Compute**: Azure Container Apps (serverless containers)
-- **Database**: Azure Database for PostgreSQL Flexible Server
-- **CI/CD**: GitHub Actions
+The Vercel project deploys `app/` automatically: pull requests get preview deployments, and merges to `main` deploy production. Database migrations are applied manually before deploying code that needs them. See [docs/DEPLOY_NOTES.md](docs/DEPLOY_NOTES.md).
 
 ---
 
@@ -242,7 +182,7 @@ This is a personal portfolio project and is not affiliated with the NHL, NHLPA, 
 
 ## License
 
-MIT License — See [LICENSE](LICENSE) for details.
+MIT License — See [LICENSE.md](LICENSE.md) for details.
 
 ---
 

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Benchwarmer Analytics is a hockey analytics platform for exploring NHL data, line combinations, and player performance. It ingests data from MoneyPuck and the NHL API and presents it through a web interface with visualizations.
 
-**Status:** Mid-migration from C#/.NET to a single TypeScript app. See `docs/MIGRATION_PLAN.md` for phases and progress. The C# code in `server/` is **reference source only**: do not build, run, or migrate with it (no `dotnet` commands). It is deleted in Phase 5.
+**Status:** In production at https://benchwarmer.reecerose.com (Vercel + Neon). The app was migrated from C#/.NET to TypeScript; see `docs/MIGRATION_PLAN.md`. Until Phase 5 removes it, the old C# code in `server/` remains as **reference source only**: do not build, run, or migrate with it (no `dotnet` commands).
 
 ## Tech Stack
 
@@ -75,7 +75,7 @@ docs/DEPLOY_NOTES.md          # Vercel project, env vars, plan limits, rollback
 - `getDb()` uses neon-http for Neon URLs and node-postgres for localhost URLs, so a scratch docker Postgres works in development.
 - Rendering: routes are client-rendered (`defaultSsr: false`); only the root shell is server-rendered. Components may use `window`/`localStorage` freely.
 - `/api` routes must set an explicit handler for each method they support, plus `ANY: methodNotAllowed`, so wrong-method requests don't fall through to the HTML shell.
-- API handlers live in `src/server/api/<group>.ts` and are wrapped with `apiHandler(CacheTier.x, fn)` (query parsing, `{ error, code }` errors, CDN cache header). GET handlers are read-only. Use `round()` from `format.ts` wherever the C# used `Math.Round`.
+- API handlers live in `src/server/api/<group>.ts` and are wrapped with `apiHandler(CacheTier.x, fn)` (query parsing, `{ error, code }` errors, CDN cache header). GET handlers are read-only. Use `round()` from `format.ts` for rounded outputs (banker's rounding, matching the original C# `Math.Round`).
 
 ## Database
 
@@ -105,5 +105,3 @@ docs/DEPLOY_NOTES.md          # Vercel project, env vars, plan limits, rollback
 - `docs/INGESTION_NOTES.md` - ingestion steps, cron schedule, backfill, and fixes vs the C# jobs
 - `docs/API_NOTES.md` - API structure, cache tiers, and differences from the C# API
 - `docs/DEPLOY_NOTES.md` - Vercel project, env vars, plan limits, caching, rollback
-- `docs/PRD.md` - Product requirements (pre-migration)
-- `docs/TODO.md` - Implementation checklist (pre-migration)
