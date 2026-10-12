@@ -1,11 +1,15 @@
 import { useState } from "react";
+import {
+  EmptyState,
+  MetricGuide,
+  PageHeader,
+  SegmentedControl,
+  ViewToggle,
+} from "@/components/layout";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Baby, Info, Filter, BarChart3, TableIcon } from "lucide-react";
-import { useRookies, useSeasons, useSortableTable, usePageTitle } from "@/hooks";
+import { useRookies, useSeasons, useSortableTable, usePageTitle, useSeasonMinGames } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -13,8 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState } from "@/components/shared";
+import { TableSkeleton, ErrorState } from "@/components/shared";
 import {
   RookieTable,
   RookieProductionChart,
@@ -24,8 +27,12 @@ import {
 } from "@/components/rookie-watcher";
 import type { Rookie, RookiePositionFilter } from "@/types";
 
+const MIN_GAMES_OPTIONS = [1, 5, 10, 15, 20, 25] as const;
+
 export const Route = createFileRoute("/rookie-watcher")({
   component: RookieWatcherPage,
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery(seasonsQueryOptions),
   validateSearch: (search: Record<string, unknown>) => ({
     view: (search.view as "table" | "charts") ?? "table",
   }),
@@ -41,7 +48,7 @@ function RookieWatcherPage() {
   const { data: seasonsData } = useSeasons();
 
   const [season, setSeason] = useState<number | undefined>(undefined);
-  const [minGames, setMinGames] = useState(10);
+  const [minGamesChoice, setMinGames] = useState<number | undefined>(undefined);
   const [position, setPosition] = useState<RookiePositionFilter>("all");
 
   const updateView = (view: "table" | "charts") => {
@@ -50,6 +57,8 @@ function RookieWatcherPage() {
 
   const effectiveSeason =
     season ?? seasonsData?.seasons?.[0]?.year ?? defaultSeason;
+  const defaultMinGames = useSeasonMinGames(effectiveSeason, 10, MIN_GAMES_OPTIONS);
+  const minGames = minGamesChoice ?? defaultMinGames;
 
   // Convert position filter for API
   const apiPosition =
@@ -75,54 +84,37 @@ function RookieWatcherPage() {
   });
 
   return (
-    <div className="container py-8">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <Baby className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">Rookie Watcher</h1>
-        </div>
-        <p className="text-muted-foreground max-w-2xl">
-          Track first-year NHL skaters meeting league rookie criteria: no prior
-          season with 26+ games played and under 26 years old as of September
-          15. Goalies are not included.
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Rookie watcher"
+        description="First-year skaters by the NHL's rookie rules: under 26 on September 15 and never more than 25 games in a prior season."
+      />
+
+      <MetricGuide metrics={["Rookie Score", "G-xG", "CF%", "Sh/60"]}>
+        <p className="text-muted-foreground">
+          Rookie score weights points double and adds finishing (goals minus
+          expected), possession and shot rate. Defensemen get a 1.3× boost on
+          production, and younger rookies score higher.
         </p>
-      </div>
+      </MetricGuide>
 
-      <Card className="mb-6 py-3 px-4">
-        <div className="flex items-start gap-3">
-          <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Rookie Score</span>{" "}
-            combines: <strong>Points</strong> (weighted x2),{" "}
-            <strong>Goals vs Expected</strong> (G - xG),{" "}
-            <strong>Corsi For %</strong> (possession metric), and{" "}
-            <strong>Shots/60</strong> (opportunity creation). Adjusted for{" "}
-            <strong>position</strong> (defensemen get 1.3x production boost) and{" "}
-            <strong>age</strong> (younger rookies score higher).
-          </div>
-        </div>
-      </Card>
-
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <Tabs
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl
+            aria-label="Position"
             value={position}
-            onValueChange={(v) => setPosition(v as RookiePositionFilter)}
-          >
-            <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="forwards">Forwards</TabsTrigger>
-              <TabsTrigger value="defensemen">Defensemen</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select
+            onValueChange={setPosition}
+            options={[
+              { value: "all", label: "All" },
+              { value: "forwards", label: "Forwards" },
+              { value: "defensemen", label: "Defense" },
+            ]}
+          />
+          <Select
               value={String(effectiveSeason ?? "")}
               onValueChange={(v) => setSeason(parseInt(v))}
             >
-              <SelectTrigger className="w-36 h-9">
+              <SelectTrigger className="w-32" aria-label="Season">
                 <SelectValue placeholder="Season" />
               </SelectTrigger>
               <SelectContent>
@@ -133,48 +125,23 @@ function RookieWatcherPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Min GP:</span>
-            <Select
+          <Select
               value={String(minGames)}
               onValueChange={(v) => setMinGames(parseInt(v))}
             >
-              <SelectTrigger className="w-20 h-9">
+              <SelectTrigger className="w-32" aria-label="Minimum games">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="5">5+</SelectItem>
-                <SelectItem value="10">10+</SelectItem>
-                <SelectItem value="15">15+</SelectItem>
-                <SelectItem value="20">20+</SelectItem>
-                <SelectItem value="25">25+</SelectItem>
+                {MIN_GAMES_OPTIONS.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n === 1 ? "Any games" : `${n}+ games`}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-          </div>
         </div>
-
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          <Button
-            variant={currentView === "charts" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateView("charts")}
-            className="gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Charts
-          </Button>
-          <Button
-            variant={currentView === "table" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateView("table")}
-            className="gap-2"
-          >
-            <TableIcon className="h-4 w-4" />
-            Table
-          </Button>
-        </div>
+        <ViewToggle value={currentView} onValueChange={updateView} />
       </div>
 
       {error && (
@@ -186,15 +153,7 @@ function RookieWatcherPage() {
       )}
 
       {isLoading ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <TableSkeleton rows={10} columns={10} />
       ) : data?.rookies && data.rookies.length > 0 ? (
         currentView === "charts" ? (
           <ChartsView rookies={data.rookies} />
@@ -207,15 +166,10 @@ function RookieWatcherPage() {
           />
         )
       ) : (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Baby className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium">No rookies found</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Try adjusting the filters or selecting a different season.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No rookies match these filters"
+          hint="Lower the minimum games or pick another season."
+        />
       )}
     </div>
   );

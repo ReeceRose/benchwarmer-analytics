@@ -15,6 +15,7 @@ import { formatToi } from "@/lib/formatters";
 import { getLineLabel } from "@/components/line-explorer/charts/line-chart-utils";
 import { LineTooltipWrapper } from "@/components/line-explorer/charts/LineTooltipWrapper";
 import type { LineCombination } from "@/types";
+import { EmptyState } from "@/components/layout";
 
 interface LineEffectivenessChartProps {
   lines: LineCombination[];
@@ -60,9 +61,7 @@ export function LineEffectivenessChart({
 
   if (chartData.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No line data with xG% available.
-      </div>
+      <EmptyState className="py-8" title="No line data with xG yet" />
     );
   }
 
@@ -77,7 +76,7 @@ export function LineEffectivenessChart({
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3">
-        {isForwardLine ? "Forward Line" : "Defense Pair"} Effectiveness (xG%)
+        {isForwardLine ? "Forward line" : "Defense pair"} effectiveness (xG%)
       </h3>
       <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 32)}>
         <BarChart
@@ -130,29 +129,29 @@ export function LineEffectivenessChart({
                       <p>
                         <span className="text-muted-foreground">xG%:</span>{" "}
                         <span
-                          className={`font-mono font-semibold ${d.isGood ? "text-success" : "text-destructive"}`}
+                          className={`tabular-nums font-semibold ${d.isGood ? "text-success" : "text-destructive"}`}
                         >
                           {d.xgPct.toFixed(1)}%
                         </span>
                       </p>
                       <p>
                         <span className="text-muted-foreground">Goals:</span>{" "}
-                        <span className="font-mono">
+                        <span className="tabular-nums">
                           {d.gf} GF / {d.ga} GA
                         </span>
                       </p>
                       <p>
                         <span className="text-muted-foreground">TOI:</span>{" "}
-                        <span className="font-mono">{d.toiFormatted}</span>
+                        <span className="tabular-nums">{d.toiFormatted}</span>
                       </p>
                     </>
                   );
                 }}
               </LineTooltipWrapper>
             )}
-            cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+            cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
           />
-          <Bar dataKey="xgPct" radius={[0, 4, 4, 0]}>
+          <Bar dataKey="xgPct" radius={4}>
             {chartData.map((entry, index) => (
               <Cell
                 key={index}

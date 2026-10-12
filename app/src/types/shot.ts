@@ -83,13 +83,3 @@ export interface ShooterStats {
   totalXGoal: number;
   goalsAboveExpected: number;
 }
-
-/** Valid shot types */
-export type ShotType =
-  | "WRIST"
-  | "SLAP"
-  | "SNAP"
-  | "BACKHAND"
-  | "TIP"
-  | "WRAP"
-  | "DEFLECTED";

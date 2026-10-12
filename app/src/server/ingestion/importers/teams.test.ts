@@ -47,7 +47,10 @@ describe("teams.csv", () => {
     const { db, written } = recordingDb();
     await importTeams(db, csv, true);
 
-    expect(written.teams.map((t) => t.abbreviation)).toEqual(["MIN", "MTL"]);
+    expect(written.teams.map((t) => [t.abbreviation, t.name])).toEqual([
+      ["MIN", "Minnesota Wild"],
+      ["MTL", "Montréal Canadiens"],
+    ]);
     expect(written.team_seasons).toHaveLength(2);
     expect(written.team_seasons.map((s) => [s.team_abbreviation, s.situation, s.games_played, s.is_playoffs])).toEqual([
       ["MIN", "other", 82, true],

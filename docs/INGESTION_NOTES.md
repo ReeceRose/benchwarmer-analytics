@@ -31,7 +31,7 @@ All steps are idempotent upserts. Unchanged rows aren't rewritten
 | `shots` | → `shots` (full, or incremental for cron) |
 | `games` | NHL schedule → `games` |
 | `score_state` | `shots` goals → `game_score_state_times` |
-| `views` | `REFRESH MATERIALIZED VIEW CONCURRENTLY` both views |
+| `views` | `REFRESH MATERIALIZED VIEW CONCURRENTLY` both views, then `ANALYZE` (Neon resets autovacuum's counters when the compute scales to zero, so planner stats would otherwise go stale) |
 
 Order within a season matters: lines resolve players through that season's
 skater rows (name fallback only), and score-state reads shots.
@@ -47,7 +47,7 @@ it) and accepts `?season=YYYY` for manual re-runs.
 | `/api/cron/schedule` | 09:00 daily | games from yesterday through the next 7 days (ET) |
 | `/api/cron/season-stats` | 09:15 daily | teams, skaters, goalies, lines for the current season |
 | `/api/cron/shots` | 09:30 daily | incremental shots + score-state for the touched games |
-| `/api/cron/derived` | 09:45 daily | full-season score-state (only changes written) + view refresh |
+| `/api/cron/derived` | 09:45 daily | full-season score-state (only changes written) + view refresh + `ANALYZE` |
 | `/api/cron/bios` | Sun 10:00 | player bios |
 
 Incremental shots: rows are imported only for games with no stored shots,
@@ -69,7 +69,9 @@ npm run backfill -- --from-season 2024 --dataset shots,score_state --force --yes
 
 Resumable: (step, season) pairs that already succeeded are skipped unless
 `--force`. Views are always refreshed at the end. The backfill loads games
-and score-state for every season too.
+and score-state for every season too. It runs outside Vercel, so it can't
+purge the API cache; run `vercel cache invalidate --tag api` afterwards (see
+`DEPLOY_NOTES.md`).
 
 ## Data quirks and decisions
 
@@ -108,6 +110,10 @@ and score-state for every season too.
   players, position labels). That produces small, harmless churn between the
   weekly bio run and the daily season runs.
 - Team divisions use the current alignment for all seasons.
+- **Team names.** On "Team Level" rows MoneyPuck's `name` column is just the
+  abbreviation, so `teams.name` comes from `TEAM_NAMES` in
+  `src/lib/team-names.ts` (shared with the UI and the games API). Relocated
+  franchises keep the name they last played under.
 - Empty optional text values are stored as NULL.
 - Derived decimals use decimal.js at 28 significant digits with banker's
   rounding.

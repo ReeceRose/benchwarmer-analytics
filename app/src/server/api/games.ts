@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gt, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import type { Database } from "@/server/db/client";
 import { games, goalieSeasons, players, shots, skaterSeasons, teamSeasons } from "@/server/db/schema";
-import type { ApiContext } from "@/server/api/handler";
+import { CacheTier, json, type ApiContext } from "@/server/api/handler";
 import { HttpError } from "@/server/api/errors";
 import { addDays, groupBy, round, sum, todayUtc } from "@/server/api/format";
 import { DangerZones, GameState, isFinalState, isLiveState } from "@/server/api/constants";
@@ -25,20 +25,9 @@ import {
   type NhlTeamStandings,
 } from "@/server/api/nhl-client";
 import { todayEastern, type ScheduledGame } from "@/server/ingestion/nhl";
+import { TEAM_NAMES } from "@/lib/team-names";
 
 const gameNotFound = () => new HttpError(404, { error: "Game not found", code: "GAME_NOT_FOUND" });
-
-export const TEAM_NAMES: Record<string, string> = {
-  ANA: "Anaheim Ducks", ARI: "Arizona Coyotes", BOS: "Boston Bruins", BUF: "Buffalo Sabres",
-  CAR: "Carolina Hurricanes", CBJ: "Columbus Blue Jackets", CGY: "Calgary Flames", CHI: "Chicago Blackhawks",
-  COL: "Colorado Avalanche", DAL: "Dallas Stars", DET: "Detroit Red Wings", EDM: "Edmonton Oilers",
-  FLA: "Florida Panthers", LAK: "Los Angeles Kings", MIN: "Minnesota Wild", MTL: "Montreal Canadiens",
-  NJD: "New Jersey Devils", NSH: "Nashville Predators", NYI: "New York Islanders", NYR: "New York Rangers",
-  OTT: "Ottawa Senators", PHI: "Philadelphia Flyers", PIT: "Pittsburgh Penguins", SEA: "Seattle Kraken",
-  SJS: "San Jose Sharks", STL: "St. Louis Blues", TBL: "Tampa Bay Lightning", TOR: "Toronto Maple Leafs",
-  UTA: "Utah Hockey Club", VAN: "Vancouver Canucks", VGK: "Vegas Golden Knights", WPG: "Winnipeg Jets",
-  WSH: "Washington Capitals",
-};
 
 export function teamName(code: string): string | null {
   return TEAM_NAMES[code.toUpperCase()] ?? null;
@@ -299,7 +288,10 @@ export function liveGoals(
 }
 
 export function landingGoals(landing: NhlGameLanding, homeTeamCode: string) {
-  const all = (landing.summary?.scoring ?? []).flatMap((p) => p.goals ?? []);
+  // Landing goals don't carry their period; it's on the enclosing group.
+  const all = (landing.summary?.scoring ?? []).flatMap((p) =>
+    (p.goals ?? []).map((g) => ({ ...g, period: g.period ?? p.periodDescriptor?.number })),
+  );
   if (all.length === 0) return [];
   const finalHome = landing.homeTeam?.score;
   const finalAway = landing.awayTeam?.score;
@@ -695,15 +687,18 @@ export async function getGameBoxscore({ params }: ApiContext) {
   const box = await getBoxscore(params.gameId);
   const stats = box?.playerByGameStats;
   if (!box || !stats) throw gameNotFound();
-  return {
+  const body = {
     gameId: params.gameId,
     homeTeamCode: box.homeTeam?.abbrev ?? "",
     awayTeamCode: box.awayTeam?.abbrev ?? "",
+    gameState: box.gameState ?? null,
     homeSkaters: boxscoreSkaters(stats.homeTeam),
     awaySkaters: boxscoreSkaters(stats.awayTeam),
     homeGoalies: boxscoreGoalies(stats.homeTeam),
     awayGoalies: boxscoreGoalies(stats.awayTeam),
   };
+  // A game in progress changes every few seconds; a final one doesn't.
+  return json(body, isFinalState(box.gameState) ? CacheTier.semiStatic : CacheTier.live);
 }
 
 const isOvertime = (g: NhlClubScheduleGame) => g.periodDescriptor?.periodType === "OT" || g.periodDescriptor?.periodType === "SO";

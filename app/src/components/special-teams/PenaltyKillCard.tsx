@@ -13,7 +13,7 @@ export function PenaltyKillCard({ stats }: PenaltyKillCardProps) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Penalty Kill</CardTitle>
+          <CardTitle className="text-base">Penalty kill</CardTitle>
           {stats.leagueRank && (
             <Badge variant="secondary">#{stats.leagueRank} in NHL</Badge>
           )}
@@ -36,31 +36,31 @@ export function PenaltyKillCard({ stats }: PenaltyKillCardProps) {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Goals Against</span>
+            <span className="text-muted-foreground">Goals against</span>
             <span className="font-medium tabular-nums">{stats.goalsAgainst}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Times Short</span>
+            <span className="text-muted-foreground">Times short</span>
             <span className="font-medium tabular-nums">{stats.timesShorthanded}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">xGoals Against</span>
+            <span className="text-muted-foreground">xG against</span>
             <span className="font-medium tabular-nums">{stats.xGoalsAgainst.toFixed(1)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Shots Against</span>
+            <span className="text-muted-foreground">Shots against</span>
             <span className="font-medium tabular-nums">{stats.shotsAgainst}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">HD Against</span>
+            <span className="text-muted-foreground">HD against</span>
             <span className="font-medium tabular-nums">{stats.highDangerAgainst}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">HD Goals Against</span>
+            <span className="text-muted-foreground">HD goals against</span>
             <span className="font-medium tabular-nums">{stats.highDangerGoalsAgainst}</span>
           </div>
           <div className="flex justify-between col-span-2">
-            <span className="text-muted-foreground">PK Time</span>
+            <span className="text-muted-foreground">PK time</span>
             <span className="font-medium tabular-nums">{formatIceTimeLong(stats.iceTimeSeconds)}</span>
           </div>
         </div>

@@ -14,6 +14,7 @@ import { formatToi } from "@/lib/formatters";
 import { getLineLabel } from "@/components/line-explorer/charts/line-chart-utils";
 import { LineTooltipWrapper } from "@/components/line-explorer/charts/LineTooltipWrapper";
 import type { LineCombination } from "@/types";
+import { EmptyState } from "@/components/layout";
 
 interface GoalsForAgainstChartProps {
   lines: LineCombination[];
@@ -55,9 +56,7 @@ export function GoalsForAgainstChart({
 
   if (chartData.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No line data with goals available.
-      </div>
+      <EmptyState className="py-8" title="None of these lines have scored or allowed a goal yet" />
     );
   }
 
@@ -68,7 +67,7 @@ export function GoalsForAgainstChart({
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3">
-        Goals For vs Against by {isForwardLine ? "Forward Line" : "Defense Pair"}
+        Goals for vs against by {isForwardLine ? "Forward line" : "Defense pair"}
       </h3>
       <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 32)}>
         <BarChart
@@ -111,27 +110,27 @@ export function GoalsForAgainstChart({
                     <>
                       <p>
                         <span className="text-muted-foreground">Goals For:</span>{" "}
-                        <span className="font-mono text-success">{d.gf}</span>
+                        <span className="tabular-nums text-success">{d.gf}</span>
                       </p>
                       <p>
                         <span className="text-muted-foreground">Goals Against:</span>{" "}
-                        <span className="font-mono text-destructive">{d.ga}</span>
+                        <span className="tabular-nums text-destructive">{d.ga}</span>
                       </p>
                       <p>
                         <span className="text-muted-foreground">Differential:</span>{" "}
-                        <span className={`font-mono font-semibold ${diffColor}`}>
+                        <span className={`tabular-nums font-semibold ${diffColor}`}>
                           {diffSign}
                           {d.diff}
                         </span>
                       </p>
                       <p>
                         <span className="text-muted-foreground">TOI:</span>{" "}
-                        <span className="font-mono">{d.toiFormatted}</span>
+                        <span className="tabular-nums">{d.toiFormatted}</span>
                       </p>
                       {d.xgPct != null && (
                         <p>
                           <span className="text-muted-foreground">xG%:</span>{" "}
-                          <span className="font-mono">{d.xgPct.toFixed(1)}%</span>
+                          <span className="tabular-nums">{d.xgPct.toFixed(1)}%</span>
                         </p>
                       )}
                     </>
@@ -139,21 +138,21 @@ export function GoalsForAgainstChart({
                 }}
               </LineTooltipWrapper>
             )}
-            cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+            cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
           />
           <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
           <Bar
             dataKey="gf"
-            name="Goals For"
+            name="Goals for"
             fill={SEMANTIC_COLOURS.success}
-            radius={[0, 4, 4, 0]}
+            radius={4}
             fillOpacity={0.85}
           />
           <Bar
             dataKey="ga"
-            name="Goals Against"
+            name="Goals against"
             fill={SEMANTIC_COLOURS.danger}
-            radius={[0, 4, 4, 0]}
+            radius={4}
             fillOpacity={0.85}
           />
         </BarChart>

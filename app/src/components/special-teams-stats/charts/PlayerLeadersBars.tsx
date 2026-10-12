@@ -42,13 +42,13 @@ interface ChartDataPoint {
 // Generate gradient color based on rank
 function getRankColor(rank: number): string {
   if (rank <= 5) {
-    return "hsl(142, 76%, 36%)"; // green-600 (top 5)
+    return "var(--chart-3)"; // green-600 (top 5)
   } else if (rank <= 10) {
-    return "hsl(217, 91%, 60%)"; // blue-500 (6-10)
+    return "var(--chart-1)"; // blue-500 (6-10)
   } else if (rank <= 15) {
-    return "hsl(45, 93%, 47%)"; // amber-500 (11-15)
+    return "var(--chart-4)"; // amber-500 (11-15)
   } else {
-    return "hsl(215, 20%, 65%)"; // gray (16+)
+    return "var(--muted-foreground)"; // gray (16+)
   }
 }
 
@@ -90,7 +90,7 @@ function CustomYAxisTick({
         cy={0}
         r={12}
         fill="none"
-        stroke="hsl(var(--border))"
+        stroke="var(--border)"
         strokeWidth={1}
       />
     </g>
@@ -116,7 +116,7 @@ function CustomTooltip({
   const metricLabel = metric === "points" ? "Points" : "P/60";
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <Avatar className="h-6 w-6">
           <AvatarImage
@@ -134,13 +134,13 @@ function CustomTooltip({
       <div className="space-y-1">
         <p>
           <span className="text-muted-foreground">Rank:</span>{" "}
-          <span className="font-mono font-semibold">#{data.rank}</span>
+          <span className="tabular-nums font-semibold">#{data.rank}</span>
         </p>
         <p>
           <span className="text-muted-foreground">
             {situationLabel} {metricLabel}:
           </span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {metric === "points" ? data.value : data.value.toFixed(2)}
           </span>
         </p>
@@ -182,7 +182,7 @@ export function PlayerLeadersBars({
     });
   };
 
-  const situationLabel = situation === "5on4" ? "Power Play" : "Penalty Kill";
+  const situationLabel = situation === "5on4" ? "Power play" : "Penalty kill";
   const metricLabel = metric === "points" ? "Points" : "Points per 60";
   const title = `Top ${situationLabel} ${metricLabel}`;
   const description = `Top 20 players by ${situationLabel.toLowerCase()} ${metricLabel.toLowerCase()}`;
@@ -192,7 +192,7 @@ export function PlayerLeadersBars({
       <Card>
         <CardHeader>
           <CardTitle>{title}</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -210,7 +210,7 @@ export function PlayerLeadersBars({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
@@ -238,11 +238,11 @@ export function PlayerLeadersBars({
             />
             <Tooltip
               content={<CustomTooltip metric={metric} situation={situation} />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.5 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.5 }}
             />
             <Bar
               dataKey="value"
-              radius={[0, 4, 4, 0]}
+              radius={4}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
             >
@@ -258,29 +258,29 @@ export function PlayerLeadersBars({
         <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(142, 76%, 36%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-3)" }}
             />
             <span>Top 5</span>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(217, 91%, 60%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-1)" }}
             />
             <span>6-10</span>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(45, 93%, 47%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-4)" }}
             />
             <span>11-15</span>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(215, 20%, 65%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--muted-foreground)" }}
             />
             <span>16-20</span>
           </div>

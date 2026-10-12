@@ -68,6 +68,8 @@ export interface GameBoxscoreResponse {
   gameId: string;
   homeTeamCode: string;
   awayTeamCode: string;
+  /** NHL game state (e.g. "LIVE", "OFF"), so clients know whether to poll. */
+  gameState: string | null;
   homeSkaters: BoxscoreSkater[];
   awaySkaters: BoxscoreSkater[];
   homeGoalies: BoxscoreGoalie[];

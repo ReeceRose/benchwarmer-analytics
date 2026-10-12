@@ -37,6 +37,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Fontsource's package exports only expose CSS; this reaches the font
+      // files so the root route can preload them.
+      '@fontsource-files': path.resolve(__dirname, './node_modules/@fontsource-variable'),
     },
   },
 })

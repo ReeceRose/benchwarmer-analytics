@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SeasonSelector } from "@/components/shared/SeasonSelector";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -119,7 +119,7 @@ export function TeamShotHeatMaps({ teamAbbrev }: TeamShotHeatMapsProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Team Shot Heat Maps</CardTitle>
+          <CardTitle>Team shot heat maps</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
@@ -135,25 +135,16 @@ export function TeamShotHeatMaps({ teamAbbrev }: TeamShotHeatMapsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex items-center gap-4">
-            <CardTitle>Shot Heat Maps</CardTitle>
-            <div className="flex items-center rounded-md border p-1">
-              <Button
-                variant={mode === "xg" ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 px-2"
-                onClick={() => setMode("xg")}
-              >
-                xG
-              </Button>
-              <Button
-                variant={mode === "volume" ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 px-2"
-                onClick={() => setMode("volume")}
-              >
-                Volume
-              </Button>
-            </div>
+            <CardTitle>Shot heat maps</CardTitle>
+            <SegmentedControl
+              aria-label="Colour by"
+              value={mode}
+              onValueChange={setMode}
+              options={[
+                { value: "xg", label: "xG" },
+                { value: "volume", label: "Volume" },
+              ]}
+            />
           </div>
           <SeasonSelector
             value={effectiveSeason}
@@ -177,11 +168,11 @@ export function TeamShotHeatMaps({ teamAbbrev }: TeamShotHeatMapsProps) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-80 w-full rounded-lg" />
+                <Skeleton className="h-80 w-full rounded-xl" />
               </div>
               <div className="space-y-3">
                 <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-80 w-full rounded-lg" />
+                <Skeleton className="h-80 w-full rounded-xl" />
               </div>
             </div>
           )}
@@ -192,20 +183,19 @@ export function TeamShotHeatMaps({ teamAbbrev }: TeamShotHeatMapsProps) {
                 <ShotHeatMap
                   shots={shotsForData.shots}
                   mode={mode}
-                  title="Shots For (Offensive)"
+                  title="Shots for (offensive)"
                 />
                 <ShotHeatMap
                   shots={shotsAgainstData.shots}
                   mode={mode}
-                  title="Shots Against (Defensive)"
+                  title="Shots against (defensive)"
                 />
               </div>
 
               {differential && (
-                <Card className="bg-muted/30">
-                  <CardContent className="pt-4">
+                <div className="rounded-xl border p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold">Shot Differential</h4>
+                      <h4 className="text-sm font-semibold">Shot differential</h4>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="w-12 text-right">For</span>
                         <span className="w-14 text-right">Diff</span>
@@ -213,7 +203,7 @@ export function TeamShotHeatMaps({ teamAbbrev }: TeamShotHeatMapsProps) {
                       </div>
                     </div>
                     <DifferentialStat
-                      label="Total Shots"
+                      label="Total shots"
                       forValue={differential.totalFor}
                       againstValue={differential.totalAgainst}
                     />
@@ -223,18 +213,18 @@ export function TeamShotHeatMaps({ teamAbbrev }: TeamShotHeatMapsProps) {
                       againstValue={differential.goalsAgainst}
                     />
                     <DifferentialStat
-                      label="Expected Goals"
+                      label="Expected goals"
                       forValue={differential.xgFor}
                       againstValue={differential.xgAgainst}
                       format={(v) => v.toFixed(1)}
                     />
                     <DifferentialStat
-                      label="High Danger"
+                      label="High danger"
                       forValue={differential.highDangerFor}
                       againstValue={differential.highDangerAgainst}
                     />
                     <DifferentialStat
-                      label="Sh% For / Against"
+                      label="Sh% for / against"
                       forValue={
                         differential.totalFor > 0
                           ? (differential.goalsFor / differential.totalFor) * 100
@@ -248,8 +238,7 @@ export function TeamShotHeatMaps({ teamAbbrev }: TeamShotHeatMapsProps) {
                       format={(v) => v.toFixed(1) + "%"}
                       higherIsBetter={true}
                     />
-                  </CardContent>
-                </Card>
+                </div>
               )}
             </div>
           )}

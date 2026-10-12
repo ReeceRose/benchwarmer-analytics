@@ -796,7 +796,7 @@ export const metrics: MetricDefinition[] = [
 
 export const categoryInfo = {
   basic: {
-    label: "Basic Stats",
+    label: "Basic stats",
     description: "Traditional counting statistics that form the foundation of hockey analysis.",
   },
   possession: {
@@ -805,20 +805,20 @@ export const categoryInfo = {
       "Metrics that measure which team controls the puck more, based on shot attempts.",
   },
   expected: {
-    label: "Expected Goals",
+    label: "Expected goals",
     description:
       "Probability-based metrics that weight shots by their likelihood of becoming goals.",
   },
   shooting: {
-    label: "Shooting Quality",
+    label: "Shooting quality",
     description: "Metrics that evaluate the quality and location of shots.",
   },
   context: {
-    label: "Game Context",
+    label: "Game context",
     description: "Situational modifiers that affect how statistics should be interpreted.",
   },
   derived: {
-    label: "Derived (Calculated)",
+    label: "Calculated by us",
     description:
       "Metrics computed by Benchwarmer from other fields. Formulas shown for transparency.",
   },

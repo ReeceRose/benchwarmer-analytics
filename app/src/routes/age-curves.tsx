@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { PageHeader, SegmentedControl } from "@/components/layout";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
-import { TrendingUp, Info } from "lucide-react";
+import * as z from "zod/mini";
 import { useAgeCurves, useAgeDistribution, usePageTitle } from "@/hooks";
-import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -23,10 +22,10 @@ import { buildHistogramBins } from "@/lib/histogram";
 import { CHART_COLOURS } from "@/lib/chart-colours";
 
 const searchSchema = z.object({
-  playerIds: z.string().optional(),
-  metric: z.string().optional(),
-  minGames: z.number().optional(),
-  useMedian: z.boolean().optional(),
+  playerIds: z.optional(z.string()),
+  metric: z.optional(z.string()),
+  minGames: z.optional(z.number()),
+  useMedian: z.optional(z.boolean()),
 });
 
 export const Route = createFileRoute("/age-curves")({
@@ -199,15 +198,15 @@ function AgeCurvesPage() {
   const selectedMetric = METRICS.find((m) => m.key === metric)!;
 
   // Build chart title
-  const leagueLabel = useMedian ? "League Median" : "League Average";
+  const leagueLabel = useMedian ? "League median" : "League average";
   const chartTitle = useMemo(() => {
     if (playerInfo.length === 0) {
-      return `${leagueLabel} ${selectedMetric.label} by Age`;
+      return `${leagueLabel} ${selectedMetric.label} by age`;
     }
     if (playerInfo.length === 1) {
       return `${playerInfo[0].playerName} vs ${leagueLabel}`;
     }
-    return `Player Comparison: ${selectedMetric.label} by Age`;
+    return `${selectedMetric.label} by age`;
   }, [playerInfo, selectedMetric, leagueLabel]);
 
   // Build histogram data from distribution
@@ -225,92 +224,56 @@ function AgeCurvesPage() {
   }, []);
 
   return (
-    <div className="container py-8">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <TrendingUp className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">Age Curves</h1>
-        </div>
-        <p className="text-muted-foreground max-w-2xl">
-          Compare player performance trajectories against league averages by
-          age. See how production typically changes as players progress through
-          their careers.
-        </p>
-      </div>
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Age curves"
+        description="How production changes with age, and how individual players compare with the league at each age. Add up to five players."
+      />
 
-      <Card className="mb-6 py-3 px-4">
-        <div className="flex items-start gap-3">
-          <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <p className="text-sm text-muted-foreground">
-            Age curves show how player performance typically changes over time.
-            The league {useMedian ? "median" : "average"} line represents the{" "}
-            {useMedian ? "median" : "mean"} production at each age across all
-            qualifying seasons. Comparing individual players against this
-            baseline can help identify early bloomers, late developers, or
-            players aging gracefully. You can compare up to 5 players at once.
-          </p>
-        </div>
-      </Card>
-
-      <div className="flex flex-wrap items-start gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Metric:</span>
-          <Select
-            value={metric}
-            onValueChange={(v: string) => setMetric(v as MetricKey)}
-          >
-            <SelectTrigger className="w-32 h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {METRICS.map((m) => (
-                <SelectItem key={m.key} value={m.key}>
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Min Games:</span>
-          <Select
-            value={String(minGames)}
-            onValueChange={(v: string) => setMinGames(parseInt(v))}
-          >
-            <SelectTrigger className="w-20 h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10+</SelectItem>
-              <SelectItem value="20">20+</SelectItem>
-              <SelectItem value="40">40+</SelectItem>
-              <SelectItem value="60">60+</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Baseline:</span>
-          <Select
-            value={useMedian ? "median" : "average"}
-            onValueChange={(v: string) => setUseMedian(v === "median")}
-          >
-            <SelectTrigger className="w-28 h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="average">Average</SelectItem>
-              <SelectItem value="median">Median</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={metric}
+          onValueChange={(v: string) => setMetric(v as MetricKey)}
+        >
+          <SelectTrigger className="w-36" aria-label="Metric">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {METRICS.map((m) => (
+              <SelectItem key={m.key} value={m.key}>
+                {m.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={String(minGames)}
+          onValueChange={(v: string) => setMinGames(parseInt(v))}
+        >
+          <SelectTrigger className="w-32" aria-label="Minimum games">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10+ games</SelectItem>
+            <SelectItem value="20">20+ games</SelectItem>
+            <SelectItem value="40">40+ games</SelectItem>
+            <SelectItem value="60">60+ games</SelectItem>
+          </SelectContent>
+        </Select>
+        <SegmentedControl
+          aria-label="League baseline"
+          value={useMedian ? "median" : "average"}
+          onValueChange={(v) => setUseMedian(v === "median")}
+          options={[
+            { value: "average", label: "League average" },
+            { value: "median", label: "League median" },
+          ]}
+        />
         <PlayerSearchDropdown
           selectedPlayerIds={selectedPlayerIds}
           maxPlayers={5}
           onSelectPlayer={handleSelectPlayer}
-          placeholder="Add player to compare..."
+          placeholder="Add a player"
         />
       </div>
 
@@ -329,9 +292,7 @@ function AgeCurvesPage() {
       )}
 
       {isLoading ? (
-        <Card className="p-6">
-          <Skeleton className="h-80 w-full" />
-        </Card>
+        <Skeleton className="h-112 w-full rounded-2xl" />
       ) : data ? (
         <AgeCurvesChart
           chartData={chartData}

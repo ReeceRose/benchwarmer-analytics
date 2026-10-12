@@ -5,31 +5,6 @@ export interface ApiError {
   details?: string[];
 }
 
-/** Paginated response wrapper */
-export interface PaginatedResponse<T> {
-  items: T[];
-  totalCount: number;
-  page?: number;
-  pageSize?: number;
-  totalPages?: number;
-}
-
-/** Common query parameters for paginated endpoints */
-export interface PaginationParams {
-  page?: number;
-  pageSize?: number;
-}
-
-/** Common query parameters for filtering by situation */
-export interface SituationParams {
-  situation?: Situation;
-}
-
-/** Common query parameters for filtering by season */
-export interface SeasonParams {
-  season?: number;
-}
-
 /** Valid game situations */
 export type Situation =
   | "all"

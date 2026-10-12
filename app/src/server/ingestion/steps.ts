@@ -101,10 +101,15 @@ export function syncScoreStates(db: Queryable, season: number, gameIds?: string[
 }
 
 // CONCURRENTLY keeps the views readable during refresh and only applies changed rows.
+// ANALYZE then refreshes planner statistics. Autovacuum can't be relied on for
+// that: Neon resets its change counters whenever the compute scales to zero,
+// and without fresh stats the planner thinks the current season has no rows
+// and picks nested-loop plans that turn leaderboard queries into seconds.
 export function refreshViews(db: Queryable, logger = consoleLogger) {
   return runStep(db, "views", null, async () => {
     await db.query("REFRESH MATERIALIZED VIEW CONCURRENTLY chemistry_pairs");
     await db.query("REFRESH MATERIALIZED VIEW CONCURRENTLY season_percentiles");
+    await db.query("ANALYZE");
     return { rowsWritten: 0 };
   }, logger);
 }

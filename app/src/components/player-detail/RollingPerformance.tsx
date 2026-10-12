@@ -33,13 +33,16 @@ interface RollingPerformanceProps {
 
 type MetricKey = "goals" | "shots" | "expectedGoals" | "shootingPct";
 
+// Rolling averages are fractional, so show a decimal unless the value is whole.
+const perGame = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+
 const METRICS: {
   key: MetricKey;
   label: string;
   format: (v: number) => string;
 }[] = [
-  { key: "goals", label: "Goals", format: (v) => v.toFixed(0) },
-  { key: "shots", label: "Shots", format: (v) => v.toFixed(0) },
+  { key: "goals", label: "Goals", format: (v) => perGame(v) },
+  { key: "shots", label: "Shots", format: (v) => perGame(v) },
   { key: "expectedGoals", label: "xG", format: (v) => v.toFixed(2) },
   {
     key: "shootingPct",
@@ -49,9 +52,9 @@ const METRICS: {
 ];
 
 const GAME_WINDOWS = [
-  { value: "10", label: "Last 10 Games" },
-  { value: "15", label: "Last 15 Games" },
-  { value: "20", label: "Last 20 Games" },
+  { value: "10", label: "Last 10 games" },
+  { value: "15", label: "Last 15 games" },
+  { value: "20", label: "Last 20 games" },
 ];
 
 export function RollingPerformance({
@@ -102,7 +105,7 @@ export function RollingPerformance({
       <Card className={cn(className)}>
         <CardHeader>
           <CardTitle className="text-base font-semibold">
-            Rolling Performance
+            Rolling performance
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -138,7 +141,7 @@ export function RollingPerformance({
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-3">
           <CardTitle className="text-base font-semibold">
-            Rolling Performance
+            Rolling performance
           </CardTitle>
           <Badge variant="outline" className={trendBg}>
             <TrendIcon className={`h-3 w-3 mr-1 ${trendColor}`} />
@@ -222,7 +225,7 @@ export function RollingPerformance({
                   if (!active || !payload?.length) return null;
                   const d = payload[0].payload;
                   return (
-                    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+                    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
                       <p className="font-semibold">Game {d.game}</p>
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1 text-xs">
                         <span className="text-muted-foreground">Goals:</span>
@@ -243,8 +246,8 @@ export function RollingPerformance({
                 stroke={CHART_AXIS_COLOURS.reference}
                 strokeDasharray="5 5"
                 label={{
-                  value: "Season Avg",
-                  position: "right",
+                  value: "Season avg",
+                  position: "insideTopRight",
                   fontSize: 10,
                   fill: CHART_AXIS_COLOURS.reference,
                 }}

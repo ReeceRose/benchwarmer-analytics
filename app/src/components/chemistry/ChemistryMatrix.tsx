@@ -5,7 +5,10 @@ import {
   type MatrixData,
 } from "@/components/chemistry/chemistry-utils";
 import { ChemistryTooltip } from "@/components/chemistry/ChemistryTooltip";
-import { CHEMISTRY_MATRIX_COLOURS } from "@/lib/chart-colours";
+import {
+  CHEMISTRY_MATRIX_COLOURS,
+  getChemistryTextColour,
+} from "@/lib/chart-colours";
 import type { ChemistryPair } from "@/types";
 
 interface ChemistryMatrixProps {
@@ -78,7 +81,8 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
                   width={cellSize - 1}
                   height={cellSize - 1}
                   fill={CHEMISTRY_MATRIX_COLOURS.diagonal}
-                  rx={2}
+                  fillOpacity={0.25}
+                  rx={4}
                 />
               );
             }
@@ -100,7 +104,7 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
                   stroke={hasData ? "none" : CHEMISTRY_MATRIX_COLOURS.emptyBorder}
                   strokeWidth={hasData ? 0 : 1}
                   strokeDasharray={hasData ? "none" : "2,2"}
-                  rx={2}
+                  rx={4}
                   className={
                     hasData
                       ? "cursor-pointer transition-opacity hover:opacity-80"
@@ -136,8 +140,8 @@ export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
                     x={labelWidth + j * cellSize + cellSize / 2}
                     y={headerHeight + i * cellSize + cellSize / 2 + 3}
                     textAnchor="middle"
-                    className="fill-white text-[9px] font-medium pointer-events-none"
-                    style={{ textShadow: "0 0 2px rgba(0,0,0,0.5)" }}
+                    fill={getChemistryTextColour(xgPct)}
+                    className="pointer-events-none text-[10px] font-semibold tabular-nums"
                   >
                     {xgPct.toFixed(0)}
                   </text>

@@ -1,127 +1,50 @@
+import { MirroredBar, TeamLabel } from "@/components/game-live/parts";
 import { formatPercent } from "@/lib/formatters";
-import type { TeamComparison } from "@/types";
+import type { TeamComparison, TeamPreviewStats } from "@/types";
 
-interface TeamComparisonSectionProps {
-  data: TeamComparison;
-}
-
-function ComparisonBar({
-  label,
-  homeValue,
-  awayValue,
-  format = "decimal",
-  higherIsBetter = true,
-}: {
+type Row = {
   label: string;
-  homeValue: number | null;
-  awayValue: number | null;
-  format?: "decimal" | "percent";
-  higherIsBetter?: boolean;
-}) {
-  const home = homeValue ?? 0;
-  const away = awayValue ?? 0;
-  const total = home + away;
-  const homePercent = total > 0 ? (home / total) * 100 : 50;
+  value: (t: TeamPreviewStats) => number | null;
+  format: (v: number) => string;
+  lowerIsBetter?: boolean;
+};
 
-  const formatValue = (val: number | null) => {
-    if (val === null) return "-";
-    if (format === "percent") return formatPercent(val, false);
-    return val.toFixed(2);
-  };
+const ROWS: Row[] = [
+  { label: "xGF/GP", value: (t) => t.xGoalsFor, format: (v) => v.toFixed(2) },
+  { label: "xGA/GP", value: (t) => t.xGoalsAgainst, format: (v) => v.toFixed(2), lowerIsBetter: true },
+  { label: "xG%", value: (t) => t.xGoalsPct, format: (v) => formatPercent(v) },
+  { label: "Corsi%", value: (t) => t.corsiPct, format: (v) => formatPercent(v) },
+  { label: "Power play", value: (t) => t.powerPlayPct, format: (v) => formatPercent(v, false) },
+  { label: "Penalty kill", value: (t) => t.penaltyKillPct, format: (v) => formatPercent(v, false) },
+];
 
-  const homeBetter = higherIsBetter ? home > away : home < away;
-  const awayBetter = higherIsBetter ? away > home : away < home;
-
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span
-          className={homeBetter ? "font-semibold text-success" : "text-muted-foreground"}
-        >
-          {formatValue(homeValue)}
-        </span>
-        <span className="text-muted-foreground">{label}</span>
-        <span
-          className={awayBetter ? "font-semibold text-success" : "text-muted-foreground"}
-        >
-          {formatValue(awayValue)}
-        </span>
-      </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden flex">
-        <div
-          className={`transition-all ${homeBetter ? "bg-success" : "bg-muted-foreground/30"}`}
-          style={{ width: `${homePercent}%` }}
-        />
-        <div
-          className={`transition-all ${awayBetter ? "bg-success" : "bg-muted-foreground/30"}`}
-          style={{ width: `${100 - homePercent}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-export function TeamComparisonSection({ data }: TeamComparisonSectionProps) {
+/** Season-to-date team rates, away on the left like the header. */
+export function TeamComparisonSection({ data }: { data: TeamComparison }) {
   const { home, away } = data;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium">{home.teamCode}</span>
-        <h3 className="text-sm font-medium text-muted-foreground">Team Comparison</h3>
-        <span className="font-medium">{away.teamCode}</span>
-      </div>
-
-      <div className="space-y-3">
-        <ComparisonBar
-          label="xGF/GP"
-          homeValue={home.xGoalsFor}
-          awayValue={away.xGoalsFor}
-          higherIsBetter={true}
-        />
-        <ComparisonBar
-          label="xGA/GP"
-          homeValue={home.xGoalsAgainst}
-          awayValue={away.xGoalsAgainst}
-          higherIsBetter={false}
-        />
-        <ComparisonBar
-          label="xG%"
-          homeValue={home.xGoalsPct}
-          awayValue={away.xGoalsPct}
-          format="percent"
-          higherIsBetter={true}
-        />
-        <ComparisonBar
-          label="CF%"
-          homeValue={home.corsiPct}
-          awayValue={away.corsiPct}
-          format="percent"
-          higherIsBetter={true}
-        />
-        {(home.powerPlayPct !== null || away.powerPlayPct !== null) && (
-          <ComparisonBar
-            label="PP%"
-            homeValue={home.powerPlayPct}
-            awayValue={away.powerPlayPct}
-            format="percent"
-            higherIsBetter={true}
+    <>
+      {ROWS.map((row) => {
+        const a = row.value(away);
+        const h = row.value(home);
+        if (a == null && h == null) return null;
+        return (
+          <MirroredBar
+            key={row.label}
+            label={row.label}
+            away={a ?? 0}
+            home={h ?? 0}
+            awayText={a == null ? "–" : row.format(a)}
+            homeText={h == null ? "–" : row.format(h)}
+            lowerIsBetter={row.lowerIsBetter}
           />
-        )}
-        {(home.penaltyKillPct !== null || away.penaltyKillPct !== null) && (
-          <ComparisonBar
-            label="PK%"
-            homeValue={home.penaltyKillPct}
-            awayValue={away.penaltyKillPct}
-            format="percent"
-            higherIsBetter={true}
-          />
-        )}
+        );
+      })}
+      <div className="mt-3 flex justify-between gap-2 text-xs text-muted-foreground">
+        <TeamLabel side="away">{away.teamCode}</TeamLabel>
+        <span>Bold = better side</span>
+        <TeamLabel side="home">{home.teamCode}</TeamLabel>
       </div>
-
-      <div className="text-xs text-muted-foreground text-center">
-        Based on {home.gamesPlayed} GP (home) / {away.gamesPlayed} GP (away)
-      </div>
-    </div>
+    </>
   );
 }

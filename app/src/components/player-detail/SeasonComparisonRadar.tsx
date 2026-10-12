@@ -107,16 +107,16 @@ function RadarTooltip({
   if (!active || !row) return null;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <p className="font-semibold mb-2">{row.stat}</p>
       <div className="space-y-1 text-xs">
         <div className="flex justify-between gap-4">
           <span className="text-muted-foreground">Current season</span>
-          <span className="font-mono font-semibold">{row.current_raw}</span>
+          <span className="tabular-nums font-semibold">{row.current_raw}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-muted-foreground">Career</span>
-          <span className="font-mono font-semibold">{row.career_raw}</span>
+          <span className="tabular-nums font-semibold">{row.career_raw}</span>
         </div>
       </div>
     </div>
@@ -168,7 +168,7 @@ export function SeasonComparisonRadar({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Season vs Career Radar</CardTitle>
+        <CardTitle className="text-base">Season vs career radar</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={320}>

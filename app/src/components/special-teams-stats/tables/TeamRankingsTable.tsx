@@ -1,3 +1,4 @@
+import { ArrowDown } from "lucide-react";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -46,15 +47,13 @@ function SortableHeader({
     <Tooltip>
       <TooltipTrigger asChild>
         <TableHead
-          className="text-right cursor-pointer hover:bg-muted/50 select-none"
+          className="text-right cursor-pointer select-none transition-colors hover:text-foreground"
           onClick={() => onSort(field)}
         >
           <div className="flex items-center justify-end gap-1">
             <span>{label}</span>
             {sortField === field && (
-              <span className="text-xs">
-                {sortDirection === "desc" ? "▼" : "▲"}
-              </span>
+              <ArrowDown className={`size-3 shrink-0 text-foreground ${sortDirection === "desc" ? "" : "rotate-180"}`} />
             )}
           </div>
         </TableHead>
@@ -149,7 +148,7 @@ export function TeamRankingsTable({ teams, season }: TeamRankingsTableProps) {
   const sortedTeams = sortTeams(teams, sortField, sortDirection);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-hidden rounded-2xl border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -165,7 +164,7 @@ export function TeamRankingsTable({ teams, season }: TeamRankingsTableProps) {
             />
             <SortableHeader
               field="ppRank"
-              label="PP Rank"
+              label="PP rank"
               tooltip="Power play league rank (1-32)"
               sortField={sortField}
               sortDirection={sortDirection}
@@ -177,7 +176,7 @@ export function TeamRankingsTable({ teams, season }: TeamRankingsTableProps) {
               className="text-right"
             />
             <HeaderWithTooltip
-              label="PP Opp"
+              label="PP opp"
               tooltip="Power play opportunities"
               className="text-right"
             />
@@ -191,7 +190,7 @@ export function TeamRankingsTable({ teams, season }: TeamRankingsTableProps) {
             />
             <SortableHeader
               field="pkRank"
-              label="PK Rank"
+              label="PK rank"
               tooltip="Penalty kill league rank (1-32)"
               sortField={sortField}
               sortDirection={sortDirection}
@@ -203,7 +202,7 @@ export function TeamRankingsTable({ teams, season }: TeamRankingsTableProps) {
               className="text-right"
             />
             <HeaderWithTooltip
-              label="PK Times"
+              label="PK times"
               tooltip="Times shorthanded"
               className="text-right"
             />
@@ -236,7 +235,7 @@ export function TeamRankingsTable({ teams, season }: TeamRankingsTableProps) {
                   to="/teams/$abbrev/special-teams"
                   params={{ abbrev: team.teamAbbreviation }}
                   search={season ? { season } : undefined}
-                  className="flex items-center gap-3 hover:underline"
+                  className="flex items-center gap-3 transition-colors hover:text-link"
                 >
                   <TeamLogo abbrev={team.teamAbbreviation} size="sm" />
                   <span className="font-medium">{team.teamName}</span>

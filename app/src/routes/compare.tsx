@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
+import { EmptyState, PageHeader, Section, SegmentedControl } from "@/components/layout";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
-import { GitCompare, Filter } from "lucide-react";
+import * as z from "zod/mini";
 import {
   usePlayerComparison,
   useSeasons,
@@ -11,7 +12,6 @@ import {
 } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { getDangerZoneLeagueAveragesFromGoalieBaselines } from "@/lib/goalie-baselines";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -19,34 +19,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { BackButton, SeasonSelector, ErrorState } from "@/components/shared";
+import { SeasonSelector, ErrorState, TableSkeleton } from "@/components/shared";
 import { RadarComparison, GoalieComparison, GoalieDangerZoneComparison } from "@/components/charts";
 import {
   SelectedPlayersCard,
   ComparisonTable,
-  ComparisonLegend,
   type StatMode,
 } from "@/components/compare";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Player, Situation } from "@/types";
 
 const searchSchema = z.object({
-  ids: z.string().optional(),
-  season: z.number().optional(),
-  situation: z.string().optional(),
+  ids: z.optional(z.string()),
+  season: z.optional(z.number()),
+  situation: z.optional(z.string()),
 });
 
 export const Route = createFileRoute("/compare")({
   component: ComparePage,
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery(seasonsQueryOptions),
   validateSearch: searchSchema,
 });
 
 const SITUATIONS = [
-  { value: "all", label: "All Situations" },
+  { value: "all", label: "All situations" },
   { value: "5on5", label: "5v5" },
-  { value: "5on4", label: "5v4 (Power Play)" },
-  { value: "4on5", label: "4v5 (Penalty Kill)" },
+  { value: "5on4", label: "5v4 (power play)" },
+  { value: "4on5", label: "4v5 (penalty kill)" },
 ] as const;
 
 function ComparePage() {
@@ -136,57 +135,44 @@ function ComparePage() {
   const [statMode, setStatMode] = useState<StatMode>("all");
 
   return (
-    <div className="container py-8">
-      <BackButton />
-
-      <div className="mb-6 mt-4">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">
-          Compare Players
-        </h1>
-        <p className="text-muted-foreground">
-          Compare up to 5 players side-by-side with detailed stats.
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <SeasonSelector
-          value={season}
-          onValueChange={(s) => updateSearch({ season: s })}
-        />
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={situation}
-            onValueChange={(s) => updateSearch({ situation: s as Situation })}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SITUATIONS.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Tabs
-          value={statMode}
-          onValueChange={(v) => setStatMode(v as StatMode)}
-        >
-          <TabsList className="h-9">
-            <TabsTrigger value="all" className="text-xs px-3">
-              All
-            </TabsTrigger>
-            <TabsTrigger value="counting" className="text-xs px-3">
-              Counting
-            </TabsTrigger>
-            <TabsTrigger value="rate" className="text-xs px-3">
-              Rate
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Compare players"
+        description="Put up to five skaters or goalies side by side."
+        actions={
+          <>
+            <SeasonSelector
+              value={season}
+              onValueChange={(s) => updateSearch({ season: s })}
+            />
+            <Select
+              value={situation}
+              onValueChange={(s) => updateSearch({ situation: s as Situation })}
+            >
+              <SelectTrigger className="w-40" aria-label="Situation">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SITUATIONS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <SegmentedControl
+              aria-label="Stat type"
+              value={statMode}
+              onValueChange={setStatMode}
+              options={[
+                { value: "all", label: "All stats" },
+                { value: "counting", label: "Totals" },
+                { value: "rate", label: "Per 60" },
+              ]}
+            />
+          </>
+        }
+      />
       <SelectedPlayersCard
         selectedIds={selectedIds}
         selectedPlayers={selectedPlayers}
@@ -204,27 +190,27 @@ function ComparePage() {
         />
       )}
       {isLoading && selectedIds.length >= 2 && (
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-96 w-full" />
-        </div>
+        <TableSkeleton rows={12} columns={6} />
       )}
       {hasComparisonData && (
-        <ComparisonTable
-          players={comparisonData.players}
-          positionType={selectedPositionType}
-          statMode={statMode}
-        />
+        <Section
+          title="Side by side"
+          description="Bold marks the best value in each row. Hover a stat for its definition."
+        >
+          <ComparisonTable
+            players={comparisonData.players}
+            positionType={selectedPositionType}
+            statMode={statMode}
+          />
+        </Section>
       )}
-      {hasComparisonData && <ComparisonLegend />}
       {hasComparisonData && selectedPositionType !== "goalie" && (
         <RadarComparison
           players={comparisonData.players.map((p) => ({
             name: p.name,
             stats: p.stats ?? null,
           }))}
-          title="Stat Comparison"
-          className="mt-6"
+          title="Stat comparison"
         />
       )}
       {hasComparisonData && selectedPositionType === "goalie" && (
@@ -233,8 +219,7 @@ function ComparePage() {
             name: p.name,
             stats: p.goalieStats ?? null,
           }))}
-          title="Goalie Comparison"
-          className="mt-6"
+          title="Goalie comparison"
         />
       )}
       {hasComparisonData && selectedPositionType === "goalie" && (
@@ -244,20 +229,14 @@ function ComparePage() {
             stats: p.goalieStats ?? null,
           }))}
           leagueAverages={dangerLeagueAverages}
-          title="Danger Zone Comparison"
-          className="mt-6"
+          title="Danger zone comparison"
         />
       )}
       {selectedIds.length >= 1 && selectedIds.length < 2 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <GitCompare className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="font-medium">Add one more player</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              You need at least 2 players to compare.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="Add one more player"
+          hint="A comparison needs at least two players."
+        />
       )}
     </div>
   );

@@ -1,15 +1,6 @@
 import { useMemo } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Cell,
-  LabelList,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_COLOURS } from "@/lib/chart-colours";
+import { cn } from "@/lib/utils";
 import type { GoalieStats } from "@/types";
 
 interface GoalieReboundControlProps {
@@ -66,7 +57,7 @@ function getReboundRating(
   }
   if (vsLeague >= 5) {
     return {
-      label: "Above Average",
+      label: "Above average",
       color: "text-success",
       description: "Controls rebounds better than most goalies",
     };
@@ -80,7 +71,7 @@ function getReboundRating(
   }
   if (vsLeague >= -15) {
     return {
-      label: "Below Average",
+      label: "Below average",
       color: "text-warning",
       description: "Allows more rebounds than most goalies",
     };
@@ -110,99 +101,57 @@ export function GoalieReboundControl({
 
   const rating = getReboundRating(vsLeague);
 
-  const chartData = [
-    { name: "Expected", value: reboundData.expected, fill: "#94a3b8" },
-    { name: "Actual", value: reboundData.actual, fill: CHART_COLOURS[0] },
+  const max = Math.max(reboundData.expected, reboundData.actual, 1);
+  const bars = [
+    { label: "Expected", value: reboundData.expected, text: reboundData.expected.toFixed(1), colour: "var(--muted-foreground)" },
+    { label: "Allowed", value: reboundData.actual, text: String(reboundData.actual), colour: "var(--chart-1)" },
   ];
-
-  const diffSign = reboundData.difference >= 0 ? "+" : "";
+  const better = vsLeague >= 0;
 
   return (
     <Card className={className}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center justify-between">
-          <span>Rebound Control</span>
-          <span className={`text-sm font-medium ${rating.color}`}>
-            {rating.label}
-          </span>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between text-base">
+          <span>Rebound control</span>
+          <span className={cn("text-sm font-medium", rating.color)}>{rating.label}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p className="text-2xl font-bold tabular-nums">
-              {reboundData.ratio.toFixed(2)}x
+          <div>
+            <p className="font-display text-3xl font-bold tabular-nums">
+              {reboundData.ratio.toFixed(2)}×
             </p>
-            <p className="text-xs text-muted-foreground">Rebound Ratio</p>
+            <p className="text-xs text-muted-foreground">Rebounds per expected rebound</p>
           </div>
-          <div className="text-center p-3 rounded-lg bg-muted/50">
-            <p
-              className={`text-2xl font-bold tabular-nums ${
-                vsLeague >= 0 ? "text-success" : "text-error"
-              }`}
-            >
-              {vsLeague >= 0 ? "+" : ""}
-              {vsLeague.toFixed(1)}%
+          <div>
+            <p className={cn("font-display text-3xl font-bold tabular-nums", better ? "text-success" : "text-error")}>
+              {Math.abs(vsLeague).toFixed(1)}%
             </p>
-            <p className="text-xs text-muted-foreground">vs League Avg</p>
+            <p className="text-xs text-muted-foreground">
+              {better ? "Fewer" : "More"} rebounds than league average ({leagueAvgRatio.toFixed(2)}×)
+            </p>
           </div>
         </div>
 
-        <div className="h-24">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              margin={{ left: 0, right: 50, top: 5, bottom: 5 }}
-            >
-              <XAxis type="number" hide />
-              <YAxis
-                type="category"
-                dataKey="name"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11 }}
-                width={55}
-              />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={24}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-                <LabelList
-                  dataKey="value"
-                  position="right"
-                  formatter={(value) => (value as number).toFixed(0)}
-                  className="fill-foreground text-xs font-mono"
+        <div className="space-y-2.5">
+          {bars.map((bar) => (
+            <div key={bar.label} className="grid grid-cols-[4.5rem_1fr_3rem] items-center gap-3 text-sm">
+              <span className="text-muted-foreground">{bar.label}</span>
+              <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${(100 * bar.value) / max}%`, background: bar.colour }}
                 />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+              </div>
+              <span className="text-right font-medium tabular-nums">{bar.text}</span>
+            </div>
+          ))}
         </div>
 
-        <p className="text-xs text-muted-foreground text-center">
-          {rating.description}
-        </p>
-
-        <div className="text-xs border-t pt-3 space-y-1">
-          <div className="flex justify-between text-muted-foreground">
-            <span>Expected Rebounds:</span>
-            <span className="font-mono">{reboundData.expected.toFixed(1)}</span>
-          </div>
-          <div className="flex justify-between text-muted-foreground">
-            <span>Actual Rebounds:</span>
-            <span className="font-mono">{reboundData.actual}</span>
-          </div>
-          <div className="flex justify-between text-muted-foreground">
-            <span>Difference:</span>
-            <span className="font-mono">
-              {diffSign}
-              {reboundData.difference.toFixed(1)}
-            </span>
-          </div>
-        </div>
-
-        <p className="text-[10px] text-muted-foreground/70 text-center">
-          League avg: {leagueAvgRatio.toFixed(2)}x (lower is better)
+        <p className="border-t pt-3 text-xs text-muted-foreground">
+          {rating.description}. Expected rebounds come from MoneyPuck's shot model; lower ratios
+          are better.
         </p>
       </CardContent>
     </Card>

@@ -1,10 +1,15 @@
 import { useState } from "react";
+import {
+  EmptyState,
+  MetricGuide,
+  PageHeader,
+  ViewToggle,
+} from "@/components/layout";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { TrendingUp, Info, Filter, BarChart3, TableIcon } from "lucide-react";
-import { useBreakoutCandidates, useSeasons, useSortableTable, usePageTitle } from "@/hooks";
+import { useBreakoutCandidates, useSeasons, useSortableTable, usePageTitle, useSeasonMinGames } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -19,11 +24,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   ErrorState,
   HeaderWithTooltip,
   SortableTableHeader,
+  TableSkeleton,
 } from "@/components/shared";
 import {
   CandidateRow,
@@ -32,8 +37,12 @@ import {
 } from "@/components/breakout-candidates";
 import type { BreakoutCandidate } from "@/types";
 
+const MIN_GAMES_OPTIONS = [1, 5, 10, 20, 30, 40] as const;
+
 export const Route = createFileRoute("/breakout-candidates")({
   component: BreakoutCandidatesPage,
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery(seasonsQueryOptions),
   validateSearch: (search: Record<string, unknown>) => ({
     view: (search.view as "table" | "charts") ?? "table",
   }),
@@ -56,7 +65,7 @@ function BreakoutCandidatesPage() {
   const { data: seasonsData } = useSeasons();
 
   const [season, setSeason] = useState<number | undefined>(undefined);
-  const [minGames, setMinGames] = useState(20);
+  const [minGamesChoice, setMinGames] = useState<number | undefined>(undefined);
 
   const updateView = (view: "table" | "charts") => {
     navigate({ search: (prev) => ({ ...prev, view }) });
@@ -64,6 +73,8 @@ function BreakoutCandidatesPage() {
 
   // Prefer local state > API current season > calculated default
   const effectiveSeason = season ?? seasonsData?.seasons?.[0]?.year ?? defaultSeason;
+  const defaultMinGames = useSeasonMinGames(effectiveSeason, 20, MIN_GAMES_OPTIONS);
+  const minGames = minGamesChoice ?? defaultMinGames;
   const { data, isLoading, error, refetch } = useBreakoutCandidates(
     effectiveSeason,
     minGames,
@@ -83,43 +94,26 @@ function BreakoutCandidatesPage() {
   });
 
   return (
-    <div className="container py-8">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <TrendingUp className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">
-            Breakout Candidates
-          </h1>
-        </div>
-        <p className="text-muted-foreground max-w-2xl">
-          Players with strong underlying metrics who may be poised for a
-          breakout. These players have high expected goals (xG), good possession
-          numbers, but have scored fewer goals than expected.
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Breakout candidates"
+        description="Skaters whose chances and possession say they should be scoring more than they are."
+      />
+
+      <MetricGuide metrics={["Breakout Score", "xG-G", "CF%", "Sh/60"]}>
+        <p className="text-muted-foreground">
+          Breakout score rewards players who are scoring below their expected
+          goals while driving play (CF% above 50) and generating shots.
         </p>
-      </div>
+      </MetricGuide>
 
-      <Card className="mb-6 py-3 px-4">
-        <div className="flex items-start gap-3">
-          <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Breakout Score</span>{" "}
-            combines: <strong>Goals Differential</strong> (xG - G, positive =
-            unlucky), <strong>Corsi For %</strong> (shot attempt share, above
-            50% = driving play), <strong>Shots/60</strong> (higher = more
-            opportunities).
-          </div>
-        </div>
-      </Card>
-
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
               value={String(effectiveSeason ?? "")}
               onValueChange={(v) => setSeason(parseInt(v))}
             >
-              <SelectTrigger className="w-36 h-9">
+              <SelectTrigger className="w-32" aria-label="Season">
                 <SelectValue placeholder="Season" />
               </SelectTrigger>
               <SelectContent>
@@ -130,46 +124,23 @@ function BreakoutCandidatesPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Min Games:</span>
-            <Select
+          <Select
               value={String(minGames)}
               onValueChange={(v) => setMinGames(parseInt(v))}
             >
-              <SelectTrigger className="w-20 h-9">
+              <SelectTrigger className="w-32" aria-label="Minimum games">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10+</SelectItem>
-                <SelectItem value="20">20+</SelectItem>
-                <SelectItem value="30">30+</SelectItem>
-                <SelectItem value="40">40+</SelectItem>
+                {MIN_GAMES_OPTIONS.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n === 1 ? "Any games" : `${n}+ games`}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-          </div>
         </div>
-
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          <Button
-            variant={currentView === "charts" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateView("charts")}
-            className="gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Charts
-          </Button>
-          <Button
-            variant={currentView === "table" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateView("table")}
-            className="gap-2"
-          >
-            <TableIcon className="h-4 w-4" />
-            Table
-          </Button>
-        </div>
+        <ViewToggle value={currentView} onValueChange={updateView} />
       </div>
 
       {error && (
@@ -181,15 +152,7 @@ function BreakoutCandidatesPage() {
       )}
 
       {isLoading ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <TableSkeleton rows={10} columns={10} />
       ) : data?.candidates && data.candidates.length > 0 ? (
         currentView === "charts" ? (
           <ChartsView candidates={data.candidates} />
@@ -220,8 +183,8 @@ function BreakoutCandidatesPage() {
                         className="text-right"
                       />
                       <SortableTableHeader
-                        label="G Diff"
-                        tooltip="Goals below expected (xG - G). Positive = unlucky"
+                        label="xG − G"
+                        tooltip="Goals below expected (xG minus goals). Bigger means unluckier."
                         metric="xG-G"
                         sortKey="goalsDifferential"
                         currentSort={sortKey}
@@ -272,15 +235,10 @@ function BreakoutCandidatesPage() {
           </Card>
         )
       ) : (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium">No candidates found</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Try adjusting the filters or selecting a different season.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No breakout candidates match these filters"
+          hint="Lower the minimum games or pick another season."
+        />
       )}
     </div>
   );

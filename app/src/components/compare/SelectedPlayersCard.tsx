@@ -1,7 +1,6 @@
-import { GitCompare, X, Loader2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { X, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Panel, Section } from "@/components/layout";
 import { PlayerSearchDropdown } from "@/components/compare/PlayerSearchDropdown";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { Player, PlayerDetail } from "@/types";
@@ -26,67 +25,60 @@ export function SelectedPlayersCard({
   maxPlayers = 5,
 }: SelectedPlayersCardProps) {
   return (
-    <Card className="mb-6">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <GitCompare className="h-5 w-5" />
-          Selected Players ({selectedIds.length}/{maxPlayers})
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap items-center gap-2">
-          {playersLoading && selectedIds.length > 0 && (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          )}
-          {selectedPlayers
-            ?.filter(
-              (player): player is NonNullable<typeof player> => player != null
-            )
-            .map((player) => (
-              <Badge
-                key={player.id}
-                variant="secondary"
-                className="py-1.5 px-3 text-sm flex items-center gap-2"
+    <Section
+      title="Players"
+      description={`${selectedIds.length} of ${maxPlayers}. Skaters and goalies can't be mixed.`}
+    >
+      <Panel className="flex flex-wrap items-center gap-2">
+        {playersLoading && selectedIds.length > 0 && (
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        )}
+        {selectedPlayers
+          ?.filter((player): player is NonNullable<typeof player> => player != null)
+          .map((player) => (
+            <span
+              key={player.id}
+              className="inline-flex items-center gap-2 rounded-full bg-muted py-1 pr-1.5 pl-1 text-sm"
+            >
+              <Avatar className="size-6">
+                <AvatarImage
+                  src={getPlayerHeadshotUrl(player.id, player.currentTeamAbbreviation)}
+                  alt={player.name}
+                />
+                <AvatarFallback className="text-[10px]">
+                  {getPlayerInitials(player.name)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium">{player.name}</span>
+              {player.currentTeamAbbreviation && (
+                <span className="text-xs text-muted-foreground">
+                  {player.currentTeamAbbreviation}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => onRemovePlayer(player.id)}
+                className="rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+                aria-label={`Remove ${player.name}`}
               >
-                <Avatar className="h-5 w-5">
-                  <AvatarImage
-                    src={getPlayerHeadshotUrl(player.id, player.currentTeamAbbreviation)}
-                    alt={player.name}
-                  />
-                  <AvatarFallback className="text-[8px]">
-                    {getPlayerInitials(player.name)}
-                  </AvatarFallback>
-                </Avatar>
-                {player.name}
-                {player.currentTeamAbbreviation && (
-                  <span className="text-muted-foreground">
-                    ({player.currentTeamAbbreviation})
-                  </span>
-                )}
-                <button
-                  onClick={() => onRemovePlayer(player.id)}
-                  className="ml-1 hover:text-destructive"
-                  aria-label={`Remove ${player.name}`}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
+                <X className="size-3.5" />
+              </button>
+            </span>
+          ))}
 
-          <PlayerSearchDropdown
-            onAddPlayer={onAddPlayer}
-            selectedIds={selectedIds}
-            selectedPositionType={selectedPositionType}
-            disabled={selectedIds.length >= maxPlayers}
-          />
-        </div>
+        <PlayerSearchDropdown
+          onAddPlayer={onAddPlayer}
+          selectedIds={selectedIds}
+          selectedPositionType={selectedPositionType}
+          disabled={selectedIds.length >= maxPlayers}
+        />
 
         {selectedIds.length === 0 && (
-          <p className="text-sm text-muted-foreground mt-3">
-            Add at least 2 players to compare their statistics.
+          <p className="text-sm text-muted-foreground">
+            Add at least two players to compare them.
           </p>
         )}
-      </CardContent>
-    </Card>
+      </Panel>
+    </Section>
   );
 }

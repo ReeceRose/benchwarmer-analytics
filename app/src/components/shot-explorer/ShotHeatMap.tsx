@@ -53,7 +53,7 @@ function getZoneColor(
 
 export function ShotHeatMap({
   shots,
-  width = 480,
+  width = 560,
   mode = "xg",
   title,
 }: ShotHeatMapProps) {
@@ -133,7 +133,7 @@ export function ShotHeatMap({
   const totalXg = shots.reduce((sum, s) => sum + (s.xGoal ?? 0), 0);
 
   return (
-    <div className="space-y-3">
+    <div className="w-full space-y-3" style={{ maxWidth: width }}>
       {title && (
         <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
       )}
@@ -142,7 +142,7 @@ export function ShotHeatMap({
           viewBox={`0 0 ${RINK_LENGTH} ${RINK_HEIGHT}`}
           width={width}
           height={height}
-          className="bg-muted rounded-lg border border-border"
+          className="h-auto w-full rounded-xl border border-border bg-muted"
           preserveAspectRatio="xMidYMid meet"
         >
           <path
@@ -173,7 +173,7 @@ export function ShotHeatMap({
               Z
             `}
             fill="white"
-            className="dark:fill-slate-800"
+            className="dark:fill-muted"
           />
 
           {zones.map((zone) => {
@@ -280,7 +280,7 @@ export function ShotHeatMap({
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>{mode === "xg" ? "Low xG" : "Few shots"}</span>
-        <div className="flex h-3 w-24 rounded overflow-hidden">
+        <div className="flex h-2.5 w-24 overflow-hidden rounded-full">
           <div className="flex-1 bg-cold/30" />
           <div className="flex-1 bg-warning/50" />
           <div className="flex-1 bg-error/70" />

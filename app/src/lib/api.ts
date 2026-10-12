@@ -1,4 +1,5 @@
-import axios from "axios";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getRequestUrl } from "@tanstack/react-start/server";
 import type {
   TeamListResponse,
   Team,
@@ -11,7 +12,6 @@ import type {
   PlayerDetail,
   PlayerStatsResponse,
   GoalieStatsResponse,
-  LinemateHistoryResponse,
   PlayerComparisonResponse,
   PlayerRollingStatsResponse,
   GoalieWorkloadResponse,
@@ -20,12 +20,12 @@ import type {
   TopLinesResponse,
   TeamShotsResponse,
   ShotQueryParams,
-  ShooterStats,
   PlayerShotsResponse,
   GamesResponse,
   GameSummary,
   GameBoxscoreResponse,
   GameShotsResponse,
+  LiveGameResponse,
   GamePreview,
   GoalieRecentFormResponse,
   BreakoutCandidatesResponse,
@@ -55,12 +55,40 @@ import type {
   ScoreStateStatsResponse,
 } from "@/types";
 
-const api = axios.create({
-  baseURL: "/api",
-  headers: {
-    "Content-Type": "application/json",
+type QueryValue = string | number | boolean | null | undefined;
+
+// Where /api lives. In the browser it's same-origin. During SSR there's no
+// origin to resolve against, so fetch the public URL of the incoming request:
+// that goes through the CDN, so server renders hit the same API cache as
+// browsers. The timeout keeps a slow API from holding up the HTML.
+const apiTarget = createIsomorphicFn()
+  .server(() => ({
+    base: `${getRequestUrl({ xForwardedHost: true }).origin}/api`,
+    signal: AbortSignal.timeout(5000) as AbortSignal | undefined,
+  }))
+  .client(() => ({ base: "/api", signal: undefined }));
+
+// Minimal GET client for /api: undefined/null params are dropped, and non-2xx
+// responses throw with the API's `{ error }` message.
+const api = {
+  async get<T>(path: string, options: { params?: object } = {}): Promise<{ data: T }> {
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(options.params ?? {}) as [string, QueryValue][]) {
+      if (value !== undefined && value !== null) search.set(key, String(value));
+    }
+    const query = search.size > 0 ? `?${search}` : "";
+    const { base, signal } = apiTarget();
+    const response = await fetch(`${base}${path}${query}`, {
+      headers: { Accept: "application/json" },
+      signal,
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(body?.error ?? `Request failed with status code ${response.status}`);
+    }
+    return { data: (await response.json()) as T };
   },
-});
+};
 
 // Teams
 
@@ -139,18 +167,6 @@ export async function getPlayerStats(
   return data;
 }
 
-export async function getPlayerLinemates(
-  id: number,
-  season?: number,
-  situation?: string
-): Promise<LinemateHistoryResponse> {
-  const { data } = await api.get<LinemateHistoryResponse>(
-    `/players/${id}/linemates`,
-    { params: { season, situation } }
-  );
-  return data;
-}
-
 export async function comparePlayers(
   ids: number[],
   season?: number,
@@ -224,18 +240,6 @@ export async function getTeamShots(
   return data;
 }
 
-export async function getShooterStats(
-  abbrev: string,
-  season: number,
-  playoffs?: boolean
-): Promise<ShooterStats[]> {
-  const { data } = await api.get<ShooterStats[]>(
-    `/teams/${abbrev}/shots/shooters`,
-    { params: { season, playoffs } }
-  );
-  return data;
-}
-
 export async function getTeamShotsAgainst(
   abbrev: string,
   params: ShotQueryParams
@@ -266,11 +270,6 @@ export async function getPlayerShots(
 
 // Games
 
-export async function getYesterdaysGames(): Promise<GamesResponse> {
-  const { data } = await api.get<GamesResponse>("/games/yesterday");
-  return data;
-}
-
 export async function getTodaysGames(): Promise<GamesResponse> {
   const { data } = await api.get<GamesResponse>("/games/today");
   return data;
@@ -298,8 +297,8 @@ export async function getGameShots(gameId: string): Promise<GameShotsResponse> {
   return data;
 }
 
-export async function getLiveScores(): Promise<GamesResponse> {
-  const { data } = await api.get<GamesResponse>("/games/live");
+export async function getGameLive(gameId: string): Promise<LiveGameResponse> {
+  const { data } = await api.get<LiveGameResponse>(`/games/${gameId}/live`);
   return data;
 }
 

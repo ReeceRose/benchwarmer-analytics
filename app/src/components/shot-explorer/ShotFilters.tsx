@@ -28,19 +28,19 @@ interface ShotFiltersProps {
 }
 
 const SHOT_TYPES = [
-  { value: "WRIST", label: "Wrist Shot" },
-  { value: "SLAP", label: "Slap Shot" },
-  { value: "SNAP", label: "Snap Shot" },
+  { value: "WRIST", label: "Wrist shot" },
+  { value: "SLAP", label: "Slap shot" },
+  { value: "SNAP", label: "Snap shot" },
   { value: "BACKHAND", label: "Backhand" },
   { value: "TIP", label: "Tip-In" },
-  { value: "WRAP", label: "Wrap Around" },
+  { value: "WRAP", label: "Wrap around" },
   { value: "DEFLECTED", label: "Deflected" },
 ];
 
 const PERIODS = [
-  { value: "1", label: "1st Period" },
-  { value: "2", label: "2nd Period" },
-  { value: "3", label: "3rd Period" },
+  { value: "1", label: "1st period" },
+  { value: "2", label: "2nd period" },
+  { value: "3", label: "3rd period" },
   { value: "4", label: "OT" },
 ];
 
@@ -53,14 +53,14 @@ const LIMITS = [
 ];
 
 const DANGER_LEVELS = [
-  { value: "all", label: "All Shots" },
-  { value: "high", label: "High Danger (xG > 15%)" },
+  { value: "all", label: "All shots" },
+  { value: "high", label: "High danger (xG > 15%)" },
   { value: "medium-high", label: "Medium+ (xG > 6%)" },
-  { value: "low", label: "Low Danger (xG < 6%)" },
+  { value: "low", label: "Low danger (xG < 6%)" },
 ];
 
 const SCORE_STATES = [
-  { value: "all", label: "All Game States" },
+  { value: "all", label: "All game states" },
   { value: "leading", label: "Leading" },
   { value: "trailing", label: "Trailing" },
   { value: "tied", label: "Tied" },
@@ -96,10 +96,10 @@ export function ShotFilters({
           }
         >
           <SelectTrigger id="period-filter" className="w-35">
-            <SelectValue placeholder="All Periods" />
+            <SelectValue placeholder="All periods" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Periods</SelectItem>
+            <SelectItem value="all">All periods</SelectItem>
             {PERIODS.map((p) => (
               <SelectItem key={p.value} value={p.value}>
                 {p.label}
@@ -110,7 +110,7 @@ export function ShotFilters({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="shot-type-filter" className="text-sm">
-          Shot Type
+          Shot type
         </Label>
         <Select
           value={shotType ?? "all"}
@@ -119,10 +119,10 @@ export function ShotFilters({
           }
         >
           <SelectTrigger id="shot-type-filter" className="w-38">
-            <SelectValue placeholder="All Types" />
+            <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="all">All types</SelectItem>
             {SHOT_TYPES.map((t) => (
               <SelectItem key={t.value} value={t.value}>
                 {t.label}
@@ -133,7 +133,7 @@ export function ShotFilters({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="danger-filter" className="text-sm">
-          Danger Level
+          Danger level
         </Label>
         <Select
           value={dangerLevel}
@@ -153,7 +153,7 @@ export function ShotFilters({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="score-state-filter" className="text-sm">
-          Game State
+          Game state
         </Label>
         <Select
           value={scoreState}
@@ -205,10 +205,10 @@ export function ShotFilters({
             }
           >
             <SelectTrigger id="player-filter" className="w-45">
-              <SelectValue placeholder="All Players" />
+              <SelectValue placeholder="All players" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Players</SelectItem>
+              <SelectItem value="all">All players</SelectItem>
               {players
                 .filter((p) => p.position !== "G")
                 .map((p) => (
@@ -227,7 +227,7 @@ export function ShotFilters({
           onCheckedChange={onGoalsOnlyChange}
         />
         <Label htmlFor="goals-only" className="text-sm cursor-pointer">
-          Goals Only
+          Goals only
         </Label>
       </div>
     </div>

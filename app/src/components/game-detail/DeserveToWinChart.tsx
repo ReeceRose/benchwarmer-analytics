@@ -62,7 +62,7 @@ function GoalDot(props: {
       cy={cy}
       r={5}
       fill={isHomeGoal ? SEMANTIC_COLOURS.primary : SEMANTIC_COLOURS.danger}
-      stroke="#fff"
+      stroke="var(--card)"
       strokeWidth={2}
     />
   );
@@ -89,7 +89,7 @@ function CustomTooltip({
   const poissonAway = payload.find((p) => p.dataKey === "awayPoissonPct");
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <p className="font-semibold mb-2">{data.timeLabel}</p>
       <div className="space-y-2 text-xs">
         <div>
@@ -97,7 +97,7 @@ function CustomTooltip({
           {mcHome && (
             <p className="flex justify-between gap-4">
               <span style={{ color: mcHome.color }}>{data.homeTeamCode}:</span>
-              <span className="font-mono font-semibold">
+              <span className="tabular-nums font-semibold">
                 {mcHome.value.toFixed(1)}%
               </span>
             </p>
@@ -105,7 +105,7 @@ function CustomTooltip({
           {mcAway && (
             <p className="flex justify-between gap-4">
               <span style={{ color: mcAway.color }}>{data.awayTeamCode}:</span>
-              <span className="font-mono font-semibold">
+              <span className="tabular-nums font-semibold">
                 {mcAway.value.toFixed(1)}%
               </span>
             </p>
@@ -116,7 +116,7 @@ function CustomTooltip({
           {poissonHome && (
             <p className="flex justify-between gap-4">
               <span style={{ color: poissonHome.color }}>{data.homeTeamCode}:</span>
-              <span className="font-mono font-semibold">
+              <span className="tabular-nums font-semibold">
                 {poissonHome.value.toFixed(1)}%
               </span>
             </p>
@@ -124,7 +124,7 @@ function CustomTooltip({
           {poissonAway && (
             <p className="flex justify-between gap-4">
               <span style={{ color: poissonAway.color }}>{data.awayTeamCode}:</span>
-              <span className="font-mono font-semibold">
+              <span className="tabular-nums font-semibold">
                 {poissonAway.value.toFixed(1)}%
               </span>
             </p>
@@ -197,7 +197,7 @@ export function DeserveToWinChart({ data }: DeserveToWinChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Deserve to Win Meter</CardTitle>
+          <CardTitle className="text-base">Deserve to win meter</CardTitle>
           <CardDescription>
             No shot data available for this game
           </CardDescription>
@@ -209,7 +209,7 @@ export function DeserveToWinChart({ data }: DeserveToWinChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Deserve to Win Meter</CardTitle>
+        <CardTitle className="text-base">Deserve to win meter</CardTitle>
         <CardDescription>
           {deservedWinner} deserved to win by {winPctDiff.toFixed(1)}% | Actual
           winner: {actualWinner}
@@ -355,7 +355,7 @@ export function DeserveToWinChart({ data }: DeserveToWinChartProps) {
               {data.homeTeamCode}
             </div>
             <div
-              className="font-mono text-2xl font-bold"
+              className="tabular-nums text-2xl font-bold"
               style={{ color: SEMANTIC_COLOURS.primary }}
             >
               {formatPercent(data.homeSummary.monteCarloWinPct)}
@@ -370,7 +370,7 @@ export function DeserveToWinChart({ data }: DeserveToWinChartProps) {
               {data.awayTeamCode}
             </div>
             <div
-              className="font-mono text-2xl font-bold"
+              className="tabular-nums text-2xl font-bold"
               style={{ color: SEMANTIC_COLOURS.danger }}
             >
               {formatPercent(data.awaySummary.monteCarloWinPct)}
@@ -399,7 +399,7 @@ export function DeserveToWinChartSkeleton() {
         <Skeleton className="h-4 w-64 mt-1" />
       </CardHeader>
       <CardContent>
-        <Skeleton className="w-full h-72 rounded-lg" />
+        <Skeleton className="w-full h-72 rounded-xl" />
         <div className="mt-2 flex flex-col items-center gap-1">
           <div className="flex justify-center gap-6">
             <Skeleton className="h-3 w-12" />

@@ -6,7 +6,7 @@ import { methodNotAllowed } from "@/server/http";
 export const Route = createFileRoute("/api/players/$id/shots")({
   server: {
     handlers: {
-      GET: apiHandler(CacheTier.team, getPlayerShots),
+      GET: apiHandler(CacheTier.ingested, getPlayerShots),
       ANY: methodNotAllowed,
     },
   },

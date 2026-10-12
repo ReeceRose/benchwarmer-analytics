@@ -50,7 +50,7 @@ function CustomTooltip({
   const isExtreme = deviation > 3;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <TeamLogo abbrev={data.abbrev} size="sm" />
         <span className="font-semibold">{data.name}</span>
@@ -58,7 +58,7 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p className={isLucky ? "text-warning" : "text-success"}>
           <span className="text-muted-foreground">PDO:</span>{" "}
-          <span className="font-mono font-semibold">{data.pdo.toFixed(1)}</span>
+          <span className="tabular-nums font-semibold">{data.pdo.toFixed(1)}</span>
           <span className="ml-1">
             ({isLucky ? "Lucky" : "Unlucky"}
             {isExtreme ? " - Extreme" : ""})
@@ -66,11 +66,11 @@ function CustomTooltip({
         </p>
         <p>
           <span className="text-muted-foreground">Shooting %:</span>{" "}
-          <span className="font-mono">{data.shootingPct.toFixed(1)}%</span>
+          <span className="tabular-nums">{data.shootingPct.toFixed(1)}%</span>
         </p>
         <p>
           <span className="text-muted-foreground">Save %:</span>{" "}
-          <span className="font-mono">{data.savePct.toFixed(1)}%</span>
+          <span className="tabular-nums">{data.savePct.toFixed(1)}%</span>
         </p>
       </div>
     </div>
@@ -128,7 +128,7 @@ export function PDODistributionChart({ teams }: PDODistributionChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>PDO Distribution</CardTitle>
+          <CardTitle>PDO distribution</CardTitle>
           <CardDescription>No PDO data available</CardDescription>
         </CardHeader>
       </Card>
@@ -143,8 +143,8 @@ export function PDODistributionChart({ teams }: PDODistributionChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">
-          PDO Distribution (Luck Indicator)
+        <CardTitle className="text-base">
+          PDO distribution (luck indicator)
         </CardTitle>
         <CardDescription>
           PDO = Sh% + Sv% — values near 100 are sustainable, extremes regress to
@@ -191,14 +191,14 @@ export function PDODistributionChart({ teams }: PDODistributionChartProps) {
 
             <ReferenceLine
               x={97}
-              stroke="hsl(142, 76%, 36%)"
+              stroke="var(--chart-3)"
               strokeDasharray="3 3"
               strokeWidth={1}
               strokeOpacity={0.5}
             />
             <ReferenceLine
               x={103}
-              stroke="hsl(45, 93%, 47%)"
+              stroke="var(--chart-4)"
               strokeDasharray="3 3"
               strokeWidth={1}
               strokeOpacity={0.5}
@@ -216,21 +216,21 @@ export function PDODistributionChart({ teams }: PDODistributionChartProps) {
         <div className="flex justify-center gap-6 mt-4 text-xs">
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(142, 76%, 36%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-3)" }}
             />
             <span className="text-muted-foreground">
               {"< 97: Unlucky (likely to improve)"}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded bg-muted-foreground" />
+            <span className="size-2.5 rounded-[3px] bg-muted-foreground" />
             <span className="text-muted-foreground">97-103: Sustainable</span>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(45, 93%, 47%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-4)" }}
             />
             <span className="text-muted-foreground">
               {"> 103: Lucky (likely to regress)"}

@@ -51,7 +51,7 @@ function CustomTooltip({
   const isOver = data.diff > 0;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <TeamLogo abbrev={data.abbrev} size="sm" />
         <span className="font-semibold">{data.name}</span>
@@ -59,15 +59,15 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Actual Points:</span>{" "}
-          <span className="font-mono font-semibold">{data.points}</span>
+          <span className="tabular-nums font-semibold">{data.points}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Expected Points:</span>{" "}
-          <span className="font-mono">{data.expectedPoints}</span>
+          <span className="tabular-nums">{data.expectedPoints}</span>
         </p>
         <p className={isOver ? "text-warning" : "text-success"}>
           <span className="text-muted-foreground">Difference:</span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {isOver ? "+" : ""}
             {data.diff}
           </span>
@@ -114,7 +114,7 @@ function ExpectedPointsDot(props: { cx?: number; cy?: number }) {
       cx={cx}
       cy={cy}
       r={5}
-      fill="hsl(var(--background))"
+      fill="var(--background)"
       stroke={CHART_AXIS_COLOURS.tick}
       strokeWidth={2}
     />
@@ -136,8 +136,8 @@ function ActualPointsDot(props: {
       cx={cx}
       cy={cy}
       r={6}
-      fill={isOver ? "hsl(45, 93%, 47%)" : "hsl(142, 76%, 36%)"}
-      stroke="hsl(var(--background))"
+      fill={isOver ? "var(--chart-4)" : "var(--chart-3)"}
+      stroke="var(--background)"
       strokeWidth={2}
       cursor="pointer"
       onClick={() => onClick?.(payload)}
@@ -176,8 +176,8 @@ export function PointsExpectedChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Expected vs Actual Points</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Expected vs actual points</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -191,7 +191,7 @@ export function PointsExpectedChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Expected vs Actual Points</CardTitle>
+        <CardTitle className="text-base">Expected vs actual points</CardTitle>
         <CardDescription>
           Sorted by differential - overperformers at top, underperformers at
           bottom
@@ -221,7 +221,7 @@ export function PointsExpectedChart({
             />
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.5 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.5 }}
             />
 
             <Bar
@@ -238,7 +238,7 @@ export function PointsExpectedChart({
                   { x: entry.points, y: entry.abbrev },
                 ]}
                 stroke={
-                  entry.diff > 0 ? "hsl(45, 93%, 47%)" : "hsl(142, 76%, 36%)"
+                  entry.diff > 0 ? "var(--chart-4)" : "var(--chart-3)"
                 }
                 strokeWidth={3}
                 strokeOpacity={0.6}
@@ -259,12 +259,12 @@ export function PointsExpectedChart({
               className="w-3 h-3 rounded-full border-2"
               style={{ borderColor: CHART_AXIS_COLOURS.tick }}
             />
-            <span className="text-muted-foreground">Expected Points</span>
+            <span className="text-muted-foreground">Expected points</span>
           </div>
           <div className="flex items-center gap-2">
             <span
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "hsl(45, 93%, 47%)" }}
+              style={{ backgroundColor: "var(--chart-4)" }}
             />
             <span className="text-muted-foreground">
               Actual (Overperforming)
@@ -273,7 +273,7 @@ export function PointsExpectedChart({
           <div className="flex items-center gap-2">
             <span
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "hsl(142, 76%, 36%)" }}
+              style={{ backgroundColor: "var(--chart-3)" }}
             />
             <span className="text-muted-foreground">
               Actual (Underperforming)

@@ -22,17 +22,6 @@ export function isLiveState(state: string | null | undefined): boolean {
   return state === GameState.live || state === GameState.critical;
 }
 
-export function isScheduledState(state: string | null | undefined): boolean {
-  return state === GameState.future || state === GameState.preGame;
-}
-
-// Final, or a past game with a score (the stored state can be stale).
-export function isGameCompleted(state: string | null, gameDate: string, homeScore: number, awayScore: number): boolean {
-  if (isFinalState(state)) return true;
-  const today = new Date().toISOString().slice(0, 10);
-  return gameDate < today && (homeScore > 0 || awayScore > 0);
-}
-
 export const NhlConstants = {
   // A player loses rookie status after this many games in any prior season.
   rookieMaxPriorGames: 26,

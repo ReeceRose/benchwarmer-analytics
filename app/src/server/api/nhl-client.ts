@@ -154,19 +154,182 @@ export interface NhlScoringGoal {
   assists?: NhlGoalAssist[];
 }
 
+export interface NhlPeriodDescriptor {
+  number?: number;
+  periodType?: string | null;
+}
+
+export interface NhlClock {
+  timeRemaining?: string | null;
+  secondsRemaining?: number | null;
+  running?: boolean;
+  inIntermission?: boolean;
+}
+
+export interface NhlSituation {
+  homeTeam?: { abbrev?: string; strength?: number; situationDescriptions?: string[] | null } | null;
+  awayTeam?: { abbrev?: string; strength?: number; situationDescriptions?: string[] | null } | null;
+  situationCode?: string | null;
+  timeRemaining?: string | null;
+}
+
+export interface NhlPenalty {
+  timeInPeriod?: string;
+  type?: string | null;
+  duration?: number;
+  descKey?: string | null;
+  teamAbbrev?: Localized | null;
+  committedByPlayer?: { firstName?: Localized | null; lastName?: Localized | null; sweaterNumber?: number } | null;
+  servedBy?: Localized | string | null;
+  drawnBy?: { firstName?: Localized | null; lastName?: Localized | null; sweaterNumber?: number } | null;
+}
+
+export interface NhlIceSurfacePlayer {
+  playerId?: number;
+  name?: Localized | null;
+  sweaterNumber?: number;
+  positionCode?: string | null;
+  headshot?: string | null;
+  totalSOI?: number | null;
+}
+
+export interface NhlIceSurfaceTeam {
+  forwards?: NhlIceSurfacePlayer[];
+  defensemen?: NhlIceSurfacePlayer[];
+  goalies?: NhlIceSurfacePlayer[];
+  penaltyBox?: NhlIceSurfacePlayer[];
+}
+
+export interface NhlThreeStar {
+  star?: number;
+  playerId?: number;
+  teamAbbrev?: string | Localized | null;
+  name?: Localized | string | null;
+  position?: string | null;
+}
+
 export interface NhlGameLanding {
   id?: number;
   gameState?: string;
   gameDate?: string;
-  awayTeam?: { abbrev?: string; score?: number | null };
-  homeTeam?: { abbrev?: string; score?: number | null };
+  startTimeUTC?: string | null;
+  venue?: Localized | null;
+  venueLocation?: Localized | null;
+  tvBroadcasts?: { network?: string; countryCode?: string; market?: string }[] | null;
+  periodDescriptor?: NhlPeriodDescriptor | null;
+  clock?: NhlClock | null;
+  situation?: NhlSituation | null;
+  awayTeam?: { abbrev?: string; score?: number | null; sog?: number | null; placeName?: Localized | null; commonName?: Localized | null };
+  homeTeam?: { abbrev?: string; score?: number | null; sog?: number | null; placeName?: Localized | null; commonName?: Localized | null };
   summary?: {
-    scoring?: { periodDescriptor?: { periodType?: string | null } | null; goals?: NhlScoringGoal[] }[];
+    scoring?: { periodDescriptor?: NhlPeriodDescriptor | null; goals?: (NhlScoringGoal & { shotType?: string | null; headshot?: string | null; highlightClipSharingUrl?: string | null })[] }[];
+    penalties?: { periodDescriptor?: NhlPeriodDescriptor | null; penalties?: NhlPenalty[] }[];
+    threeStars?: NhlThreeStar[] | null;
+    iceSurface?: { awayTeam?: NhlIceSurfaceTeam | null; homeTeam?: NhlIceSurfaceTeam | null } | null;
   } | null;
 }
 
 export function getGameLanding(gameId: string): Promise<NhlGameLanding | null> {
   return getJson<NhlGameLanding>(`${NHL_API}/gamecenter/${encodeURIComponent(gameId)}/landing`);
+}
+
+export interface NhlPlay {
+  eventId?: number;
+  sortOrder?: number;
+  periodDescriptor?: NhlPeriodDescriptor | null;
+  timeInPeriod?: string;
+  situationCode?: string | null;
+  homeTeamDefendingSide?: string | null;
+  typeDescKey?: string;
+  details?: {
+    eventOwnerTeamId?: number;
+    xCoord?: number | null;
+    yCoord?: number | null;
+    zoneCode?: string | null;
+    shotType?: string | null;
+    reason?: string | null;
+    descKey?: string | null;
+    typeCode?: string | null;
+    duration?: number | null;
+    shootingPlayerId?: number;
+    scoringPlayerId?: number;
+    goalieInNetId?: number;
+    blockingPlayerId?: number;
+    hittingPlayerId?: number;
+    hitteePlayerId?: number;
+    winningPlayerId?: number;
+    losingPlayerId?: number;
+    committedByPlayerId?: number;
+    drawnByPlayerId?: number;
+    servedByPlayerId?: number;
+    playerId?: number;
+    highlightClipSharingUrl?: string | null;
+  } | null;
+}
+
+export interface NhlRosterSpot {
+  teamId?: number;
+  playerId?: number;
+  firstName?: Localized | null;
+  lastName?: Localized | null;
+  sweaterNumber?: number;
+  positionCode?: string;
+  headshot?: string | null;
+}
+
+export interface NhlPlayByPlay {
+  id?: number;
+  gameState?: string;
+  awayTeam?: { id?: number; abbrev?: string };
+  homeTeam?: { id?: number; abbrev?: string };
+  plays?: NhlPlay[];
+  rosterSpots?: NhlRosterSpot[];
+}
+
+export function getPlayByPlay(gameId: string): Promise<NhlPlayByPlay | null> {
+  return getJson<NhlPlayByPlay>(`${NHL_API}/gamecenter/${encodeURIComponent(gameId)}/play-by-play`);
+}
+
+export interface NhlRightRail {
+  seasonSeriesWins?: { awayTeamWins?: number; homeTeamWins?: number } | null;
+  gameInfo?: {
+    referees?: { default?: string; fullName?: Localized; sweaterNumber?: number }[];
+    linesmen?: { default?: string; fullName?: Localized; sweaterNumber?: number }[];
+    awayTeam?: { headCoach?: Localized | null; scratches?: { firstName?: Localized; lastName?: Localized }[] } | null;
+    homeTeam?: { headCoach?: Localized | null; scratches?: { firstName?: Localized; lastName?: Localized }[] } | null;
+  } | null;
+  teamGameStats?: { category?: string; awayValue?: string | number; homeValue?: string | number }[];
+  gameReports?: Record<string, string> | null;
+}
+
+export function getRightRail(gameId: string): Promise<NhlRightRail | null> {
+  return getJson<NhlRightRail>(`${NHL_API}/gamecenter/${encodeURIComponent(gameId)}/right-rail`);
+}
+
+export interface NhlClubStats {
+  skaters?: {
+    playerId?: number;
+    firstName?: Localized;
+    lastName?: Localized;
+    gamesPlayed?: number;
+    goals?: number;
+    assists?: number;
+    points?: number;
+    plusMinus?: number;
+  }[];
+  goalies?: {
+    playerId?: number;
+    gamesPlayed?: number;
+    wins?: number;
+    goalsAgainstAverage?: number;
+    savePercentage?: number;
+    shutouts?: number;
+  }[];
+}
+
+// Current regular-season player stats for a team.
+export function getClubStats(team: string): Promise<NhlClubStats | null> {
+  return getJson<NhlClubStats>(`${NHL_API}/club-stats/${encodeURIComponent(team)}/now`);
 }
 
 export interface NhlClubScheduleGame {
@@ -295,4 +458,22 @@ export async function getTeamSpecialTeams(season: number): Promise<Map<string, N
     });
   }
   return result;
+}
+
+export interface NhlShift {
+  playerId?: number;
+  teamId?: number;
+  period?: number;
+  startTime?: string | null;
+  endTime?: string | null;
+  /** 517 = a shift; other codes are goal markers. */
+  typeCode?: number;
+}
+
+// Every shift so far. This feed trails play-by-play by a few minutes.
+export async function getShiftChart(gameId: string): Promise<NhlShift[]> {
+  const response = await getJson<{ data?: NhlShift[] }>(
+    `${STATS_API}/shiftcharts?cayenneExp=gameId=${encodeURIComponent(gameId)}`,
+  );
+  return response?.data ?? [];
 }

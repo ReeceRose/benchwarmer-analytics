@@ -1,5 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
+import { invalidateByTag } from "@vercel/functions";
 import { z } from "zod";
+import { CACHE_TAG } from "@/lib/cache-headers";
 import { getPool, type Queryable } from "@/server/ingestion/db";
 import { currentSeason } from "@/server/ingestion/normalize";
 import { failStaleRuns } from "@/server/ingestion/sync-runs";
@@ -27,7 +29,18 @@ export function seasonFromRequest(request: Request): number | Response {
   return parsed.success ? parsed.data : Response.json({ error: "Invalid season" }, { status: 400 });
 }
 
-// Wraps a cron job: auth, ?season parsing, stale-run cleanup, JSON result, no caching.
+// Marks every cached API response and page stale so the CDN refetches it in
+// the background on the next request. A no-op outside Vercel (e.g. local dev).
+async function invalidateApiCache(): Promise<void> {
+  try {
+    await invalidateByTag(CACHE_TAG);
+  } catch (error) {
+    console.error("API cache invalidation failed", error);
+  }
+}
+
+// Wraps a cron job: auth, ?season parsing, stale-run cleanup, JSON result, no
+// caching. On success, invalidates the CDN cache.
 export function cronHandler(job: (db: Queryable, season: number) => Promise<Record<string, unknown>>) {
   return async ({ request }: { request: Request }) => {
     const denied = authorizeCron(request);
@@ -39,6 +52,7 @@ export function cronHandler(job: (db: Queryable, season: number) => Promise<Reco
     try {
       await failStaleRuns(db, 60);
       const result = await job(db, season);
+      await invalidateApiCache();
       return Response.json({ ok: true, ms: Date.now() - started, ...result }, { headers: { "Cache-Control": "no-store" } });
     } catch (error) {
       console.error("cron job failed", error);

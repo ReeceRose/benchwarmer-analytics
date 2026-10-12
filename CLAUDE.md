@@ -47,7 +47,7 @@ DATABASE_URL=postgresql://postgres:scratch@localhost:55432/benchwarmer npm run d
 ```
 app/                          # the app (TanStack Start)
 ├── src/router.tsx            # getRouter(): router + per-router QueryClient
-├── src/start.ts              # createStart(): defaultSsr: false (SPA-style rendering)
+├── src/start.ts              # createStart(): defaultSsr: false; routes opt in to SSR
 ├── src/routes/               # UI routes; __root.tsx is the HTML shell + providers
 ├── src/routes/api/           # /api/* server routes: thin wrappers around src/server/api ($.ts = JSON 404)
 ├── src/routes/api/cron/      # ingestion cron jobs (schedules in vite.config.ts)
@@ -56,7 +56,7 @@ app/                          # the app (TanStack Start)
 ├── src/server/cron.ts        # cron route auth/wrapper (CRON_SECRET)
 ├── src/server/api/           # API handlers by group, NHL API client, query/error/cache helpers
 ├── src/server/http.ts        # shared Response helpers
-├── src/lib/api.ts            # axios client for same-origin /api (contract the UI depends on)
+├── src/lib/api.ts            # fetch client for same-origin /api (contract the UI depends on)
 ├── src/types/                # response shapes: source of truth for the /api contract
 ├── drizzle/                  # migrations; 0000_init.sql is the baseline (incl. materialized views)
 └── scripts/                  # CLI scripts (backfill.ts)
@@ -65,13 +65,14 @@ docs/SCHEMA_NOTES.md          # schema design decisions, type mapping, materiali
 docs/INGESTION_NOTES.md       # ingestion sources, steps, cron, backfill, data quirks
 docs/API_NOTES.md             # API structure, cache tiers, behavior notes
 docs/DEPLOY_NOTES.md          # Vercel project, env vars, plan limits, rollback
+docs/DESIGN_SYSTEM.md         # "press box" theme, layout components, UI patterns
 ```
 
 ## Key Configuration
 
 - **Environment** (see `app/.env.example`): `DATABASE_URL` (pooled), `DATABASE_URL_UNPOOLED` (direct, for migrations and backfill), `CRON_SECRET`. Locally, put them in `.env.local` at the repo root (where `neon link` writes it) or in `app/.env.local` (which takes precedence).
 - `getDb()` uses neon-http for Neon URLs and node-postgres for localhost URLs, so a scratch docker Postgres works in development.
-- Rendering: routes are client-rendered (`defaultSsr: false`); only the root shell is server-rendered. Components may use `window`/`localStorage` freely.
+- Rendering: routes are client-rendered unless they set `ssr: true`. The root layout (header, scores strip, footer) and the homepage are server-rendered, so components they render must not touch `window`/`localStorage` or theme state during render (team logos switch variants with the `dark:` class instead). An SSR route's loader prefetches its queries with `prefetchForSsr()` (`src/lib/ssr-prefetch.ts`), using the same query options as its hooks; `@tanstack/react-router-ssr-query` sends the results to the browser. During SSR, `src/lib/api.ts` fetches the public URL, so it goes through the CDN cache. Client-only routes may use `window`/`localStorage` freely.
 - `/api` routes must set an explicit handler for each method they support, plus `ANY: methodNotAllowed`, so wrong-method requests don't fall through to the HTML shell.
 - API handlers live in `src/server/api/<group>.ts` and are wrapped with `apiHandler(CacheTier.x, fn)` (query parsing, `{ error, code }` errors, CDN cache header). GET handlers are read-only. Use `round()` from `format.ts` for rounded outputs (banker's rounding on the value's decimal form).
 
@@ -89,6 +90,10 @@ docs/DEPLOY_NOTES.md          # Vercel project, env vars, plan limits, rollback
 - Every step runs inside `runStep()` so it's logged in `sync_runs`.
 - Be polite to MoneyPuck: sequential downloads only.
 
+## UI Changes
+
+Before changing any UI (pages, components, charts, styles), read `docs/DESIGN_SYSTEM.md` and follow it: the "press box" colour rules, the `@/components/layout` building blocks, the patterns for tables, charts and two-team comparisons, and the checklist at the end. If a change adds a new pattern, update that doc in the same change.
+
 ## Code Style
 
 ### Frontend (React/TypeScript)
@@ -102,3 +107,4 @@ docs/DEPLOY_NOTES.md          # Vercel project, env vars, plan limits, rollback
 - `docs/INGESTION_NOTES.md` - ingestion sources, steps, cron schedule, backfill, data quirks
 - `docs/API_NOTES.md` - API structure, cache tiers, behavior notes
 - `docs/DEPLOY_NOTES.md` - Vercel project, env vars, plan limits, caching, rollback
+- `docs/DESIGN_SYSTEM.md` - "press box" theme: tokens, colour rules, layout components, UI patterns, checklist

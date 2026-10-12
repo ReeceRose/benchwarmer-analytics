@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { TeamLogo } from "@/components/team-detail/TeamLogo";
 import { formatPeriod } from "@/lib/game-formatters";
 import type { GameGoal } from "@/types";
 
@@ -42,25 +42,21 @@ export function GoalsList({ goals, awayCode, defaultExpanded = false }: GoalsLis
         <div className="space-y-1 text-xs">
           {displayGoals.map((goal, idx) => (
             <div key={idx} className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                {goal.teamCode === awayCode ? "A" : "H"}
-              </Badge>
+              <TeamLogo abbrev={goal.teamCode} size="sm" />
+              <span className="sr-only">{goal.teamCode === awayCode ? "Away" : "Home"}</span>
               <span className="font-medium">{goal.scorerName}</span>
               <span className="text-muted-foreground">
                 {formatPeriod(goal.period)} {goal.timeInPeriod}
               </span>
               {goal.strength && goal.strength !== "ev" && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs px-1.5 py-0.5 uppercase"
-                >
+                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
                   {goal.strength}
-                </Badge>
+                </span>
               )}
               {goal.isGameWinningGoal && (
-                <Badge className="text-xs px-1.5 py-0.5 bg-highlight/20 text-highlight border-highlight/30">
+<span className="rounded-full bg-highlight/20 px-1.5 py-0.5 text-[11px] font-semibold">
                   GWG
-                </Badge>
+                </span>
               )}
             </div>
           ))}

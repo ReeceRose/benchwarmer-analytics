@@ -130,14 +130,6 @@ export interface SpecialTeamsPlayerLeadersResponse {
   players: SpecialTeamsPlayerLeader[];
 }
 
-// Filter types for special teams page
-export interface SpecialTeamsFilters {
-  season?: number;
-  minToi?: number;
-  position?: "F" | "D";
-  team?: string;
-}
-
 export type PlayerLeaderSortField =
   | "toi"
   | "goals"

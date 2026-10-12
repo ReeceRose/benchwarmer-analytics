@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, Users } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlayerDragCard } from "@/components/line-builder/PlayerDragCard";
@@ -40,22 +40,19 @@ export function RosterPanel({ players, usedPlayerIds, lineType }: RosterPanelPro
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex items-center gap-2 mb-3 shrink-0">
-        <Users className="h-5 w-5 text-muted-foreground" />
-        <h3 className="font-semibold">Available Players</h3>
-        <span className="text-sm text-muted-foreground">
-          ({sortedPlayers.length})
-        </span>
+      <div className="mb-3 flex shrink-0 items-baseline justify-between">
+        <h3 className="text-sm font-semibold">Available players</h3>
+        <span className="text-xs text-muted-foreground tabular-nums">{sortedPlayers.length}</span>
       </div>
 
       <div className="relative mb-3 shrink-0">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Search players..."
+          placeholder="Search players…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-8"
+          className="pl-9"
         />
       </div>
 

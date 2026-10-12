@@ -59,13 +59,13 @@ const METRICS: { key: MetricKey; label: string; description: string; format: (v:
   {
     key: "xgPer60",
     label: "xG/60",
-    description: "Expected Goals per 60 minutes",
+    description: "Expected goals per 60 minutes",
     format: (v) => v.toFixed(2),
   },
   {
     key: "corsiPct",
     label: "CF%",
-    description: "Corsi For Percentage (shot attempt share)",
+    description: "Corsi for percentage (shot attempt share)",
     format: (v) => v.toFixed(1) + "%",
   },
 ];
@@ -199,7 +199,7 @@ export function CareerTrajectory({ stats, className }: CareerTrajectoryProps) {
   return (
     <Card className={cn(className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-semibold">Career Trajectory</CardTitle>
+        <CardTitle className="text-base font-semibold">Career trajectory</CardTitle>
         <Select value={metric} onValueChange={(v) => setMetric(v as MetricKey)}>
           <SelectTrigger className="w-32 h-8 text-sm">
             <SelectValue />
@@ -240,7 +240,7 @@ export function CareerTrajectory({ stats, className }: CareerTrajectoryProps) {
                   if (!active || !payload?.length) return null;
                   const data = payload[0].payload as DataPoint;
                   return (
-                    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+                    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
                       <p className="font-semibold">{data.seasonLabel}</p>
                       <p className="text-muted-foreground">{data.gamesPlayed} GP</p>
                       <p className="mt-1">
@@ -260,7 +260,7 @@ export function CareerTrajectory({ stats, className }: CareerTrajectoryProps) {
                 stroke={CHART_AXIS_COLOURS.reference}
                 strokeDasharray="5 5"
                 label={{
-                  value: "League Avg",
+                  value: "League avg",
                   position: "right",
                   fontSize: 10,
                   fill: CHART_AXIS_COLOURS.reference,

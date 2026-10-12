@@ -1,19 +1,27 @@
+@import "@fontsource-variable/onest";
+@import "@fontsource-variable/funnel-display";
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Hockey-Inspired Theme
+ * Benchwarmer theme: "press box"
  *
- * Colour palette inspired by the ice rink:
- * - Ice blue/white tones for backgrounds
- * - Blue line blue for primary actions
- * - Goal line red for destructive/accent
- * - Puck charcoal for text
- * - Trophy gold for highlights
+ * Near-monochrome and calm, so the numbers do the talking.
+ * - Ink on near-white (light) or white on near-black (dark) for everything
+ *   you can press: buttons, active states, tab underlines
+ * - Colour is saved for data: blue, red, green, amber, violet
+ * - Green/red carry good/bad; blue marks links, the focus ring and the
+ *   logo's steam
+ *
+ * Text colours (success/error/warning on cards and the page background)
+ * are tuned to clear WCAG AA (4.5:1).
  */
 
 @theme inline {
+  --font-sans: "Onest Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Funnel Display Variable", "Onest Variable", ui-sans-serif, system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -21,59 +29,6 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  --colour-background: var(--background);
-  --colour-foreground: var(--foreground);
-  --colour-card: var(--card);
-  --colour-card-foreground: var(--card-foreground);
-  --colour-popover: var(--popover);
-  --colour-popover-foreground: var(--popover-foreground);
-  --colour-primary: var(--primary);
-  --colour-primary-foreground: var(--primary-foreground);
-  --colour-secondary: var(--secondary);
-  --colour-secondary-foreground: var(--secondary-foreground);
-  --colour-muted: var(--muted);
-  --colour-muted-foreground: var(--muted-foreground);
-  --colour-accent: var(--accent);
-  --colour-accent-foreground: var(--accent-foreground);
-  --colour-destructive: var(--destructive);
-  --colour-border: var(--border);
-  --colour-input: var(--input);
-  --colour-ring: var(--ring);
-  --colour-chart-1: var(--chart-1);
-  --colour-chart-2: var(--chart-2);
-  --colour-chart-3: var(--chart-3);
-  --colour-chart-4: var(--chart-4);
-  --colour-chart-5: var(--chart-5);
-  --colour-sidebar: var(--sidebar);
-  --colour-sidebar-foreground: var(--sidebar-foreground);
-  --colour-sidebar-primary: var(--sidebar-primary);
-  --colour-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --colour-sidebar-accent: var(--sidebar-accent);
-  --colour-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --colour-sidebar-border: var(--sidebar-border);
-  --colour-sidebar-ring: var(--sidebar-ring);
-  /* Semantic colours for stats and indicators */
-  --colour-success: var(--success);
-  --colour-success-foreground: var(--success-foreground);
-  --colour-warning: var(--warning);
-  --colour-warning-foreground: var(--warning-foreground);
-  --colour-error: var(--error);
-  --colour-error-foreground: var(--error-foreground);
-  --colour-live: var(--live);
-  --colour-hot: var(--hot);
-  --colour-cold: var(--cold);
-  --colour-highlight: var(--highlight);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-error: var(--error);
-  --color-error-foreground: var(--error-foreground);
-  --color-live: var(--live);
-  --color-hot: var(--hot);
-  --color-cold: var(--cold);
-  --color-highlight: var(--highlight);
-  /* Keep color- aliases for Tailwind compatibility */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -97,138 +52,169 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  /* Semantic colours for stats and indicators */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --color-live: var(--live);
+  --color-hot: var(--hot);
+  --color-cold: var(--cold);
+  --color-highlight: var(--highlight);
+  --color-link: var(--link);
+  /* Brand mark */
+  --color-puck: var(--puck);
+  --color-puck-top: var(--puck-top);
+  --color-steam: var(--steam);
+  /* Scores strip: follows the theme */
+  --color-strip: var(--strip);
+  --color-strip-foreground: var(--strip-foreground);
+  --color-strip-muted: var(--strip-muted);
+  --color-strip-border: var(--strip-border);
+  --color-strip-link: var(--strip-link);
+  --color-strip-live: var(--strip-live);
 }
 
-/* Light Mode - Fresh Ice */
+/* Light mode */
 :root {
-  --radius: 0.625rem;
-  /* Ice white with subtle blue tint */
-  --background: oklch(0.98 0.005 230);
-  /* Puck charcoal */
-  --foreground: oklch(0.18 0.01 250);
-  /* Slightly bluer ice for cards */
-  --card: oklch(0.99 0.008 230);
-  --card-foreground: oklch(0.18 0.01 250);
-  --popover: oklch(0.99 0.008 230);
-  --popover-foreground: oklch(0.18 0.01 250);
-  /* Blue line blue - primary action colour */
-  --primary: oklch(0.45 0.2 250);
-  --primary-foreground: oklch(0.98 0.005 230);
-  /* Light ice blue for secondary */
-  --secondary: oklch(0.94 0.02 230);
-  --secondary-foreground: oklch(0.25 0.02 250);
-  /* Muted ice grey */
-  --muted: oklch(0.94 0.015 230);
-  --muted-foreground: oklch(0.5 0.02 250);
-  /* Soft ice blue for accents/hover states */
-  --accent: oklch(0.92 0.025 230);
-  --accent-foreground: oklch(0.18 0.01 250);
-  /* Goal line red for destructive */
-  --destructive: oklch(0.55 0.25 25);
-  /* Ice grey borders */
-  --border: oklch(0.88 0.02 230);
-  --input: oklch(0.92 0.015 230);
-  --ring: oklch(0.55 0.18 250);
-  /* Chart colours - hockey palette */
-  --chart-1: oklch(0.55 0.2 250);   /* Blue line blue */
-  --chart-2: oklch(0.6 0.22 25);    /* Goal line red */
-  --chart-3: oklch(0.65 0.18 145);  /* Goal light green */
-  --chart-4: oklch(0.75 0.16 85);   /* Trophy gold */
-  --chart-5: oklch(0.55 0.15 300);  /* Violet (for variety) */
-  /* Semantic colours - stats and indicators */
-  --success: oklch(0.55 0.2 145);          /* Goal light green */
-  --success-foreground: oklch(0.98 0.005 230);
-  --warning: oklch(0.65 0.18 55);          /* Caution amber */
-  --warning-foreground: oklch(0.18 0.01 250);
-  --error: oklch(0.55 0.22 25);            /* Penalty red */
-  --error-foreground: oklch(0.98 0.005 230);
-  --live: oklch(0.55 0.25 25);             /* Broadcast red */
-  --hot: oklch(0.6 0.2 55);                /* Hot streak orange */
-  --cold: oklch(0.55 0.15 250);            /* Cold streak blue */
-  --highlight: oklch(0.7 0.16 85);          /* Trophy gold */
-  /* Sidebar - boards tan/brown tint */
-  --sidebar: oklch(0.96 0.01 60);
-  --sidebar-foreground: oklch(0.18 0.01 250);
-  --sidebar-primary: oklch(0.45 0.2 250);
-  --sidebar-primary-foreground: oklch(0.98 0.005 230);
-  --sidebar-accent: oklch(0.92 0.02 60);
-  --sidebar-accent-foreground: oklch(0.25 0.02 250);
-  --sidebar-border: oklch(0.88 0.02 60);
-  --sidebar-ring: oklch(0.55 0.18 250);
+  --radius: 0.75rem;
+  --background: #fafafa;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f0;
+  --secondary-foreground: #111111;
+  --muted: #f2f2f2;
+  --muted-foreground: #666666;
+  --accent: #f0f0f0;
+  --accent-foreground: #111111;
+  --destructive: #c62828;
+  --border: #e6e6e6;
+  --input: #dadada;
+  --ring: #2563eb;
+  --link: #1d4ed8;
+  --chart-1: #2563eb;
+  --chart-2: #e5484d;
+  --chart-3: #16a34a;
+  --chart-4: #f59e0b;
+  --chart-5: #8b5cf6;
+  --success: #15803d;
+  --success-foreground: #fafafa;
+  --warning: #92600a;
+  --warning-foreground: #fafafa;
+  --error: #c62828;
+  --error-foreground: #fafafa;
+  --live: #e5484d;
+  --hot: #ea580c;
+  --cold: #2563eb;
+  --highlight: #f59e0b;
+  --puck: #111111;
+  --puck-top: #555555;
+  --steam: #2563eb;
+  --team-mix: 100%;
 }
 
-/* Dark Mode - Arena at Night */
+/* Dark mode */
 .dark {
-  /* Deep charcoal - like the arena with lights on ice */
-  --background: oklch(0.14 0.015 250);
-  /* Ice white text */
-  --foreground: oklch(0.95 0.01 230);
-  /* Slightly lighter charcoal for cards */
-  --card: oklch(0.18 0.02 250);
-  --card-foreground: oklch(0.95 0.01 230);
-  --popover: oklch(0.18 0.02 250);
-  --popover-foreground: oklch(0.95 0.01 230);
-  /* Bright ice blue for primary */
-  --primary: oklch(0.7 0.18 230);
-  --primary-foreground: oklch(0.14 0.015 250);
-  /* Dark blue-grey secondary */
-  --secondary: oklch(0.25 0.03 250);
-  --secondary-foreground: oklch(0.95 0.01 230);
-  /* Muted blue-grey */
-  --muted: oklch(0.25 0.025 250);
-  --muted-foreground: oklch(0.65 0.02 230);
-  /* Soft ice blue for accents/hover states */
-  --accent: oklch(0.3 0.04 250);
-  --accent-foreground: oklch(0.95 0.01 230);
-  /* Goal line red for destructive */
-  --destructive: oklch(0.65 0.24 25);
-  /* Subtle blue-tinted borders */
-  --border: oklch(0.3 0.03 250);
-  --input: oklch(0.28 0.025 250);
-  --ring: oklch(0.6 0.15 230);
-  /* Chart colours - brighter for dark mode */
-  --chart-1: oklch(0.65 0.2 230);   /* Ice blue */
-  --chart-2: oklch(0.65 0.24 25);   /* Goal red */
-  --chart-3: oklch(0.7 0.2 145);    /* Goal green */
-  --chart-4: oklch(0.8 0.18 85);    /* Trophy gold */
-  --chart-5: oklch(0.65 0.18 300);  /* Violet */
-  /* Semantic colours - stats and indicators */
-  --success: oklch(0.65 0.2 145);          /* Goal light green */
-  --success-foreground: oklch(0.14 0.015 250);
-  --warning: oklch(0.7 0.18 55);           /* Caution amber */
-  --warning-foreground: oklch(0.14 0.015 250);
-  --error: oklch(0.65 0.22 25);            /* Penalty red */
-  --error-foreground: oklch(0.14 0.015 250);
-  --live: oklch(0.6 0.25 25);              /* Broadcast red */
-  --hot: oklch(0.65 0.2 55);               /* Hot streak orange */
-  --cold: oklch(0.6 0.15 250);             /* Cold streak blue */
-  --highlight: oklch(0.8 0.18 85);          /* Trophy gold */
-  /* Sidebar - dark boards */
-  --sidebar: oklch(0.16 0.02 250);
-  --sidebar-foreground: oklch(0.95 0.01 230);
-  --sidebar-primary: oklch(0.65 0.18 230);
-  --sidebar-primary-foreground: oklch(0.95 0.01 230);
-  --sidebar-accent: oklch(0.22 0.025 250);
-  --sidebar-accent-foreground: oklch(0.95 0.01 230);
-  --sidebar-border: oklch(0.28 0.03 250);
-  --sidebar-ring: oklch(0.6 0.15 230);
+  --background: #0a0a0a;
+  --foreground: #f5f5f5;
+  --card: #141414;
+  --card-foreground: #f5f5f5;
+  --popover: #1a1a1a;
+  --popover-foreground: #f5f5f5;
+  --primary: #f5f5f5;
+  --primary-foreground: #0a0a0a;
+  --secondary: #222222;
+  --secondary-foreground: #f5f5f5;
+  --muted: #1c1c1c;
+  --muted-foreground: #a1a1a1;
+  --accent: #222222;
+  --accent-foreground: #f5f5f5;
+  --destructive: #f87171;
+  --border: #262626;
+  --input: #333333;
+  --ring: #60a5fa;
+  --link: #60a5fa;
+  --chart-1: #60a5fa;
+  --chart-2: #f87171;
+  --chart-3: #4ade80;
+  --chart-4: #fbbf24;
+  --chart-5: #a78bfa;
+  --success: #4ade80;
+  --success-foreground: #0a0a0a;
+  --warning: #fbbf24;
+  --warning-foreground: #0a0a0a;
+  --error: #f87171;
+  --error-foreground: #0a0a0a;
+  --live: #f87171;
+  --hot: #fb923c;
+  --cold: #60a5fa;
+  --highlight: #fbbf24;
+  --puck: #2e2e2e;
+  --puck-top: #5c5c5c;
+  --steam: #60a5fa;
+  --team-mix: 65%;
+}
+
+/* The scores strip follows the theme. */
+:root {
+  --strip: var(--card);
+  --strip-foreground: var(--foreground);
+  --strip-muted: var(--muted-foreground);
+  --strip-border: var(--border);
+  --strip-link: var(--link);
+  --strip-live: var(--live);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   body {
     @apply bg-background text-foreground;
   }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  h1 {
+    letter-spacing: -0.02em;
+  }
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Raw <th>s match the Table component's quiet headers. */
+  th {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--muted-foreground);
+  }
+}
+
+/* Recharts: inherit the app font and keep chart chrome quiet */
+.recharts-wrapper,
+.recharts-wrapper text {
+  font-family: var(--font-sans);
+}
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick-line {
+  stroke: var(--border);
+}
+.recharts-legend-item-text {
+  color: var(--muted-foreground) !important;
 }
 
 /* Fix Recharts tooltip styling for dark mode */

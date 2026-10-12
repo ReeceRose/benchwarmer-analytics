@@ -1,3 +1,4 @@
+import { ArrowDown } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -79,8 +80,8 @@ function RankDiffBadge({ pointsRank, overallRank, points }: RankDiffBadgeProps) 
 
   const isOverperforming = diff > 0;
   const colorClass = isOverperforming
-    ? "text-emerald-500"
-    : "text-red-500";
+    ? "text-success"
+    : "text-error";
 
   return (
     <Tooltip>
@@ -126,15 +127,13 @@ function SortableHeader({
     <Tooltip>
       <TooltipTrigger asChild>
         <TableHead
-          className={`cursor-pointer hover:bg-muted/50 select-none ${align === "left" ? "text-left" : "text-center"}`}
+          className={`cursor-pointer select-none transition-colors hover:text-foreground ${align === "left" ? "sticky left-0 z-10 bg-card text-left" : "text-center"}`}
           onClick={() => onSort(field)}
         >
           <div className={`flex items-center gap-1 ${alignClass}`}>
             <span>{label}</span>
             {sortField === field && (
-              <span className="text-xs">
-                {sortDirection === "desc" ? "▼" : "▲"}
-              </span>
+              <ArrowDown className={`size-3 shrink-0 text-foreground ${sortDirection === "desc" ? "" : "rotate-180"}`} />
             )}
           </div>
         </TableHead>
@@ -212,7 +211,7 @@ export function CategoryRankingsTable({ teams, isLoading, isError, season }: Cat
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <p className="text-muted-foreground">No data available</p>
+          <p className="text-muted-foreground">No data for this selection yet</p>
         </CardContent>
       </Card>
     );
@@ -248,14 +247,14 @@ export function CategoryRankingsTable({ teams, isLoading, isError, season }: Cat
           </TableHeader>
           <TableBody>
             {sortedTeams.map((team) => (
-              <TableRow key={team.abbreviation}>
-                <TableCell>
+              <TableRow key={team.abbreviation} className="group">
+                <TableCell className="sticky left-0 z-10 bg-card group-hover:bg-muted">
                   <div className="flex items-center gap-2">
                     <Link
                       to="/teams/$abbrev"
                       params={{ abbrev: team.abbreviation }}
                       search={{ season }}
-                      className="flex items-center gap-2 hover:underline"
+                      className="flex items-center gap-2 hover:text-link"
                     >
                       <TeamLogo abbrev={team.abbreviation} size="sm" />
                       <span className="font-medium">{team.name}</span>

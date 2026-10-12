@@ -24,7 +24,7 @@ export function GoalieGameTooltip({
   const d = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <p className="font-semibold">
         vs {d.opponent} {d.isB2B && "(B2B)"}
       </p>

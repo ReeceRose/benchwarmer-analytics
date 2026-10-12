@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Grid3X3, Circle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/layout";
 import { SeasonSelector } from "@/components/shared/SeasonSelector";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { RinkVisualization } from "@/components/shot-explorer/RinkVisualization";
@@ -14,6 +14,27 @@ import { MONEYPUCK_DANGER_THRESHOLDS } from "@/lib/danger-zones";
 import type { DangerLevel, ScoreState } from "@/types";
 
 type ViewMode = "shots" | "heatmap";
+
+const VIEW_OPTIONS = [
+  {
+    value: "shots",
+    label: (
+      <span className="flex items-center gap-1.5">
+        <Circle className="size-3.5" />
+        Shots
+      </span>
+    ),
+  },
+  {
+    value: "heatmap",
+    label: (
+      <span className="flex items-center gap-1.5">
+        <Grid3X3 className="size-3.5" />
+        Heat map
+      </span>
+    ),
+  },
+] as const;
 
 interface ShotExplorerProps {
   teamAbbrev: string;
@@ -103,7 +124,7 @@ export function ShotExplorer({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Shot Map</CardTitle>
+          <CardTitle>Shot map</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
@@ -117,29 +138,15 @@ export function ShotExplorer({
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="flex items-center gap-4">
-            <CardTitle>Shot Map</CardTitle>
-            <div className="flex items-center rounded-md border p-1">
-              <Button
-                variant={viewMode === "shots" ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 px-2"
-                onClick={() => setViewMode("shots")}
-              >
-                <Circle className="h-3.5 w-3.5 mr-1" />
-                Shots
-              </Button>
-              <Button
-                variant={viewMode === "heatmap" ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 px-2"
-                onClick={() => setViewMode("heatmap")}
-              >
-                <Grid3X3 className="h-3.5 w-3.5 mr-1" />
-                Heat Map
-              </Button>
-            </div>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0 pb-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <CardTitle className="whitespace-nowrap">Shot map</CardTitle>
+            <SegmentedControl
+              aria-label="Shot map view"
+              value={viewMode}
+              onValueChange={setViewMode}
+              options={VIEW_OPTIONS}
+            />
           </div>
           <SeasonSelector
             value={season}
@@ -173,13 +180,13 @@ export function ShotExplorer({
             />
           )}
           {isLoading && (
-            <div className="space-y-4">
-              <Skeleton className="h-100 w-full rounded-lg" />
-              <Skeleton className="h-20 w-full rounded-lg" />
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+              <Skeleton className="aspect-100/85 w-full max-w-140 rounded-xl" />
+              <Skeleton className="h-48 w-full rounded-xl" />
             </div>
           )}
           {!isLoading && !error && data && (
-            <>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
               {viewMode === "shots" ? (
                 <RinkVisualization
                   shots={filteredShots}
@@ -192,13 +199,15 @@ export function ShotExplorer({
                   mode="xg"
                 />
               )}
-              <ShotSummaryCard summary={data.summary} />
-              <p className="text-sm text-muted-foreground text-center">
-                Showing {filteredShots.length} shots
-                {dangerLevel !== "all" && ` (${dangerLevel} danger)`}
-                {limit && data.shots.length >= limit && ` - limited to ${limit}`}
-              </p>
-            </>
+              <div className="space-y-3">
+                <ShotSummaryCard summary={data.summary} />
+                <p className="text-xs text-muted-foreground">
+                  Showing {filteredShots.length} shots
+                  {dangerLevel !== "all" && ` (${dangerLevel} danger)`}
+                  {limit && data.shots.length >= limit && `, limited to ${limit}`}
+                </p>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

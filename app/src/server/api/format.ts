@@ -9,10 +9,6 @@ export function round(value: number, digits = 0): number {
   return new Decimal(value).toDecimalPlaces(digits, Decimal.ROUND_HALF_EVEN).toNumber();
 }
 
-export function roundOrNull(value: number | null | undefined, digits = 0): number | null {
-  return value === null || value === undefined ? null : round(value, digits);
-}
-
 // "2024-25" for 2024.
 export function seasonLabel(year: number): string {
   return `${year}-${String((year + 1) % 100).padStart(2, "0")}`;

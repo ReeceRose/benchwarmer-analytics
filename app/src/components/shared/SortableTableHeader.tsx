@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 import { TableHead } from "@/components/ui/table";
 import {
   Tooltip,
@@ -45,8 +45,8 @@ export function SortableTableHeader<T extends string>({
   const head = (
     <TableHead
       className={cn(
-        "text-right cursor-pointer hover:bg-muted/50 transition-colors",
-        isHighlighted && "bg-muted/30 font-semibold",
+        "cursor-pointer text-right transition-colors select-none hover:text-foreground",
+        isHighlighted && "bg-accent/60 font-semibold text-foreground",
         className
       )}
       onClick={() => onSort(sortKey)}
@@ -54,8 +54,8 @@ export function SortableTableHeader<T extends string>({
       <span className="flex items-center justify-end gap-1 whitespace-nowrap">
         {label}
         {isActive && (
-          <ArrowUpDown
-            className={cn("h-3 w-3 shrink-0", !showDescArrow && "rotate-180")}
+          <ArrowDown
+            className={cn("size-3 shrink-0 text-foreground", !showDescArrow && "rotate-180")}
           />
         )}
       </span>

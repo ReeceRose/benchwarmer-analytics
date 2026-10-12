@@ -1,26 +1,60 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
+import { prefetchHomeLeaders } from "@/hooks/useHomeLeaders";
+import { outliersQueryOptions } from "@/hooks/useOutliers";
+import { topLinesQueryOptions } from "@/hooks/useTopLines";
+import { teamsQueryOptions } from "@/hooks/useTeams";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
+import * as z from "zod/mini";
 import { usePageTitle } from "@/hooks";
-import { SeasonSelector, SituationSelector } from "@/components/shared";
+import { SeasonSelector } from "@/components/shared";
+import { PageHeader, SegmentedControl } from "@/components/layout";
 import {
   LeaderStripSection,
   OutliersSectionWrapper,
   TopLinesSection,
   TeamGrid,
-  GamesSection,
 } from "@/components/home";
 import { useSeasons } from "@/hooks";
 import { formatSeason } from "@/lib/formatters";
 import type { Situation } from "@/types";
 
 const searchSchema = z.object({
-  season: z.number().optional(),
-  situation: z.string().optional(),
+  season: z.optional(z.number()),
+  situation: z.optional(z.string()),
 });
+
+const SITUATION_OPTIONS: { value: Situation; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "5on5", label: "5v5" },
+  { value: "5on4", label: "Power play" },
+  { value: "4on5", label: "Penalty kill" },
+];
 
 export const Route = createFileRoute("/")({
   component: HomePage,
+  ssr: true,
   validateSearch: searchSchema,
+  loaderDeps: ({ search }) => ({
+    season: search.season,
+    situation: search.situation,
+  }),
+  // Same queries (and keys) as the sections below, so a server render
+  // includes their data.
+  loader: async ({ context: { queryClient }, deps }) => {
+    await queryClient.prefetchQuery(seasonsQueryOptions);
+    const season =
+      deps.season ??
+      queryClient.getQueryData(seasonsQueryOptions.queryKey)?.seasons?.[0]?.year;
+    if (season === undefined) return;
+    const situation = deps.situation || "all";
+    await prefetchForSsr([
+      ...prefetchHomeLeaders(queryClient, season, situation),
+      queryClient.prefetchQuery(outliersQueryOptions(season, situation)),
+      queryClient.prefetchQuery(topLinesQueryOptions(season, "5on5")),
+      queryClient.prefetchQuery(teamsQueryOptions),
+    ]);
+  },
 });
 
 function HomePage() {
@@ -51,43 +85,38 @@ function HomePage() {
     });
   };
 
+  const isCurrentSeason = effectiveSeason === defaultSeason;
+
   return (
-    <div className="container py-6 space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">NHL Analytics</h1>
-          <p className="text-muted-foreground">
-            powered by advanced stats from MoneyPuck
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <SeasonSelector
-            value={effectiveSeason}
-            onValueChange={(season) => updateSearch({ season })}
-          />
-          <SituationSelector
-            value={situation}
-            onValueChange={(situation) => updateSearch({ situation })}
-            compact
-          />
-        </div>
-      </div>
-
-      {effectiveSeason && (
-        <p className="text-sm text-muted-foreground">
-          Showing {formatSeason(effectiveSeason)}{" "}
-          {situation === "5on5" ? "5v5" : situation} stats
-        </p>
-      )}
-
-      {effectiveSeason === defaultSeason && <GamesSection />}
+    <div className="container space-y-10 py-8">
+      <PageHeader
+        title={
+          effectiveSeason
+            ? `${formatSeason(effectiveSeason)} ${isCurrentSeason ? "so far" : "season"}`
+            : "NHL analytics"
+        }
+        description="Advanced stats from MoneyPuck, updated every morning."
+        actions={
+          <>
+            <SeasonSelector
+              value={effectiveSeason}
+              onValueChange={(season) => updateSearch({ season })}
+            />
+            <SegmentedControl
+              aria-label="Game situation"
+              value={situation}
+              onValueChange={(situation) => updateSearch({ situation })}
+              options={SITUATION_OPTIONS}
+            />
+          </>
+        }
+      />
 
       <LeaderStripSection season={effectiveSeason} situation={situation} />
 
       <OutliersSectionWrapper season={effectiveSeason} situation={situation} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         <TopLinesSection season={effectiveSeason} />
         <TeamGrid />
       </div>

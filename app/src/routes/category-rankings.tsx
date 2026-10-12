@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Trophy, ArrowLeft } from "lucide-react";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
 import { useCategoryRankings, useSeasons, usePageTitle } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,14 +10,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CategoryRankingsTable } from "@/components/category-rankings";
-import { z } from "zod";
+import { PageHeader } from "@/components/layout";
+import * as z from "zod/mini";
 
 const searchSchema = z.object({
-  season: z.number().optional(),
+  season: z.optional(z.number()),
 });
 
 export const Route = createFileRoute("/category-rankings")({
   component: CategoryRankingsPage,
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery(seasonsQueryOptions),
   validateSearch: searchSchema,
 });
 
@@ -38,44 +41,33 @@ function CategoryRankingsPage() {
   };
 
   return (
-    <div className="container py-8">
-      <div className="mb-6">
-        <Button variant="ghost" size="sm" className="mb-4 -ml-2" asChild>
-          <Link to="/standings">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Standings
-          </Link>
-        </Button>
-
-        <div className="flex items-center gap-3 mb-2">
-          <Trophy className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">
-            Category Rankings
-          </h1>
-        </div>
-        <p className="text-muted-foreground max-w-2xl">
-          See where each team ranks (1-32) across key statistical categories.
-          Green indicates top 10, red indicates bottom 10.
-        </p>
-      </div>
-
-      <div className="flex items-center gap-3 mb-6">
-        <Select
-          value={currentSeason?.toString() ?? ""}
-          onValueChange={handleSeasonChange}
-        >
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Select season" />
-          </SelectTrigger>
-          <SelectContent>
-            {seasonsData?.seasons.map((s) => (
-              <SelectItem key={s.year} value={s.year.toString()}>
-                {s.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Category rankings"
+        description="Where every team ranks, 1 to 32, in each category. Top 10 are green, bottom 10 red."
+        actions={
+          <>
+            <Select
+              value={currentSeason?.toString() ?? ""}
+              onValueChange={handleSeasonChange}
+            >
+              <SelectTrigger className="w-32" aria-label="Season">
+                <SelectValue placeholder="Season" />
+              </SelectTrigger>
+              <SelectContent>
+                {seasonsData?.seasons.map((s) => (
+                  <SelectItem key={s.year} value={s.year.toString()}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" asChild>
+              <Link to="/standings">Standings</Link>
+            </Button>
+          </>
+        }
+      />
 
       <CategoryRankingsTable
         teams={data?.teams ?? []}

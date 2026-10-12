@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { usePlayerSearch } from "@/hooks";
 
@@ -19,7 +19,16 @@ export function PlayerSearchDropdown({
   disabled = false,
 }: PlayerSearchDropdownProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: searchResults } = usePlayerSearch(searchQuery, 1, 10);
+  const { data: searchResults, isLoading: searchLoading } = usePlayerSearch(
+    searchQuery,
+    1,
+    10,
+  );
+
+  const availableResults =
+    searchResults?.players?.filter(
+      (player) => !selectedPlayerIds.includes(player.id),
+    ) ?? [];
 
   const isMaxReached = selectedPlayerIds.length >= maxPlayers;
   const effectivePlaceholder = isMaxReached
@@ -48,26 +57,32 @@ export function PlayerSearchDropdown({
           disabled={disabled || isMaxReached}
         />
       </div>
-      {searchQuery.length >= 2 &&
-        searchResults?.players &&
-        searchResults.players.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
-            {searchResults.players
-              .filter((player) => !selectedPlayerIds.includes(player.id))
-              .map((player) => (
-                <button
-                  key={player.id}
-                  onClick={() => handleSelect(player.id)}
-                  className="w-full px-3 py-2 text-left hover:bg-muted text-sm flex justify-between items-center"
-                >
-                  <span>{player.name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {player.currentTeamAbbreviation}
-                  </span>
-                </button>
-              ))}
-          </div>
-        )}
+      {searchQuery.length >= 2 && (
+        <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border bg-popover p-1 shadow-lg shadow-black/5">
+          {searchLoading ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : availableResults.length > 0 ? (
+            availableResults.map((player) => (
+              <button
+                key={player.id}
+                onClick={() => handleSelect(player.id)}
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent"
+              >
+                <span>{player.name}</span>
+                <span className="text-muted-foreground text-xs">
+                  {player.currentTeamAbbreviation}
+                </span>
+              </button>
+            ))
+          ) : (
+            <p className="p-4 text-center text-sm text-muted-foreground">
+              No players match "{searchQuery}"
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

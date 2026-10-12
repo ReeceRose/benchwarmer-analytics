@@ -1,4 +1,4 @@
-import { and, asc, avg, count, desc, eq, gte, inArray, isNotNull, max, sql, sum as sqlSum, type SQL } from "drizzle-orm";
+import { and, asc, avg, count, desc, eq, gt, gte, inArray, isNotNull, lt, max, sql, sum as sqlSum, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { queryRows, type Database } from "@/server/db/client";
 import {
@@ -111,14 +111,18 @@ function outlierEntry(r: SkaterBaseRow) {
 
 // Scoring above (hot) / below (cold) expected goals.
 function runningHot(db: Database, season: number, situation: string, limit: number, minGoals: number) {
-  return skaterBase(db, season, situation, and(isNotNull(skaterSeasons.expectedGoals), gte(skaterSeasons.goals, minGoals)))
+  const above = sql`${skaterSeasons.goals} - ${skaterSeasons.expectedGoals} > 0`;
+  return skaterBase(db, season, situation, and(isNotNull(skaterSeasons.expectedGoals), gte(skaterSeasons.goals, minGoals), above))
     .orderBy(desc(sql`${skaterSeasons.goals} - ${skaterSeasons.expectedGoals}`), asc(skaterSeasons.id))
     .limit(limit)
     .then((rows) => rows.map(outlierEntry));
 }
 
 function runningCold(db: Database, season: number, situation: string, limit: number, minGoals: number) {
-  return skaterBase(db, season, situation, and(isNotNull(skaterSeasons.expectedGoals), gte(skaterSeasons.expectedGoals, minGoals)))
+  // Early in a season few players qualify; without the sign filter, players
+  // scoring above expected would fill out the "cold" list.
+  const below = sql`${skaterSeasons.goals} - ${skaterSeasons.expectedGoals} < 0`;
+  return skaterBase(db, season, situation, and(isNotNull(skaterSeasons.expectedGoals), gte(skaterSeasons.expectedGoals, minGoals), below))
     .orderBy(asc(sql`${skaterSeasons.goals} - ${skaterSeasons.expectedGoals}`), asc(skaterSeasons.id))
     .limit(limit)
     .then((rows) => rows.map(outlierEntry));
@@ -166,7 +170,7 @@ async function topLines(db: Database, season: number, situation: string, limit: 
   }));
 }
 
-// League averages (50 when there is nothing to average).
+// League averages as fractions (0.5 when there is nothing to average).
 async function leagueAverages(db: Database, season: number, situation: string, minIceTime: number, minLineToi: number) {
   const [[corsi], [xg]] = await Promise.all([
     db
@@ -194,8 +198,8 @@ async function leagueAverages(db: Database, season: number, situation: string, m
       ),
   ]);
   return {
-    corsiPct: corsi.n > 0 ? corsi.value : 50,
-    expectedGoalsPct: xg.n > 0 ? xg.value : 50,
+    corsiPct: corsi.n > 0 ? corsi.value : 0.5,
+    expectedGoalsPct: xg.n > 0 ? xg.value : 0.5,
   };
 }
 
@@ -265,8 +269,12 @@ async function goalieOutliers(db: Database, season: number, limit: number, minGa
     goalsSavedAboveExpected: r.goalsSavedAboveExpected ?? 0,
   });
   const [hot, cold] = await Promise.all([
-    goalieBase(db, season, minGames, filter).orderBy(desc(goalieSeasons.goalsSavedAboveExpected), asc(goalieSeasons.id)).limit(limit),
-    goalieBase(db, season, minGames, filter).orderBy(asc(goalieSeasons.goalsSavedAboveExpected), asc(goalieSeasons.id)).limit(limit),
+    goalieBase(db, season, minGames, and(filter, gt(goalieSeasons.goalsSavedAboveExpected, 0)))
+      .orderBy(desc(goalieSeasons.goalsSavedAboveExpected), asc(goalieSeasons.id))
+      .limit(limit),
+    goalieBase(db, season, minGames, and(filter, lt(goalieSeasons.goalsSavedAboveExpected, 0)))
+      .orderBy(asc(goalieSeasons.goalsSavedAboveExpected), asc(goalieSeasons.id))
+      .limit(limit),
   ]);
   return { runningHot: hot.map(entry), runningCold: cold.map(entry) };
 }
@@ -346,10 +354,16 @@ function shotsPer60(s: Pick<SkaterSeasonRow, "shots" | "iceTimeSeconds">): numbe
   return s.iceTimeSeconds > 0 ? (s.shots / s.iceTimeSeconds) * 3600 : 0;
 }
 
+// corsi_for_pct is stored as MoneyPuck's fraction (0.55); the scores work in
+// percentage points (55), with 50 when it's missing.
+function corsiPoints(s: Pick<SkaterSeasonRow, "corsiForPct">): number {
+  return s.corsiForPct == null ? 50 : s.corsiForPct * 100;
+}
+
 // Higher = more likely to break out: scoring below xG, good possession, high shot rate.
 export function breakoutScore(s: ScoreInput): number {
   const xgDiff = (s.expectedGoals ?? 0) - s.goals;
-  const corsiBonus = ((s.corsiForPct ?? 50) - 50) / 10;
+  const corsiBonus = (corsiPoints(s) - 50) / 10;
   const shotBonus = (shotsPer60(s) - 7) / 3;
   return round(xgDiff + corsiBonus + shotBonus, 2);
 }
@@ -359,7 +373,7 @@ export function breakoutScore(s: ScoreInput): number {
 export function rookieScore(s: ScoreInput, position: string | null, age: number): number {
   const points = s.goals + s.assists;
   const xgDiff = s.goals - (s.expectedGoals ?? 0);
-  const corsiBonus = ((s.corsiForPct ?? 50) - 50) / 5;
+  const corsiBonus = (corsiPoints(s) - 50) / 5;
   const shotBonus = shotsPer60(s) / 3;
   const multiplier = position === "D" ? 1.3 : 1;
   const ageBonus = (22 - age) * 2;
@@ -775,6 +789,7 @@ async function skaterLeaderboard(db: Database, category: string, season: number,
       onIceShootingPct: s.onIceShootingPct,
       onIceSavePct: s.onIceSavePct,
       iceTimeSeconds: s.iceTimeSeconds,
+      faceoffPct: fo == null ? undefined : round(fo, 1),
       ...NO_GOALIE_FIELDS,
     };
   });

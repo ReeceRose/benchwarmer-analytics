@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { TrendingUp, Filter, BarChart3 } from "lucide-react";
 import { useLeagueTrends, usePageTitle } from "@/hooks";
 import { formatSeason, formatToi } from "@/lib/formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared";
+import { PageHeader, StatTile, EmptyState } from "@/components/layout";
 import {
   LeagueTrendsChart,
   type TrendMetric,
@@ -31,17 +31,17 @@ export const Route = createFileRoute("/league-trends")({
 });
 
 const situationOptions = [
-  { value: "all", label: "All Situations" },
-  { value: "5on5", label: "5-on-5" },
-  { value: "5on4", label: "Power Play (5v4)" },
-  { value: "4on5", label: "Penalty Kill (4v5)" },
+  { value: "all", label: "All situations" },
+  { value: "5on5", label: "5v5" },
+  { value: "5on4", label: "Power play" },
+  { value: "4on5", label: "Penalty kill" },
 ];
 
 const metricOptions: { value: TrendMetric; label: string }[] = [
-  { value: "avgGoalsPerGame", label: "Goals per Game" },
-  { value: "avgAssistsPerGame", label: "Assists per Game" },
-  { value: "avgToiPerGame", label: "TOI per Game" },
-  { value: "avgCorsiPct", label: "Corsi For %" },
+  { value: "avgGoalsPerGame", label: "Goals per game" },
+  { value: "avgAssistsPerGame", label: "Assists per game" },
+  { value: "avgToiPerGame", label: "TOI per game" },
+  { value: "avgCorsiPct", label: "Corsi for %" },
   { value: "avgXgPer60", label: "xG per 60" },
 ];
 
@@ -62,57 +62,45 @@ function LeagueTrendsPage() {
   const latestSeason = data?.seasons?.[data.seasons.length - 1];
 
   return (
-    <div className="container py-8">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <TrendingUp className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">League Trends</h1>
-        </div>
-        <p className="text-muted-foreground max-w-2xl">
-          Track how league-wide statistics have changed across seasons. See
-          trends in scoring, possession metrics, and player performance over
-          time.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={situation}
-            onValueChange={(v) => updateSearch({ situation: v })}
-          >
-            <SelectTrigger className="w-40 h-9">
-              <SelectValue placeholder="Situation" />
-            </SelectTrigger>
-            <SelectContent>
-              {situationOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={metric}
-            onValueChange={(v) => updateSearch({ metric: v as TrendMetric })}
-          >
-            <SelectTrigger className="w-44 h-9">
-              <SelectValue placeholder="Metric" />
-            </SelectTrigger>
-            <SelectContent>
-              {metricOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="League trends"
+        description="How scoring, possession and ice time have changed across the league, season by season."
+        actions={
+          <>
+            <Select
+              value={situation}
+              onValueChange={(v) => updateSearch({ situation: v })}
+            >
+              <SelectTrigger className="w-40" aria-label="Situation">
+                <SelectValue placeholder="Situation" />
+              </SelectTrigger>
+              <SelectContent>
+                {situationOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={metric}
+              onValueChange={(v) => updateSearch({ metric: v as TrendMetric })}
+            >
+              <SelectTrigger className="w-44" aria-label="Metric">
+                <SelectValue placeholder="Metric" />
+              </SelectTrigger>
+              <SelectContent>
+                {metricOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        }
+      />
 
       {error && (
         <ErrorState
@@ -135,25 +123,25 @@ function LeagueTrendsPage() {
         <div className="space-y-6">
           {latestSeason && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <SummaryCard
-                title="Latest Season"
+              <StatTile
+                label="Latest season"
                 value={formatSeason(latestSeason.season)}
-                subtitle={`${latestSeason.totalPlayers.toLocaleString()} players`}
+                note={`${latestSeason.totalPlayers.toLocaleString()} players`}
               />
-              <SummaryCard
-                title="Total Goals"
+              <StatTile
+                label="Total goals"
                 value={latestSeason.totalGoals.toLocaleString()}
-                subtitle={`${latestSeason.avgGoalsPerGame.toFixed(2)} per team-game`}
+                note={`${latestSeason.avgGoalsPerGame.toFixed(2)} per team-game`}
               />
-              <SummaryCard
-                title="Avg TOI/Game"
+              <StatTile
+                label="Average TOI per game"
                 value={formatToi(latestSeason.avgToiPerGame)}
-                subtitle="Per player"
+                note="Per player"
               />
-              <SummaryCard
-                title="Avg CF%"
+              <StatTile
+                label="Average CF%"
                 value={`${latestSeason.avgCorsiPct.toFixed(1)}%`}
-                subtitle="Ice time weighted"
+                note="Ice time weighted"
               />
             </div>
           )}
@@ -163,7 +151,7 @@ function LeagueTrendsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium">
-                Season-by-Season Data
+                Season-by-season data
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -228,36 +216,11 @@ function LeagueTrendsPage() {
           </Card>
         </div>
       ) : (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium">No trend data available</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Try selecting a different situation filter.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No trend data for this situation"
+          hint="Pick another situation."
+        />
       )}
     </div>
-  );
-}
-
-function SummaryCard({
-  title,
-  value,
-  subtitle,
-}: {
-  title: string;
-  value: string;
-  subtitle: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-4">
-        <p className="text-sm text-muted-foreground">{title}</p>
-        <p className="text-2xl font-bold tabular-nums">{value}</p>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
-      </CardContent>
-    </Card>
   );
 }

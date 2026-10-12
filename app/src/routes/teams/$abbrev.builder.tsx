@@ -1,14 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
-import { Wrench } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/layout";
+import * as z from "zod/mini";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SeasonSelector, ErrorState } from "@/components/shared";
 import { LineBuilder } from "@/components/line-builder";
 import { useTeamRoster, useChemistryMatrix, useTeamSeasons } from "@/hooks";
 
 const searchSchema = z.object({
-  season: z.number().optional(),
+  season: z.optional(z.number()),
 });
 
 export const Route = createFileRoute("/teams/$abbrev/builder")({
@@ -49,18 +48,14 @@ function TeamLineBuilderPage() {
   const error = rosterError || chemistryError;
 
   return (
-    <div className="container pb-8">
-      <div className="mb-6 mt-4">
-        <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
-          <Wrench className="h-8 w-8" />
-          Line Builder
-        </h1>
-        <p className="text-muted-foreground">
-          Build custom line combinations and see historical chemistry stats when
-          players have played together.
-        </p>
-      </div>
-      <div className="flex items-center gap-3 mb-6">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">Line builder</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Drag players into a line to see how they've done together.
+          </p>
+        </div>
         <SeasonSelector
           value={season}
           onValueChange={(s) => {
@@ -83,23 +78,20 @@ function TeamLineBuilderPage() {
       {isLoading && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <Skeleton className="h-150 w-full rounded-lg" />
+            <Skeleton className="h-150 w-full rounded-2xl" />
           </div>
           <div className="lg:col-span-2 space-y-4">
             <Skeleton className="h-10 w-64" />
-            <Skeleton className="h-32 w-full rounded-lg" />
-            <Skeleton className="h-48 w-full rounded-lg" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-48 w-full rounded-2xl" />
           </div>
         </div>
       )}
       {!season && !isLoading && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="font-medium">
-              Select a season to start building lines
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No seasons recorded for this team"
+          hint="The line builder needs a season with games played."
+        />
       )}
       {!isLoading && !error && rosterData && season && (
         <LineBuilder

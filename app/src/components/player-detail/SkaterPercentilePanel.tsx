@@ -1,9 +1,13 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSeasonMinGames } from "@/hooks";
 import { getSeasonPercentiles } from "@/lib/api";
+import { formatOrdinal } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { SkaterStats } from "@/types";
+
+const MIN_GAMES_OPTIONS = [1, 3, 5, 10, 15, 20] as const;
 
 function calculatePercentile(value: number, thresholds: number[]): number | null {
   if (!Number.isFinite(value) || thresholds.length === 0) return null;
@@ -25,7 +29,7 @@ function getPercentileColor(pctl: number | null): string {
 function getPercentileBarClass(pctl: number | null): string {
   if (pctl == null) return "bg-muted";
   if (pctl >= 75) return "bg-success/70";
-  if (pctl >= 50) return "bg-primary/70";
+  if (pctl >= 50) return "bg-muted-foreground/50";
   if (pctl >= 25) return "bg-warning/70";
   return "bg-error/70";
 }
@@ -62,10 +66,11 @@ export function SkaterPercentilePanel({
   season: number;
 }) {
   const seasonAgg = useMemo(() => aggregateSeasonAll(stats, season), [stats, season]);
+  const minGames = useSeasonMinGames(season, 20, MIN_GAMES_OPTIONS);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["analytics", "season-percentiles", season],
-    queryFn: () => getSeasonPercentiles(season),
+    queryKey: ["analytics", "season-percentiles", season, minGames],
+    queryFn: () => getSeasonPercentiles(season, minGames),
     staleTime: 1000 * 60 * 30,
   });
 
@@ -102,42 +107,48 @@ export function SkaterPercentilePanel({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Percentiles (Season)</CardTitle>
+        <CardTitle className="text-base">League percentiles</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-5">
           {metrics.map((m) => {
             const p = m.pctl;
-            const widthPct = p != null ? Math.max(1, Math.min(99, p)) : 0;
+            const widthPct = p != null ? Math.max(2, Math.min(100, p)) : 0;
             return (
-              <div key={m.key} className="space-y-1.5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-medium">{m.label}</div>
-                  <div className={cn("text-sm font-semibold tabular-nums", getPercentileColor(p))}>
-                    {isLoading ? "…" : p != null ? `P${p}` : "-"}
-                  </div>
-                </div>
-
-                <div className="relative h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={cn("absolute inset-y-0 left-0", getPercentileBarClass(p))}
-                    style={{ width: `${widthPct}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="tabular-nums">
+              <div key={m.key} className="space-y-2">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-sm font-medium">{m.label}</span>
+                  <span className="text-sm text-muted-foreground tabular-nums">
                     {m.value != null ? m.value.toFixed(2) : "-"}
                   </span>
-                  <span />
+                  <span
+                    className={cn(
+                      "ml-auto font-display text-lg font-bold tabular-nums",
+                      getPercentileColor(p),
+                    )}
+                  >
+                    {isLoading ? "…" : p != null ? formatOrdinal(p) : "-"}
+                  </span>
+                </div>
+                <div className="relative h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={cn(
+                      "absolute inset-y-0 left-0 rounded-full transition-[width]",
+                      getPercentileBarClass(p),
+                    )}
+                    style={{ width: `${widthPct}%` }}
+                  />
+                  <div className="absolute inset-y-0 left-1/2 w-px bg-foreground/20" />
                 </div>
               </div>
             );
           })}
         </div>
 
-        <p className="text-xs text-muted-foreground mt-3">
-          Percentiles are vs the league in this season (min games default).
+        <p className="mt-5 text-xs text-muted-foreground">
+          Percentile among skaters with at least {minGames}{" "}
+          {minGames === 1 ? "game" : "games"} this season. The tick marks the
+          league median.
         </p>
       </CardContent>
     </Card>

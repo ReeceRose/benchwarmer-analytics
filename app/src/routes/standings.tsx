@@ -1,17 +1,21 @@
 import { useMemo } from "react";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { TableIcon, Info, BarChart3, Trophy } from "lucide-react";
 import {
   useOfficialStandings,
   useStandingsAnalytics,
   useSeasons,
   usePageTitle,
 } from "@/hooks";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState } from "@/components/shared";
+import { ErrorState, TableSkeleton } from "@/components/shared";
+import {
+  MetricGuide,
+  PageHeader,
+  SegmentedControl,
+  ViewToggle,
+} from "@/components/layout";
 import { StandingsTable } from "@/components/standings";
 import {
   PointsLuckChart,
@@ -19,15 +23,17 @@ import {
   PDODistributionChart,
 } from "@/components/standings/charts";
 import type { StandingsGrouping, StandingsWithAnalytics } from "@/types";
-import { z } from "zod";
+import * as z from "zod/mini";
 
 const searchSchema = z.object({
-  grouping: z.enum(["league", "conference", "division"]).optional(),
-  view: z.enum(["charts", "table"]).optional(),
+  grouping: z.optional(z.enum(["league", "conference", "division"])),
+  view: z.optional(z.enum(["charts", "table"])),
 });
 
 export const Route = createFileRoute("/standings")({
   component: StandingsPage,
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery(seasonsQueryOptions),
   validateSearch: searchSchema,
 });
 
@@ -76,97 +82,57 @@ function StandingsPage() {
   };
 
   return (
-    <div className="container py-8">
-      <div className="mb-6">
-        <div className="flex items-center justify-between gap-4 mb-2">
-          <div className="flex items-center gap-3">
-            <TableIcon className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight">NHL Standings</h1>
-          </div>
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Standings"
+        description="Official NHL standings alongside the underlying numbers that predict where teams are heading."
+        actions={
           <Button variant="outline" asChild>
-            <Link to="/category-rankings">
-              <Trophy className="h-4 w-4 mr-2" />
-              Category Rankings
-            </Link>
+            <Link to="/category-rankings">Category rankings</Link>
           </Button>
-        </div>
-        <p className="text-muted-foreground max-w-2xl">
-          Official NHL standings with advanced analytics overlay. View by
-          division, conference, or league-wide.
-        </p>
-      </div>
+        }
+      />
 
-      <Card className="mb-6 py-3 px-4">
-        <div className="flex items-start gap-3">
-          <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="text-sm text-muted-foreground space-y-2">
-            <div>
-              <span className="font-medium text-foreground">Playoffs: </span>
-              <span className="inline-flex items-center gap-1 mx-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                Division top 3
-              </span>
-              <span className="text-muted-foreground/50 mx-1">|</span>
-              <span className="inline-flex items-center gap-1 mx-1">
-                <span className="text-[10px] px-1 py-0 border border-chart-4 text-chart-4 rounded font-medium">
-                  WC
-                </span>
-                Wildcard (2 per conf)
-              </span>
-            </div>
-            <div>
-              <span className="font-medium text-foreground">Metrics: </span>
-              <strong>Pts%</strong> (points earned / possible),{" "}
-              <strong>xGF/xGA</strong> (expected goals for/against),{" "}
-              <strong>xG±</strong> (expected goal differential),{" "}
-              <strong>xPts</strong> (expected points), <strong>xG%</strong>{" "}
-              (expected goals share), <strong>CF%/FF%</strong> (shot attempt
-              share), <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
-              <strong>PDO</strong> (Sh% + Sv% - values near 100 are sustainable),{" "}
-              <strong>Pts±</strong> (actual - expected points).
-            </div>
-          </div>
+      <MetricGuide
+        metrics={["Pts%", "xG±", "xPts", "xG%", "CF%", "FF%", "Sh%", "Sv%", "PDO", "Pts±"]}
+      >
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-muted-foreground">
+          <span className="inline-flex items-center gap-2">
+            <span className="size-1.5 rounded-full bg-success" />
+            Top three in the division
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span className="rounded-full border border-chart-4/70 bg-chart-4/10 px-1.5 text-[10px] font-semibold text-chart-4">
+              WC
+            </span>
+            Wild card (two per conference)
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span className="w-6 border-t-2 border-dashed border-primary/40" />
+            Playoff cut line
+          </span>
         </div>
-      </Card>
+      </MetricGuide>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         {currentView === "table" ? (
-          <Tabs
+          <SegmentedControl
+            aria-label="Group by"
             value={grouping}
-            onValueChange={(v) =>
-              updateSearch({ grouping: v as StandingsGrouping })
-            }
-          >
-            <TabsList>
-              <TabsTrigger value="division">Division</TabsTrigger>
-              <TabsTrigger value="conference">Conference</TabsTrigger>
-              <TabsTrigger value="league">League</TabsTrigger>
-            </TabsList>
-          </Tabs>
+            onValueChange={(grouping) => updateSearch({ grouping })}
+            options={[
+              { value: "division", label: "Division" },
+              { value: "conference", label: "Conference" },
+              { value: "league", label: "League" },
+            ]}
+          />
         ) : (
-          <div /> // Spacer to keep toggle on the right
+          <span />
         )}
-
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          <Button
-            variant={currentView === "charts" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateSearch({ view: "charts" })}
-            className="gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Charts
-          </Button>
-          <Button
-            variant={currentView === "table" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateSearch({ view: "table" })}
-            className="gap-2"
-          >
-            <TableIcon className="h-4 w-4" />
-            Table
-          </Button>
-        </div>
+        <ViewToggle
+          value={currentView}
+          onValueChange={(view) => updateSearch({ view })}
+        />
       </div>
 
       {officialError && (
@@ -181,15 +147,7 @@ function StandingsPage() {
       )}
 
       {officialLoading ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <TableSkeleton rows={8} />
       ) : officialData?.teams && officialData.teams.length > 0 ? (
         currentView === "charts" ? (
           <ChartsView
@@ -205,15 +163,9 @@ function StandingsPage() {
           />
         )
       ) : (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <TableIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium">No standings data available</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Check back later when the season is in progress.
-            </p>
-          </CardContent>
-        </Card>
+        <p className="py-12 text-center text-muted-foreground">
+          No standings yet. They appear once the season's first games are played.
+        </p>
       )}
     </div>
   );
@@ -229,15 +181,10 @@ function ChartsView({
 }) {
   if (analyticsLoading) {
     return (
-      <Card>
-        <CardContent className="p-4">
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Skeleton className="h-96 rounded-2xl" />
+        <Skeleton className="h-96 rounded-2xl" />
+      </div>
     );
   }
 

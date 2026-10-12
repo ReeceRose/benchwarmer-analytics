@@ -39,16 +39,16 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="font-semibold mb-2">Age {data.age}</div>
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Rookies:</span>{" "}
-          <span className="font-mono font-semibold">{data.count}</span>
+          <span className="tabular-nums font-semibold">{data.count}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Avg Points:</span>{" "}
-          <span className="font-mono">{data.avgPoints.toFixed(1)}</span>
+          <span className="tabular-nums">{data.avgPoints.toFixed(1)}</span>
         </p>
       </div>
     </div>
@@ -83,8 +83,8 @@ export function RookieAgeDistributionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Age Distribution</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Age distribution</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -93,7 +93,7 @@ export function RookieAgeDistributionChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Rookie Age Distribution</CardTitle>
+        <CardTitle className="text-base">Rookie age distribution</CardTitle>
         <CardDescription>
           Number of rookies by age (as of Sept 15)
         </CardDescription>
@@ -118,9 +118,9 @@ export function RookieAgeDistributionChart({
             />
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
             />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="count" radius={[6, 6, 0, 0]}>
               {chartData.map((entry, index) => (
                 <Cell
                   key={`cell-${entry.age}`}

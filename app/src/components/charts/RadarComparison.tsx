@@ -103,7 +103,7 @@ function RadarChartTooltip({
   const stat = data.stat as string;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <p className="font-semibold mb-2">{stat}</p>
       <div className="space-y-1">
         {payload.map((entry, i) => (
@@ -113,7 +113,7 @@ function RadarChartTooltip({
               style={{ backgroundColor: entry.color }}
             />
             <span>{entry.name}:</span>
-            <span className="font-mono ml-auto">
+            <span className="tabular-nums ml-auto">
               {data[`${entry.name}_raw`]}
             </span>
           </div>
@@ -125,7 +125,7 @@ function RadarChartTooltip({
 
 export function RadarComparison({
   players,
-  title = "Player Comparison",
+  title = "Player comparison",
   className,
 }: RadarComparisonProps) {
   // Filter out players without stats
@@ -135,7 +135,7 @@ export function RadarComparison({
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle className="text-lg">{title}</CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -169,7 +169,7 @@ export function RadarComparison({
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={350}>

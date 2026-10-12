@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { TeamLogo } from "@/components/team-detail/TeamLogo";
 import { formatPercent, formatSavePct } from "@/lib/formatters";
 import {
   getPdoColour,
@@ -47,16 +48,18 @@ export function StandingsRow({
   // Colors - analytics
   const pdoColor = analytics ? getPdoColour(analytics.pdo) : "";
   const pointsDiffColor = analytics ? getPointsDiffColour(analytics.pointsDiff) : "";
-  const xgPctColor = analytics ? getXgPctColour(analytics.xGoalsPct) : "";
-  const corsiColor = analytics ? getCorsiColour(analytics.corsiPct) : "";
-  const fenwickColor = analytics ? getFenwickColour(analytics.fenwickPct) : "";
+  // Shares arrive as fractions; the colour thresholds are in percent.
+  const asPct = (v: number | null | undefined) => (v != null ? v * 100 : null);
+  const xgPctColor = analytics ? getXgPctColour(asPct(analytics.xGoalsPct)) : "";
+  const corsiColor = analytics ? getCorsiColour(asPct(analytics.corsiPct)) : "";
+  const fenwickColor = analytics ? getFenwickColour(asPct(analytics.fenwickPct)) : "";
   const shootingPctColor = analytics ? getShootingPctColour(analytics.shootingPct) : "";
   const savePctColor = analytics ? getSavePctColour(analytics.savePct) : "";
   const xGoalDiffColor = xGoalDiff != null ? getXgDiffColour(xGoalDiff) : "";
 
   return (
-    <TableRow>
-      <TableCell className="font-medium text-muted-foreground">
+    <TableRow className="group">
+      <TableCell className="sticky left-0 z-10 bg-card font-medium text-muted-foreground group-hover:bg-muted">
         <span className="flex items-center gap-2">
           <span>{rank}</span>
           {playoffStatus === "division" && (
@@ -77,22 +80,18 @@ export function StandingsRow({
           )}
         </span>
       </TableCell>
-      <TableCell>
-        <div className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-2">
-          <Link
-            to="/teams/$abbrev"
-            params={{ abbrev: team.abbreviation }}
-            search={{ season }}
-            className="hover:underline font-medium truncate min-w-0"
-          >
-            {team.name}
-          </Link>
-          <span className="text-muted-foreground text-xs text-right tabular-nums">
-            {team.abbreviation}
-          </span>
-        </div>
+      <TableCell className="sticky left-14 z-10 bg-card group-hover:bg-muted">
+        <Link
+          to="/teams/$abbrev"
+          params={{ abbrev: team.abbreviation }}
+          search={{ season }}
+          className="flex min-w-0 items-center gap-2.5 font-medium hover:text-link"
+        >
+          <TeamLogo abbrev={team.abbreviation} size="md" />
+          <span className="truncate">{team.name}</span>
+        </Link>
       </TableCell>
-      <TableCell className="text-right tabular-nums">{team.gamesPlayed}</TableCell>
+      <TableCell className="border-l text-right tabular-nums">{team.gamesPlayed}</TableCell>
       <TableCell className="text-right tabular-nums">{team.wins}</TableCell>
       <TableCell className="text-right tabular-nums">{team.losses}</TableCell>
       <TableCell className="text-right tabular-nums">{team.otLosses}</TableCell>
@@ -102,7 +101,7 @@ export function StandingsRow({
       <TableCell className={`text-right tabular-nums ${pointsPctColor}`}>
         {(pointsPct * 100).toFixed(1)}%
       </TableCell>
-      <TableCell className="text-right tabular-nums">{team.goalsFor}</TableCell>
+      <TableCell className="border-l text-right tabular-nums">{team.goalsFor}</TableCell>
       <TableCell className="text-right tabular-nums">{team.goalsAgainst}</TableCell>
       <TableCell
         className={`text-right tabular-nums ${team.goalDifferential >= 0 ? "text-success" : "text-error"}`}
@@ -110,7 +109,7 @@ export function StandingsRow({
         {team.goalDifferential > 0 ? "+" : ""}
         {team.goalDifferential}
       </TableCell>
-      <TableCell className="text-right text-muted-foreground tabular-nums">
+      <TableCell className="border-l text-right text-muted-foreground tabular-nums">
         {team.homeRecord}
       </TableCell>
       <TableCell className="text-right text-muted-foreground tabular-nums">
@@ -139,14 +138,14 @@ export function StandingsRow({
       {analyticsLoading ? (
         <>
           {[...Array(11)].map((_, i) => (
-            <TableCell key={i} className="text-right">
+            <TableCell key={i} className={i === 0 ? "border-l text-right" : "text-right"}>
               <Skeleton className="h-4 w-10 ml-auto" />
             </TableCell>
           ))}
         </>
       ) : analytics ? (
         <>
-          <TableCell className="text-right tabular-nums">
+          <TableCell className="border-l text-right tabular-nums">
             {analytics.xGoalsFor.toFixed(1)}
           </TableCell>
           <TableCell className="text-right tabular-nums">
@@ -161,7 +160,7 @@ export function StandingsRow({
           </TableCell>
           <TableCell className={`text-right tabular-nums ${xgPctColor}`}>
             {analytics.xGoalsPct != null
-              ? formatPercent(analytics.xGoalsPct, false)
+              ? formatPercent(analytics.xGoalsPct, true)
               : "-"}
           </TableCell>
           <TableCell className={`text-right tabular-nums ${corsiColor}`}>
@@ -195,7 +194,12 @@ export function StandingsRow({
       ) : (
         <>
           {[...Array(11)].map((_, i) => (
-            <TableCell key={i} className="text-right text-muted-foreground">-</TableCell>
+            <TableCell
+              key={i}
+              className={`text-right text-muted-foreground ${i === 0 ? "border-l" : ""}`}
+            >
+              -
+            </TableCell>
           ))}
         </>
       )}

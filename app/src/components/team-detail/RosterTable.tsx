@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -11,7 +10,13 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { HeaderWithTooltip } from "@/components/shared";
-import { formatPosition, formatHeight, formatWeight, formatToi, formatPercent } from "@/lib/formatters";
+import {
+  formatHeight,
+  formatWeight,
+  formatToi,
+  formatPercent,
+  formatPositionShort,
+} from "@/lib/formatters";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { RosterPlayer } from "@/types/player";
 
@@ -59,7 +64,7 @@ export function RosterTable({ title, players, showStats = false }: RosterTablePr
                     <Link
                       to="/players/$id"
                       params={{ id: String(player.id) }}
-                      className="flex items-center gap-2 hover:underline"
+                      className="flex items-center gap-2 transition-colors hover:text-link"
                     >
                       <Avatar className="h-6 w-6">
                         <AvatarImage
@@ -74,9 +79,7 @@ export function RosterTable({ title, players, showStats = false }: RosterTablePr
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="font-normal">
-                      {formatPosition(player.position)}
-                    </Badge>
+                    <span className="text-muted-foreground">{formatPositionShort(player.position)}</span>
                   </TableCell>
                   {showStats ? (
                     <>

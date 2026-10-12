@@ -57,7 +57,7 @@ function CustomTooltip({
   const isLucky = data.diff > 0;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <TeamLogo abbrev={data.abbrev} size="sm" />
         <span className="font-semibold">{data.name}</span>
@@ -65,15 +65,15 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Actual Points:</span>{" "}
-          <span className="font-mono font-semibold">{data.points}</span>
+          <span className="tabular-nums font-semibold">{data.points}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Expected Points:</span>{" "}
-          <span className="font-mono">{data.expectedPoints.toFixed(1)}</span>
+          <span className="tabular-nums">{data.expectedPoints.toFixed(1)}</span>
         </p>
         <p className={isLucky ? "text-warning" : "text-success"}>
           <span className="text-muted-foreground">Difference:</span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {isLucky ? "+" : ""}
             {data.diff.toFixed(1)}
           </span>
@@ -107,7 +107,7 @@ function CustomDot(props: {
         height={size * 2}
         style={{
           transition: "all 0.15s",
-          filter: isSelected ? "drop-shadow(0 0 4px hsl(var(--primary)))" : undefined,
+          filter: isSelected ? "drop-shadow(0 0 4px var(--primary))" : undefined,
         }}
       />
       {isSelected && (
@@ -116,7 +116,7 @@ function CustomDot(props: {
           cy={cy}
           r={size + 3}
           fill="none"
-          stroke="hsl(var(--primary))"
+          stroke="var(--primary)"
           strokeWidth={2}
         />
       )}
@@ -136,7 +136,7 @@ function SelectionPanel({
   const isLucky = data.diff > 0;
 
   return (
-    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+    <div className="mt-3 animate-in rounded-xl border bg-card p-3 duration-200 slide-in-from-bottom-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <TeamLogo abbrev={data.abbrev} size="md" />
@@ -152,14 +152,14 @@ function SelectionPanel({
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">Pts:</span>{" "}
-                <span className="font-mono font-semibold">{data.points}</span>
+                <span className="tabular-nums font-semibold">{data.points}</span>
               </span>
               <span>
                 <span className="text-xs">xPts:</span>{" "}
-                <span className="font-mono">{data.expectedPoints.toFixed(1)}</span>
+                <span className="tabular-nums">{data.expectedPoints.toFixed(1)}</span>
               </span>
               <span
-                className={`font-mono font-semibold ${isLucky ? "text-warning" : "text-success"}`}
+                className={`tabular-nums font-semibold ${isLucky ? "text-warning" : "text-success"}`}
               >
                 {isLucky ? "+" : ""}
                 {data.diff.toFixed(1)}
@@ -221,7 +221,7 @@ export function PointsLuckChart({ teams }: PointsLuckChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Points Luck</CardTitle>
+          <CardTitle>Points luck</CardTitle>
           <CardDescription>No analytics data available</CardDescription>
         </CardHeader>
       </Card>
@@ -236,7 +236,7 @@ export function PointsLuckChart({ teams }: PointsLuckChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Expected vs Actual Points</CardTitle>
+        <CardTitle className="text-base">Expected vs actual points</CardTitle>
         <CardDescription>
           Teams above the line are "lucky" (overperforming), below are "unlucky"
           (underperforming)
@@ -275,7 +275,7 @@ export function PointsLuckChart({ teams }: PointsLuckChartProps) {
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Actual Points"
+                value="Actual points"
                 angle={-90}
                 position="insideLeft"
                 offset={10}

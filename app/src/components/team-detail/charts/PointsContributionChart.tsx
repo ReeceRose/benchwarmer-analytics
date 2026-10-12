@@ -27,16 +27,18 @@ interface ChartDataPoint {
   isOther: boolean;
 }
 
+// The five chart colours, then softer mixes of the first three for larger rosters.
+const softened = (token: string) => `color-mix(in oklab, var(${token}) 55%, var(--card))`;
 const PIE_COLOURS = [
-  "#2563eb", // Blue
-  "#16a34a", // Green
-  "#ca8a04", // Gold
-  "#7c3aed", // Violet
-  "#dc2626", // Red
-  "#0891b2", // Cyan
-  "#db2777", // Rose
-  "#ea580c", // Orange
-  "hsl(var(--muted-foreground))", // Gray for "Other"
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  softened("--chart-1"),
+  softened("--chart-2"),
+  softened("--chart-3"),
+  "var(--muted-foreground)", // "Other"
 ];
 
 function CustomTooltip({
@@ -51,7 +53,7 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         {!data.isOther && data.playerId && (
           <Avatar className="h-6 w-6">
@@ -70,7 +72,7 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Points:</span>{" "}
-          <span className="font-mono font-semibold">{data.points}</span>
+          <span className="tabular-nums font-semibold">{data.points}</span>
           <span className="text-muted-foreground ml-1">
             ({data.percentage.toFixed(1)}%)
           </span>
@@ -78,7 +80,7 @@ function CustomTooltip({
         {!data.isOther && (
           <p>
             <span className="text-muted-foreground">Goals/Assists:</span>{" "}
-            <span className="font-mono">
+            <span className="tabular-nums">
               {data.goals}G / {data.assists}A
             </span>
           </p>
@@ -148,7 +150,7 @@ export function PointsContributionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Points Contribution</CardTitle>
+          <CardTitle className="text-base">Points contribution</CardTitle>
           <CardDescription>
             No points data available for this roster
           </CardDescription>
@@ -170,7 +172,7 @@ export function PointsContributionChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Points Contribution</CardTitle>
+        <CardTitle className="text-base">Points contribution</CardTitle>
         <CardDescription>
           {totalPoints} total points | {scoringDepth} (top 3: {top3Percentage.toFixed(0)}%)
         </CardDescription>
@@ -196,7 +198,7 @@ export function PointsContributionChart({
                     key={entry.playerId ?? "other"}
                     fill={PIE_COLOURS[index % PIE_COLOURS.length]}
                     fillOpacity={entry.isOther ? 0.5 : 0.85}
-                    stroke="hsl(var(--background))"
+                    stroke="var(--background)"
                     strokeWidth={2}
                   />
                 ))}
@@ -212,7 +214,7 @@ export function PointsContributionChart({
                   key={entry.playerId ?? "other"}
                   onClick={() => handleClick(entry)}
                   disabled={entry.isOther}
-                  className="flex items-center gap-2 text-left hover:bg-muted/50 rounded px-2 py-1 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
+                  className="flex items-center gap-2 text-left hover:bg-muted/60 rounded-lg px-2 py-1 transition-colors disabled:cursor-default disabled:hover:bg-transparent"
                 >
                   <span
                     className="w-3 h-3 rounded-full shrink-0"
@@ -224,7 +226,7 @@ export function PointsContributionChart({
                   <span className="truncate text-xs">
                     {entry.isOther ? entry.name : entry.name.split(" ").pop()}
                   </span>
-                  <span className="ml-auto font-mono text-xs text-muted-foreground">
+                  <span className="ml-auto tabular-nums text-xs text-muted-foreground">
                     {entry.points}
                   </span>
                 </button>

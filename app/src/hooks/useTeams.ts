@@ -1,12 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { getTeams, getTeam, getTeamRoster, getScoreStateStats } from "@/lib/api";
 
+export const teamsQueryOptions = queryOptions({
+  queryKey: ["teams"],
+  queryFn: getTeams,
+  staleTime: 1000 * 60 * 60, // Teams rarely change, cache for 1 hour
+});
+
 export function useTeams() {
-  return useQuery({
-    queryKey: ["teams"],
-    queryFn: getTeams,
-    staleTime: 1000 * 60 * 60, // Teams rarely change, cache for 1 hour
-  });
+  return useQuery(teamsQueryOptions);
 }
 
 export function useTeam(abbrev: string) {

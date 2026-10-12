@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { TeamTag } from "@/components/shared/TeamTag";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -11,7 +12,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SortableTableHeader } from "@/components/shared";
-import { formatPercent, formatPosition, formatToi } from "@/lib/formatters";
+import {
+  formatPercent,
+  formatToi,
+  formatPositionShort,
+} from "@/lib/formatters";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { Rookie } from "@/types";
 
@@ -166,14 +171,9 @@ export function RookieTable({
 }
 
 function RookieRow({ rookie, rank }: { rookie: Rookie; rank: number }) {
+  const diff = Math.round(rookie.goalsDifferential * 10) / 10;
   const diffColor =
-    rookie.goalsDifferential > 2
-      ? "text-success"
-      : rookie.goalsDifferential > 0
-        ? "text-success/70"
-        : rookie.goalsDifferential < -2
-          ? "text-error"
-          : "text-warning";
+    diff >= 1 ? "text-success" : diff <= -1 ? "text-error" : "text-foreground";
 
   const corsiColor =
     (rookie.corsiForPct ?? 0.5) >= 0.52
@@ -186,8 +186,8 @@ function RookieRow({ rookie, rank }: { rookie: Rookie; rank: number }) {
     rookie.rookieScore >= 50
       ? "bg-success/10 text-success border-success/20"
       : rookie.rookieScore >= 30
-        ? "bg-warning/10 text-warning border-warning/20"
-        : "bg-muted";
+        ? "font-semibold"
+        : "border-transparent text-muted-foreground";
 
   return (
     <TableRow>
@@ -196,7 +196,7 @@ function RookieRow({ rookie, rank }: { rookie: Rookie; rank: number }) {
         <Link
           to="/players/$id"
           params={{ id: String(rookie.playerId) }}
-          className="flex items-center gap-2 hover:underline"
+          className="flex items-center gap-2 transition-colors hover:text-link"
         >
           <Avatar className="h-6 w-6">
             <AvatarImage
@@ -212,18 +212,10 @@ function RookieRow({ rookie, rank }: { rookie: Rookie; rank: number }) {
         </Link>
       </TableCell>
       <TableCell>
-        <Badge variant="outline" className="font-normal">
-          {formatPosition(rookie.position)}
-        </Badge>
+        <span className="text-muted-foreground">{formatPositionShort(rookie.position)}</span>
       </TableCell>
       <TableCell>
-        <Link
-          to="/teams/$abbrev"
-          params={{ abbrev: rookie.team }}
-          className="hover:underline text-muted-foreground"
-        >
-          {rookie.team}
-        </Link>
+        <TeamTag abbrev={rookie.team} />
       </TableCell>
       <TableCell className="text-right">{rookie.age}</TableCell>
       <TableCell className="text-right">{rookie.gamesPlayed}</TableCell>
@@ -232,8 +224,8 @@ function RookieRow({ rookie, rank }: { rookie: Rookie; rank: number }) {
       <TableCell className="text-right font-semibold">{rookie.points}</TableCell>
       <TableCell className="text-right">{rookie.expectedGoals.toFixed(1)}</TableCell>
       <TableCell className={`text-right font-medium ${diffColor}`}>
-        {rookie.goalsDifferential > 0 ? "+" : ""}
-        {rookie.goalsDifferential.toFixed(1)}
+        {diff > 0 ? "+" : ""}
+        {diff === 0 ? "0.0" : diff.toFixed(1)}
       </TableCell>
       <TableCell className={`text-right ${corsiColor}`}>
         {formatPercent(rookie.corsiForPct)}

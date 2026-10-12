@@ -1,14 +1,7 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Activity, TrendingDown, Calendar } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { Panel, SegmentedControl } from "@/components/layout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useGoalieWorkload } from "@/hooks";
 import {
   WorkloadWindowCard,
@@ -26,30 +19,18 @@ interface GoalieWorkloadMonitorProps {
 }
 
 const GAME_LIMITS = [
-  { value: "10", label: "Last 10 Games" },
-  { value: "20", label: "Last 20 Games" },
-  { value: "30", label: "Last 30 Games" },
-];
+  { value: "10", label: "10 games" },
+  { value: "20", label: "20 games" },
+  { value: "30", label: "30 games" },
+] as const;
 
-const TREND_CONFIG = {
-  heavy: {
-    icon: AlertTriangle,
-    color: "text-warning",
-    bg: "bg-warning/10 text-warning border-warning/20",
-    label: "Heavy Workload",
-  },
-  moderate: {
-    icon: Activity,
-    color: "text-cold",
-    bg: "bg-cold/10 text-cold border-cold/20",
-    label: "Moderate",
-  },
-  light: {
-    icon: TrendingDown,
-    color: "text-success",
-    bg: "bg-success/10 text-success border-success/20",
-    label: "Light",
-  },
+type GameLimit = (typeof GAME_LIMITS)[number]["value"];
+
+// Only a heavy workload is a warning; light and moderate are plain facts.
+const TREND = {
+  heavy: { label: "Heavy workload", className: "bg-warning/15 text-warning" },
+  moderate: { label: "Moderate workload", className: "bg-muted text-muted-foreground" },
+  light: { label: "Light workload", className: "bg-muted text-muted-foreground" },
 };
 
 export function GoalieWorkloadMonitor({
@@ -57,7 +38,7 @@ export function GoalieWorkloadMonitor({
   season,
   className,
 }: GoalieWorkloadMonitorProps) {
-  const [gameLimit, setGameLimit] = useState("10");
+  const [gameLimit, setGameLimit] = useState<GameLimit>("10");
 
   const { data, isLoading, isFetching } = useGoalieWorkload(
     playerId,
@@ -81,18 +62,15 @@ export function GoalieWorkloadMonitor({
 
   if (isLoading) {
     return (
-      <Card className={cn(className)}>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            Workload Monitor
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-48 flex items-center justify-center text-muted-foreground">
-            Loading...
-          </div>
-        </CardContent>
-      </Card>
+      <Panel className={cn("space-y-5", className)}>
+        <Skeleton className="h-5 w-40" />
+        <div className="grid grid-cols-3 gap-3">
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+        </div>
+        <Skeleton className="h-64 w-full" />
+      </Panel>
     );
   }
 
@@ -100,69 +78,57 @@ export function GoalieWorkloadMonitor({
     return null;
   }
 
-  const trend = TREND_CONFIG[data.workloadTrend];
-  const TrendIcon = trend.icon;
+  const trend = TREND[data.workloadTrend];
 
   return (
-    <Card className={cn(className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="flex items-center gap-3">
-          <CardTitle className="text-base font-semibold">
-            Workload Monitor
-          </CardTitle>
-          <Badge variant="outline" className={trend.bg}>
-            <TrendIcon className={`h-3 w-3 mr-1 ${trend.color}`} />
-            {trend.label}
-          </Badge>
+    <Panel className={cn("space-y-6", className)}>
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="text-sm font-semibold">Recent workload</h3>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+            trend.className
+          )}
+        >
+          {data.workloadTrend === "heavy" && <AlertTriangle className="size-3" />}
+          {trend.label}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <WorkloadWindowCard window={data.last7Days} />
+        <WorkloadWindowCard window={data.last14Days} />
+        <WorkloadWindowCard window={data.last30Days} />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="text-sm font-semibold">Game by game</h4>
+          <p className="text-xs text-muted-foreground">
+            {isFetching
+              ? "Loading…"
+              : data.gamesIncluded < parseInt(gameLimit)
+                ? `All ${data.gamesIncluded} games this season`
+                : `Last ${gameLimit} games`}
+          </p>
         </div>
-      </CardHeader>
+        <SegmentedControl
+          aria-label="Games shown"
+          value={gameLimit}
+          onValueChange={setGameLimit}
+          options={GAME_LIMITS}
+        />
+      </div>
 
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-3 gap-4">
-          <WorkloadWindowCard window={data.last7Days} />
-          <WorkloadWindowCard window={data.last14Days} />
-          <WorkloadWindowCard window={data.last30Days} />
+      <ShotsAgainstChart data={chartData} />
+      <SavePercentageChart data={chartData} />
+
+      {data.backToBackSplits.backToBackGames > 0 && (
+        <div>
+          <h4 className="mb-2 text-sm font-semibold">Back-to-backs</h4>
+          <BackToBackSplitsDisplay splits={data.backToBackSplits} />
         </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h4 className="text-sm font-medium">Performance Trends</h4>
-            {isFetching && (
-              <span className="text-xs text-muted-foreground">(loading...)</span>
-            )}
-            {!isFetching && data.gamesIncluded < parseInt(gameLimit) && (
-              <span className="text-xs text-muted-foreground">
-                ({data.gamesIncluded} games available)
-              </span>
-            )}
-          </div>
-          <Select value={gameLimit} onValueChange={setGameLimit}>
-            <SelectTrigger className="w-40 h-8 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {GAME_LIMITS.map((w) => (
-                <SelectItem key={w.value} value={w.value}>
-                  {w.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <ShotsAgainstChart data={chartData} />
-        <SavePercentageChart data={chartData} />
-
-        {data.backToBackSplits.backToBackGames > 0 && (
-          <div>
-            <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Back-to-Back Performance
-            </h4>
-            <BackToBackSplitsDisplay splits={data.backToBackSplits} />
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </Panel>
   );
 }

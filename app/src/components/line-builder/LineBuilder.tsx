@@ -7,9 +7,9 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { RotateCcw, Users2, Shield } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Panel, SegmentedControl } from "@/components/layout";
 import { RosterPanel } from "@/components/line-builder/RosterPanel";
 import { LineSlot } from "@/components/line-builder/LineSlot";
 import { LineStatsPanel } from "@/components/line-builder/LineStatsPanel";
@@ -145,40 +145,34 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
       onDragEnd={handleDragEnd}
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 border rounded-lg p-4 bg-card h-150">
+        <Panel className="h-150 lg:col-span-1">
           <RosterPanel players={roster} usedPlayerIds={usedPlayerIds} lineType={lineType} />
-        </div>
+        </Panel>
 
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <Tabs
+            <SegmentedControl
+              aria-label="Line type"
               value={lineType}
-              onValueChange={(v) => setLineType(v as LineType)}
-            >
-              <TabsList>
-                <TabsTrigger value="forward" className="gap-2">
-                  <Users2 className="h-4 w-4" />
-                  Forward Line
-                </TabsTrigger>
-                <TabsTrigger value="defense" className="gap-2">
-                  <Shield className="h-4 w-4" />
-                  Defense Pair
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+              onValueChange={setLineType}
+              options={[
+                { value: "forward", label: "Forward line" },
+                { value: "defense", label: "Defense pair" },
+              ]}
+            />
 
             <Button variant="outline" size="sm" onClick={handleReset}>
-              <RotateCcw className="h-4 w-4 mr-2" />
+              <RotateCcw />
               Reset
             </Button>
           </div>
 
-          <div className="border rounded-lg p-6 bg-card">
+          <Panel>
             {lineType === "forward" ? (
               <div className="grid grid-cols-3 gap-4">
                 <LineSlot
                   id="forward-lw"
-                  label="Left Wing"
+                  label="Left wing"
                   player={lineState.forward.lw}
                   onRemove={() => handleRemovePlayer("forward", "lw")}
                 />
@@ -190,7 +184,7 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
                 />
                 <LineSlot
                   id="forward-rw"
-                  label="Right Wing"
+                  label="Right wing"
                   player={lineState.forward.rw}
                   onRemove={() => handleRemovePlayer("forward", "rw")}
                 />
@@ -199,19 +193,19 @@ export function LineBuilder({ roster, chemistryPairs }: LineBuilderProps) {
               <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
                 <LineSlot
                   id="defense-ld"
-                  label="Left Defense"
+                  label="Left defense"
                   player={lineState.defense.ld}
                   onRemove={() => handleRemovePlayer("defense", "ld")}
                 />
                 <LineSlot
                   id="defense-rd"
-                  label="Right Defense"
+                  label="Right defense"
                   player={lineState.defense.rd}
                   onRemove={() => handleRemovePlayer("defense", "rd")}
                 />
               </div>
             )}
-          </div>
+          </Panel>
 
           <LineStatsPanel
             pairStats={relevantPairs}

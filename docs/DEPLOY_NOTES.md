@@ -55,10 +55,15 @@ Nothing currently requires Pro.
 ## Caching
 
 Vercel's CDN honors `s-maxage`/`stale-while-revalidate` from API responses
-and strips them from the header sent to browsers, so clients see
-`Cache-Control: public, max-age=0`. Check caching with the `x-vercel-cache`
-response header (`HIT`/`STALE`/`MISS`). Errors and `/api/health` are
-`no-store`.
+and strips them from the header sent to browsers, which see only `max-age`
+(see `API_NOTES.md`). Check caching with the `x-vercel-cache` response
+header (`HIT`/`STALE`/`MISS`). Errors and `/api/health` are `no-store`.
+
+API responses carry the cache tag `api`. Cron jobs invalidate it through
+`invalidateByTag()` from `@vercel/functions`. A local backfill can't, so
+invalidate by hand after one: `vercel cache invalidate --tag api` (or
+dashboard → CDN → Caches → Purge, Invalidate, tag `api`). A new deployment
+starts with an empty cache anyway.
 
 ## Database migrations
 

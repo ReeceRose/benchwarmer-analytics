@@ -1,5 +1,5 @@
 export { TeamLogo } from "@/components/team-detail/TeamLogo";
-export { TeamHeader } from "@/components/team-detail/TeamHeader";
+export { TeamHero } from "@/components/team-detail/TeamHero";
 export { RosterTable } from "@/components/team-detail/RosterTable";
 export { GoalieRosterTable } from "@/components/team-detail/GoalieRosterTable";
 export { RosterSkeleton } from "@/components/team-detail/RosterSkeleton";

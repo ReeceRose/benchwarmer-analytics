@@ -11,3 +11,4 @@ export * from "@/types/standings";
 export * from "@/types/special-teams";
 export * from "@/types/leaderboard";
 export * from "@/types/deserve-to-win";
+export * from "@/types/game-live";

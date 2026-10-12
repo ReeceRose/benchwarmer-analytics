@@ -12,6 +12,7 @@ import {
 import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SpecialTeamsGame } from "@/types";
+import { EmptyState } from "@/components/layout";
 
 interface SpecialTeamsTrendChartProps {
   games: SpecialTeamsGame[];
@@ -52,7 +53,7 @@ function CustomTooltip({
   const pkDiffSign = pkDiff > 0 ? "+" : "";
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="font-semibold mb-2">
         Game {label}: vs {data.opponent}
       </div>
@@ -61,27 +62,27 @@ function CustomTooltip({
       </div>
       <div className="space-y-2 text-xs">
         <div>
-          <div className="font-medium text-success mb-1">Power Play</div>
+          <div className="font-medium text-success mb-1">Power play</div>
           <p>
             <span className="text-muted-foreground">Cumulative:</span>{" "}
-            <span className="font-mono">{data.cumulativePpGoals} G / {data.cumulativePpXGoals.toFixed(1)} xG</span>
+            <span className="tabular-nums">{data.cumulativePpGoals} G / {data.cumulativePpXGoals.toFixed(1)} xG</span>
           </p>
           <p>
             <span className="text-muted-foreground">Diff:</span>{" "}
-            <span className={`font-mono font-semibold ${ppDiff >= 0 ? "text-success" : "text-destructive"}`}>
+            <span className={`tabular-nums font-semibold ${ppDiff >= 0 ? "text-success" : "text-destructive"}`}>
               {ppDiffSign}{ppDiff.toFixed(1)}
             </span>
           </p>
         </div>
         <div>
-          <div className="font-medium text-destructive mb-1">Penalty Kill</div>
+          <div className="font-medium text-destructive mb-1">Penalty kill</div>
           <p>
             <span className="text-muted-foreground">Cumulative:</span>{" "}
-            <span className="font-mono">{data.cumulativePkGoalsAgainst} GA / {data.cumulativePkXGoalsAgainst.toFixed(1)} xGA</span>
+            <span className="tabular-nums">{data.cumulativePkGoalsAgainst} GA / {data.cumulativePkXGoalsAgainst.toFixed(1)} xGA</span>
           </p>
           <p>
             <span className="text-muted-foreground">Diff:</span>{" "}
-            <span className={`font-mono font-semibold ${pkDiff <= 0 ? "text-success" : "text-destructive"}`}>
+            <span className={`tabular-nums font-semibold ${pkDiff <= 0 ? "text-success" : "text-destructive"}`}>
               {pkDiffSign}{pkDiff.toFixed(1)}
             </span>
             <span className="text-muted-foreground ml-1">(lower is better)</span>
@@ -117,7 +118,7 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
     return (
       <div>
         <h3 className="text-sm font-semibold mb-3">
-          Special Teams Performance Through Season
+          Special teams performance through season
         </h3>
         <Skeleton className="h-64 w-full" />
       </div>
@@ -126,9 +127,10 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
 
   if (chartData.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No game-by-game special teams data available.
-      </div>
+      <EmptyState
+        className="border-0 py-8"
+        title="No game-by-game special teams data yet"
+      />
     );
   }
 
@@ -145,7 +147,7 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3">
-        Cumulative Goals vs Expected Through Season
+        Cumulative goals vs expected through season
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart
@@ -186,8 +188,8 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
           <Line
             type="monotone"
             dataKey="cumulativePpGoals"
-            name="PP Goals"
-            stroke={SEMANTIC_COLOURS.success}
+            name="PP goals"
+            stroke={SEMANTIC_COLOURS.primary}
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4 }}
@@ -196,7 +198,7 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
             type="monotone"
             dataKey="cumulativePpXGoals"
             name="PP xG"
-            stroke={SEMANTIC_COLOURS.success}
+            stroke={SEMANTIC_COLOURS.primary}
             strokeWidth={2}
             strokeDasharray="5 5"
             dot={false}
@@ -205,8 +207,8 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
           <Line
             type="monotone"
             dataKey="cumulativePkGoalsAgainst"
-            name="PK Goals Against"
-            stroke={SEMANTIC_COLOURS.danger}
+            name="PK goals against"
+            stroke="var(--chart-5)"
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4 }}
@@ -215,7 +217,7 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
             type="monotone"
             dataKey="cumulativePkXGoalsAgainst"
             name="PK xGA"
-            stroke={SEMANTIC_COLOURS.danger}
+            stroke="var(--chart-5)"
             strokeWidth={2}
             strokeDasharray="5 5"
             dot={false}

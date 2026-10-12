@@ -139,7 +139,7 @@ function CustomTooltip({
   );
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="font-semibold mb-2 flex items-center justify-between gap-4">
         <span>{event.teamCode}</span>
         <span className="text-muted-foreground font-normal">
@@ -163,7 +163,7 @@ function CustomTooltip({
 
         <div className="flex items-center justify-between gap-4">
           <span className="text-muted-foreground">xG</span>
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {(event.xGoal * 100).toFixed(1)}%
           </span>
         </div>
@@ -191,12 +191,12 @@ function CustomTooltip({
         {(event.shotRebound || event.shotRush) && (
           <div className="pt-1 flex gap-2">
             {event.shotRebound && (
-              <span className="bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
                 Rebound
               </span>
             )}
             {event.shotRush && (
-              <span className="bg-cold/20 text-cold px-1.5 py-0.5 rounded font-medium">
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
                 Rush
               </span>
             )}
@@ -273,7 +273,7 @@ export function ShotGoalTimelineChart({ shotsData }: ShotGoalTimelineChartProps)
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Shot & Goal Timeline</CardTitle>
+          <CardTitle className="text-base">Shot & goal timeline</CardTitle>
           <CardDescription>No shot data available for this game</CardDescription>
         </CardHeader>
       </Card>
@@ -285,7 +285,7 @@ export function ShotGoalTimelineChart({ shotsData }: ShotGoalTimelineChartProps)
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Shot & Goal Timeline</CardTitle>
+        <CardTitle className="text-base">Shot & goal timeline</CardTitle>
         <CardDescription>
           Diamonds indicate goals. Shot size scales with xG. Final:{" "}
           {shotsData.awayTeamCode} {awayGoals} - {homeGoals}{" "}
@@ -335,7 +335,7 @@ export function ShotGoalTimelineChart({ shotsData }: ShotGoalTimelineChartProps)
 
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.25 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.25 }}
             />
 
             <ReferenceLine
@@ -388,7 +388,7 @@ export function ShotGoalTimelineChart({ shotsData }: ShotGoalTimelineChartProps)
           <div className="flex items-center gap-2">
             <span
               className="inline-block h-2 w-2 rotate-45"
-              style={{ backgroundColor: "white", border: "1px solid #94a3b8" }}
+              style={{ backgroundColor: "white", border: "1px solid var(--muted-foreground)" }}
             />
             <span>Goal (diamond)</span>
           </div>
@@ -406,7 +406,7 @@ export function ShotGoalTimelineChartSkeleton() {
         <Skeleton className="h-4 w-80 mt-1" />
       </CardHeader>
       <CardContent>
-        <Skeleton className="w-full h-56 rounded-lg" />
+        <Skeleton className="w-full h-56 rounded-xl" />
         <div className="mt-3 flex flex-wrap items-center justify-center gap-6">
           <Skeleton className="h-3 w-20" />
           <Skeleton className="h-3 w-20" />

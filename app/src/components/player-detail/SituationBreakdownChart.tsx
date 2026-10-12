@@ -72,7 +72,7 @@ export function SituationBreakdownChart({
   return (
     <Card className="mt-6">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Situation Breakdown</CardTitle>
+        <CardTitle className="text-base">Situation breakdown</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={280}>
@@ -96,25 +96,25 @@ export function SituationBreakdownChart({
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
             <Tooltip
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.25 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.25 }}
               content={({ active, payload, label }) => {
                 const row = payload?.[0]?.payload as Row | undefined;
                 if (!active || !row) return null;
                 return (
-                  <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+                  <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
                     <p className="font-semibold mb-2">{label}</p>
                     <div className="space-y-1 text-xs">
                       <div className="flex justify-between gap-4">
                         <span className="text-muted-foreground">Goals/60</span>
-                        <span className="font-mono font-semibold">{row.goalsPer60.toFixed(2)}</span>
+                        <span className="tabular-nums font-semibold">{row.goalsPer60.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between gap-4">
                         <span className="text-muted-foreground">Assists/60</span>
-                        <span className="font-mono font-semibold">{row.assistsPer60.toFixed(2)}</span>
+                        <span className="tabular-nums font-semibold">{row.assistsPer60.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between gap-4">
                         <span className="text-muted-foreground">Points/60</span>
-                        <span className="font-mono font-semibold">{row.pointsPer60.toFixed(2)}</span>
+                        <span className="tabular-nums font-semibold">{row.pointsPer60.toFixed(2)}</span>
                       </div>  
                       <div className="flex justify-between gap-4 pt-2 border-t">
                         <span className="text-muted-foreground">TOI</span>
@@ -129,19 +129,19 @@ export function SituationBreakdownChart({
               dataKey="goalsPer60"
               name="Goals/60"
               fill={CHART_COLOURS[2]}
-              radius={[3, 3, 0, 0]}
+              radius={[6, 6, 0, 0]}
             />
             <Bar
               dataKey="assistsPer60"
               name="Assists/60"
               fill={CHART_COLOURS[3]}
-              radius={[3, 3, 0, 0]}
+              radius={[6, 6, 0, 0]}
             />
             <Bar
               dataKey="pointsPer60"
               name="Points/60"
               fill={CHART_COLOURS[0]}
-              radius={[3, 3, 0, 0]}
+              radius={[6, 6, 0, 0]}
             />
           </BarChart>
         </ResponsiveContainer>

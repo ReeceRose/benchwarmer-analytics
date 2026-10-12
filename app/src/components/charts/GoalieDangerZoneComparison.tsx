@@ -84,7 +84,7 @@ function RadarChartTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <p className="font-semibold mb-2">{data.zone}</p>
       <div className="space-y-1 text-xs">
         {payload.map((entry) => (
@@ -96,7 +96,7 @@ function RadarChartTooltip({
               />
               {entry.name}:
             </span>
-            <span className="font-mono">
+            <span className="tabular-nums">
               {data[`${entry.dataKey}Raw`] || "-"}
             </span>
           </div>
@@ -109,7 +109,7 @@ function RadarChartTooltip({
 export function GoalieDangerZoneComparison({
   players,
   leagueAverages,
-  title = "Danger Zone Comparison",
+  title = "Danger zone comparison",
   className,
 }: GoalieDangerZoneComparisonProps) {
   const validPlayers = players.filter((p) => p.stats != null);
@@ -150,15 +150,15 @@ export function GoalieDangerZoneComparison({
   // Build radar data with all players
   const baselines = leagueAverages ?? DEFAULT_LEAGUE_AVERAGES;
   const zones = [
-    { key: "low", label: "Low Danger", leagueAvg: baselines.lowDanger },
+    { key: "low", label: "Low danger", leagueAvg: baselines.lowDanger },
     {
       key: "med",
-      label: "Medium Danger",
+      label: "Medium danger",
       leagueAvg: baselines.mediumDanger,
     },
     {
       key: "high",
-      label: "High Danger",
+      label: "High danger",
       leagueAvg: baselines.highDanger,
     },
   ];
@@ -189,7 +189,7 @@ export function GoalieDangerZoneComparison({
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -216,10 +216,10 @@ export function GoalieDangerZoneComparison({
               axisLine={false}
             />
             <Radar
-              name="League Avg"
+              name="League avg"
               dataKey="league"
-              stroke="#94a3b8"
-              fill="#94a3b8"
+              stroke="var(--muted-foreground)"
+              fill="var(--muted-foreground)"
               fillOpacity={0.1}
               strokeWidth={1}
               strokeDasharray="5 5"
@@ -275,26 +275,26 @@ export function GoalieDangerZoneComparison({
                     />
                     {player.name.split(" ").pop()}
                   </td>
-                  <td className="text-right font-mono">
+                  <td className="text-right tabular-nums">
                     {formatPct(player.stats.lowSvPct)}
                   </td>
-                  <td className="text-right font-mono">
+                  <td className="text-right tabular-nums">
                     {formatPct(player.stats.medSvPct)}
                   </td>
-                  <td className="text-right font-mono">
+                  <td className="text-right tabular-nums">
                     {formatPct(player.stats.highSvPct)}
                   </td>
                 </tr>
               ))}
               <tr className="text-muted-foreground">
-                <td className="py-1.5">League Avg</td>
-                <td className="text-right font-mono">
+                <td className="py-1.5">League avg</td>
+                <td className="text-right tabular-nums">
                   {formatPct(baselines.lowDanger)}
                 </td>
-                <td className="text-right font-mono">
+                <td className="text-right tabular-nums">
                   {formatPct(baselines.mediumDanger)}
                 </td>
-                <td className="text-right font-mono">
+                <td className="text-right tabular-nums">
                   {formatPct(baselines.highDanger)}
                 </td>
               </tr>

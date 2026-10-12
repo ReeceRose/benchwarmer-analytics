@@ -99,9 +99,9 @@ function StatTooltip({
 
   const data = payload[0].payload;
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg px-3 py-2 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 px-3 py-2 text-sm">
       <span className="font-medium">{data.name}: </span>
-      <span className="font-mono">{statDef.format(data.value)}</span>
+      <span className="tabular-nums">{statDef.format(data.value)}</span>
     </div>
   );
 }
@@ -187,7 +187,7 @@ function StatMiniChart({
             <ReferenceLine y={0} stroke="var(--border)" />
           )}
           <Tooltip content={<StatTooltip statDef={statDef} />} />
-          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
@@ -205,7 +205,7 @@ function StatMiniChart({
             style={{
               color: d.value === bestValue ? undefined : CHART_AXIS_COLOURS.tick,
             }}
-            className={`font-mono ${d.value === bestValue ? "text-foreground font-semibold" : ""}`}
+            className={`tabular-nums ${d.value === bestValue ? "text-foreground font-semibold" : ""}`}
           >
             {statDef.format(d.value as number)}
           </span>
@@ -217,7 +217,7 @@ function StatMiniChart({
 
 export function GoalieComparison({
   players,
-  title = "Goalie Comparison",
+  title = "Goalie comparison",
   className,
 }: GoalieComparisonProps) {
   const validPlayers = players.filter((p) => p.stats != null);
@@ -226,7 +226,7 @@ export function GoalieComparison({
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle className="text-lg">{title}</CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -240,7 +240,7 @@ export function GoalieComparison({
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex justify-center gap-6 mb-4">

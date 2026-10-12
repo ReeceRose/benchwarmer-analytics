@@ -59,7 +59,7 @@ function CustomTooltip({
   const isOverperforming = data.diff > 0;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <Avatar className="h-6 w-6">
           <AvatarImage
@@ -76,15 +76,15 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Goals:</span>{" "}
-          <span className="font-mono font-semibold">{data.goals}</span>
+          <span className="tabular-nums font-semibold">{data.goals}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Expected Goals:</span>{" "}
-          <span className="font-mono">{data.expectedGoals.toFixed(1)}</span>
+          <span className="tabular-nums">{data.expectedGoals.toFixed(1)}</span>
         </p>
         <p className={isOverperforming ? "text-success" : "text-warning"}>
           <span className="text-muted-foreground">G - xG:</span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {isOverperforming ? "+" : ""}
             {data.diff.toFixed(1)}
           </span>
@@ -94,7 +94,7 @@ function CustomTooltip({
         </p>
         <p>
           <span className="text-muted-foreground">Total Points:</span>{" "}
-          <span className="font-mono">{data.points}</span>
+          <span className="tabular-nums">{data.points}</span>
         </p>
       </div>
     </div>
@@ -132,8 +132,8 @@ function CustomDot(props: {
             borderRadius: "50%",
             objectFit: "cover",
             border: isSelected
-              ? "3px solid hsl(var(--primary))"
-              : `2px solid ${isOverperforming ? "hsl(142, 76%, 36%)" : "hsl(45, 93%, 47%)"}`,
+              ? "3px solid var(--primary)"
+              : `2px solid ${isOverperforming ? "var(--chart-3)" : "var(--chart-4)"}`,
             transition: "border 0.15s",
           }}
         />
@@ -154,7 +154,7 @@ function SelectionPanel({
   const isOverperforming = data.diff > 0;
 
   return (
-    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+    <div className="mt-3 animate-in rounded-xl border bg-card p-3 duration-200 slide-in-from-bottom-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <Avatar className="h-10 w-10 shrink-0">
@@ -176,14 +176,14 @@ function SelectionPanel({
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">Goals:</span>{" "}
-                <span className="font-mono">{data.goals}</span>
+                <span className="tabular-nums">{data.goals}</span>
               </span>
               <span>
                 <span className="text-xs">xG:</span>{" "}
-                <span className="font-mono">{data.expectedGoals.toFixed(1)}</span>
+                <span className="tabular-nums">{data.expectedGoals.toFixed(1)}</span>
               </span>
               <span
-                className={`font-mono font-semibold ${isOverperforming ? "text-success" : "text-warning"}`}
+                className={`tabular-nums font-semibold ${isOverperforming ? "text-success" : "text-warning"}`}
               >
                 {isOverperforming ? "+" : ""}
                 {data.diff.toFixed(1)}
@@ -246,8 +246,8 @@ export function GoalsVsExpectedChart({ rookies }: GoalsVsExpectedChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Goals vs Expected</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Goals vs expected</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -260,7 +260,7 @@ export function GoalsVsExpectedChart({ rookies }: GoalsVsExpectedChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Goals vs Expected Goals</CardTitle>
+        <CardTitle className="text-base">Goals vs expected goals</CardTitle>
         <CardDescription>
           Rookies above the line are outperforming expectations
         </CardDescription>
@@ -297,7 +297,7 @@ export function GoalsVsExpectedChart({ rookies }: GoalsVsExpectedChartProps) {
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Actual Goals"
+                value="Actual goals"
                 angle={-90}
                 position="insideLeft"
                 offset={10}
@@ -340,7 +340,7 @@ export function GoalsVsExpectedChart({ rookies }: GoalsVsExpectedChartProps) {
           <div className="flex items-center gap-2">
             <span
               className="w-3 h-3 rounded-full border-2"
-              style={{ borderColor: "hsl(142, 76%, 36%)" }}
+              style={{ borderColor: "var(--chart-3)" }}
             />
             <span className="text-muted-foreground">
               Above line = Outperforming (hot)
@@ -349,7 +349,7 @@ export function GoalsVsExpectedChart({ rookies }: GoalsVsExpectedChartProps) {
           <div className="flex items-center gap-2">
             <span
               className="w-3 h-3 rounded-full border-2"
-              style={{ borderColor: "hsl(45, 93%, 47%)" }}
+              style={{ borderColor: "var(--chart-4)" }}
             />
             <span className="text-muted-foreground">
               Below line = Due for more goals

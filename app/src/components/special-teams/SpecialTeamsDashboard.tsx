@@ -1,5 +1,4 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Calendar } from "lucide-react";
 import {
   useTeamSpecialTeams,
   useTeamSeasons,
@@ -22,6 +21,7 @@ import {
   GoalsVsXGChart,
   SpecialTeamsTrendChart,
 } from "@/components/special-teams/charts";
+import { EmptyState } from "@/components/layout";
 
 interface SpecialTeamsDashboardProps {
   abbrev: string;
@@ -91,14 +91,19 @@ export function SpecialTeamsDashboard({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">Special teams</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Power play and penalty kill, regular season.
+          </p>
+        </div>
         <Select
           value={effectiveSeason?.toString() ?? ""}
           onValueChange={handleSeasonChange}
         >
-          <SelectTrigger className="w-45">
-            <SelectValue placeholder="Select season" />
+          <SelectTrigger className="w-32" aria-label="Season">
+            <SelectValue placeholder="Season" />
           </SelectTrigger>
           <SelectContent>
             {seasons?.seasons.map((s) => (
@@ -108,12 +113,6 @@ export function SpecialTeamsDashboard({
             ))}
           </SelectContent>
         </Select>
-        {effectiveSeason && (
-          <span className="text-sm text-muted-foreground">
-            Showing {effectiveSeason}-
-            {(effectiveSeason + 1).toString().slice(-2)} regular season
-          </span>
-        )}
       </div>
 
       {specialTeams && (
@@ -125,7 +124,7 @@ export function SpecialTeamsDashboard({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Performance Analysis</CardTitle>
+              <CardTitle className="text-base">Performance analysis</CardTitle>
             </CardHeader>
             <CardContent className="space-y-8">
               <GoalsVsXGChart
@@ -144,12 +143,10 @@ export function SpecialTeamsDashboard({
       )}
 
       {!specialTeams && !isLoading && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg">No special teams data available.</p>
-          <p className="text-sm mt-2">
-            Try selecting a different season or run data ingestion.
-          </p>
-        </div>
+        <EmptyState
+          title="No special teams data for this season"
+          hint="Try another season."
+        />
       )}
     </div>
   );

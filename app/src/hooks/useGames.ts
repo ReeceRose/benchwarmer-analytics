@@ -1,43 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
-import { getYesterdaysGames, getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getGameShots, getLiveScores, getGamePreview, getGoalieRecentForm, getDeserveToWin } from "@/lib/api";
-import type { GamesResponse, GameSummary } from "@/types";
+import { queryOptions, useQuery } from "@tanstack/react-query";
+import { getTodaysGames, getGamesByDate, getGame, getGameBoxscore, getGameShots, getGameLive, getGamePreview, getGoalieRecentForm, getDeserveToWin } from "@/lib/api";
+import type { GameBoxscoreResponse, GamesResponse, GameSummary, LiveGameResponse } from "@/types";
 
-export function useYesterdaysGames() {
-  return useQuery({
-    queryKey: ["games", "yesterday"],
-    queryFn: getYesterdaysGames,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+// LIVE/CRIT are in play; OVER has ended but isn't official yet, so stats can still be corrected.
+function isGameInProgress(state: string | null | undefined): boolean {
+  return state === "LIVE" || state === "CRIT" || state === "OVER";
 }
+
+export const todaysGamesQueryOptions = queryOptions({
+  queryKey: ["games", "today"],
+  queryFn: getTodaysGames,
+  staleTime: 1000 * 60 * 1, // 1 minute - frequent for live games
+  refetchInterval: (query) => {
+    const data = query.state.data as GamesResponse | undefined;
+    const hasLiveGames = data?.games.some(g => g.gameState === "LIVE" || g.gameState === "CRIT");
+    // If live games, refresh every 30s. Otherwise refresh every 2 minutes
+    // to catch games that transition from FUT/PRE to LIVE
+    const hasPendingGames = data?.games.some(g => g.gameState === "FUT" || g.gameState === "PRE");
+    return hasLiveGames ? 30000 : hasPendingGames ? 120000 : false;
+  },
+});
 
 export function useTodaysGames() {
-  return useQuery({
-    queryKey: ["games", "today"],
-    queryFn: getTodaysGames,
-    staleTime: 1000 * 60 * 1, // 1 minute - frequent for live games
-    refetchInterval: (query) => {
-      const data = query.state.data as GamesResponse | undefined;
-      const hasLiveGames = data?.games.some(g => g.gameState === "LIVE" || g.gameState === "CRIT");
-      // If live games, refresh every 30s. Otherwise refresh every 2 minutes
-      // to catch games that transition from FUT/PRE to LIVE
-      const hasPendingGames = data?.games.some(g => g.gameState === "FUT" || g.gameState === "PRE");
-      return hasLiveGames ? 30000 : hasPendingGames ? 120000 : false;
-    },
-  });
-}
-
-export function useLiveScores() {
-  return useQuery({
-    queryKey: ["games", "live"],
-    queryFn: getLiveScores,
-    staleTime: 1000 * 30, // 30 seconds
-    refetchInterval: (query) => {
-      // Auto-refresh every 30 seconds if there are live games
-      const data = query.state.data as GamesResponse | undefined;
-      const hasLiveGames = data?.games.some(g => g.gameState === "LIVE" || g.gameState === "CRIT");
-      return hasLiveGames ? 30000 : 60000; // 30s if live, 1min otherwise
-    },
-  });
+  return useQuery(todaysGamesQueryOptions);
 }
 
 export function useGamesByDate(date: string | undefined) {
@@ -69,7 +54,11 @@ export function useGameBoxscore(gameId: string | undefined) {
     queryKey: ["games", gameId, "boxscore"],
     queryFn: () => getGameBoxscore(gameId!),
     enabled: !!gameId,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 15,
+    refetchInterval: (query) => {
+      const state = (query.state.data as GameBoxscoreResponse | undefined)?.gameState;
+      return isGameInProgress(state) ? 30000 : false;
+    },
   });
 }
 
@@ -106,5 +95,20 @@ export function useDeserveToWin(gameId: string | undefined) {
     queryFn: () => getDeserveToWin(gameId!),
     enabled: !!gameId,
     staleTime: 1000 * 60 * 30, // 30 minutes - static for completed games
+  });
+}
+
+// Game centre feed (play-by-play, shifts, right rail). Polls while the game is live.
+export function useGameLive(gameId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["games", gameId, "live"],
+    queryFn: () => getGameLive(gameId!),
+    enabled: !!gameId && enabled,
+    staleTime: 1000 * 15,
+    refetchInterval: (query) => {
+      const state = (query.state.data as LiveGameResponse | undefined)?.meta.gameState;
+      if (state === "OVER") return 60000;
+      return isGameInProgress(state) ? 20000 : false;
+    },
   });
 }

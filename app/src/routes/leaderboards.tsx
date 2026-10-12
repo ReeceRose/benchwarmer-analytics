@@ -1,11 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
-import { Trophy, Filter, BarChart3, TableIcon } from "lucide-react";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
+import * as z from "zod/mini";
 import { useLeaderboard, useSeasons, usePageTitle } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -20,8 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState, SortableTableHeader } from "@/components/shared";
+import { ErrorState, SortableTableHeader, TableSkeleton } from "@/components/shared";
+import { PageHeader, SegmentedControl, ViewToggle } from "@/components/layout";
 import { LeaderboardRow } from "@/components/leaderboard";
 import {
   SkaterLuckChart,
@@ -61,15 +59,17 @@ const categorySchema = z.enum([
 ]);
 
 const searchSchema = z.object({
-  category: categorySchema.optional(),
-  season: z.number().optional(),
-  situation: z.string().optional(),
-  sortDir: z.enum(["asc", "desc"]).optional(),
-  view: z.enum(["charts", "table"]).optional(),
+  category: z.optional(categorySchema),
+  season: z.optional(z.number()),
+  situation: z.optional(z.string()),
+  sortDir: z.optional(z.enum(["asc", "desc"])),
+  view: z.optional(z.enum(["charts", "table"])),
 });
 
 export const Route = createFileRoute("/leaderboards")({
   component: LeaderboardsPage,
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery(seasonsQueryOptions),
   validateSearch: searchSchema,
 });
 
@@ -159,96 +159,61 @@ function LeaderboardsPage() {
   };
 
   return (
-    <div className="container py-8">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <Trophy className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">League Leaders</h1>
-        </div>
-        <p className="text-muted-foreground max-w-2xl">
-          Top performers across key statistical categories. Click column headers
-          to sort.
-        </p>
-      </div>
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Leaderboards"
+        description="The league's best by any stat. Sort by any column."
+      />
 
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <Tabs
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl
+            aria-label="Player type"
             value={isGoalieView ? "goalies" : "skaters"}
             onValueChange={handlePlayerTypeChange}
+            options={[
+              { value: "skaters", label: "Skaters" },
+              { value: "goalies", label: "Goalies" },
+            ]}
+          />
+          <Select
+            value={String(effectiveSeason ?? "")}
+            onValueChange={(v) => updateSearch({ season: parseInt(v) })}
           >
-            <TabsList>
-              <TabsTrigger value="skaters">Skaters</TabsTrigger>
-              <TabsTrigger value="goalies">Goalies</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select
-              value={String(effectiveSeason ?? "")}
-              onValueChange={(v) => updateSearch({ season: parseInt(v) })}
-            >
-              <SelectTrigger className="w-36 h-9">
-                <SelectValue placeholder="Season" />
-              </SelectTrigger>
-              <SelectContent>
-                {seasonsData?.seasons?.map((s) => (
-                  <SelectItem key={s.year} value={String(s.year)}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+            <SelectTrigger className="w-32" aria-label="Season">
+              <SelectValue placeholder="Season" />
+            </SelectTrigger>
+            <SelectContent>
+              {seasonsData?.seasons?.map((s) => (
+                <SelectItem key={s.year} value={String(s.year)}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {!isGoalieView && currentView === "table" && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Situation:</span>
-              <Select
-                value={effectiveSituation}
-                onValueChange={(v) => updateSearch({ situation: v })}
-              >
-                <SelectTrigger className="w-28 h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="5on5">5v5</SelectItem>
-                  <SelectItem value="5on4">PP</SelectItem>
-                  <SelectItem value="4on5">PK</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <SegmentedControl
+              aria-label="Game situation"
+              value={effectiveSituation}
+              onValueChange={(situation) => updateSearch({ situation })}
+              options={[
+                { value: "all", label: "All" },
+                { value: "5on5", label: "5v5" },
+                { value: "5on4", label: "Power play" },
+                { value: "4on5", label: "Penalty kill" },
+              ]}
+            />
           )}
-
-          {isGoalieView && currentView === "table" && (
-            <span className="text-sm text-muted-foreground italic">
-              Goalie stats shown for all situations
+          {isGoalieView && (
+            <span className="text-sm text-muted-foreground">
+              Goalie stats cover all situations.
             </span>
           )}
         </div>
-
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          <Button
-            variant={currentView === "charts" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateSearch({ view: "charts" })}
-            className="gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Charts
-          </Button>
-          <Button
-            variant={currentView === "table" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateSearch({ view: "table" })}
-            className="gap-2"
-          >
-            <TableIcon className="h-4 w-4" />
-            Table
-          </Button>
-        </div>
+        <ViewToggle
+          value={currentView}
+          onValueChange={(view) => updateSearch({ view })}
+        />
       </div>
 
       {error && (
@@ -260,15 +225,7 @@ function LeaderboardsPage() {
       )}
 
       {isLoading ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <TableSkeleton rows={12} columns={12} />
       ) : sortedEntries.length > 0 ? (
         currentView === "charts" ? (
           <ChartsView
@@ -288,15 +245,9 @@ function LeaderboardsPage() {
           />
         )
       ) : (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Trophy className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium">No data found</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Try selecting a different season or situation.
-            </p>
-          </CardContent>
-        </Card>
+        <p className="py-12 text-center text-muted-foreground">
+          No qualified players for this season and situation. Try another.
+        </p>
       )}
     </div>
   );

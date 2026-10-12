@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Trophy, Info, Filter, BarChart3, TableIcon } from "lucide-react";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
 import { usePowerRankings, useSeasons, usePageTitle } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,9 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { ErrorState, SortableTableHeader } from "@/components/shared";
+import { ErrorState, SortableTableHeader, TableSkeleton } from "@/components/shared";
+import { MetricGuide, PageHeader, ViewToggle } from "@/components/layout";
 import { TeamRow, RegressionCard } from "@/components/power-rankings";
 import {
   TeamRankingBars,
@@ -27,7 +26,8 @@ import {
   PointsExpectedChart,
   QualityVsQuantityChart,
 } from "@/components/power-rankings/charts";
-import { z } from "zod";
+import * as z from "zod/mini";
+import type { TeamPowerRanking } from "@/types";
 
 const sortKeySchema = z.enum([
   "gamesPlayed",
@@ -59,14 +59,16 @@ const sortKeySchema = z.enum([
 type SortKey = z.infer<typeof sortKeySchema>;
 
 const searchSchema = z.object({
-  season: z.number().optional(),
-  sortKey: sortKeySchema.optional(),
-  sortDir: z.enum(["asc", "desc"]).optional(),
-  view: z.enum(["charts", "table"]).optional(),
+  season: z.optional(z.number()),
+  sortKey: z.optional(sortKeySchema),
+  sortDir: z.optional(z.enum(["asc", "desc"])),
+  view: z.optional(z.enum(["charts", "table"])),
 });
 
 export const Route = createFileRoute("/power-rankings")({
   component: PowerRankingsPage,
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery(seasonsQueryOptions),
   validateSearch: searchSchema,
 });
 
@@ -153,91 +155,52 @@ function PowerRankingsPage() {
   };
 
   return (
-    <div className="container py-8">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <Trophy className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">Power Rankings</h1>
-        </div>
-        <p className="text-muted-foreground max-w-2xl">
-          League-wide team rankings combining traditional standings with
-          advanced analytics. Identify teams that are over or underperforming
-          their underlying metrics.
-        </p>
-      </div>
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Power rankings"
+        description="Standings and underlying numbers side by side, to show which teams are better or worse than their record."
+        actions={
+          <>
+            <Select
+              value={String(effectiveSeason ?? "")}
+              onValueChange={(v) => updateSearch({ season: parseInt(v) })}
+            >
+              <SelectTrigger className="w-32" aria-label="Season">
+                <SelectValue placeholder="Season" />
+              </SelectTrigger>
+              <SelectContent>
+                {seasonsData?.seasons?.map((s) => (
+                  <SelectItem key={s.year} value={String(s.year)}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <ViewToggle
+              value={currentView}
+              onValueChange={(view) => updateSearch({ view })}
+            />
+          </>
+        }
+      />
 
-      <Card className="mb-6 py-3 px-4">
-        <div className="flex items-start gap-3">
-          <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Key Metrics: </span>
-            <strong>Pts%</strong> (points earned / possible),{" "}
-            <strong>xGF/xGA</strong> (expected goals for/against),{" "}
-            <strong>xG±</strong> (expected goal differential),{" "}
-            <strong>xPts</strong> (expected points), <strong>xG%</strong>{" "}
-            (expected goals share), <strong>CF%/FF%</strong> (shot attempt
-            share), <strong>Sh%/Sv%</strong> (shooting/save percentage),{" "}
-            <strong>PDO</strong> (Sh% + Sv% - values near 100 are sustainable),{" "}
-            <strong>Pts±</strong> (actual - expected points).
-          </div>
-        </div>
-      </Card>
-
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={String(effectiveSeason ?? "")}
-            onValueChange={(v) => updateSearch({ season: parseInt(v) })}
-          >
-            <SelectTrigger className="w-36 h-9">
-              <SelectValue placeholder="Season" />
-            </SelectTrigger>
-            <SelectContent>
-              {seasonsData?.seasons?.map((s) => (
-                <SelectItem key={s.year} value={String(s.year)}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          <Button
-            variant={currentView === "charts" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateSearch({ view: "charts" })}
-            className="gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Charts
-          </Button>
-          <Button
-            variant={currentView === "table" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateSearch({ view: "table" })}
-            className="gap-2"
-          >
-            <TableIcon className="h-4 w-4" />
-            Table
-          </Button>
-        </div>
-      </div>
+      <MetricGuide
+        metrics={["Pts%", "xG±", "xPts", "xG%", "CF%", "FF%", "Sh%", "Sv%", "PDO", "Pts±", "PP%", "PK%"]}
+      />
 
       {isCurrentSeason &&
         data?.insights &&
         (data.insights.likelyToImprove.length > 0 ||
           data.insights.likelyToRegress.length > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <RegressionCard
-              title="Likely to Improve"
+              title="Likely to improve"
               icon="up"
               candidates={data.insights.likelyToImprove}
               season={effectiveSeason}
             />
             <RegressionCard
-              title="Likely to Regress"
+              title="Likely to regress"
               icon="down"
               candidates={data.insights.likelyToRegress}
               season={effectiveSeason}
@@ -254,15 +217,7 @@ function PowerRankingsPage() {
       )}
 
       {isLoading ? (
-        <Card>
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <TableSkeleton rows={10} columns={12} />
       ) : data?.teams && data.teams.length > 0 ? (
         currentView === "charts" ? (
           <ChartsView teams={data.teams} season={effectiveSeason} />
@@ -276,22 +231,15 @@ function PowerRankingsPage() {
           />
         )
       ) : (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Trophy className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium">No data available</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Try selecting a different season.
-            </p>
-          </CardContent>
-        </Card>
+        <p className="py-12 text-center text-muted-foreground">
+          No rankings for this season yet. Try another season.
+        </p>
       )}
     </div>
   );
 }
 
 // Charts View Component
-import type { TeamPowerRanking } from "@/types";
 
 function ChartsView({
   teams,
@@ -337,7 +285,7 @@ function TableView({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">#</TableHead>
-                  <TableHead className="w-32">Team</TableHead>
+                  <TableHead className="sticky left-0 z-10 w-52 bg-card">Team</TableHead>
                   <SortableTableHeader
                     label="GP"
                     tooltip="Games played"
@@ -608,21 +556,21 @@ function TableView({
           </div>
         </CardContent>
       </Card>
-      <div className="flex items-center gap-6 mt-4 text-sm">
+      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded bg-success" />
+          <span className="size-2.5 rounded-[3px] bg-success" />
           <span className="text-muted-foreground">
-            Strong / Underperforming (room to improve)
+            Strong, or underperforming (room to improve)
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded bg-muted-foreground" />
-          <span className="text-muted-foreground">Average / Sustainable</span>
+          <span className="size-2.5 rounded-[3px] bg-muted-foreground" />
+          <span className="text-muted-foreground">Average, or sustainable</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded bg-error" />
+          <span className="size-2.5 rounded-[3px] bg-error" />
           <span className="text-muted-foreground">
-            Weak / Overperforming (likely to regress)
+            Weak, or overperforming (likely to regress)
           </span>
         </div>
       </div>

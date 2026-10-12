@@ -4,6 +4,7 @@ import { upsert, type Queryable, type UpsertRow } from "@/server/ingestion/db";
 import { buildMapper } from "@/server/ingestion/map";
 import { normalizeTeam } from "@/server/ingestion/normalize";
 import { teamExpectedHeaders, teamFields } from "@/server/ingestion/records";
+import { TEAM_NAMES } from "@/lib/team-names";
 
 // Division/conference by team (current alignment, historical teams at their
 // last alignment).
@@ -79,7 +80,8 @@ export async function importTeams(db: Queryable, csv: string, isPlayoffs: boolea
       const [division, conference] = TEAM_DIVISIONS[abbreviation] ?? [null, null];
       teamRows.set(abbreviation, {
         abbreviation,
-        name: record.name,
+        // On team rows MoneyPuck's `name` is just the abbreviation.
+        name: TEAM_NAMES[abbreviation] ?? record.name,
         division,
         conference,
         isActive: ACTIVE_TEAMS.has(abbreviation),

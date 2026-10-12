@@ -12,6 +12,7 @@ import {
   findGwgIndex,
   goalieRecentForm,
   headToHeadRecord,
+  landingGoals,
   seasonFromGameId,
   seasonSeriesText,
   teamName,
@@ -194,5 +195,24 @@ describe("helpers", () => {
     expect(goalieRecentForm("TOR", games, boxes)).toEqual([
       { playerId: 31, name: "J. Woll", gamesPlayed: 2, savePct: 0.96, shotsAgainst: 50, goalsAgainst: 2 },
     ]);
+  });
+});
+
+describe("landingGoals", () => {
+  it("takes each goal's period from its scoring group", () => {
+    const goals = landingGoals(
+      {
+        homeTeam: { abbrev: "BOS", score: 1 },
+        awayTeam: { abbrev: "PHI", score: 1 },
+        summary: {
+          scoring: [
+            { periodDescriptor: { number: 1 }, goals: [{ teamAbbrev: { default: "BOS" }, homeScore: 1, awayScore: 0 }] },
+            { periodDescriptor: { number: 3 }, goals: [{ teamAbbrev: { default: "PHI" }, homeScore: 1, awayScore: 1 }] },
+          ],
+        },
+      },
+      "BOS",
+    );
+    expect(goals.map((g) => g.period)).toEqual([1, 3]);
   });
 });

@@ -13,7 +13,7 @@ export function PowerPlayCard({ stats }: PowerPlayCardProps) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Power Play</CardTitle>
+          <CardTitle className="text-base">Power play</CardTitle>
           {stats.leagueRank && (
             <Badge variant="secondary">#{stats.leagueRank} in NHL</Badge>
           )}
@@ -52,15 +52,15 @@ export function PowerPlayCard({ stats }: PowerPlayCardProps) {
             <span className="font-medium tabular-nums">{stats.shotsFor}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">High Danger</span>
+            <span className="text-muted-foreground">High danger</span>
             <span className="font-medium tabular-nums">{stats.highDangerChances}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">HD Goals</span>
+            <span className="text-muted-foreground">HD goals</span>
             <span className="font-medium tabular-nums">{stats.highDangerGoals}</span>
           </div>
           <div className="flex justify-between col-span-2">
-            <span className="text-muted-foreground">PP Time</span>
+            <span className="text-muted-foreground">PP time</span>
             <span className="font-medium tabular-nums">{formatIceTimeLong(stats.iceTimeSeconds)}</span>
           </div>
         </div>

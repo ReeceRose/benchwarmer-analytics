@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { TeamLogo } from "@/components/team-detail/TeamLogo";
+import { getTeamName } from "@/lib/team-names";
 import type { RegressionCandidate } from "@/types";
 
 interface RegressionCardProps {
@@ -22,13 +24,13 @@ export function RegressionCard({
   const iconColor = icon === "up" ? "text-success" : "text-error";
 
   return (
-    <Card className="py-3">
-      <CardContent className="py-0">
-        <div className="flex items-center gap-2 font-medium mb-2">
-          <Icon className={`h-4 w-4 ${iconColor}`} />
+    <Card className="py-4">
+      <CardContent>
+        <div className="mb-3 flex items-center gap-2 font-display font-semibold">
+          <Icon className={`size-4 ${iconColor}`} />
           {title}
         </div>
-        <ul className="space-y-1">
+        <ul className="space-y-3">
           {candidates.map((candidate) => (
             <RegressionItem
               key={candidate.abbreviation}
@@ -50,16 +52,21 @@ function RegressionItem({
   season?: number;
 }) {
   return (
-    <li className="text-sm">
+    <li>
       <Link
         to="/teams/$abbrev"
         params={{ abbrev: candidate.abbreviation }}
         search={{ season }}
-        className="font-medium hover:underline"
+        className="group flex items-start gap-3 text-sm"
       >
-        {candidate.abbreviation}
+        <TeamLogo abbrev={candidate.abbreviation} size="md" className="mt-0.5" />
+        <span>
+          <span className="block font-medium group-hover:text-link">
+            {getTeamName(candidate.abbreviation)}
+          </span>
+          <span className="text-muted-foreground">{candidate.reason}</span>
+        </span>
       </Link>
-      <span className="text-muted-foreground">: {candidate.reason}</span>
     </li>
   );
 }

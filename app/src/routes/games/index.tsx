@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { z } from "zod";
+import { createFileRoute } from "@tanstack/react-router";
+import { PageHeader, SegmentedControl } from "@/components/layout";
+import * as z from "zod/mini";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GamesGrid } from "@/components/games";
 import { useTodaysGames, useGamesByDate, usePageTitle } from "@/hooks";
 import { formatGameDateLong } from "@/lib/game-formatters";
@@ -14,7 +14,7 @@ import {
 import type { GameSummary } from "@/types";
 
 const searchSchema = z.object({
-  date: z.string().optional(),
+  date: z.optional(z.string()),
 });
 
 export const Route = createFileRoute("/games/")({
@@ -83,35 +83,41 @@ function GamesPage() {
   };
 
   return (
-    <div className="container py-6 space-y-6">
-      <div>
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mb-2">
-          <ChevronLeft className="h-4 w-4" />
-          Back to Home
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight">Games</h1>
-        <p className="text-muted-foreground">
-          Browse NHL games and view detailed analytics
-        </p>
-      </div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList>
-            <TabsTrigger value="yesterday">Yesterday</TabsTrigger>
-            <TabsTrigger value="today">Today</TabsTrigger>
-            <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Games"
+        description="Scores, previews and game-by-game analytics."
+      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SegmentedControl
+          aria-label="Day"
+          value={activeTab}
+          onValueChange={handleTabChange}
+          options={[
+            { value: "yesterday", label: "Yesterday" },
+            { value: "today", label: "Today" },
+            { value: "tomorrow", label: "Tomorrow" },
+          ]}
+        />
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => handleDateChange(-1)}>
-            <ChevronLeft className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleDateChange(-1)}
+            aria-label="Previous day"
+          >
+            <ChevronLeft className="size-4" />
           </Button>
-          <span className="text-sm font-medium min-w-50 text-center">
+          <span className="min-w-56 text-center font-display font-semibold">
             {formatGameDateLong(displayDate)}
           </span>
-          <Button variant="outline" size="icon" onClick={() => handleDateChange(1)}>
-            <ChevronRight className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleDateChange(1)}
+            aria-label="Next day"
+          >
+            <ChevronRight className="size-4" />
           </Button>
         </div>
       </div>

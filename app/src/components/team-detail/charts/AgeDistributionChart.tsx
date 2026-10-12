@@ -42,11 +42,11 @@ interface AgeBin {
 }
 
 const AGE_BINS: Omit<AgeBin, "count" | "players">[] = [
-  { label: "18-22", range: "Entry Level", min: 18, max: 22 },
+  { label: "18-22", range: "Entry level", min: 18, max: 22 },
   { label: "23-26", range: "Rising", min: 23, max: 26 },
   { label: "27-30", range: "Prime", min: 27, max: 30 },
   { label: "31-34", range: "Veteran", min: 31, max: 34 },
-  { label: "35+", range: "Late Career", min: 35, max: 99 },
+  { label: "35+", range: "Late career", min: 35, max: 99 },
 ];
 
 const BIN_COLOURS = [
@@ -80,7 +80,7 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm max-w-xs">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm max-w-xs">
       <div className="font-semibold mb-2">
         {data.label} ({data.range})
       </div>
@@ -170,7 +170,7 @@ export function AgeDistributionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Age Distribution</CardTitle>
+          <CardTitle className="text-base">Age distribution</CardTitle>
           <CardDescription>
             No birth date data available for this roster
           </CardDescription>
@@ -182,7 +182,7 @@ export function AgeDistributionChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Age Distribution</CardTitle>
+        <CardTitle className="text-base">Age distribution</CardTitle>
         <CardDescription>
           Average age: {avgAge} years | Most players in {largestBin.range} phase
           ({largestBin.label})
@@ -217,11 +217,11 @@ export function AgeDistributionChart({
             />
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
             />
             <Bar
               dataKey="count"
-              radius={[4, 4, 0, 0]}
+              radius={[6, 6, 0, 0]}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as AgeBin)}
             >

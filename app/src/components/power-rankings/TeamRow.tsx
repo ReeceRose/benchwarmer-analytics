@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { TeamLogo } from "@/components/team-detail/TeamLogo";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatPercent, formatSavePct } from "@/lib/formatters";
 import {
@@ -46,20 +47,19 @@ export function TeamRow({ team, rank, season }: TeamRowProps) {
   const pkPctColor = getPkPctColour(team.pkPct);
 
   return (
-    <TableRow>
+    <TableRow className="group">
       <TableCell className="font-medium text-muted-foreground">{rank}</TableCell>
-      <TableCell>
+      <TableCell className="sticky left-0 z-10 bg-card group-hover:bg-muted">
         <Link
           to="/teams/$abbrev"
           params={{ abbrev: team.abbreviation }}
           search={{ season }}
-          className="hover:underline font-medium"
+          className="flex min-w-0 items-center gap-2.5 font-medium hover:text-link"
+          title={team.name}
         >
-          {team.name}
+          <TeamLogo abbrev={team.abbreviation} size="md" />
+          <span className="truncate">{team.name}</span>
         </Link>
-        <span className="text-muted-foreground text-xs ml-2">
-          {team.abbreviation}
-        </span>
       </TableCell>
       <TableCell className="text-right">{team.gamesPlayed}</TableCell>
       <TableCell className="text-right">{team.wins}</TableCell>

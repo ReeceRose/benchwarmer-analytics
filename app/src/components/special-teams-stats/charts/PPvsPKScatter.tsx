@@ -58,7 +58,7 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <TeamLogo abbrev={data.abbrev} size="sm" />
         <span className="font-semibold">{data.name}</span>
@@ -66,15 +66,15 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">PP%:</span>{" "}
-          <span className="font-mono">{data.ppPct.toFixed(1)}%</span>
+          <span className="tabular-nums">{data.ppPct.toFixed(1)}%</span>
         </p>
         <p>
           <span className="text-muted-foreground">PK%:</span>{" "}
-          <span className="font-mono">{data.pkPct.toFixed(1)}%</span>
+          <span className="tabular-nums">{data.pkPct.toFixed(1)}%</span>
         </p>
         <p>
           <span className="text-muted-foreground">Combined:</span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {data.combined.toFixed(1)}%
           </span>
         </p>
@@ -106,7 +106,7 @@ function CustomDot(props: {
         height={size * 2}
         style={{
           transition: "all 0.15s",
-          filter: isSelected ? "drop-shadow(0 0 4px hsl(var(--primary)))" : undefined,
+          filter: isSelected ? "drop-shadow(0 0 4px var(--primary))" : undefined,
         }}
       />
       {isSelected && (
@@ -115,7 +115,7 @@ function CustomDot(props: {
           cy={cy}
           r={size + 3}
           fill="none"
-          stroke="hsl(var(--primary))"
+          stroke="var(--primary)"
           strokeWidth={2}
         />
       )}
@@ -136,7 +136,7 @@ function SelectionPanel({
   const isPoor = data.ppPct < 18 && data.pkPct < 78;
 
   return (
-    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+    <div className="mt-3 animate-in rounded-xl border bg-card p-3 duration-200 slide-in-from-bottom-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <TeamLogo abbrev={data.abbrev} size="md" />
@@ -153,13 +153,13 @@ function SelectionPanel({
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">PP%:</span>{" "}
-                <span className="font-mono">{data.ppPct.toFixed(1)}%</span>
+                <span className="tabular-nums">{data.ppPct.toFixed(1)}%</span>
               </span>
               <span>
                 <span className="text-xs">PK%:</span>{" "}
-                <span className="font-mono">{data.pkPct.toFixed(1)}%</span>
+                <span className="tabular-nums">{data.pkPct.toFixed(1)}%</span>
               </span>
-              <span className="font-mono font-semibold">
+              <span className="tabular-nums font-semibold">
                 {data.combined.toFixed(1)}%
               </span>
             </div>
@@ -219,7 +219,7 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
       <Card>
         <CardHeader>
           <CardTitle>PP% vs PK%</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -242,7 +242,7 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">PP% vs PK%</CardTitle>
+        <CardTitle className="text-base">PP% vs PK%</CardTitle>
         <CardDescription>
           Teams in upper-right excel at both special teams
         </CardDescription>
@@ -261,7 +261,7 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
               x2={avgPP}
               y1={avgPK}
               y2={yMax}
-              fill="hsl(217, 91%, 60%)"
+              fill="var(--chart-1)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -269,7 +269,7 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
               x2={xMax}
               y1={avgPK}
               y2={yMax}
-              fill="hsl(142, 76%, 36%)"
+              fill="var(--chart-3)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -277,7 +277,7 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
               x2={avgPP}
               y1={yMin}
               y2={avgPK}
-              fill="hsl(0, 72%, 51%)"
+              fill="var(--chart-2)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -285,7 +285,7 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
               x2={xMax}
               y1={yMin}
               y2={avgPK}
-              fill="hsl(45, 93%, 47%)"
+              fill="var(--chart-4)"
               fillOpacity={0.08}
             />
 
@@ -360,29 +360,25 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
         )}
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(217, 91%, 60%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium">Good PK Only</span>
             <p className="text-muted-foreground">High PK%, Below Avg PP%</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(142, 76%, 36%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
-            <span className="font-medium text-success">Elite Special Teams</span>
+            <span className="font-medium text-success">Elite special teams</span>
             <p className="text-muted-foreground">High PP% & PK%</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(0, 72%, 51%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
-            <span className="font-medium text-destructive">Poor Special Teams</span>
+            <span className="font-medium text-destructive">Poor special teams</span>
             <p className="text-muted-foreground">Below Avg PP% & PK%</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(45, 93%, 47%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium">Good PP Only</span>
             <p className="text-muted-foreground">High PP%, Below Avg PK%</p>

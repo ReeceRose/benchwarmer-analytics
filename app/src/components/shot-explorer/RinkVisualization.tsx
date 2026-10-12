@@ -6,7 +6,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { RINK_COLOURS, getShotColour as getShotColourFromLib } from "@/lib/chart-colours";
+import {
+  RINK_COLOURS,
+  SHOT_DANGER_COLOURS,
+  getShotColour as getShotColourFromLib,
+} from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 
 interface RinkVisualizationProps {
@@ -97,18 +101,18 @@ function ShotTooltipContent({ shot, teamAbbreviation }: { shot: Shot; teamAbbrev
       {(shot.shotRebound || shot.shotRush || shot.shotOnEmptyNet) && (
         <div className="flex gap-2 text-xs">
           {shot.shotRebound && (
-            <span className="bg-hot/20 text-hot px-1.5 py-0.5 rounded font-medium">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
               Rebound
             </span>
           )}
           {shot.shotRush && (
-            <span className="bg-cold/20 text-cold px-1.5 py-0.5 rounded font-medium">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
               Rush
             </span>
           )}
           {shot.shotOnEmptyNet && (
-            <span className="bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">
-              Empty Net
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
+              Empty net
             </span>
           )}
         </div>
@@ -119,7 +123,7 @@ function ShotTooltipContent({ shot, teamAbbreviation }: { shot: Shot; teamAbbrev
 
 export function RinkVisualization({
   shots,
-  width = 480,
+  width = 560,
   showLegend = true,
   teamAbbreviation,
 }: RinkVisualizationProps) {
@@ -166,24 +170,15 @@ export function RinkVisualization({
   }, [shots]);
 
   return (
-    <div className="relative">
+    <div className="relative w-full" style={{ maxWidth: width }}>
       
         <svg
           viewBox={`0 0 ${RINK_LENGTH} ${RINK_HEIGHT}`}
           width={width}
           height={height}
-          className="bg-muted rounded-lg border border-border"
+          className="h-auto w-full rounded-xl border border-border bg-muted"
           preserveAspectRatio="xMidYMid meet"
         >
-          <defs>
-            <filter id="goal-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
           <path
             d={`
               M ${RINK_LENGTH} 0
@@ -212,7 +207,7 @@ export function RinkVisualization({
               Z
             `}
             fill="white"
-            className="dark:fill-slate-800"
+            className="dark:fill-muted"
           />
           <line
             x1={GOAL_LINE_X}
@@ -317,9 +312,8 @@ export function RinkVisualization({
                   r={size}
                   fill={color}
                   fillOpacity={1}
-                  stroke="white"
-                  strokeWidth={1}
-                  filter="url(#goal-glow)"
+                  stroke="var(--card)"
+                  strokeWidth={0.6}
                   className="cursor-pointer transition-all hover:opacity-100"
                 />
               </TooltipTrigger>
@@ -331,26 +325,23 @@ export function RinkVisualization({
         </svg>
       
       {showLegend && (
-        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-success ring-2 ring-white" />
-            <span>Goal</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-error" />
-            <span>High Danger (xG &gt; 15%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-warning" />
-            <span>Medium Danger (6-15%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-cold" />
-            <span>Low Danger (&lt; 6%)</span>
-          </div>
-          <div className="text-xs ml-auto">Dot size = xG probability</div>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+          <LegendDot colour={SHOT_DANGER_COLOURS.goal} label="Goal" />
+          <LegendDot colour={SHOT_DANGER_COLOURS.highDanger} label="High danger (xG 15%+)" />
+          <LegendDot colour={SHOT_DANGER_COLOURS.mediumDanger} label="Medium (6–15%)" />
+          <LegendDot colour={SHOT_DANGER_COLOURS.lowDanger} label="Low (under 6%)" />
+          <span>Bigger dot, better chance</span>
         </div>
       )}
     </div>
+  );
+}
+
+function LegendDot({ colour, label }: { colour: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="size-2.5 rounded-full" style={{ backgroundColor: colour }} />
+      {label}
+    </span>
   );
 }

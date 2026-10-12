@@ -32,11 +32,6 @@ export const SKATER_CATEGORIES: LeaderboardCategory[] = [
   "faceoffPct",
 ];
 
-export const ALL_CATEGORIES: LeaderboardCategory[] = [
-  ...SKATER_CATEGORIES,
-  ...GOALIE_CATEGORIES,
-];
-
 /**
  * Categories where lower values are better (affects sort direction display).
  */

@@ -1,11 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { TrendingUp, TrendingDown, Shield } from "lucide-react";
 import { useSeasons, useOutliers } from "@/hooks";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatPosition } from "@/lib/formatters";
+import { formatPositionShort } from "@/lib/formatters";
 import type { OutlierEntry, GoalieOutlierEntry } from "@/types";
 
 interface PlayerCardProps {
@@ -41,12 +40,9 @@ export function PlayerCard({ player, trend }: PlayerCardProps) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{player.name}</p>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                {player.position && (
-                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
-                    {formatPosition(player.position)}
-                  </Badge>
-                )}
-                {player.team && <span>{player.team}</span>}
+                {[player.team, player.position && formatPositionShort(player.position)]
+                  .filter(Boolean)
+                  .join(" · ")}
               </div>
             </div>
             <div className="text-right shrink-0">
@@ -104,10 +100,7 @@ export function GoalieCard({ goalie, trend }: GoalieCardProps) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{goalie.name}</p>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
-                  G
-                </Badge>
-                {goalie.team && <span>{goalie.team}</span>}
+                {[goalie.team, "G"].filter(Boolean).join(" · ")}
               </div>
             </div>
             <div className="text-right shrink-0">
@@ -214,7 +207,7 @@ export function FeaturedPlayers({ enabled }: FeaturedPlayersProps) {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="h-4 w-4 text-success" />
-            <h2 className="font-semibold">Running Hot</h2>
+            <h2 className="font-semibold">Running hot</h2>
             <span className="text-xs text-muted-foreground">
               Outperforming expected goals
             </span>
@@ -231,7 +224,7 @@ export function FeaturedPlayers({ enabled }: FeaturedPlayersProps) {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <TrendingDown className="h-4 w-4 text-error" />
-            <h2 className="font-semibold">Running Cold</h2>
+            <h2 className="font-semibold">Running cold</h2>
             <span className="text-xs text-muted-foreground">
               Due for positive regression
             </span>
@@ -250,7 +243,7 @@ export function FeaturedPlayers({ enabled }: FeaturedPlayersProps) {
             <Shield className="h-4 w-4 text-muted-foreground" />
             <h2 className="font-semibold">Goalies</h2>
             <span className="text-xs text-muted-foreground">
-              Goals Saved Above Expected
+              Goals saved above expected
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">

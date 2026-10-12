@@ -82,18 +82,6 @@ export interface LeagueAverages {
   expectedGoalsPct: number;
 }
 
-/** Response from GET /api/stats/homepage */
-export interface HomepageDataResponse {
-  season: number;
-  situation: string;
-  leaders: Leaderboards;
-  outliers: Outliers;
-  topLines: TopLine[];
-  leagueAverages: LeagueAverages;
-  goalieLeaders: GoalieLeaderboards;
-  goalieOutliers: GoalieOutliers;
-}
-
 /** Response from GET /api/stats/outliers */
 export interface OutliersResponse {
   season: number;
@@ -108,4 +96,16 @@ export interface TopLinesResponse {
   season: number;
   situation: string;
   lines: TopLine[];
+}
+
+/** Response from GET /api/stats/homepage */
+export interface HomepageDataResponse {
+  season: number;
+  situation: string;
+  leaders: Leaderboards;
+  outliers: Outliers;
+  topLines: TopLine[];
+  leagueAverages: LeagueAverages;
+  goalieLeaders: GoalieLeaderboards;
+  goalieOutliers: GoalieOutliers;
 }

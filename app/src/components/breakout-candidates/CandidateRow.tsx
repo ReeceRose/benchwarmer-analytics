@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
+import { TeamTag } from "@/components/shared/TeamTag";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatPosition } from "@/lib/formatters";
+import { formatPositionShort } from "@/lib/formatters";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { BreakoutCandidate } from "@/types";
 
@@ -12,17 +13,10 @@ interface CandidateRowProps {
 }
 
 export function CandidateRow({ candidate, rank }: CandidateRowProps) {
-  const diffColor =
-    candidate.goalsDifferential > 2
-      ? "text-error"
-      : candidate.goalsDifferential > 0
-        ? "text-warning"
-        : "text-success";
-
   const corsiColor =
-    (candidate.corsiForPct ?? 50) >= 52
+    (candidate.corsiForPct ?? 0.5) >= 0.52
       ? "text-success"
-      : (candidate.corsiForPct ?? 50) >= 48
+      : (candidate.corsiForPct ?? 0.5) >= 0.48
         ? "text-foreground"
         : "text-error";
 
@@ -30,8 +24,8 @@ export function CandidateRow({ candidate, rank }: CandidateRowProps) {
     candidate.breakoutScore >= 5
       ? "bg-success/10 text-success border-success/20"
       : candidate.breakoutScore >= 3
-        ? "bg-warning/10 text-warning border-warning/20"
-        : "bg-muted";
+        ? "font-semibold"
+        : "border-transparent text-muted-foreground";
 
   return (
     <TableRow>
@@ -40,7 +34,7 @@ export function CandidateRow({ candidate, rank }: CandidateRowProps) {
         <Link
           to="/players/$id"
           params={{ id: String(candidate.playerId) }}
-          className="flex items-center gap-2 hover:underline"
+          className="flex items-center gap-2 transition-colors hover:text-link"
         >
           <Avatar className="h-6 w-6">
             <AvatarImage
@@ -55,29 +49,23 @@ export function CandidateRow({ candidate, rank }: CandidateRowProps) {
         </Link>
       </TableCell>
       <TableCell>
-        <Badge variant="outline" className="font-normal">
-          {formatPosition(candidate.position)}
-        </Badge>
+        <span className="text-muted-foreground">{formatPositionShort(candidate.position)}</span>
       </TableCell>
       <TableCell>
-        <Link
-          to="/teams/$abbrev"
-          params={{ abbrev: candidate.team }}
-          className="hover:underline text-muted-foreground"
-        >
-          {candidate.team}
-        </Link>
+        <TeamTag abbrev={candidate.team} />
       </TableCell>
       <TableCell className="text-right">{candidate.gamesPlayed}</TableCell>
       <TableCell className="text-right">{candidate.goals}</TableCell>
       <TableCell className="text-right">
         {candidate.expectedGoals.toFixed(1)}
       </TableCell>
-      <TableCell className={`text-right font-medium ${diffColor}`}>
+      <TableCell className="text-right font-medium">
         +{candidate.goalsDifferential.toFixed(1)}
       </TableCell>
       <TableCell className={`text-right ${corsiColor}`}>
-        {candidate.corsiForPct?.toFixed(1) ?? "-"}%
+        {candidate.corsiForPct != null
+          ? `${(candidate.corsiForPct * 100).toFixed(1)}%`
+          : "–"}
       </TableCell>
       <TableCell className="text-right">
         {candidate.shotsPer60.toFixed(1)}

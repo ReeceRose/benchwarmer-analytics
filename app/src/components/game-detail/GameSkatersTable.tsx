@@ -1,5 +1,4 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -21,6 +20,7 @@ import type {
   BoxscoreGoalie,
   GameGoal,
 } from "@/types";
+import { EmptyState } from "@/components/layout";
 
 interface GameBoxscoreTableProps {
   boxscoreData: GameBoxscoreResponse;
@@ -73,32 +73,32 @@ function SkaterRow({
             ({skater.position})
           </span>
           {hasGwg && (
-            <Badge className="text-xs px-1.5 py-0.5 bg-highlight/20 text-highlight border-highlight/30">
+            <span className="rounded-full bg-highlight/20 px-1.5 py-0.5 text-[11px] font-semibold">
               GWG
-            </Badge>
+            </span>
           )}
         </div>
       </TableCell>
-      <TableCell className="text-center font-mono font-bold">
+      <TableCell className="text-center tabular-nums font-bold">
         {skater.goals}
       </TableCell>
-      <TableCell className="text-center font-mono">{skater.assists}</TableCell>
-      <TableCell className="text-center font-mono font-semibold">
+      <TableCell className="text-center tabular-nums">{skater.assists}</TableCell>
+      <TableCell className="text-center tabular-nums font-semibold">
         {skater.points}
       </TableCell>
       <TableCell
-        className={`text-center font-mono ${skater.plusMinus > 0 ? "text-success" : skater.plusMinus < 0 ? "text-error" : ""}`}
+        className={`text-center tabular-nums ${skater.plusMinus > 0 ? "text-success" : skater.plusMinus < 0 ? "text-error" : ""}`}
       >
         {skater.plusMinus > 0 ? `+${skater.plusMinus}` : skater.plusMinus}
       </TableCell>
-      <TableCell className="text-center font-mono">
+      <TableCell className="text-center tabular-nums">
         {skater.shotsOnGoal}
       </TableCell>
-      <TableCell className="text-center font-mono">{skater.hits}</TableCell>
-      <TableCell className="text-center font-mono">
+      <TableCell className="text-center tabular-nums">{skater.hits}</TableCell>
+      <TableCell className="text-center tabular-nums">
         {skater.blockedShots}
       </TableCell>
-      <TableCell className="text-center font-mono text-muted-foreground">
+      <TableCell className="text-center tabular-nums text-muted-foreground">
         {skater.timeOnIce}
       </TableCell>
     </TableRow>
@@ -145,24 +145,24 @@ function GoalieRow({
           </span>
           <span>{goalie.name}</span>
           {goalie.starter && (
-            <span className="text-xs text-primary">(Starter)</span>
+            <span className="text-xs text-muted-foreground">(Starter)</span>
           )}
         </div>
       </TableCell>
-      <TableCell className="text-center font-mono">{goalie.saves}</TableCell>
-      <TableCell className="text-center font-mono">
+      <TableCell className="text-center tabular-nums">{goalie.saves}</TableCell>
+      <TableCell className="text-center tabular-nums">
         {goalie.shotsAgainst}
       </TableCell>
-      <TableCell className="text-center font-mono">
+      <TableCell className="text-center tabular-nums">
         {goalie.goalsAgainst}
       </TableCell>
-      <TableCell className="text-center font-mono font-semibold">
+      <TableCell className="text-center tabular-nums font-semibold">
         {formatSavePct(goalie.savePct)}
       </TableCell>
-      <TableCell className="text-center font-mono text-muted-foreground">
+      <TableCell className="text-center tabular-nums text-muted-foreground">
         {goalie.timeOnIce}
       </TableCell>
-      <TableCell className="text-center font-mono">
+      <TableCell className="text-center tabular-nums">
         {goalie.decision && (
           <span
             className={
@@ -196,9 +196,7 @@ function TeamSkatersTable({
 }) {
   if (skaters.length === 0 && goalies.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No player data available for {teamCode}
-      </div>
+      <EmptyState className="py-8" title={`No player data for ${teamCode}`} />
     );
   }
 
@@ -281,7 +279,7 @@ export function GameBoxscoreTable({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Box Score</CardTitle>
+          <CardTitle>Box score</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
@@ -295,7 +293,7 @@ export function GameBoxscoreTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Box Score</CardTitle>
+        <CardTitle>Box score</CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="away">

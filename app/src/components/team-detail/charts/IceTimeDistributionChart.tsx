@@ -58,7 +58,7 @@ function CustomTooltip({
     : "Defenseman";
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <Avatar className="h-6 w-6">
           <AvatarImage
@@ -76,15 +76,15 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Total TOI:</span>{" "}
-          <span className="font-mono font-semibold">{data.toiFormatted}</span>
+          <span className="tabular-nums font-semibold">{data.toiFormatted}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Games Played:</span>{" "}
-          <span className="font-mono">{data.gamesPlayed}</span>
+          <span className="tabular-nums">{data.gamesPlayed}</span>
         </p>
         <p>
           <span className="text-muted-foreground">TOI/Game:</span>{" "}
-          <span className="font-mono">
+          <span className="tabular-nums">
             {formatToiPerGame(data.toi, data.gamesPlayed) || "-"}
           </span>
         </p>
@@ -131,7 +131,7 @@ export function IceTimeDistributionChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Ice Time Distribution</CardTitle>
+          <CardTitle className="text-base">Ice time distribution</CardTitle>
           <CardDescription>
             No ice time data available for this roster
           </CardDescription>
@@ -143,7 +143,7 @@ export function IceTimeDistributionChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Ice Time Distribution</CardTitle>
+        <CardTitle className="text-base">Ice time distribution</CardTitle>
         <CardDescription>
           Top 15 skaters by total ice time this season
         </CardDescription>
@@ -182,11 +182,11 @@ export function IceTimeDistributionChart({
             />
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
             />
             <Bar
               dataKey="toi"
-              radius={[0, 4, 4, 0]}
+              radius={4}
               cursor="pointer"
               onClick={(_, index) => handleClick(chartData[index])}
             >

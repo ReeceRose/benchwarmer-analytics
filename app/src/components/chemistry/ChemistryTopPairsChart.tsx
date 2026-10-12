@@ -15,6 +15,7 @@ import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
 import { formatIceTimeLong } from "@/lib/formatters";
 import type { MatrixData } from "@/components/chemistry/chemistry-utils";
 import type { ChemistryPair } from "@/types";
+import { EmptyState } from "@/components/layout";
 
 /** Minimum ice time together (5 minutes) for meaningful chemistry data */
 const MIN_TOI_SECONDS = 300;
@@ -47,27 +48,27 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="font-semibold mb-2">{data.pairLabel}</div>
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">xG%:</span>{" "}
           <span
-            className={`font-mono font-semibold ${data.isGood ? "text-success" : "text-destructive"}`}
+            className={`tabular-nums font-semibold ${data.isGood ? "text-success" : "text-destructive"}`}
           >
             {data.xgPct.toFixed(1)}%
           </span>
         </p>
         <p>
           <span className="text-muted-foreground">vs Average:</span>{" "}
-          <span className="font-mono">
+          <span className="tabular-nums">
             {data.xgDiff > 0 ? "+" : ""}
             {data.xgDiff.toFixed(1)}%
           </span>
         </p>
         <p>
           <span className="text-muted-foreground">Time Together:</span>{" "}
-          <span className="font-mono">{data.toiFormatted}</span>
+          <span className="tabular-nums">{data.toiFormatted}</span>
         </p>
       </div>
     </div>
@@ -134,9 +135,7 @@ export function ChemistryTopPairsChart({
 
   if (topPairs.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        Not enough pair data to display rankings.
-      </div>
+      <EmptyState className="py-8" title="Not enough time together to rank pairs yet" />
     );
   }
 
@@ -144,7 +143,7 @@ export function ChemistryTopPairsChart({
     <div className="space-y-8">
       <div>
         <h3 className="text-sm font-semibold text-success mb-3">
-          Best Pairs (Highest xG%)
+          Best pairs (highest xG%)
         </h3>
         <ResponsiveContainer width="100%" height={Math.max(250, topPairs.length * 28)}>
           <BarChart
@@ -183,11 +182,11 @@ export function ChemistryTopPairsChart({
             />
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
             />
             <Bar
               dataKey="xgPct"
-              radius={[0, 4, 4, 0]}
+              radius={4}
               cursor="pointer"
               onClick={(_, index) => handleClick(topPairs[index])}
             >
@@ -205,7 +204,7 @@ export function ChemistryTopPairsChart({
 
       <div>
         <h3 className="text-sm font-semibold text-destructive mb-3">
-          Worst Pairs (Lowest xG%)
+          Worst pairs (lowest xG%)
         </h3>
         <ResponsiveContainer width="100%" height={Math.max(250, bottomPairs.length * 28)}>
           <BarChart
@@ -244,11 +243,11 @@ export function ChemistryTopPairsChart({
             />
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
             />
             <Bar
               dataKey="xgPct"
-              radius={[0, 4, 4, 0]}
+              radius={4}
               cursor="pointer"
               onClick={(_, index) => handleClick(bottomPairs[index])}
             >

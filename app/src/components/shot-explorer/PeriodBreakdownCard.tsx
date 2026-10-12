@@ -99,7 +99,7 @@ export function PeriodBreakdownCard({ shots }: PeriodBreakdownCardProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Period Breakdown</CardTitle>
+        <CardTitle className="text-base">Period breakdown</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -108,7 +108,7 @@ export function PeriodBreakdownCard({ shots }: PeriodBreakdownCardProps) {
               <TableRow>
                 <TableHead className="w-16">Period</TableHead>
                 <HeaderWithTooltip label="Shots" tooltip="Total shot attempts" className="text-right" />
-                <HeaderWithTooltip label="On Goal" tooltip="Shots on goal" className="text-right" />
+                <HeaderWithTooltip label="On goal" tooltip="Shots on goal" className="text-right" />
                 <HeaderWithTooltip label="Goals" tooltip="Goals scored" className="text-right" />
                 <HeaderWithTooltip label="Sh%" tooltip="Shooting percentage" className="text-right" />
                 <HeaderWithTooltip label="xG" tooltip="Expected goals based on shot quality" className="text-right" />

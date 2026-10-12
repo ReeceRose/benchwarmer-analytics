@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "@tanstack/react-router";
+import { TeamTag } from "@/components/shared/TeamTag";
 import { useQueries } from "@tanstack/react-query";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import { getSeasonPercentiles } from "@/lib/api";
 import { formatToi, formatPercent, formatSeason } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { SkaterSeasonRow, SkaterCareerTotals } from "@/components/player-detail/skater-stats";
+import { EmptyState } from "@/components/layout";
 
 // Helper to calculate percentile from a value given percentile thresholds
 function calculatePercentile(value: number, thresholds: number[]): number {
@@ -150,10 +151,10 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
 
   if (rows.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground border rounded-md">
-        <p className="font-medium">No statistics available</p>
-        <p className="text-sm mt-1">This player may not have NHL stats recorded yet.</p>
-      </div>
+      <EmptyState
+        title="No stats yet"
+        hint="This player hasn't played an NHL game we have data for."
+      />
     );
   }
 
@@ -162,9 +163,9 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
       <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="font-semibold">Season</TableHead>
-              <TableHead className="font-semibold">Team</TableHead>
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Season</TableHead>
+              <TableHead>Team</TableHead>
               <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
               <HeaderWithTooltip label="G" tooltip="Goals" className="text-right" />
               <HeaderWithTooltip label="A" tooltip="Assists" className="text-right" />
@@ -189,8 +190,8 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
               )}
             </TableRow>
             {hasPlayoffData && (
-              <TableRow className="bg-muted/30">
-                <TableHead colSpan={6} className="text-xs text-muted-foreground py-1">Regular Season</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead colSpan={6} className="text-xs text-muted-foreground py-1">Regular season</TableHead>
                 <TableHead className="py-1 hidden sm:table-cell" />
                 <TableHead colSpan={3} className="py-1 hidden md:table-cell" />
                 <TableHead colSpan={3} className="py-1 hidden lg:table-cell" />
@@ -206,14 +207,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
               <TableRow key={`${row.season}-${row.team}`} className="hover:bg-muted/30">
                 <TableCell className="font-medium">{formatSeason(row.season)}</TableCell>
                 <TableCell>
-                  <Link
-                    to="/teams/$abbrev"
-                    params={{ abbrev: row.team }}
-                    search={{ season: row.season }}
-                    className="hover:underline"
-                  >
-                    {row.team}
-                  </Link>
+                  <TeamTag abbrev={row.team} season={row.season} />
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{row.gp}</TableCell>
                 <TableCell className="text-right tabular-nums">{row.g}</TableCell>
@@ -245,15 +239,15 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
                 )}
                 {hasPlayoffData && (
                   <>
-                    <TableCell className="text-right tabular-nums border-l">{row.playoffGp ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{row.playoffG ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{row.playoffA ?? "-"}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{row.playoffP ?? "-"}</TableCell>
+                    <TableCell className="text-right tabular-nums border-l">{row.playoffGp ?? "–"}</TableCell>
+                    <TableCell className="text-right tabular-nums">{row.playoffG ?? "–"}</TableCell>
+                    <TableCell className="text-right tabular-nums">{row.playoffA ?? "–"}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{row.playoffP ?? "–"}</TableCell>
                   </>
                 )}
               </TableRow>
             ))}
-            <TableRow className="bg-muted/50 font-semibold border-t-2">
+            <TableRow className="border-t font-semibold hover:bg-transparent">
               <TableCell>Totals</TableCell>
               <TableCell></TableCell>
               <TableCell className="text-right tabular-nums">{totals.gp}</TableCell>

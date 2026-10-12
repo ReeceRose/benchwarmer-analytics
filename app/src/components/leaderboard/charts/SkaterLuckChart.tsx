@@ -59,7 +59,7 @@ function CustomTooltip({
   const isLucky = data.diff > 0;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <Avatar className="h-6 w-6">
           <AvatarImage
@@ -76,15 +76,15 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Goals:</span>{" "}
-          <span className="font-mono font-semibold">{data.goals}</span>
+          <span className="tabular-nums font-semibold">{data.goals}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Expected Goals:</span>{" "}
-          <span className="font-mono">{data.expectedGoals.toFixed(1)}</span>
+          <span className="tabular-nums">{data.expectedGoals.toFixed(1)}</span>
         </p>
         <p className={isLucky ? "text-warning" : "text-success"}>
           <span className="text-muted-foreground">Difference:</span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {isLucky ? "+" : ""}
             {data.diff.toFixed(1)}
           </span>
@@ -118,8 +118,8 @@ function CustomDot(props: {
       cx={cx}
       cy={cy}
       r={radius}
-      fill={isLucky ? "hsl(45, 93%, 47%)" : "hsl(142, 76%, 36%)"}
-      stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--background))"}
+      fill={isLucky ? "var(--chart-4)" : "var(--chart-3)"}
+      stroke={isSelected ? "var(--primary)" : "var(--background)"}
       strokeWidth={isSelected ? 3 : 1.5}
       style={{ transition: "r 0.15s, stroke-width 0.15s" }}
     />
@@ -138,7 +138,7 @@ function SelectionPanel({
   const isLucky = data.diff > 0;
 
   return (
-    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+    <div className="mt-3 animate-in rounded-xl border bg-card p-3 duration-200 slide-in-from-bottom-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <Avatar className="h-10 w-10 shrink-0">
@@ -153,13 +153,13 @@ function SelectionPanel({
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">Goals:</span>{" "}
-                <span className="font-mono">{data.goals}</span>
+                <span className="tabular-nums">{data.goals}</span>
               </span>
               <span>
                 <span className="text-xs">xG:</span>{" "}
-                <span className="font-mono">{data.expectedGoals.toFixed(1)}</span>
+                <span className="tabular-nums">{data.expectedGoals.toFixed(1)}</span>
               </span>
-              <span className={`font-mono font-semibold ${isLucky ? "text-warning" : "text-success"}`}>
+              <span className={`tabular-nums font-semibold ${isLucky ? "text-warning" : "text-success"}`}>
                 {isLucky ? "+" : ""}
                 {data.diff.toFixed(1)}
               </span>
@@ -220,8 +220,8 @@ export function SkaterLuckChart({ entries }: SkaterLuckChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Goals vs Expected Goals</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Goals vs expected goals</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -234,7 +234,7 @@ export function SkaterLuckChart({ entries }: SkaterLuckChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Goals vs Expected Goals</CardTitle>
+        <CardTitle className="text-base">Goals vs expected goals</CardTitle>
         <CardDescription>
           Players above the line are outperforming their expected goals
         </CardDescription>
@@ -272,7 +272,7 @@ export function SkaterLuckChart({ entries }: SkaterLuckChartProps) {
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Actual Goals"
+                value="Actual goals"
                 angle={-90}
                 position="insideLeft"
                 offset={10}
@@ -317,7 +317,7 @@ export function SkaterLuckChart({ entries }: SkaterLuckChartProps) {
           <div className="flex items-center gap-2">
             <span
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "hsl(45, 93%, 47%)" }}
+              style={{ backgroundColor: "var(--chart-4)" }}
             />
             <span className="text-muted-foreground">
               Above line = Overperforming xG
@@ -326,7 +326,7 @@ export function SkaterLuckChart({ entries }: SkaterLuckChartProps) {
           <div className="flex items-center gap-2">
             <span
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "hsl(142, 76%, 36%)" }}
+              style={{ backgroundColor: "var(--chart-3)" }}
             />
             <span className="text-muted-foreground">
               Below line = Underperforming xG

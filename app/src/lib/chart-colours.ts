@@ -1,12 +1,9 @@
 /**
  * Centralised chart colour definitions for consistent styling across all visualisations.
  *
- * Hockey-inspired colour palette:
- * - Blue line blue: Primary chart colour
- * - Goal line red: Secondary/warning
- * - Goal light green: Success/goals
- * - Trophy gold: Highlights
- * - Ice blue/grey: Backgrounds and axes
+ * Series and semantic colours resolve to the theme's CSS variables (see
+ * index.css), so charts follow light/dark mode. Rink and heat map colours are
+ * fixed hex values from the same palette.
  *
  * This module provides:
  * - CHART_COLOURS: Primary palette for multi-series charts (5 distinct colours)
@@ -20,24 +17,9 @@ import { getDangerZoneFromXg } from "@/lib/danger-zones";
 
 /**
  * Primary chart colour palette for multi-series visualisations.
- * Hockey-inspired colours for comparing players, metrics, or data series.
+ * Blue, red, green, amber, violet.
  */
 export const CHART_COLOURS = [
-  "#2563eb", // Blue line blue
-  "#dc2626", // Goal line red
-  "#16a34a", // Goal light green
-  "#ca8a04", // Trophy gold
-  "#7c3aed", // Violet (variety)
-] as const;
-
-// Legacy alias for backwards compatibility
-export const CHART_COLORS = CHART_COLOURS;
-
-/**
- * CSS variable-based chart colours for theme-aware charts.
- * Use these when you need colours that adapt to light/dark mode.
- */
-export const CHART_COLOURS_CSS = [
   "var(--chart-1)",
   "var(--chart-2)",
   "var(--chart-3)",
@@ -45,110 +27,89 @@ export const CHART_COLOURS_CSS = [
   "var(--chart-5)",
 ] as const;
 
-// Legacy alias
-export const CHART_COLORS_CSS = CHART_COLOURS_CSS;
-
 /**
  * Chart axis styling colours for consistent Recharts configuration.
- * Ice-inspired greys and blues.
+ * Quiet, theme-aware chrome.
  */
 export const CHART_AXIS_COLOURS = {
-  /** Grid line colour - ice grey */
-  grid: "#64748b", // slate-500
+  /** Grid and axis line colour */
+  grid: "var(--border)",
   /** Tick label text colour */
-  tick: "#94a3b8", // slate-400
+  tick: "var(--muted-foreground)",
   /** Reference line colour */
-  reference: "#94a3b8",
+  reference: "var(--muted-foreground)",
   /** Default grid/axis opacity */
-  gridOpacity: 0.3,
+  gridOpacity: 1,
 } as const;
-
-// Legacy alias
-export const CHART_AXIS_COLORS = CHART_AXIS_COLOURS;
 
 /**
- * Shot danger zone colours for rink visualisations.
- * Based on expected goal (xG) probability.
+ * Shot danger zone colours for rink visualisations, from the chart palette
+ * so they brighten in dark mode. Based on expected goal (xG) probability.
  */
 export const SHOT_DANGER_COLOURS = {
-  /** Goal scored - goal light green */
-  goal: "#16a34a", // green-600
-  /** High danger (xG ≥ 20%) - warning orange */
-  highDanger: "#ea580c", // orange-600
-  /** Medium danger (8-20% xG) - caution amber */
-  mediumDanger: "#d97706", // amber-600
-  /** Low danger (< 8% xG) - blue line blue */
-  lowDanger: "#2563eb", // blue-600
+  /** Goal scored - green */
+  goal: "var(--chart-3)",
+  /** High danger - red */
+  highDanger: "var(--chart-2)",
+  /** Medium danger - amber */
+  mediumDanger: "var(--chart-4)",
+  /** Low danger - blue */
+  lowDanger: "var(--chart-1)",
 } as const;
-
-// Legacy alias
-export const SHOT_DANGER_COLORS = SHOT_DANGER_COLOURS;
 
 /**
  * Heat map gradient colours for zone-based visualisations.
  * RGB values for use with rgba() opacity.
- * Cold (ice blue) -> Warm (amber) -> Hot (red)
+ * Cold (blue) -> Warm (amber) -> Hot (red)
  */
 export const HEATMAP_COLOURS = {
-  /** Low intensity - ice blue */
-  low: { r: 37, g: 99, b: 235 }, // blue-600
+  /** Low intensity - blue */
+  low: { r: 37, g: 99, b: 235 }, // #2563eb
   /** Medium intensity - amber */
-  medium: { r: 217, g: 119, b: 6 }, // amber-600
-  /** High intensity - goal red */
-  high: { r: 220, g: 38, b: 38 }, // red-600
+  medium: { r: 245, g: 158, b: 11 }, // #f59e0b
+  /** High intensity - red */
+  high: { r: 229, g: 72, b: 77 }, // #e5484d
 } as const;
-
-// Legacy alias
-export const HEATMAP_COLORS = HEATMAP_COLOURS;
 
 /**
  * Hockey rink element colours.
  */
 export const RINK_COLOURS = {
   /** Goal line - red */
-  goalLine: "#dc2626", // red-600
+  goalLine: "#e5484d",
   /** Blue line */
-  blueLine: "#2563eb", // blue-600
-  /** Crease fill - light blue */
-  creaseFill: "#93c5fd", // blue-300
+  blueLine: "#2563eb",
+  /** Crease fill - pale blue */
+  creaseFill: "#bfd3fb",
   /** Ice surface */
-  ice: "#f0f9ff", // sky-50
-  /** Centre ice red */
-  centreRed: "#dc2626", // red-600
+  ice: "#ffffff",
+  /** Centre ice - red */
+  centreRed: "#e5484d",
 } as const;
-
-// Legacy alias
-export const RINK_COLORS = RINK_COLOURS;
 
 /**
  * Chart gradient colours (for area charts).
  */
 export const CHART_GRADIENT_COLOURS = {
   /** Primary blue gradient - blue line */
-  primary: "#2563eb", // blue-600
-  /** Danger/warning red gradient - goal line */
-  danger: "#dc2626", // red-600
-  /** Success green gradient - goal light */
-  success: "#16a34a", // green-600
+  primary: "var(--chart-1)",
+  /** Danger/warning red gradient - goal light */
+  danger: "var(--chart-2)",
+  /** Success green gradient - glass green */
+  success: "var(--chart-3)",
 } as const;
-
-// Legacy alias
-export const CHART_GRADIENT_COLORS = CHART_GRADIENT_COLOURS;
 
 /**
  * Chemistry matrix colours for player pair visualisations.
  */
 export const CHEMISTRY_MATRIX_COLOURS = {
-  /** Diagonal cells (self) - dark ice */
-  diagonal: "hsl(220, 15%, 25%)",
-  /** Empty cells (no data) - deep ice */
-  empty: "hsl(220, 20%, 12%)",
+  /** Diagonal cells (self) */
+  diagonal: "var(--muted-foreground)",
+  /** Empty cells (no data) */
+  empty: "transparent",
   /** Empty cell border */
-  emptyBorder: "hsl(220, 15%, 20%)",
+  emptyBorder: "var(--border)",
 } as const;
-
-// Legacy alias
-export const CHEMISTRY_MATRIX_COLORS = CHEMISTRY_MATRIX_COLOURS;
 
 /**
  * Get heat map colour based on intensity value.
@@ -183,12 +144,10 @@ export function getHeatmapColour(
   }
 }
 
-// Legacy alias
-export const getHeatmapColor = getHeatmapColour;
-
 /**
- * Get chemistry heat colour based on xG percentage.
- * Red (bad, 35%) -> Amber (neutral, 50%) -> Green (good, 65%)
+ * Get chemistry heat colour based on xG percentage: goal-light red (35%)
+ * through a neutral card tint (50%) to glass green (65%). Mixed with the card
+ * colour so it sits well in both themes.
  *
  * @param xgPct - Expected goals percentage (0-100)
  * @param hasData - Whether data exists for this cell
@@ -199,17 +158,20 @@ export function getChemistryHeatColour(
 ): string {
   if (!hasData || xgPct == null) return "transparent";
 
-  // Clamp to 35-65 range for colour scaling
   const clamped = Math.max(35, Math.min(65, xgPct));
-  const normalised = (clamped - 35) / 30; // 0 to 1
-
-  // Red (0°) -> Amber (45°) -> Green (120°)
-  const hue = normalised * 120;
-  return `hsl(${hue}, 75%, 45%)`;
+  const strength = Math.round((Math.abs(clamped - 50) / 15) * 85) + 12;
+  const hue = clamped >= 50 ? SHOT_DANGER_COLOURS.goal : SHOT_DANGER_COLOURS.highDanger;
+  return `color-mix(in oklab, ${hue} ${strength}%, var(--muted))`;
 }
 
-// Legacy alias
-export const getChemistryHeatColor = getChemistryHeatColour;
+/**
+ * Text colour for a chemistry cell: the card colour on strong fills (light
+ * text in light mode, dark text on dark mode's brighter fills), ink otherwise.
+ */
+export function getChemistryTextColour(xgPct: number | undefined | null): string {
+  if (xgPct == null) return "var(--foreground)";
+  return Math.abs(xgPct - 50) >= 8 ? "var(--card)" : "var(--foreground)";
+}
 
 /**
  * Semantic chart colours for data visualisation.
@@ -217,34 +179,28 @@ export const getChemistryHeatColor = getChemistryHeatColour;
  */
 export const SEMANTIC_COLOURS = {
   /** Success/positive - goals, good performance */
-  success: "hsl(142, 76%, 36%)",
+  success: "var(--chart-3)",
   /** Danger/negative - against, poor performance */
-  danger: "hsl(0, 72%, 51%)",
+  danger: "var(--chart-2)",
   /** Primary/home team - blue line */
-  primary: "hsl(217, 91%, 60%)",
+  primary: "var(--chart-1)",
   /** Warning/caution - decline, attention needed */
-  warning: "hsl(45, 93%, 47%)",
+  warning: "var(--chart-4)",
   /** Neutral/muted */
-  muted: "#94a3b8",
+  muted: "var(--muted-foreground)",
 } as const;
-
-// Legacy alias
-export const SEMANTIC_COLORS = SEMANTIC_COLOURS;
 
 /**
  * Age curve phase colours for career trajectory visualisations.
  */
 export const AGE_PHASE_COLOURS = {
   /** Development phase (18-23) */
-  development: "hsl(217, 91%, 60%)",
+  development: "var(--chart-1)",
   /** Prime years (24-29) */
-  prime: "hsl(142, 76%, 36%)",
+  prime: "var(--chart-3)",
   /** Decline phase (30+) */
-  decline: "hsl(45, 93%, 47%)",
+  decline: "var(--chart-4)",
 } as const;
-
-// Legacy alias
-export const AGE_PHASE_COLORS = AGE_PHASE_COLOURS;
 
 /**
  * Get shot colour based on outcome and xG value.
@@ -260,6 +216,3 @@ export function getShotColour(isGoal: boolean, xGoal: number): string {
   if (zone === "medium") return SHOT_DANGER_COLOURS.mediumDanger;
   return SHOT_DANGER_COLOURS.lowDanger;
 }
-
-// Legacy alias
-export const getShotColor = getShotColour;

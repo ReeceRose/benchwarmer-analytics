@@ -11,6 +11,7 @@ import { usePlayerShots } from "@/hooks";
 import { MONEYPUCK_DANGER_THRESHOLDS } from "@/lib/danger-zones";
 import { cn } from "@/lib/utils";
 import type { DangerLevel } from "@/types";
+import { EmptyState } from "@/components/layout";
 
 interface PlayerShotMapProps {
   playerId: number;
@@ -68,11 +69,11 @@ export function PlayerShotMap({
     return (
       <Card className={cn(className)}>
         <CardHeader>
-          <CardTitle>Shot Map</CardTitle>
+          <CardTitle>Shot map</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-75">
-            <Skeleton className="h-75 w-full" />
+            <Skeleton className="aspect-100/85 w-full max-w-140 rounded-xl" />
           </div>
         </CardContent>
       </Card>
@@ -82,7 +83,7 @@ export function PlayerShotMap({
   return (
     <Card className={cn(className)}>
       <CardHeader>
-        <CardTitle>Shot Map</CardTitle>
+        <CardTitle>Shot map</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <PlayerShotFilters
@@ -102,23 +103,27 @@ export function PlayerShotMap({
         />
 
         {shotsLoading ? (
-          <Skeleton className="h-75 w-full" />
+          <Skeleton className="aspect-100/85 w-full max-w-140 rounded-xl" />
         ) : filteredShots.length > 0 ? (
-          <div className="space-y-4">
-            <RinkVisualization shots={filteredShots} showLegend teamAbbreviation={playerTeamAbbreviation} />
-            {shotsData?.summary && <ShotSummaryCard summary={shotsData.summary} />}
+          <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+              <RinkVisualization shots={filteredShots} showLegend teamAbbreviation={playerTeamAbbreviation} />
+              <div className="space-y-3">
+                {shotsData?.summary && <ShotSummaryCard summary={shotsData.summary} />}
+                <p className="text-xs text-muted-foreground">
+                  Showing {filteredShots.length} shots
+                  {dangerLevel !== "all" && ` (${dangerLevel} danger)`}
+                  {shotLimit && shotsData && shotsData.shots.length >= shotLimit && `, limited to ${shotLimit}`}
+                </p>
+              </div>
+            </div>
             <PeriodBreakdownCard shots={filteredShots} />
-            <p className="text-sm text-muted-foreground text-center">
-              Showing {filteredShots.length} shots
-              {dangerLevel !== "all" && ` (${dangerLevel} danger)`}
-              {shotLimit && shotsData && shotsData.shots.length >= shotLimit && ` - limited to ${shotLimit}`}
-            </p>
           </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No shot data available for {effectiveShotSeason}-{effectiveShotSeason + 1}.</p>
-            <p className="text-sm mt-1">Try adjusting your filters or selecting a different season.</p>
-          </div>
+          <EmptyState
+            title={`No shots for ${effectiveShotSeason}–${String(effectiveShotSeason + 1).slice(2)}`}
+            hint="Loosen the filters, or pick another season."
+          />
         )}
       </CardContent>
     </Card>

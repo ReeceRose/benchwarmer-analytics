@@ -1,8 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { Flame } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TeamHeading } from "@/components/game-preview/TeamHeading";
 import { formatSavePct } from "@/lib/formatters";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+import { cn } from "@/lib/utils";
 import type { GoalieMatchup, GoaliePreview, GoalieRecentForm } from "@/types";
 
 interface GoalieMatchupSectionProps {
@@ -12,7 +14,7 @@ interface GoalieMatchupSectionProps {
   recentForm?: { home: GoalieRecentForm[]; away: GoalieRecentForm[] };
 }
 
-function GoalieCard({
+function GoalieRow({
   goalie,
   team,
   recentForm,
@@ -21,81 +23,61 @@ function GoalieCard({
   team: string;
   recentForm?: GoalieRecentForm;
 }) {
-  // Compare recent form to season average (1% threshold)
-  const isHot =
-    recentForm &&
-    goalie.savePct != null &&
-    recentForm.savePct != null &&
-    recentForm.savePct >= goalie.savePct + 0.01;
-  const isCold =
-    recentForm &&
-    goalie.savePct != null &&
-    recentForm.savePct != null &&
-    recentForm.savePct <= goalie.savePct - 0.01;
+  // Recent form at least a point of save percentage away from the season mark.
+  const delta =
+    recentForm?.savePct != null && goalie.savePct != null
+      ? recentForm.savePct - goalie.savePct
+      : 0;
+  const isHot = delta >= 0.01;
+  const isCold = delta <= -0.01;
+  const gsax = goalie.goalsSavedAboveExpected;
 
   return (
     <Link
       to="/players/$id"
       params={{ id: goalie.playerId.toString() }}
-      className="block p-2 bg-muted/30 rounded hover:bg-muted/50 transition-colors"
+      className="group -mx-2 block rounded-xl px-2 py-2 transition-colors hover:bg-muted/60"
     >
-      <div className="text-center space-y-1">
-        <div className="flex flex-col items-center gap-1">
-          <Avatar className="h-10 w-10">
-            <AvatarImage
-              src={getPlayerHeadshotUrl(goalie.playerId, team)}
-              alt={goalie.name}
-            />
-            <AvatarFallback className="text-xs">
-              {getPlayerInitials(goalie.name)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="font-medium text-sm">{goalie.name}</span>
-        </div>
-        <div className="flex items-center justify-center gap-3 text-xs">
-          <span>
-            <span className="text-muted-foreground">SV%</span>{" "}
-            <span className="font-mono">{formatSavePct(goalie.savePct)}</span>
-          </span>
-          <span>
-            <span className="text-muted-foreground">GAA</span>{" "}
-            <span className="font-mono">
-              {goalie.goalsAgainstAvg?.toFixed(2) ?? "-"}
-            </span>
-          </span>
-          <span>
-            <span className="text-muted-foreground">GSAX</span>{" "}
-            <span
-              className={`font-mono ${
-                goalie.goalsSavedAboveExpected != null &&
-                goalie.goalsSavedAboveExpected > 0
-                  ? "text-success"
-                  : goalie.goalsSavedAboveExpected != null &&
-                      goalie.goalsSavedAboveExpected < 0
-                    ? "text-error"
-                    : ""
-              }`}
-            >
-              {goalie.goalsSavedAboveExpected != null
-                ? `${goalie.goalsSavedAboveExpected > 0 ? "+" : ""}${goalie.goalsSavedAboveExpected.toFixed(1)}`
-                : "-"}
-            </span>
-          </span>
-        </div>
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <span>{goalie.gamesPlayed} GP</span>
-          {recentForm && recentForm.gamesPlayed > 0 && (
-            <span
-              className={`flex items-center gap-1 ${
-                isHot ? "text-hot" : isCold ? "text-cold" : ""
-              }`}
-            >
-              {isHot && <Flame className="h-3 w-3" />}L{recentForm.gamesPlayed}:{" "}
-              {formatSavePct(recentForm.savePct)}
-            </span>
-          )}
+      <div className="flex items-center gap-2.5">
+        <Avatar className="size-9">
+          <AvatarImage src={getPlayerHeadshotUrl(goalie.playerId, team)} alt={goalie.name} />
+          <AvatarFallback className="text-xs">{getPlayerInitials(goalie.name)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium group-hover:text-link">{goalie.name}</div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span>{goalie.gamesPlayed} GP</span>
+            {recentForm && recentForm.gamesPlayed > 0 && (
+              <span className={cn("flex items-center gap-0.5", isHot && "text-hot", isCold && "text-cold")}>
+                · {isHot && <Flame className="size-3" />}L{recentForm.gamesPlayed}{" "}
+                {formatSavePct(recentForm.savePct)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
+      <dl className="mt-2 grid grid-cols-3 gap-1 text-center tabular-nums">
+        <div>
+          <dt className="text-[11px] text-muted-foreground">SV%</dt>
+          <dd className="text-sm font-semibold">{formatSavePct(goalie.savePct)}</dd>
+        </div>
+        <div>
+          <dt className="text-[11px] text-muted-foreground">GAA</dt>
+          <dd className="text-sm font-semibold">{goalie.goalsAgainstAvg?.toFixed(2) ?? "–"}</dd>
+        </div>
+        <div>
+          <dt className="text-[11px] text-muted-foreground">GSAx</dt>
+          <dd
+            className={cn(
+              "text-sm font-semibold",
+              gsax != null && gsax > 0 && "text-success",
+              gsax != null && gsax < 0 && "text-error",
+            )}
+          >
+            {gsax != null ? `${gsax > 0 ? "+" : ""}${gsax.toFixed(1)}` : "–"}
+          </dd>
+        </div>
+      </dl>
     </Link>
   );
 }
@@ -109,35 +91,25 @@ function TeamGoalies({
   team: string;
   recentForms?: GoalieRecentForm[];
 }) {
-  if (goalies.length === 0) {
-    return (
-      <div className="text-center p-4 bg-muted/30 rounded">
-        <p className="text-sm text-muted-foreground">{team}</p>
-        <p className="text-xs text-muted-foreground mt-1">No goalie data</p>
-      </div>
-    );
-  }
-
-  // Create a lookup map for recent form by player ID
-  const recentFormMap = new Map(
-    recentForms?.map((rf) => [rf.playerId, rf]) ?? []
-  );
+  const recentFormMap = new Map(recentForms?.map((rf) => [rf.playerId, rf]) ?? []);
 
   return (
-    <div className="space-y-1.5">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide text-center">
-        {team}
-      </div>
-      <div className="space-y-1.5">
-        {goalies.map((goalie) => (
-          <GoalieCard
-            key={goalie.playerId}
-            goalie={goalie}
-            team={team}
-            recentForm={recentFormMap.get(goalie.playerId)}
-          />
-        ))}
-      </div>
+    <div className="min-w-0">
+      <TeamHeading team={team} />
+      {goalies.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No goalie data</p>
+      ) : (
+        <div className="space-y-1">
+          {goalies.map((goalie) => (
+            <GoalieRow
+              key={goalie.playerId}
+              goalie={goalie}
+              team={team}
+              recentForm={recentFormMap.get(goalie.playerId)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -149,21 +121,9 @@ export function GoalieMatchupSection({
   recentForm,
 }: GoalieMatchupSectionProps) {
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium">Goalies</h3>
-
-      <div className="grid grid-cols-2 gap-3">
-        <TeamGoalies
-          goalies={data.home}
-          team={homeTeam}
-          recentForms={recentForm?.home}
-        />
-        <TeamGoalies
-          goalies={data.away}
-          team={awayTeam}
-          recentForms={recentForm?.away}
-        />
-      </div>
+    <div className="grid grid-cols-2 gap-4 sm:gap-6">
+      <TeamGoalies goalies={data.away} team={awayTeam} recentForms={recentForm?.away} />
+      <TeamGoalies goalies={data.home} team={homeTeam} recentForms={recentForm?.home} />
     </div>
   );
 }

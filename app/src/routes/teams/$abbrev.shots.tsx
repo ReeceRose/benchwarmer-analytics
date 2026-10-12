@@ -1,20 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
-import { Circle, LayoutGrid } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/layout";
+import * as z from "zod/mini";
 import { ShotExplorer, TeamShotHeatMaps } from "@/components/shot-explorer";
 import type { DangerLevel, ScoreState } from "@/types";
 
 const searchSchema = z.object({
-  season: z.number().optional(),
-  period: z.number().optional(),
-  shotType: z.string().optional(),
-  playerId: z.number().optional(),
-  goalsOnly: z.boolean().optional(),
-  limit: z.number().optional(),
-  dangerLevel: z.enum(["all", "high", "medium-high", "low"]).optional(),
-  scoreState: z.enum(["all", "leading", "trailing", "tied"]).optional(),
-  view: z.enum(["explorer", "heatmaps"]).optional(),
+  season: z.optional(z.number()),
+  period: z.optional(z.number()),
+  shotType: z.optional(z.string()),
+  playerId: z.optional(z.number()),
+  goalsOnly: z.optional(z.boolean()),
+  limit: z.optional(z.number()),
+  dangerLevel: z.optional(z.enum(["all", "high", "medium-high", "low"])),
+  scoreState: z.optional(z.enum(["all", "leading", "trailing", "tied"])),
+  view: z.optional(z.enum(["explorer", "heatmaps"])),
 });
 
 export const Route = createFileRoute("/teams/$abbrev/shots")({
@@ -54,29 +53,16 @@ function TeamShotsPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="flex items-center rounded-md border p-1">
-          <Button
-            variant={view === "explorer" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7 px-3"
-            onClick={() => updateSearch({ view: "explorer" })}
-          >
-            <Circle className="h-3.5 w-3.5 mr-1.5" />
-            Shot Explorer
-          </Button>
-          <Button
-            variant={view === "heatmaps" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7 px-3"
-            onClick={() => updateSearch({ view: "heatmaps" })}
-          >
-            <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
-            For/Against Heat Maps
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <SegmentedControl
+        aria-label="Shot view"
+        value={view}
+        onValueChange={(view) => updateSearch({ view })}
+        options={[
+          { value: "explorer", label: "Shot explorer" },
+          { value: "heatmaps", label: "For and against heat maps" },
+        ]}
+      />
 
       {view === "explorer" ? (
         <ShotExplorer

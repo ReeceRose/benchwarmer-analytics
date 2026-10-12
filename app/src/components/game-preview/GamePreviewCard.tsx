@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Panel, Section } from "@/components/layout";
 import { HeadToHeadSection } from "@/components/game-preview/HeadToHeadSection";
 import { TeamComparisonSection } from "@/components/game-preview/TeamComparisonSection";
 import { HotPlayersSection } from "@/components/game-preview/HotPlayersSection";
@@ -12,8 +12,8 @@ interface GamePreviewSectionsProps {
 }
 
 /**
- * Renders the preview sections (team comparison, goalie matchup, hot players, head-to-head).
- * Use with GameDetailHeader for a complete preview page.
+ * The preview sections for a game that hasn't started. Use under
+ * GameDetailHeader; like the header, the away team is on the left.
  */
 export function GamePreviewSections({
   preview,
@@ -21,78 +21,73 @@ export function GamePreviewSections({
 }: GamePreviewSectionsProps) {
   const { game, headToHead, teamComparison, hotPlayers, goalieMatchup } =
     preview;
+  const { home, away } = teamComparison;
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="py-4">
-          <TeamComparisonSection data={teamComparison} />
-        </CardContent>
-      </Card>
+    <div className="space-y-8">
+      <div className="grid gap-8 lg:grid-cols-2">
+        <Section
+          title="Team comparison"
+          description={`Season to date: ${away.teamCode} ${away.gamesPlayed} GP, ${home.teamCode} ${home.gamesPlayed} GP`}
+        >
+          <Panel>
+            <TeamComparisonSection data={teamComparison} />
+          </Panel>
+        </Section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardContent className="py-4">
+        <Section title="Goalies" description="Season numbers and recent form">
+          <Panel>
             <GoalieMatchupSection
               data={goalieMatchup}
               homeTeam={game.homeTeam}
               awayTeam={game.awayTeam}
               recentForm={goalieRecentForm}
             />
-          </CardContent>
-        </Card>
+          </Panel>
+        </Section>
+      </div>
 
-        <Card>
-          <CardContent className="py-4">
+      <div className="grid gap-8 lg:grid-cols-2">
+        <Section title="Hot and cold" description="Goals vs expected goals at 5v5">
+          <Panel>
             <HotPlayersSection
               data={hotPlayers}
               homeTeam={game.homeTeam}
               awayTeam={game.awayTeam}
             />
-          </CardContent>
-        </Card>
-      </div>
+          </Panel>
+        </Section>
 
-      <Card>
-        <CardContent className="py-4">
-          <HeadToHeadSection
-            data={headToHead}
-            homeTeam={game.homeTeam}
-            awayTeam={game.awayTeam}
-          />
-        </CardContent>
-      </Card>
+        <Section title="Season series">
+          <Panel>
+            <HeadToHeadSection data={headToHead} />
+          </Panel>
+        </Section>
+      </div>
+    </div>
+  );
+}
+
+function SectionSkeleton({ height }: { height: string }) {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-7 w-48" />
+      <Skeleton className={`w-full rounded-2xl ${height}`} />
     </div>
   );
 }
 
 export function GamePreviewSectionsSkeleton() {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="py-4">
-          <Skeleton className="h-24 w-full" />
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardContent className="py-4">
-            <Skeleton className="h-32 w-full" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="py-4">
-            <Skeleton className="h-32 w-full" />
-          </CardContent>
-        </Card>
+    <div className="space-y-8">
+      <div className="grid gap-8 lg:grid-cols-2">
+        <SectionSkeleton height="h-64" />
+        <SectionSkeleton height="h-64" />
       </div>
-
-      <Card>
-        <CardContent className="py-4">
-          <Skeleton className="h-24 w-full" />
-        </CardContent>
-      </Card>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <SectionSkeleton height="h-48" />
+        <SectionSkeleton height="h-48" />
+      </div>
     </div>
   );
 }

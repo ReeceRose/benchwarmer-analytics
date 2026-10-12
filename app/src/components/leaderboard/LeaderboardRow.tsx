@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import { TeamTag } from "@/components/shared/TeamTag";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  formatPosition,
   formatToi,
   formatPercent,
   formatSavePct,
+  formatPositionShort,
 } from "@/lib/formatters";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { LeaderboardEntry } from "@/types";
@@ -27,7 +27,7 @@ export function LeaderboardRow({
   highlightedColumn,
 }: LeaderboardRowProps) {
   const cellClass = (col: string) =>
-    `text-right tabular-nums ${highlightedColumn === col ? "bg-muted/30 font-semibold" : ""}`;
+    `text-right tabular-nums ${highlightedColumn === col ? "bg-accent/40 font-semibold" : ""}`;
 
   return (
     <TableRow>
@@ -38,7 +38,7 @@ export function LeaderboardRow({
         <Link
           to="/players/$id"
           params={{ id: String(entry.playerId) }}
-          className="flex items-center gap-2 hover:underline"
+          className="flex items-center gap-2 transition-colors hover:text-link"
         >
           <Avatar className="h-6 w-6">
             <AvatarImage
@@ -53,20 +53,11 @@ export function LeaderboardRow({
         </Link>
       </TableCell>
       <TableCell>
-        <Badge variant="outline" className="font-normal">
-          {formatPosition(entry.position)}
-        </Badge>
+        <span className="text-muted-foreground">{formatPositionShort(entry.position)}</span>
       </TableCell>
       <TableCell>
         {entry.team ? (
-          <Link
-            to="/teams/$abbrev"
-            params={{ abbrev: entry.team }}
-            search={{ season: season }}
-            className="hover:underline text-muted-foreground"
-          >
-            {entry.team}
-          </Link>
+          <TeamTag abbrev={entry.team} season={season} />
         ) : (
           "-"
         )}

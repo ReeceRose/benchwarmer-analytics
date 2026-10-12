@@ -47,7 +47,7 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <Avatar className="h-6 w-6">
           <AvatarImage
@@ -64,27 +64,27 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Breakout Score:</span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {data.breakoutScore.toFixed(1)}
           </span>
         </p>
         <p>
-          <span className="text-muted-foreground">Goals Diff (xG - G):</span>{" "}
-          <span className="font-mono text-success">
+          <span className="text-muted-foreground">Goals below xG:</span>{" "}
+          <span className="tabular-nums text-success">
             +{data.goalsDiff.toFixed(1)}
           </span>
         </p>
         {data.corsiPct != null && (
           <p>
             <span className="text-muted-foreground">CF%:</span>{" "}
-            <span className="font-mono">
+            <span className="tabular-nums">
               {(data.corsiPct * 100).toFixed(1)}%
             </span>
           </p>
         )}
         <p>
           <span className="text-muted-foreground">Rank:</span>{" "}
-          <span className="font-mono">#{data.rank}</span>
+          <span className="tabular-nums">#{data.rank}</span>
         </p>
       </div>
     </div>
@@ -129,7 +129,7 @@ function CustomYAxisTick({
         cy={0}
         r={12}
         fill="none"
-        stroke="hsl(var(--border))"
+        stroke="var(--border)"
         strokeWidth={1}
       />
     </g>
@@ -166,8 +166,8 @@ export function BreakoutScoreChart({ candidates }: BreakoutScoreChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Top Breakout Candidates</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Top breakout candidates</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -176,7 +176,7 @@ export function BreakoutScoreChart({ candidates }: BreakoutScoreChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Top Breakout Candidates</CardTitle>
+        <CardTitle className="text-base">Top breakout candidates</CardTitle>
         <CardDescription>
           Players ranked by combined breakout score
         </CardDescription>
@@ -204,13 +204,13 @@ export function BreakoutScoreChart({ candidates }: BreakoutScoreChartProps) {
             />
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
             />
             <Bar
               dataKey="breakoutScore"
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
-              radius={[0, 4, 4, 0]}
+              radius={4}
             >
               {chartData.map((_, index) => (
                 <Cell

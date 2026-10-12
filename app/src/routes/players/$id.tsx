@@ -1,19 +1,22 @@
 import { useState, useMemo } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Filter } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   usePlayer,
   usePlayerStats,
-  useTeams,
   usePageTitle,
   useGoalieLeagueBaselines,
   useSkaterLeagueBaselines,
 } from "@/hooks";
-import { ErrorState, BackButton } from "@/components/shared";
+import { ErrorState } from "@/components/shared";
+import {
+  EntityHeroSkeleton,
+  PageTabs,
+  Section,
+  pageTabClass,
+} from "@/components/layout";
 import { getDangerZoneLeagueAveragesFromGoalieBaselines } from "@/lib/goalie-baselines";
 import {
-  PlayerHeader,
-  PlayerHeaderSkeleton,
+  PlayerHero,
   SkaterStatsTable,
   GoalieStatsTable,
   StatsTableSkeleton,
@@ -25,14 +28,12 @@ import {
   SeasonComparisonRadar,
   SituationBreakdownChart,
   GoalieWorkloadMonitor,
-  GoalieDangerZoneRadar,
+  GoalieDangerZones,
   GoalieReboundControl,
   ShiftQualityDashboard,
-  ShiftQualityDashboardSkeleton,
   FaceoffStatsCard,
-  FaceoffStatsCardSkeleton,
   GiveawayTakeawayCard,
-  GiveawayTakeawayCardSkeleton,
+  UsageCardSkeleton,
   buildSkaterSeasonRows,
   calculateSkaterTotals,
   buildGoalieSeasonRows,
@@ -47,8 +48,28 @@ import {
 } from "@/components/ui/select";
 import type { SkaterStats, GoalieStats } from "@/types";
 
+const TABS = ["overview", "career", "shots", "form"] as const;
+type PlayerTab = (typeof TABS)[number];
+
+const TAB_LABELS: Record<PlayerTab, string> = {
+  overview: "Overview",
+  career: "Career stats",
+  shots: "Shot map",
+  form: "Recent form",
+};
+
 export const Route = createFileRoute("/players/$id")({
   component: PlayerDetailPage,
+  // `season` is accepted (box score links send it) but the page always opens
+  // on the player's latest season.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tab?: PlayerTab; season?: number } => ({
+    tab: TABS.includes(search.tab as PlayerTab)
+      ? (search.tab as PlayerTab)
+      : undefined,
+    season: typeof search.season === "number" ? search.season : undefined,
+  }),
 });
 
 // Type guard to check if stats response is for a goalie
@@ -59,21 +80,21 @@ function isGoalieStats(stats: SkaterStats[] | GoalieStats[]): stats is GoalieSta
 
 // Situation options for the filter
 const SITUATIONS = [
-  { value: "all", label: "All Situations" },
+  { value: "all", label: "All situations" },
   { value: "5on5", label: "5v5" },
-  { value: "5on4", label: "5v4 (Power Play)" },
-  { value: "4on5", label: "4v5 (Penalty Kill)" },
+  { value: "5on4", label: "5v4 (power play)" },
+  { value: "4on5", label: "4v5 (penalty kill)" },
   { value: "other", label: "Other" },
 ] as const;
 
 function PlayerDetailPage() {
   const { id } = Route.useParams();
+  const { tab = "overview" } = Route.useSearch();
   const playerId = parseInt(id, 10);
   const [situation, setSituation] = useState("all");
 
   const { data: player, isLoading: playerLoading, error, refetch } = usePlayer(playerId);
   const { data: statsData, isLoading: statsLoading } = usePlayerStats(playerId);
-  const { data: teamsData } = useTeams();
 
   usePageTitle(player?.name);
 
@@ -139,7 +160,6 @@ function PlayerDetailPage() {
     false
   );
 
-  const teams = teamsData?.teams;
 
   // Get available seasons from stats data for shot filter (skaters only)
   const availableSeasons = useMemo(() => {
@@ -163,161 +183,200 @@ function PlayerDetailPage() {
     return null;
   }, [allStats, availableSeasons, isGoalie]);
 
+  // Latest regular-season, all-situations row: the hero's headline numbers.
+  const latestSeasonStats = useMemo(() => {
+    const regular = (allStats as (SkaterStats | GoalieStats)[]).filter(
+      (s) => s.situation === "all" && !s.isPlayoffs,
+    );
+    return regular.sort((a, b) => b.season - a.season)[0];
+  }, [allStats]);
+
+  // Goalies have no shot map or rolling form views.
+  const tabs: readonly PlayerTab[] = isGoalie ? ["overview", "career"] : TABS;
+  const activeTab: PlayerTab = tabs.includes(tab) ? tab : "overview";
+
   if (error) {
     return (
       <div className="container py-8">
         <ErrorState
           title="Player not found"
-          message="Could not find this player. They may not exist or the server may be unavailable."
+          message="This player doesn't exist, or the stats service is unavailable."
           onRetry={() => refetch()}
         />
       </div>
     );
   }
 
+  const situationFilter = availableSituations.length > 1 && (
+    <Select value={situation} onValueChange={setSituation}>
+      <SelectTrigger className="w-40" aria-label="Situation">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {availableSituations.map((s) => (
+          <SelectItem key={s.value} value={s.value}>
+            {s.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  const currentSeason = availableSeasons[0];
+
   return (
-    <div className="container py-8">
-      <BackButton fallbackPath="/players" label="Players" />
-
-      {playerLoading ? (
-        <PlayerHeaderSkeleton />
-      ) : player ? (
-        <PlayerHeader
-          player={player}
-          teams={teams}
-          isGoalie={isGoalie}
-          luckStats={!isGoalie && skaterTotals.xg > 0 ? {
-            goals: skaterTotals.g,
-            expectedGoals: skaterTotals.xg,
-            shots: skaterTotals.shots,
-          } : undefined}
-        />
-      ) : null}
-
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 mt-6">
-        <h2 className="text-lg font-semibold">Career statistics</h2>
-        {availableSituations.length > 1 && (
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={situation} onValueChange={setSituation}>
-              <SelectTrigger className="h-8 w-36 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableSituations.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
-
-      {statsLoading ? (
-        <StatsTableSkeleton />
-      ) : isGoalie ? (
-        <div className="space-y-8">
-          <GoalieStatsTable rows={goalieSeasonRows} totals={goalieTotals} />
-
-          {filteredGoalieStats.length > 0 && (
-            <section className="space-y-4">
-              <h3 className="text-base font-semibold">Goaltending profile</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <GoalieDangerZoneRadar
-                  stats={filteredGoalieStats}
-                  leagueAverages={dangerLeagueAverages}
-                />
-                <GoalieReboundControl
-                  stats={filteredGoalieStats}
-                  leagueAverageRatio={goalieBaselines?.reboundRatio}
-                />
-              </div>
-            </section>
-          )}
-
-          {availableSeasons.length > 0 && (
-            <section className="space-y-4">
-              <h3 className="text-base font-semibold">Workload</h3>
-              <GoalieWorkloadMonitor
-                playerId={playerId}
-                season={availableSeasons[0]}
-                className="mt-0"
-              />
-            </section>
-          )}
-        </div>
+    <>
+      {playerLoading || !player ? (
+        <EntityHeroSkeleton />
       ) : (
-        <div className="space-y-8">
-          <SkaterStatsTable rows={skaterSeasonRows} totals={skaterTotals} />
+        <PlayerHero player={player} season={latestSeasonStats} />
+      )}
 
-          {availableSeasons.length > 0 && (
-            <section className="space-y-4">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <h3 className="text-base font-semibold">Current season insights</h3>
-                <p className="text-xs text-muted-foreground">
-                  Regular season • all situations (unless noted)
-                </p>
-              </div>
+      <PageTabs aria-label="Player sections">
+        {tabs.map((t) => (
+          <Link
+            key={t}
+            to="/players/$id"
+            params={{ id }}
+            search={t === "overview" ? {} : { tab: t }}
+            data-active={t === activeTab}
+            activeProps={{}}
+            className={pageTabClass}
+            resetScroll={false}
+          >
+            {TAB_LABELS[t]}
+          </Link>
+        ))}
+      </PageTabs>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SkaterPercentilePanel
-                  stats={allStats as SkaterStats[]}
-                  season={availableSeasons[0]}
-                />
-                <SeasonComparisonRadar
-                  stats={allStats as SkaterStats[]}
-                  season={availableSeasons[0]}
-                />
-              </div>
-
-              {shiftQualityStats && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <ShiftQualityDashboard stats={shiftQualityStats} />
-                  <FaceoffStatsCard stats={shiftQualityStats} baselines={skaterBaselines} />
-                  <GiveawayTakeawayCard stats={shiftQualityStats} />
-                </div>
-              )}
-
-              <SituationBreakdownChart
-                stats={allStats as SkaterStats[]}
-                season={availableSeasons[0]}
-              />
-
-              <RollingPerformance playerId={playerId} season={availableSeasons[0]} className="mt-0" />
-            </section>
-          )}
-
-          {!statsLoading && allStats.length > 0 && (
-            <section className="space-y-4">
-              <h3 className="text-base font-semibold">Career trends</h3>
-              <CareerTrajectory stats={allStats as SkaterStats[]} className="mt-0" />
-              <CareerTotalsChart stats={allStats as SkaterStats[]} className="mt-0" />
-            </section>
-          )}
-
-          {availableSeasons.length > 0 && (
-            <section className="space-y-4">
-              <h3 className="text-base font-semibold">Shot profile</h3>
+      <div className="container space-y-10 py-8">
+        {statsLoading ? (
+          activeTab === "career" ? (
+            <StatsTableSkeleton />
+          ) : (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <UsageCardSkeleton />
+              <UsageCardSkeleton />
+              <UsageCardSkeleton />
+            </div>
+          )
+        ) : allStats.length === 0 ? (
+          <p className="py-12 text-center text-muted-foreground">
+            No NHL stats recorded for this player yet.
+          </p>
+        ) : isGoalie ? (
+          <>
+            {activeTab === "overview" && (
+              <>
+                {currentSeason && (
+                  <Section title="Workload">
+                    <GoalieWorkloadMonitor
+                      playerId={playerId}
+                      season={currentSeason}
+                      className="mt-0"
+                    />
+                  </Section>
+                )}
+                {filteredGoalieStats.length > 0 && (
+                  <Section
+                    title="Goaltending profile"
+                    description="Save rates by shot danger and rebound control, across the seasons shown in career stats."
+                    action={situationFilter}
+                  >
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                      <GoalieDangerZones
+                        stats={filteredGoalieStats}
+                        leagueAverages={dangerLeagueAverages}
+                      />
+                      <GoalieReboundControl
+                        stats={filteredGoalieStats}
+                        leagueAverageRatio={goalieBaselines?.reboundRatio}
+                      />
+                    </div>
+                  </Section>
+                )}
+              </>
+            )}
+            {activeTab === "career" && (
+              <Section title="Career statistics" action={situationFilter}>
+                <GoalieStatsTable rows={goalieSeasonRows} totals={goalieTotals} />
+              </Section>
+            )}
+          </>
+        ) : (
+          <>
+            {activeTab === "overview" && currentSeason && (
+              <>
+                <Section
+                  title="This season"
+                  description="Regular season, all situations unless noted."
+                >
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <SkaterPercentilePanel
+                      stats={allStats as SkaterStats[]}
+                      season={currentSeason}
+                    />
+                    <SeasonComparisonRadar
+                      stats={allStats as SkaterStats[]}
+                      season={currentSeason}
+                    />
+                  </div>
+                </Section>
+                {shiftQualityStats && (
+                  <Section title="Usage and puck play">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                      <ShiftQualityDashboard stats={shiftQualityStats} />
+                      <FaceoffStatsCard
+                        stats={shiftQualityStats}
+                        baselines={skaterBaselines}
+                      />
+                      <GiveawayTakeawayCard stats={shiftQualityStats} />
+                    </div>
+                  </Section>
+                )}
+                <Section title="By situation">
+                  <SituationBreakdownChart
+                    stats={allStats as SkaterStats[]}
+                    season={currentSeason}
+                  />
+                </Section>
+              </>
+            )}
+            {activeTab === "career" && (
+              <>
+                <Section title="Career statistics" action={situationFilter}>
+                  <SkaterStatsTable rows={skaterSeasonRows} totals={skaterTotals} />
+                </Section>
+                <Section title="Career trends">
+                  <CareerTrajectory
+                    stats={allStats as SkaterStats[]}
+                    className="mt-0"
+                  />
+                  <CareerTotalsChart
+                    stats={allStats as SkaterStats[]}
+                    className="mt-0"
+                  />
+                </Section>
+              </>
+            )}
+            {activeTab === "shots" && (
               <PlayerShotMap
                 playerId={playerId}
                 availableSeasons={availableSeasons}
                 playerTeamAbbreviation={player?.currentTeamAbbreviation}
                 className="mt-0"
               />
-            </section>
-          )}
-        </div>
-      )}
-
-      {!isGoalie && statsLoading && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          <ShiftQualityDashboardSkeleton />
-          <FaceoffStatsCardSkeleton />
-          <GiveawayTakeawayCardSkeleton />
-        </div>
-      )}
-    </div>
+            )}
+            {activeTab === "form" && currentSeason && (
+              <RollingPerformance
+                playerId={playerId}
+                season={currentSeason}
+                className="mt-0"
+              />
+            )}
+          </>
+        )}
+      </div>
+    </>
   );
 }

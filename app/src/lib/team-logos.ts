@@ -44,7 +44,22 @@ const TEAM_LOGO_MAP: Record<string, string> = {
   ATL: "ATL", // Atlanta Thrashers → Winnipeg Jets (2011)
 };
 
-export function getTeamLogoUrl(abbrev: string): string {
+/**
+ * `light` logos are drawn for light backgrounds, `dark` logos for dark ones
+ * (team-coloured headers, the scores strip). Without a variant the logo
+ * matches the page theme at call time; components that must follow theme
+ * toggles live should pass `resolvedTheme` from useTheme().
+ */
+export function getTeamLogoUrl(
+  abbrev: string,
+  variant?: "light" | "dark",
+): string {
+  const resolved =
+    variant ??
+    (typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light");
   const mapped = TEAM_LOGO_MAP[abbrev] ?? abbrev;
-  return `https://assets.nhle.com/logos/nhl/svg/${mapped}_light.svg`;
+  return `https://assets.nhle.com/logos/nhl/svg/${mapped}_${resolved}.svg`;
 }

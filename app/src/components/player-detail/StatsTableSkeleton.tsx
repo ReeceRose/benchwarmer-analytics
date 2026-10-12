@@ -5,7 +5,7 @@ export function StatsTableSkeleton() {
   return (
     <Card className="py-0 gap-0">
       <CardContent className="p-0 overflow-hidden">
-      <div className="bg-muted/50 p-3 border-b">
+      <div className="border-b p-3">
         <div className="flex gap-4">
           <Skeleton className="h-4 w-16" />
           <Skeleton className="h-4 w-14" />
@@ -35,7 +35,7 @@ export function StatsTableSkeleton() {
           </div>
         </div>
       ))}
-      <div className="bg-muted/50 p-3 border-t-2">
+      <div className="border-t p-3">
         <div className="flex gap-4 items-center">
           <Skeleton className="h-4 w-14" />
           <Skeleton className="h-4 w-10" />

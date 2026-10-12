@@ -43,9 +43,6 @@ export function getThresholdColour(
   return "text-foreground";
 }
 
-// Legacy alias
-export const getThresholdColor = getThresholdColour;
-
 // Preset thresholds for common hockey stats
 
 /**
@@ -63,9 +60,6 @@ export function getPdoColour(pdo: number | null | undefined): string {
   return "text-foreground";
 }
 
-// Legacy alias
-export const getPdoColor = getPdoColour;
-
 /**
  * Points differential colour - positive is overperforming (error), negative is underperforming (success).
  */
@@ -76,9 +70,6 @@ export function getPointsDiffColour(diff: number | null | undefined): string {
   return "text-muted-foreground";
 }
 
-// Legacy alias
-export const getPointsDiffColor = getPointsDiffColour;
-
 /**
  * Expected goals percentage colour - higher is better.
  */
@@ -86,18 +77,12 @@ export function getXgPctColour(xgPct: number | null | undefined): string {
   return getThresholdColour(xgPct, { good: 52, bad: 48 });
 }
 
-// Legacy alias
-export const getXgPctColor = getXgPctColour;
-
 /**
  * Corsi percentage colour - higher is better.
  */
 export function getCorsiColour(corsi: number | null | undefined): string {
   return getThresholdColour(corsi, { good: 52, bad: 48 });
 }
-
-// Legacy alias
-export const getCorsiColor = getCorsiColour;
 
 /**
  * Save percentage colour - higher is better.
@@ -107,19 +92,6 @@ export function getSavePctColour(savePct: number | null | undefined): string {
   return getThresholdColour(savePct, { good: 91.5, bad: 90 });
 }
 
-// Legacy alias
-export const getSavePctColor = getSavePctColour;
-
-/**
- * Goals against average colour - lower is better.
- */
-export function getGaaColour(gaa: number | null | undefined): string {
-  return getThresholdColour(gaa, { good: 3.0, bad: 2.5 }, true);
-}
-
-// Legacy alias
-export const getGaaColor = getGaaColour;
-
 /**
  * Power play percentage colour - higher is better.
  * League average is around 20%.
@@ -128,9 +100,6 @@ export function getPpPctColour(ppPct: number | null | undefined): string {
   return getThresholdColour(ppPct, { good: 23, bad: 17 });
 }
 
-// Legacy alias
-export const getPpPctColor = getPpPctColour;
-
 /**
  * Penalty kill percentage colour - higher is better.
  * League average is around 80%.
@@ -138,9 +107,6 @@ export const getPpPctColor = getPpPctColour;
 export function getPkPctColour(pkPct: number | null | undefined): string {
   return getThresholdColour(pkPct, { good: 82, bad: 77 });
 }
-
-// Legacy alias
-export const getPkPctColor = getPkPctColour;
 
 /**
  * Goal differential colour - positive is good, negative is bad.
@@ -151,9 +117,6 @@ export function getGoalDiffColour(diff: number | null | undefined): string {
   if (diff < -10) return "text-error";
   return "text-foreground";
 }
-
-// Legacy alias
-export const getGoalDiffColor = getGoalDiffColour;
 
 /**
  * Points percentage colour - higher is better.
@@ -166,9 +129,6 @@ export function getPointsPctColour(pct: number | null | undefined): string {
   return "text-foreground";
 }
 
-// Legacy alias
-export const getPointsPctColor = getPointsPctColour;
-
 /**
  * Shooting percentage colour - higher is better but extreme values regress.
  * League average is around 9-10%.
@@ -180,18 +140,12 @@ export function getShootingPctColour(pct: number | null | undefined): string {
   return "text-foreground";
 }
 
-// Legacy alias
-export const getShootingPctColor = getShootingPctColour;
-
 /**
  * Fenwick percentage colour - higher is better.
  */
 export function getFenwickColour(fenwick: number | null | undefined): string {
   return getThresholdColour(fenwick, { good: 52, bad: 48 });
 }
-
-// Legacy alias
-export const getFenwickColor = getFenwickColour;
 
 /**
  * Expected goal differential colour - positive is good, negative is bad.
@@ -202,9 +156,6 @@ export function getXgDiffColour(diff: number | null | undefined): string {
   if (diff < -10) return "text-error";
   return "text-foreground";
 }
-
-// Legacy alias
-export const getXgDiffColor = getXgDiffColour;
 
 const NHL_TEAM_COUNT = 32;
 const TOP_TIER_THRESHOLD = 10;
@@ -220,6 +171,3 @@ export function getRankColour(rank: number | null | undefined): string {
   if (rank >= BOTTOM_TIER_THRESHOLD) return "text-error";
   return "text-foreground";
 }
-
-// Legacy alias
-export const getRankColor = getRankColour;

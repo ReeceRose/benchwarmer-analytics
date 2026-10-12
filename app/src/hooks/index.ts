@@ -3,7 +3,6 @@ export {
   usePlayer,
   usePlayers,
   usePlayerStats,
-  usePlayerLinemates,
   usePlayerSearch,
   usePlayerComparison,
   usePlayerRollingStats,
@@ -13,18 +12,24 @@ export {
 } from "@/hooks/usePlayer";
 export { useLines } from "@/hooks/useLines";
 export { useChemistryMatrix } from "@/hooks/useChemistryMatrix";
-export { useSeasons, useTeamSeasons } from "@/hooks/useSeasons";
+export {
+  useSeasons,
+  useTeamSeasons,
+  seasonsQueryOptions,
+  teamSeasonsQueryOptions,
+} from "@/hooks/useSeasons";
 export { useHomeLeaders } from "@/hooks/useHomeLeaders";
 export { useOutliers } from "@/hooks/useOutliers";
 export { useTopLines } from "@/hooks/useTopLines";
-export { useTeamShots, useTeamShotsAgainst, useShooterStats, usePlayerShots } from "@/hooks/useShots";
-export { useYesterdaysGames, useTodaysGames, useLiveScores, useGamesByDate, useGame, useGameBoxscore, useGameShots, useGamePreview, useGoalieRecentForm, useDeserveToWin } from "@/hooks/useGames";
-export { useBreakoutCandidates, useAgeCurves, useAgeDistribution, useSeasonPercentiles, useLeagueTrends } from "@/hooks/useAnalytics";
+export { useTeamShots, useTeamShotsAgainst, usePlayerShots } from "@/hooks/useShots";
+export { useTodaysGames, useGamesByDate, useGame, useGameBoxscore, useGameShots, useGamePreview, useGoalieRecentForm, useDeserveToWin, useGameLive } from "@/hooks/useGames";
+export { useBreakoutCandidates, useAgeCurves, useAgeDistribution, useLeagueTrends } from "@/hooks/useAnalytics";
 export {
   usePowerRankings,
   useOfficialStandings,
   useStandingsAnalytics,
   useCategoryRankings,
+  useSeasonMinGames,
 } from "@/hooks/useStandings";
 export {
   useTeamSpecialTeams,

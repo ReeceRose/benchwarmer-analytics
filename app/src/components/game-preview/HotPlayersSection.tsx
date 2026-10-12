@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Flame, Snowflake } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TeamHeading } from "@/components/game-preview/TeamHeading";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+import { cn } from "@/lib/utils";
 import type { HotPlayers, HotPlayer } from "@/types";
 
 interface HotPlayersSectionProps {
@@ -17,88 +19,55 @@ function PlayerRow({ player, team }: { player: HotPlayer; team: string }) {
     <Link
       to="/players/$id"
       params={{ id: player.playerId.toString() }}
-      className="flex items-center justify-between py-1.5 px-2 -mx-2 hover:bg-muted/50 rounded transition-colors"
+      className="group -mx-2 flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-muted/60"
     >
-      <div className="flex items-center gap-2">
-        {isHot ? (
-          <Flame className="h-3.5 w-3.5 text-hot" />
-        ) : (
-          <Snowflake className="h-3.5 w-3.5 text-cold" />
-        )}
-        <Avatar className="h-6 w-6">
-          <AvatarImage
-            src={getPlayerHeadshotUrl(player.playerId, team)}
-            alt={player.name}
-          />
-          <AvatarFallback className="text-[10px]">
-            {getPlayerInitials(player.name)}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <span className="font-medium text-sm">{player.name}</span>
+      <Avatar className="size-7">
+        <AvatarImage src={getPlayerHeadshotUrl(player.playerId, team)} alt={player.name} />
+        <AvatarFallback className="text-[10px]">{getPlayerInitials(player.name)}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium group-hover:text-link">
+          {player.name}
           {player.position && (
-            <span className="text-xs text-muted-foreground ml-1">
-              {player.position}
-            </span>
+            <span className="ml-1 text-xs font-normal text-muted-foreground">{player.position}</span>
           )}
         </div>
-      </div>
-      <div className="flex items-center gap-3 text-right">
-        <div className="text-xs text-muted-foreground">
-          {player.goals}G / {player.expectedGoals.toFixed(1)} xG
+        <div className="text-xs text-muted-foreground tabular-nums">
+          {player.goals} G · {player.expectedGoals.toFixed(1)} xG
         </div>
-        <span
-          className={`font-mono text-sm ${
-            isHot ? "text-success" : "text-error"
-          }`}
-        >
-          {isHot ? "+" : ""}
-          {player.differential.toFixed(1)}
-        </span>
       </div>
+      <span
+        className={cn(
+          "flex shrink-0 items-center gap-1 text-sm font-semibold tabular-nums",
+          isHot ? "text-hot" : "text-cold",
+        )}
+      >
+        {isHot ? <Flame className="size-3.5" /> : <Snowflake className="size-3.5" />}
+        {isHot ? "+" : ""}
+        {player.differential.toFixed(1)}
+      </span>
     </Link>
   );
 }
 
-function TeamColumn({
-  team,
-  players,
-}: {
-  team: string;
-  players: HotPlayer[];
-}) {
+function TeamColumn({ team, players }: { team: string; players: HotPlayer[] }) {
   return (
-    <div className="space-y-1">
-      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-        {team}
-      </div>
+    <div className="min-w-0">
+      <TeamHeading team={team} />
       {players.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hot players</p>
+        <p className="text-sm text-muted-foreground">Nobody running hot or cold</p>
       ) : (
-        players.map((player) => (
-          <PlayerRow key={player.playerId} player={player} team={team} />
-        ))
+        players.map((player) => <PlayerRow key={player.playerId} player={player} team={team} />)
       )}
     </div>
   );
 }
 
-export function HotPlayersSection({
-  data,
-  homeTeam,
-  awayTeam,
-}: HotPlayersSectionProps) {
+export function HotPlayersSection({ data, homeTeam, awayTeam }: HotPlayersSectionProps) {
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-medium">Hot Players</h3>
-      <p className="text-xs text-muted-foreground">
-        Players outperforming expected goals (5v5)
-      </p>
-
-      <div className="grid grid-cols-2 gap-4">
-        <TeamColumn team={homeTeam} players={data.home} />
-        <TeamColumn team={awayTeam} players={data.away} />
-      </div>
+    <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
+      <TeamColumn team={awayTeam} players={data.away} />
+      <TeamColumn team={homeTeam} players={data.home} />
     </div>
   );
 }

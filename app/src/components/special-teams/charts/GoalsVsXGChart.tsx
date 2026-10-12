@@ -42,22 +42,22 @@ function CustomTooltip({
   const isLucky = data.type === "pp" ? diff > 0 : diff < 0;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="font-semibold mb-2">{data.label}</div>
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">
             {data.type === "pp" ? "Goals Scored:" : "Goals Against:"}
           </span>{" "}
-          <span className="font-mono font-semibold">{data.goals}</span>
+          <span className="tabular-nums font-semibold">{data.goals}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Expected:</span>{" "}
-          <span className="font-mono">{data.xGoals.toFixed(1)}</span>
+          <span className="tabular-nums">{data.xGoals.toFixed(1)}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Difference:</span>{" "}
-          <span className={`font-mono font-semibold ${diffColor}`}>
+          <span className={`tabular-nums font-semibold ${diffColor}`}>
             {diffSign}{diff.toFixed(1)}
           </span>
         </p>
@@ -73,7 +73,7 @@ export function GoalsVsXGChart({ powerPlay, penaltyKill }: GoalsVsXGChartProps) 
   const chartData: ChartDataPoint[] = [
     {
       name: "PP",
-      label: "Power Play",
+      label: "Power play",
       goals: powerPlay.goals,
       xGoals: powerPlay.xGoals,
       diff: powerPlay.goals - powerPlay.xGoals,
@@ -81,7 +81,7 @@ export function GoalsVsXGChart({ powerPlay, penaltyKill }: GoalsVsXGChartProps) 
     },
     {
       name: "PK",
-      label: "Penalty Kill",
+      label: "Penalty kill",
       goals: penaltyKill.goalsAgainst,
       xGoals: penaltyKill.xGoalsAgainst,
       diff: penaltyKill.goalsAgainst - penaltyKill.xGoalsAgainst,
@@ -99,7 +99,7 @@ export function GoalsVsXGChart({ powerPlay, penaltyKill }: GoalsVsXGChartProps) 
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3">
-        Goals vs Expected Goals
+        Goals vs expected goals
       </h3>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart
@@ -129,7 +129,7 @@ export function GoalsVsXGChart({ powerPlay, penaltyKill }: GoalsVsXGChartProps) 
           />
           <Tooltip
             content={<CustomTooltip />}
-            cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+            cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
           />
           <Legend
             wrapperStyle={{ fontSize: 11, paddingTop: 10 }}
@@ -137,17 +137,17 @@ export function GoalsVsXGChart({ powerPlay, penaltyKill }: GoalsVsXGChartProps) 
           <ReferenceLine y={0} stroke={CHART_AXIS_COLOURS.grid} />
           <Bar
             dataKey="goals"
-            name="Actual Goals"
-            fill={SEMANTIC_COLOURS.success}
-            radius={[4, 4, 0, 0]}
+            name="Actual goals"
+            fill={SEMANTIC_COLOURS.primary}
+            radius={[6, 6, 0, 0]}
             fillOpacity={0.85}
           />
           <Bar
             dataKey="xGoals"
             name="Expected (xG)"
-            fill={SEMANTIC_COLOURS.warning}
-            radius={[4, 4, 0, 0]}
-            fillOpacity={0.85}
+            fill={SEMANTIC_COLOURS.muted}
+            radius={[6, 6, 0, 0]}
+            fillOpacity={0.45}
           />
         </BarChart>
       </ResponsiveContainer>

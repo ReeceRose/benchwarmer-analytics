@@ -1,16 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
+import * as z from "zod/mini";
 import { LineExplorer } from "@/components/line-explorer";
 import type { LineType, LineSortField, SortDirection } from "@/types";
 
 const searchSchema = z.object({
-  season: z.number().optional(),
-  lineType: z.string().optional(),
-  minToi: z.number().optional(),
-  sortBy: z.string().optional(),
-  sortDir: z.string().optional(),
-  page: z.number().optional(),
-  view: z.enum(["table", "charts"]).optional(),
+  season: z.optional(z.number()),
+  lineType: z.optional(z.string()),
+  minToi: z.optional(z.number()),
+  sortBy: z.optional(z.string()),
+  sortDir: z.optional(z.string()),
+  page: z.optional(z.number()),
+  view: z.optional(z.enum(["table", "charts"])),
 });
 
 export const Route = createFileRoute("/teams/$abbrev/lines")({

@@ -1,7 +1,7 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "@tanstack/react-router";
 import { ErrorState } from "@/components/shared";
-import { LuckChart } from "@/components/home/LuckChart";
-import { OutliersSection } from "@/components/home/OutliersSection";
+import { Panel, Section } from "@/components/layout";
+import { LuckBoard, LuckBoardSkeleton, type LuckRow } from "@/components/home/LuckBoard";
 import { useOutliers } from "@/hooks";
 import type { Situation } from "@/types";
 
@@ -15,44 +15,85 @@ export function OutliersSectionWrapper({ season, situation }: OutliersSectionWra
 
   if (error) {
     return (
-      <section className="space-y-4">
-        <ErrorState
-          title="Failed to load outliers"
-          message="Could not fetch outlier data."
-          onRetry={refetch}
-        />
-      </section>
+      <ErrorState
+        title="Couldn't load finishing luck"
+        message="The outliers request failed."
+        onRetry={refetch}
+      />
     );
   }
 
-  if (isLoading) {
-    return (
-      <section className="space-y-4">
-        <Skeleton className="h-64 rounded-lg" />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-80 rounded-lg" />
-          <Skeleton className="h-80 rounded-lg" />
-        </div>
-      </section>
-    );
-  }
+  const skaterRows: LuckRow[] = data
+    ? [
+        ...data.skaterOutliers.runningHot.slice(0, 5),
+        ...data.skaterOutliers.runningCold.slice(0, 5).reverse(),
+      ].map((p) => ({
+        playerId: p.playerId,
+        name: p.name,
+        team: p.team,
+        value: p.differential,
+        detail: `${p.goals} goals on ${p.expectedGoals.toFixed(1)} expected`,
+      }))
+    : [];
 
-  if (!data) {
-    return null;
-  }
+  const goalieRows: LuckRow[] = data?.goalieOutliers
+    ? [
+        ...data.goalieOutliers.runningHot.slice(0, 5),
+        ...data.goalieOutliers.runningCold.slice(0, 5).reverse(),
+      ].map((g) => ({
+        playerId: g.playerId,
+        name: g.name,
+        team: g.team,
+        value: g.goalsSavedAboveExpected,
+        detail: `${g.goalsAgainst} goals allowed on ${g.expectedGoalsAgainst.toFixed(1)} expected`,
+      }))
+    : [];
 
   return (
-    <section className="space-y-4">
-      <LuckChart
-        runningHot={data.skaterOutliers.runningHot}
-        runningCold={data.skaterOutliers.runningCold}
-      />
-      <OutliersSection
-        runningHot={data.skaterOutliers.runningHot}
-        runningCold={data.skaterOutliers.runningCold}
-        goalieRunningHot={data.goalieOutliers?.runningHot}
-        goalieRunningCold={data.goalieOutliers?.runningCold}
-      />
-    </section>
+    <div className="grid gap-8 lg:grid-cols-2">
+      <Section
+        title="Finishing luck"
+        description="Goals scored minus expected goals."
+        action={
+          <Link
+            to="/leaderboards"
+            search={{ view: "charts" }}
+            className="font-semibold text-link hover:underline"
+          >
+            Full chart
+          </Link>
+        }
+      >
+        <Panel>
+          {isLoading ? (
+            <LuckBoardSkeleton />
+          ) : (
+            <LuckBoard
+              rows={skaterRows}
+              negativeLabel="Below expected"
+              positiveLabel="Above expected"
+              valueLabel="G − xG"
+            />
+          )}
+        </Panel>
+      </Section>
+      <Section
+        title="Goaltending luck"
+        description="Goals saved above expected (GSAx)."
+      >
+        <Panel>
+          {isLoading ? (
+            <LuckBoardSkeleton />
+          ) : (
+            <LuckBoard
+              rows={goalieRows}
+              negativeLabel="Letting in more"
+              positiveLabel="Stopping more"
+              valueLabel="GSAx"
+            />
+          )}
+        </Panel>
+      </Section>
+    </div>
   );
 }

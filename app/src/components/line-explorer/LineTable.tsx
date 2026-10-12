@@ -11,6 +11,7 @@ import { SortableTableHeader } from "@/components/shared";
 import { LineRow } from "@/components/line-explorer/LineRow";
 import { LineDetail } from "@/components/line-explorer/LineDetail";
 import type { LineCombination, LineSortField, SortDirection } from "@/types";
+import { EmptyState } from "@/components/layout";
 
 interface LineTableProps {
   lines: LineCombination[];
@@ -45,12 +46,10 @@ export function LineTable({
 
   if (lines.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground border rounded-md">
-        <p className="font-medium">No line combinations found</p>
-        <p className="text-sm mt-1">
-          Try adjusting the filters or selecting a different season.
-        </p>
-      </div>
+      <EmptyState
+        title="No lines have played that much together yet"
+        hint="Lower the minutes, or pick another season."
+      />
     );
   }
 
@@ -61,7 +60,7 @@ export function LineTable({
       <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
+            <TableRow className="hover:bg-transparent">
               <TableHead className="min-w-70">Players</TableHead>
               <SortableTableHeader
                 label="GP"

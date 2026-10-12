@@ -34,20 +34,6 @@ export function formatPercent(
 }
 
 /**
- * Format date string to readable format
- * @example formatDate("1997-01-13") => "Jan 13, 1997"
- */
-export function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return "-";
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-/**
  * Format height in inches to feet and inches
  * @example formatHeight(74) => "6'2\""
  */
@@ -68,27 +54,6 @@ export function formatWeight(lbs: number | null | undefined): string {
 }
 
 /**
- * Format a stat value with optional comparison to average
- * @example formatStat(52.1, 50.0) => { value: "52.1", trend: "up" }
- */
-export function formatStat(
-  value: number | null | undefined,
-  average?: number | null
-): { value: string; trend?: "up" | "down" | "neutral" } {
-  if (value == null) return { value: "-" };
-
-  const formattedValue = value.toFixed(1);
-  if (average == null) return { value: formattedValue };
-
-  const diff = value - average;
-  const threshold = 0.5;
-
-  if (diff > threshold) return { value: formattedValue, trend: "up" };
-  if (diff < -threshold) return { value: formattedValue, trend: "down" };
-  return { value: formattedValue, trend: "neutral" };
-}
-
-/**
  * Format player position to full name
  * @example formatPosition("C") => "Center"
  */
@@ -104,15 +69,6 @@ export function formatPosition(position: string | null | undefined): string {
     RW: "Right Wing",
   };
   return positions[position.toUpperCase()] || position;
-}
-
-/**
- * Format number with commas
- * @example formatNumber(1234567) => "1,234,567"
- */
-export function formatNumber(value: number | null | undefined): string {
-  if (value == null) return "-";
-  return value.toLocaleString();
 }
 
 /**
@@ -179,4 +135,26 @@ export function formatToiPerGame(totalSeconds: number, gamesPlayed: number): str
   const mins = Math.floor(perGame / 60);
   const secs = Math.floor(perGame % 60);
   return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Ordinal for a rank
+ * @example formatOrdinal(1) => "1st", formatOrdinal(22) => "22nd"
+ */
+export function formatOrdinal(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  const suffix = ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  return `${n}${suffix}`;
+}
+
+/**
+ * Short position code for dense tables
+ * @example formatPositionShort("L") => "LW"
+ */
+export function formatPositionShort(position: string | null | undefined): string {
+  if (!position) return "–";
+  const positions: Record<string, string> = { L: "LW", R: "RW" };
+  const upper = position.toUpperCase();
+  return positions[upper] ?? upper;
 }

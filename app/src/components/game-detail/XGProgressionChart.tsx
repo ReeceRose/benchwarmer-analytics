@@ -54,7 +54,7 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <p className="font-semibold mb-2">{data.timeLabel}</p>
       <div className="space-y-1 text-xs">
         {payload.map((p) => (
@@ -62,7 +62,7 @@ function CustomTooltip({
             <span style={{ color: p.color }}>
               {p.dataKey === "homeXG" ? "Home xG:" : "Away xG:"}
             </span>
-            <span className="font-mono font-semibold">
+            <span className="tabular-nums font-semibold">
               {(p.payload[p.dataKey as keyof ChartDataPoint] as number).toFixed(
                 2,
               )}
@@ -166,7 +166,7 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">xG Progression</CardTitle>
+          <CardTitle className="text-base">xG progression</CardTitle>
           <CardDescription>
             No shot data available for this game
           </CardDescription>
@@ -178,7 +178,7 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Expected Goals Progression</CardTitle>
+        <CardTitle className="text-base">Expected goals progression</CardTitle>
         <CardDescription>
           {xgWinner} led by {xgDiff.toFixed(2)} xG | Final:{" "}
           {shotsData.awayTeamCode} {awayGoals} - {homeGoals}{" "}
@@ -279,7 +279,7 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
               {shotsData.homeTeamCode} xG
             </div>
             <div
-              className="font-mono font-semibold"
+              className="tabular-nums font-semibold"
               style={{ color: SEMANTIC_COLOURS.primary }}
             >
               {homeTotal.toFixed(2)}
@@ -290,7 +290,7 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
               {shotsData.awayTeamCode} xG
             </div>
             <div
-              className="font-mono font-semibold"
+              className="tabular-nums font-semibold"
               style={{ color: SEMANTIC_COLOURS.danger }}
             >
               {awayTotal.toFixed(2)}
@@ -315,7 +315,7 @@ export function XGProgressionChartSkeleton() {
         <Skeleton className="h-4 w-72 mt-1" />
       </CardHeader>
       <CardContent>
-        <Skeleton className="w-full h-72 rounded-lg" />
+        <Skeleton className="w-full h-72 rounded-xl" />
         <div className="mt-2 flex justify-center gap-6">
           <Skeleton className="h-3 w-12" />
           <Skeleton className="h-3 w-12" />

@@ -1,5 +1,4 @@
-export { PlayerHeader } from "@/components/player-detail/PlayerHeader";
-export { PlayerHeaderSkeleton } from "@/components/player-detail/PlayerHeaderSkeleton";
+export { PlayerHero } from "@/components/player-detail/PlayerHero";
 export { SkaterStatsTable } from "@/components/player-detail/SkaterStatsTable";
 export { GoalieStatsTable } from "@/components/player-detail/GoalieStatsTable";
 export { StatsTableSkeleton } from "@/components/player-detail/StatsTableSkeleton";
@@ -11,14 +10,11 @@ export { SkaterPercentilePanel } from "@/components/player-detail/SkaterPercenti
 export { SeasonComparisonRadar } from "@/components/player-detail/SeasonComparisonRadar";
 export { SituationBreakdownChart } from "@/components/player-detail/SituationBreakdownChart";
 export { GoalieWorkloadMonitor } from "@/components/player-detail/GoalieWorkloadMonitor";
-export { GoalieDangerZoneRadar } from "@/components/player-detail/GoalieDangerZoneRadar";
+export { GoalieDangerZones } from "@/components/player-detail/GoalieDangerZones";
 export { GoalieReboundControl } from "@/components/player-detail/GoalieReboundControl";
 export { ShiftQualityDashboard } from "@/components/player-detail/ShiftQualityDashboard";
-export { ShiftQualityDashboardSkeleton } from "@/components/player-detail/ShiftQualityDashboardSkeleton";
 export { FaceoffStatsCard } from "@/components/player-detail/FaceoffStatsCard";
-export { FaceoffStatsCardSkeleton } from "@/components/player-detail/FaceoffStatsCardSkeleton";
 export { GiveawayTakeawayCard } from "@/components/player-detail/GiveawayTakeawayCard";
-export { GiveawayTakeawayCardSkeleton } from "@/components/player-detail/GiveawayTakeawayCardSkeleton";
 
 export {
   buildSkaterSeasonRows,
@@ -33,3 +29,4 @@ export {
   type GoalieSeasonRow,
   type GoalieCareerTotals,
 } from "@/components/player-detail/goalie-stats";
+export { UsageCardSkeleton } from "@/components/player-detail/UsageCard";

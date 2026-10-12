@@ -39,23 +39,23 @@ const CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
   goals: "Goals",
   assists: "Assists",
   shots: "Shots",
-  expectedGoals: "Expected Goals",
+  expectedGoals: "Expected goals",
   xgPer60: "xG/60",
   corsiPct: "CF%",
   fenwickPct: "FF%",
   oiShPct: "On-Ice Sh%",
   oiSvPct: "On-Ice Sv%",
   iceTime: "Ice Time (min)",
-  gamesPlayed: "Games Played",
+  gamesPlayed: "Games played",
   faceoffPct: "FO%",
   savePct: "Save %",
   gaa: "GAA",
   gsax: "GSAx",
-  shotsAgainst: "Shots Against",
+  shotsAgainst: "Shots against",
   goalieTime: "Ice Time (min)",
-  goalsAgainst: "Goals Against",
+  goalsAgainst: "Goals against",
   xga: "xGA",
-  reboundControl: "Rebound Control",
+  reboundControl: "Rebound control",
 };
 
 // Custom tooltip
@@ -73,7 +73,7 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <Avatar className="h-6 w-6">
           <AvatarImage
@@ -92,13 +92,13 @@ function CustomTooltip({
           <span className="text-muted-foreground">
             {CATEGORY_LABELS[category]}:
           </span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {formatValue(data.value, category)}
           </span>
         </p>
         <p>
           <span className="text-muted-foreground">Rank:</span>{" "}
-          <span className="font-mono">#{data.rank}</span>
+          <span className="tabular-nums">#{data.rank}</span>
         </p>
       </div>
     </div>
@@ -143,7 +143,7 @@ function CustomYAxisTick({
         cy={0}
         r={12}
         fill="none"
-        stroke="hsl(var(--border))"
+        stroke="var(--border)"
         strokeWidth={1}
       />
     </g>
@@ -203,8 +203,8 @@ export function Top10LeadersChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Top 10 Leaders</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Top 10 leaders</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -241,7 +241,7 @@ export function Top10LeadersChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">
+        <CardTitle className="text-base">
           Top 10: {CATEGORY_LABELS[category]}
         </CardTitle>
         <CardDescription>
@@ -275,13 +275,13 @@ export function Top10LeadersChart({
             />
             <Tooltip
               content={<CustomTooltip category={category} />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
             />
             <Bar
               dataKey="value"
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
-              radius={[0, 4, 4, 0]}
+              radius={4}
             >
               {chartData.map((_, index) => (
                 <Cell

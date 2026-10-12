@@ -18,7 +18,7 @@ export function LineDetail({ line }: LineDetailProps) {
       <TableCell colSpan={8}>
         <div className="py-2 px-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
-            <StatItem label="Goal Diff" value={goalDiff > 0 ? `+${goalDiff}` : goalDiff.toString()} />
+            <StatItem label="Goal diff" value={goalDiff > 0 ? `+${goalDiff}` : goalDiff.toString()} />
             <StatItem label="TOI/GP" value={formatToi(Math.round(toiPerGame))} />
             <StatItem label="GF/60" value={gfPer60.toFixed(2)} />
             <StatItem label="GA/60" value={gaPer60.toFixed(2)} />
@@ -42,7 +42,7 @@ function StatItem({ label, value }: { label: string; value: string }) {
 
 function formatSituation(situation: string): string {
   const map: Record<string, string> = {
-    all: "All Situations",
+    all: "All situations",
     "5on5": "5v5",
     "5on4": "5v4 (PP)",
     "4on5": "4v5 (PK)",

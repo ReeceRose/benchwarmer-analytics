@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { LiveIndicator, GoalsList } from "@/components/shared";
+import { TeamLogo } from "@/components/team-detail/TeamLogo";
 import { formatGameTimeShort, formatPeriod } from "@/lib/game-formatters";
-import type { GameSummary } from "@/types";
+import { getTeamColours } from "@/lib/team-colours";
+import { getTeamName } from "@/lib/team-names";
+import { cn } from "@/lib/utils";
+import type { GameSummary, GameTeam } from "@/types";
 
 interface GameCardProps {
   game: GameSummary;
@@ -12,142 +14,142 @@ interface GameCardProps {
 export function GameCard({ game }: GameCardProps) {
   const isCompleted = game.gameState === "OFF";
   const isLive = game.gameState === "LIVE" || game.gameState === "CRIT";
-  const homeWins =
-    isCompleted && (game.home.goals ?? 0) > (game.away.goals ?? 0);
-  const awayWins =
-    isCompleted && (game.away.goals ?? 0) > (game.home.goals ?? 0);
-
-  // Get the appropriate record based on home/away context
-  const awayDisplayRecord = game.away.roadRecord || game.away.record;
-  const homeDisplayRecord = game.home.homeRecord || game.home.record;
+  const homeWins = isCompleted && (game.home.goals ?? 0) > (game.away.goals ?? 0);
+  const awayWins = isCompleted && (game.away.goals ?? 0) > (game.home.goals ?? 0);
+  const showXg =
+    game.hasShotData &&
+    isCompleted &&
+    game.away.expectedGoals !== null &&
+    game.home.expectedGoals !== null;
 
   return (
-    <Link to="/games/$gameId" params={{ gameId: game.gameId }}>
-      <Card className="h-full hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              {isLive ? (
-                <>
-                  <LiveIndicator />
-                  <span className="font-medium">
-                    {formatPeriod(game.currentPeriod, game.inIntermission)}
-                    {!game.inIntermission &&
-                      game.timeRemaining &&
-                      ` ${game.timeRemaining}`}
-                  </span>
-                </>
-              ) : isCompleted ? (
-                <span>
-                  Final
-                  {game.periodType && game.periodType !== "REG" && (
-                    <Badge
-                      variant="secondary"
-                      className="ml-2 text-[10px] px-1"
-                    >
-                      {game.periodType}
-                    </Badge>
-                  )}
-                </span>
-              ) : (
-                <span>{formatGameTimeShort(game.startTimeUtc)}</span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {(isLive || isCompleted) &&
-                game.away.shotsOnGoal !== null &&
-                game.home.shotsOnGoal !== null && (
-                  <span className="font-mono text-[10px]">
-                    SOG: {game.away.shotsOnGoal}-{game.home.shotsOnGoal}
-                  </span>
-                )}
-              {game.hasShotData && !isLive && (
-                <Badge variant="outline" className="text-[10px]">
-                  Stats
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div
-              className={`flex items-center justify-between ${awayWins ? "" : isCompleted ? "opacity-70" : ""}`}
-            >
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="font-mono text-xs">
-                  {game.away.teamCode}
-                </Badge>
-                <span className="text-sm truncate">{game.away.teamName}</span>
-                {awayDisplayRecord && (
-                  <span className="text-[10px] text-muted-foreground">
-                    ({awayDisplayRecord}
-                    {game.away.roadRecord ? " away" : ""})
-                  </span>
-                )}
-              </div>
-              <span
-                className={`font-mono text-lg font-bold ${awayWins ? "" : isCompleted ? "text-muted-foreground" : ""}`}
-              >
-                {game.away.goals ?? "-"}
-              </span>
-            </div>
-            <div
-              className={`flex items-center justify-between ${homeWins ? "" : isCompleted ? "opacity-70" : ""}`}
-            >
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="font-mono text-xs">
-                  {game.home.teamCode}
-                </Badge>
-                <span className="text-sm truncate">{game.home.teamName}</span>
-                {homeDisplayRecord && (
-                  <span className="text-[10px] text-muted-foreground">
-                    ({homeDisplayRecord}
-                    {game.home.homeRecord ? " home" : ""})
-                  </span>
-                )}
-              </div>
-              <span
-                className={`font-mono text-lg font-bold ${homeWins ? "" : isCompleted ? "text-muted-foreground" : ""}`}
-              >
-                {game.home.goals ?? "-"}
-              </span>
-            </div>
-          </div>
-          {(game.seasonSeries || game.away.streak || game.home.streak) && (
-            <div className="text-[10px] text-muted-foreground text-center space-y-0.5">
-              {game.seasonSeries && <div>{game.seasonSeries}</div>}
-              {(game.away.streak || game.home.streak) && (
-                <div>
-                  {game.away.teamCode}: {game.away.streak || "-"}
-                  {game.away.last10 && (
-                    <span className="opacity-70 ml-1">
-                      L10: {game.away.last10}
-                    </span>
-                  )}
-                  <span className="mx-2 opacity-30">|</span>
-                  {game.home.teamCode}: {game.home.streak || "-"}
-                  {game.home.last10 && (
-                    <span className="opacity-70 ml-1">
-                      L10: {game.home.last10}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
+    <Link
+      to="/games/$gameId"
+      params={{ gameId: game.gameId }}
+      className="group flex h-full flex-col rounded-2xl border bg-card p-4 transition-colors hover:border-primary/40"
+    >
+      <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
+        {isLive ? (
+          <span className="flex items-center gap-2">
+            <LiveIndicator />
+            <span className="font-medium text-foreground">
+              {formatPeriod(game.currentPeriod, game.inIntermission)}
+              {!game.inIntermission && game.timeRemaining && ` ${game.timeRemaining}`}
+            </span>
+          </span>
+        ) : isCompleted ? (
+          <span className="font-medium">
+            Final
+            {game.periodType && game.periodType !== "REG" && `/${game.periodType}`}
+          </span>
+        ) : (
+          <span className="font-medium">{formatGameTimeShort(game.startTimeUtc)}</span>
+        )}
+        {(isLive || isCompleted) &&
+          game.away.shotsOnGoal !== null &&
+          game.home.shotsOnGoal !== null && (
+            <span className="tabular-nums">
+              Shots {game.away.shotsOnGoal}–{game.home.shotsOnGoal}
+            </span>
           )}
-          {game.hasShotData &&
-            isCompleted &&
-            game.away.expectedGoals !== null &&
-            game.home.expectedGoals !== null && (
-              <div className="pt-2 border-t text-[10px] text-muted-foreground font-mono flex justify-between">
-                <span>{game.away.teamCode} xG: {game.away.expectedGoals.toFixed(1)}</span>
-                <span>{game.home.teamCode} xG: {game.home.expectedGoals.toFixed(1)}</span>
-              </div>
-            )}
-          {isLive && game.goals && game.goals.length > 0 && (
-            <GoalsList goals={game.goals} awayCode={game.away.teamCode} />
-          )}
-        </CardContent>
-      </Card>
+      </div>
+
+      <div className="space-y-2">
+        <TeamLine
+          team={game.away}
+          record={game.away.roadRecord || game.away.record}
+          recordLabel={game.away.roadRecord ? "away" : ""}
+          dimmed={isCompleted && !awayWins}
+        />
+        <TeamLine
+          team={game.home}
+          record={game.home.homeRecord || game.home.record}
+          recordLabel={game.home.homeRecord ? "home" : ""}
+          dimmed={isCompleted && !homeWins}
+        />
+      </div>
+
+      {showXg && (
+        <XgShare away={game.away} home={game.home} />
+      )}
+
+      {!isCompleted && !isLive && (game.away.streak || game.home.streak) && (
+        <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">
+          {game.seasonSeries && <div className="mb-0.5">{game.seasonSeries}</div>}
+          Streaks: {game.away.teamCode} {game.away.streak || "–"}, {game.home.teamCode}{" "}
+          {game.home.streak || "–"}
+        </div>
+      )}
+
+      {isLive && game.goals && game.goals.length > 0 && (
+        <div className="mt-3 border-t pt-3">
+          <GoalsList goals={game.goals} awayCode={game.away.teamCode} />
+        </div>
+      )}
     </Link>
+  );
+}
+
+function TeamLine({
+  team,
+  record,
+  recordLabel,
+  dimmed,
+}: {
+  team: GameTeam;
+  record?: string | null;
+  recordLabel: string;
+  dimmed: boolean;
+}) {
+  return (
+    <div className={cn("flex items-center gap-3", dimmed && "opacity-60")}>
+      <TeamLogo abbrev={team.teamCode} size="md" className="size-8" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-medium group-hover:text-link">
+          {getTeamName(team.teamCode)}
+        </div>
+        {record && (
+          <div className="text-xs text-muted-foreground">
+            {record}
+            {recordLabel && ` ${recordLabel}`}
+          </div>
+        )}
+      </div>
+      <span className="font-display text-2xl font-bold tabular-nums">
+        {team.goals ?? ""}
+      </span>
+    </div>
+  );
+}
+
+// Team colour for small marks on the page surface; --team-mix lightens it in
+// dark mode so navy teams stay visible.
+const teamFill = (abbrev: string) =>
+  `color-mix(in oklab, ${getTeamColours(abbrev).primary} var(--team-mix), white)`;
+
+/** Share of expected goals, as a bar split in the two teams' colours. */
+function XgShare({ away, home }: { away: GameTeam; home: GameTeam }) {
+  const awayXg = away.expectedGoals ?? 0;
+  const homeXg = home.expectedGoals ?? 0;
+  const total = awayXg + homeXg || 1;
+  const awayPct = (awayXg / total) * 100;
+
+  return (
+    <div className="mt-3 border-t pt-3">
+      <div className="mb-1.5 flex justify-between text-xs text-muted-foreground tabular-nums">
+        <span>{awayXg.toFixed(1)} xG</span>
+        <span>Expected goals</span>
+        <span>{homeXg.toFixed(1)} xG</span>
+      </div>
+      <div className="flex h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          style={{ width: `${awayPct}%`, backgroundColor: teamFill(away.teamCode) }}
+        />
+        <div
+          className="flex-1 border-l-2 border-card"
+          style={{ backgroundColor: teamFill(home.teamCode) }}
+        />
+      </div>
+    </div>
   );
 }

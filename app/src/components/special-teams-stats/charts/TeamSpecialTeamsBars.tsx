@@ -38,13 +38,13 @@ function getRankColor(rank: number, total: number): string {
   const ratio = (rank - 1) / (total - 1);
 
   if (ratio < 0.25) {
-    return "hsl(142, 76%, 36%)"; // green-600 (top 8)
+    return "var(--chart-3)"; // green-600 (top 8)
   } else if (ratio < 0.5) {
-    return "hsl(217, 91%, 60%)"; // blue-500 (9-16)
+    return "var(--chart-1)"; // blue-500 (9-16)
   } else if (ratio < 0.75) {
-    return "hsl(45, 93%, 47%)"; // amber-500 (17-24)
+    return "var(--chart-4)"; // amber-500 (17-24)
   } else {
-    return "hsl(0, 72%, 51%)"; // red-600 (25-32)
+    return "var(--chart-2)"; // red-600 (25-32)
   }
 }
 
@@ -89,7 +89,7 @@ function CustomTooltip({
   const label = metric === "pp" ? "Power Play %" : "Penalty Kill %";
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <TeamLogo abbrev={data.abbrev} size="sm" />
         <span className="font-semibold">{data.name}</span>
@@ -97,11 +97,11 @@ function CustomTooltip({
       <div className="space-y-1">
         <p>
           <span className="text-muted-foreground">Rank:</span>{" "}
-          <span className="font-mono font-semibold">#{data.rank}</span>
+          <span className="tabular-nums font-semibold">#{data.rank}</span>
         </p>
         <p>
           <span className="text-muted-foreground">{label}:</span>{" "}
-          <span className="font-mono font-semibold">{data.value.toFixed(1)}%</span>
+          <span className="tabular-nums font-semibold">{data.value.toFixed(1)}%</span>
         </p>
       </div>
     </div>
@@ -148,7 +148,7 @@ export function TeamSpecialTeamsBars({
       <Card>
         <CardHeader>
           <CardTitle>{title}</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -162,7 +162,7 @@ export function TeamSpecialTeamsBars({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
@@ -190,11 +190,11 @@ export function TeamSpecialTeamsBars({
             />
             <Tooltip
               content={<CustomTooltip metric={metric} />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.5 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.5 }}
             />
             <Bar
               dataKey="value"
-              radius={[0, 4, 4, 0]}
+              radius={4}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
             >
@@ -210,29 +210,29 @@ export function TeamSpecialTeamsBars({
         <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(142, 76%, 36%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-3)" }}
             />
             <span>Top 8</span>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(217, 91%, 60%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-1)" }}
             />
             <span>9-16</span>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(45, 93%, 47%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-4)" }}
             />
             <span>17-24</span>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(0, 72%, 51%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-2)" }}
             />
             <span>25-32</span>
           </div>

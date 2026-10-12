@@ -1,9 +1,7 @@
 import { useMemo } from "react";
-import { Layers, BarChart3, TableIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { SeasonSelector, ErrorState } from "@/components/shared";
+import { SeasonSelector, ErrorState, TableSkeleton } from "@/components/shared";
+import { EmptyState, ViewToggle } from "@/components/layout";
 import { useLines, useTeamSeasons } from "@/hooks";
 import { LineFilters } from "@/components/line-explorer/LineFilters";
 import { LineTable } from "@/components/line-explorer/LineTable";
@@ -119,49 +117,23 @@ export function LineExplorer({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="flex items-center gap-2">
-            <Layers className="h-5 w-5" />
-            Line Combinations
-          </CardTitle>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <SeasonSelector
-              value={effectiveSeason}
-              onValueChange={onSeasonChange}
-              teamAbbrev={teamAbbrev}
-            />
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-              <Button
-                variant={view === "charts" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onViewChange("charts")}
-                className="gap-1 px-2 sm:gap-2 sm:px-3"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden xs:inline">Charts</span>
-              </Button>
-              <Button
-                variant={view === "table" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onViewChange("table")}
-                className="gap-1 px-2 sm:gap-2 sm:px-3"
-              >
-                <TableIcon className="h-4 w-4" />
-                <span className="hidden xs:inline">Table</span>
-              </Button>
-            </div>
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <SeasonSelector
+            value={effectiveSeason}
+            onValueChange={onSeasonChange}
+            teamAbbrev={teamAbbrev}
+          />
+          <LineFilters
+            lineType={lineType}
+            onLineTypeChange={onLineTypeChange}
+            minToi={minToi}
+            onMinToiChange={onMinToiChange}
+          />
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <LineFilters
-          lineType={lineType}
-          onLineTypeChange={onLineTypeChange}
-          minToi={minToi}
-          onMinToiChange={onMinToiChange}
-        />
+        <ViewToggle value={view} onValueChange={onViewChange} />
+      </div>
         {error && (
           <ErrorState
             title="Failed to load lines"
@@ -170,13 +142,7 @@ export function LineExplorer({
             variant="inline"
           />
         )}
-        {isLoading && (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-14 w-full" />
-            ))}
-          </div>
-        )}
+        {isLoading && <TableSkeleton rows={8} columns={8} />}
         {!isLoading && !error && data && (
           <>
             {view === "charts" ? (
@@ -234,11 +200,11 @@ export function LineExplorer({
           </>
         )}
         {!effectiveSeason && !isLoading && (
-          <div className="text-center py-12 text-muted-foreground">
-            <p className="font-medium">Select a season to view line combinations</p>
-          </div>
+          <EmptyState
+            title="No seasons recorded for this team"
+            hint="Line combinations appear once the team has played."
+          />
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }

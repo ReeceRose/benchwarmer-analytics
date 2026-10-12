@@ -62,7 +62,7 @@ function CustomTooltip({
   const isElite = data.gsax > 0 && data.savePct > AVG_SAVE_PCT;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <Avatar className="h-6 w-6">
           <AvatarImage
@@ -79,14 +79,14 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Save %:</span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {data.savePct.toFixed(1)}%
           </span>
         </p>
         <p>
           <span className="text-muted-foreground">GSAx:</span>{" "}
           <span
-            className={`font-mono font-semibold ${data.gsax > 0 ? "text-success" : "text-destructive"}`}
+            className={`tabular-nums font-semibold ${data.gsax > 0 ? "text-success" : "text-destructive"}`}
           >
             {data.gsax > 0 ? "+" : ""}
             {data.gsax.toFixed(1)}
@@ -94,10 +94,10 @@ function CustomTooltip({
         </p>
         <p>
           <span className="text-muted-foreground">Games Played:</span>{" "}
-          <span className="font-mono">{data.gamesPlayed}</span>
+          <span className="tabular-nums">{data.gamesPlayed}</span>
         </p>
         {isElite && (
-          <p className="text-success font-medium mt-1">Elite Performance</p>
+          <p className="text-success font-medium mt-1">Elite performance</p>
         )}
       </div>
     </div>
@@ -125,9 +125,9 @@ function CustomDot(props: {
       cx={cx}
       cy={cy}
       r={size}
-      fill={isPositiveGSAx ? "hsl(142, 76%, 36%)" : "hsl(0, 72%, 51%)"}
+      fill={isPositiveGSAx ? "var(--chart-3)" : "var(--chart-2)"}
       fillOpacity={0.7}
-      stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--background))"}
+      stroke={isSelected ? "var(--primary)" : "var(--background)"}
       strokeWidth={isSelected ? 3 : 1.5}
       style={{ transition: "r 0.15s, stroke-width 0.15s" }}
     />
@@ -146,7 +146,7 @@ function SelectionPanel({
   const isElite = data.gsax > 0 && data.savePct > AVG_SAVE_PCT;
 
   return (
-    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+    <div className="mt-3 animate-in rounded-xl border bg-card p-3 duration-200 slide-in-from-bottom-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <Avatar className="h-10 w-10 shrink-0">
@@ -164,10 +164,10 @@ function SelectionPanel({
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">Sv%:</span>{" "}
-                <span className="font-mono">{data.savePct.toFixed(1)}%</span>
+                <span className="tabular-nums">{data.savePct.toFixed(1)}%</span>
               </span>
               <span
-                className={`font-mono font-semibold ${data.gsax > 0 ? "text-success" : "text-destructive"}`}
+                className={`tabular-nums font-semibold ${data.gsax > 0 ? "text-success" : "text-destructive"}`}
               >
                 GSAx: {data.gsax > 0 ? "+" : ""}
                 {data.gsax.toFixed(1)}
@@ -235,8 +235,8 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Goalie Performance</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Goalie performance</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -252,7 +252,7 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Goalie Performance Quadrant</CardTitle>
+        <CardTitle className="text-base">Goalie performance quadrant</CardTitle>
         <CardDescription>
           GSAx vs Save % - size indicates games played (min 5 GP)
         </CardDescription>
@@ -271,7 +271,7 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
               x2={AVG_GSAX}
               y1={AVG_SAVE_PCT}
               y2={yMax}
-              fill="hsl(217, 91%, 60%)"
+              fill="var(--chart-1)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -279,7 +279,7 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
               x2={xMax}
               y1={AVG_SAVE_PCT}
               y2={yMax}
-              fill="hsl(142, 76%, 36%)"
+              fill="var(--chart-3)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -287,7 +287,7 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
               x2={AVG_GSAX}
               y1={yMin}
               y2={AVG_SAVE_PCT}
-              fill="hsl(0, 72%, 51%)"
+              fill="var(--chart-2)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -295,7 +295,7 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
               x2={xMax}
               y1={yMin}
               y2={AVG_SAVE_PCT}
-              fill="hsl(45, 93%, 47%)"
+              fill="var(--chart-4)"
               fillOpacity={0.08}
             />
 
@@ -372,29 +372,25 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
 
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(217, 91%, 60%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium">Lucky</span>
             <p className="text-muted-foreground">High Sv%, Negative GSAx</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(142, 76%, 36%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium text-success">Elite</span>
             <p className="text-muted-foreground">High Sv%, Positive GSAx</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(0, 72%, 51%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium text-destructive">Struggling</span>
             <p className="text-muted-foreground">Low Sv%, Negative GSAx</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(45, 93%, 47%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium">Unlucky</span>
             <p className="text-muted-foreground">Low Sv%, Positive GSAx</p>

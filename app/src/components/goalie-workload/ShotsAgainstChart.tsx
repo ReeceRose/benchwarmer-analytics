@@ -27,7 +27,7 @@ interface ShotsAgainstChartProps {
 export function ShotsAgainstChart({ data }: ShotsAgainstChartProps) {
   return (
     <div>
-      <h4 className="text-sm font-medium mb-2">Shots Against Trend</h4>
+      <h4 className="text-sm font-medium mb-2">Shots against trend</h4>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart

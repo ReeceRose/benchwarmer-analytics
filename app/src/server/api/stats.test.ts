@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ageAsOfSept15, breakoutScore, percentileThresholds, rookieScore, seasonTrend, thresholds } from "@/server/api/stats";
 
-const skater = { goals: 10, assists: 15, shots: 120, iceTimeSeconds: 60_000, expectedGoals: 14, corsiForPct: 55 };
+const skater = { goals: 10, assists: 15, shots: 120, iceTimeSeconds: 60_000, expectedGoals: 14, corsiForPct: 0.55 };
 
 describe("percentileThresholds", () => {
   it("interpolates linearly between ranks and rounds to 3 dp", () => {

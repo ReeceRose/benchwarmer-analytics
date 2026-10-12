@@ -1,13 +1,5 @@
-import { Clock } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { SegmentedControl } from "@/components/layout";
 import type { LineType } from "@/types";
 
 interface LineFiltersProps {
@@ -24,24 +16,18 @@ export function LineFilters({
   onMinToiChange,
 }: LineFiltersProps) {
   return (
-    <div className="flex flex-wrap items-end gap-4">
-      <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">Line Type</Label>
-        <Select value={lineType} onValueChange={(v) => onLineTypeChange(v as LineType)}>
-          <SelectTrigger className="w-35">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="forward">Forward Lines</SelectItem>
-            <SelectItem value="defense">Defense Pairs</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          Min TOI (minutes)
-        </Label>
+    <div className="flex flex-wrap items-center gap-2">
+      <SegmentedControl
+        aria-label="Line type"
+        value={lineType}
+        onValueChange={onLineTypeChange}
+        options={[
+          { value: "forward", label: "Forward lines" },
+          { value: "defense", label: "Defense pairs" },
+        ]}
+      />
+      <label className="flex items-center gap-2 text-sm text-muted-foreground">
+        At least
         <Input
           type="number"
           min={0}
@@ -49,9 +35,10 @@ export function LineFilters({
           step={5}
           value={minToi}
           onChange={(e) => onMinToiChange(parseInt(e.target.value, 10) || 0)}
-          className="w-20"
+          className="h-9 w-20"
         />
-      </div>
+        minutes together
+      </label>
     </div>
   );
 }

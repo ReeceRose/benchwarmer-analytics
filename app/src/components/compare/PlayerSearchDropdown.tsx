@@ -55,13 +55,13 @@ export function PlayerSearchDropdown({
       {showSearch ? (
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search players..."
+              placeholder="Search players…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 w-48"
+              className="w-52 pl-9"
               autoFocus
             />
           </div>
@@ -71,13 +71,13 @@ export function PlayerSearchDropdown({
         </div>
       ) : (
         <Button variant="outline" size="sm" onClick={() => setShowSearch(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Add Player
+          <Plus />
+          Add player
         </Button>
       )}
 
       {showSearch && searchQuery.length >= 2 && (
-        <div className="absolute top-full left-0 mt-1 w-64 bg-popover border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+        <div className="absolute top-full left-0 z-50 mt-1 max-h-64 w-64 overflow-y-auto rounded-xl border bg-popover p-1 shadow-lg shadow-black/5">
           {searchLoading ? (
             <div className="p-4 flex items-center justify-center">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -87,13 +87,13 @@ export function PlayerSearchDropdown({
               <button
                 key={player.id}
                 onClick={() => handleAddPlayer(player)}
-                className="w-full px-3 py-2 text-left hover:bg-muted flex items-center justify-between"
+                className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent"
               >
                 <span>{player.name}</span>
                 <span className="text-xs text-muted-foreground">
                   {player.position && formatPosition(player.position)}{" "}
                   {player.currentTeamAbbreviation &&
-                    `• ${player.currentTeamAbbreviation}`}
+                    `· ${player.currentTeamAbbreviation}`}
                 </span>
               </button>
             ))

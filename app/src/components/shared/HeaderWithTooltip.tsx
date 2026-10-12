@@ -31,7 +31,7 @@ export function HeaderWithTooltip({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <TableHead className={cn("font-semibold cursor-help", className)}>
+        <TableHead className={cn("cursor-help", className)}>
           {label}
         </TableHead>
       </TooltipTrigger>

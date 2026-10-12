@@ -1,16 +1,5 @@
 import { useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { HeaderWithTooltip } from "@/components/shared";
 import { DivisionGroup } from "@/components/standings/DivisionGroup";
-import { StandingsRow } from "@/components/standings/StandingsRow";
-import { getPlayoffStatus } from "@/lib/playoff";
 import type { StandingsGrouping, StandingsWithAnalytics } from "@/types";
 
 interface StandingsTableProps {
@@ -81,12 +70,10 @@ export function StandingsTable({
   // Division view - full width tables stacked vertically
   if (grouping === "division" && groupedTeams) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-10">
         {CONFERENCE_ORDER.map((conference) => (
-          <div key={conference} className="space-y-4">
-            <h2 className="text-lg font-semibold text-muted-foreground">
-              {conference} Conference
-            </h2>
+          <div key={conference} className="space-y-5">
+            <h2 className="text-xl font-semibold">{conference} Conference</h2>
             <div className="space-y-4">
               {DIVISION_ORDER[conference]?.map((division) => {
                 const divisionTeams = groupedTeams.get(division) ?? [];
@@ -139,160 +126,11 @@ export function StandingsTable({
   });
 
   return (
-    <Card className="py-0 gap-0">
-      <CardContent className="p-0">
-        <Table className="table-fixed">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">#</TableHead>
-              <TableHead className="w-48">Team</TableHead>
-              <HeaderWithTooltip
-                label="GP"
-                tooltip="Games played"
-                className="text-right w-11"
-              />
-              <HeaderWithTooltip
-                label="W"
-                tooltip="Wins"
-                className="text-right w-10"
-              />
-              <HeaderWithTooltip
-                label="L"
-                tooltip="Losses"
-                className="text-right w-10"
-              />
-              <HeaderWithTooltip
-                label="OT"
-                tooltip="Overtime losses"
-                className="text-right w-10"
-              />
-              <HeaderWithTooltip
-                label="Pts"
-                tooltip="Points (W×2 + OT)"
-                className="text-right font-semibold w-11"
-              />
-              <HeaderWithTooltip
-                label="Pts%"
-                tooltip="Points percentage"
-                metric="Pts%"
-                className="text-right w-13"
-              />
-              <HeaderWithTooltip
-                label="GF"
-                tooltip="Goals for"
-                className="text-right w-11"
-              />
-              <HeaderWithTooltip
-                label="GA"
-                tooltip="Goals against"
-                className="text-right w-11"
-              />
-              <HeaderWithTooltip
-                label="Diff"
-                tooltip="Goal differential"
-                metric="Diff"
-                className="text-right w-12"
-              />
-              <HeaderWithTooltip
-                label="Home"
-                tooltip="Home record"
-                className="text-right w-16"
-              />
-              <HeaderWithTooltip
-                label="Away"
-                tooltip="Away record"
-                className="text-right w-16"
-              />
-              <HeaderWithTooltip
-                label="L10"
-                tooltip="Last 10 games"
-                className="text-right w-14"
-              />
-              <HeaderWithTooltip
-                label="Strk"
-                tooltip="Current streak"
-                className="text-right w-12"
-              />
-              <HeaderWithTooltip
-                label="xGF"
-                tooltip="Expected goals for"
-                className="text-right w-12"
-              />
-              <HeaderWithTooltip
-                label="xGA"
-                tooltip="Expected goals against"
-                className="text-right w-12"
-              />
-              <HeaderWithTooltip
-                label="xG±"
-                tooltip="Expected goal differential"
-                metric="xG±"
-                className="text-right w-12"
-              />
-              <HeaderWithTooltip
-                label="xPts"
-                tooltip="Expected points"
-                metric="xPts"
-                className="text-right w-12"
-              />
-              <HeaderWithTooltip
-                label="xG%"
-                tooltip="Expected goals percentage"
-                metric="xG%"
-                className="text-right w-13"
-              />
-              <HeaderWithTooltip
-                label="CF%"
-                tooltip="Corsi percentage"
-                metric="CF%"
-                className="text-right w-13"
-              />
-              <HeaderWithTooltip
-                label="FF%"
-                tooltip="Fenwick percentage"
-                metric="FF%"
-                className="text-right w-13"
-              />
-              <HeaderWithTooltip
-                label="Sh%"
-                tooltip="Team shooting percentage"
-                metric="Sh%"
-                className="text-right w-12"
-              />
-              <HeaderWithTooltip
-                label="Sv%"
-                tooltip="Team save percentage"
-                metric="Sv%"
-                className="text-right w-12"
-              />
-              <HeaderWithTooltip
-                label="PDO"
-                tooltip="Sh% + Sv% (luck indicator)"
-                metric="PDO"
-                className="text-right w-13"
-              />
-              <HeaderWithTooltip
-                label="Pts±"
-                tooltip="Points vs expected"
-                metric="Pts±"
-                className="text-right w-12"
-              />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedTeams.map((team, index) => (
-              <StandingsRow
-                key={team.abbreviation}
-                team={team}
-                analyticsLoading={analyticsLoading}
-                season={season}
-                playoffStatus={getPlayoffStatus(team, "league")}
-                displayRank={index + 1}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <DivisionGroup
+      teams={sortedTeams}
+      analyticsLoading={analyticsLoading}
+      season={season}
+      grouping="league"
+    />
   );
 }

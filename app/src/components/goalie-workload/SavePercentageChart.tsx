@@ -27,7 +27,7 @@ interface SavePercentageChartProps {
 export function SavePercentageChart({ data }: SavePercentageChartProps) {
   return (
     <div>
-      <h4 className="text-sm font-medium mb-2">Save Percentage Trend</h4>
+      <h4 className="text-sm font-medium mb-2">Save percentage trend</h4>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart

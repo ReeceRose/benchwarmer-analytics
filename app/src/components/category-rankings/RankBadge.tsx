@@ -6,6 +6,17 @@ import {
 import { cn } from "@/lib/utils";
 import { getRankColour } from "@/lib/stat-colours";
 
+/**
+ * Heatmap fill: strongest at 1st and 32nd, fading to nothing by 11th / 22nd.
+ */
+function rankTint(rank: number): string | undefined {
+  const strength =
+    rank <= 10 ? (11 - rank) / 10 : rank >= 23 ? (rank - 22) / 10 : 0;
+  if (strength === 0) return undefined;
+  const colour = rank <= 10 ? "var(--chart-3)" : "var(--chart-2)";
+  return `color-mix(in oklab, ${colour} ${Math.round(6 + strength * 22)}%, transparent)`;
+}
+
 interface RankBadgeProps {
   rank: number;
   value?: number | string;
@@ -26,10 +37,11 @@ export function RankBadge({
   const content = (
     <span
       className={cn(
-        "inline-flex items-center justify-center min-w-8 px-1.5 py-0.5 rounded text-sm font-medium tabular-nums",
+        "inline-flex min-w-9 items-center justify-center rounded-full px-1.5 py-1 text-sm font-medium tabular-nums",
         colorClass,
         className
       )}
+      style={{ backgroundColor: rankTint(rank) }}
     >
       {rank}
     </span>

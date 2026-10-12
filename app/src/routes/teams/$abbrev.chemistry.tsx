@@ -1,8 +1,7 @@
 import { useMemo } from "react";
+import { EmptyState, SegmentedControl } from "@/components/layout";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
-import { Grid3X3, Filter, Info, ListOrdered } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import * as z from "zod/mini";
 import {
   Select,
   SelectContent,
@@ -11,12 +10,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SeasonSelector, ErrorState } from "@/components/shared";
 import { useChemistryMatrix, useTeamSeasons } from "@/hooks";
 import {
@@ -30,10 +23,10 @@ import type { Situation, PositionFilter } from "@/types";
 type ChemistryView = "grid" | "ranked";
 
 const searchSchema = z.object({
-  season: z.number().optional(),
-  situation: z.string().optional(),
-  position: z.enum(["all", "forward", "defense"]).optional(),
-  display: z.enum(["grid", "ranked"]).optional(),
+  season: z.optional(z.number()),
+  situation: z.optional(z.string()),
+  position: z.optional(z.enum(["all", "forward", "defense"])),
+  display: z.optional(z.enum(["grid", "ranked"])),
 });
 
 export const Route = createFileRoute("/teams/$abbrev/chemistry")({
@@ -44,16 +37,16 @@ export const Route = createFileRoute("/teams/$abbrev/chemistry")({
 // Situation options
 const SITUATIONS = [
   { value: "5on5", label: "5v5" },
-  { value: "all", label: "All Situations" },
+  { value: "all", label: "All situations" },
   { value: "5on4", label: "5v4 (PP)" },
   { value: "4on5", label: "4v5 (PK)" },
 ] as const;
 
 // Position filter options
 const POSITION_FILTERS = [
-  { value: "all", label: "All Players" },
-  { value: "forward", label: "Forwards Only" },
-  { value: "defense", label: "Defense Only" },
+  { value: "all", label: "Everyone" },
+  { value: "forward", label: "Forwards" },
+  { value: "defense", label: "Defense" },
 ] as const;
 
 function TeamChemistryPage() {
@@ -105,69 +98,51 @@ function TeamChemistryPage() {
   }, [chemistryData]);
 
   return (
-    <div className="container pb-8">
-      <div className="mb-6 mt-4">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">
-          Chemistry Matrix
-        </h1>
-        <p className="text-muted-foreground">
-          Player pair performance measured by xG% when playing together.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">Chemistry</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Share of expected goals when each pair of players is on the ice together.
+          </p>
+        </div>
+        <SegmentedControl
+          aria-label="Display"
+          value={display}
+          onValueChange={(display) => updateSearch({ display })}
+          options={[
+            { value: "grid", label: "Grid" },
+            { value: "ranked", label: "Ranked pairs" },
+          ]}
+        />
       </div>
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-2">
         <SeasonSelector
           value={season}
           onValueChange={(s) => updateSearch({ season: s })}
           teamAbbrev={abbrev}
         />
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={situation}
-            onValueChange={(s) => updateSearch({ situation: s as Situation })}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SITUATIONS.map((s) => (
-                <SelectItem key={s.value} value={s.value}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
         <Select
-          value={position}
-          onValueChange={(p) => updateSearch({ position: p as PositionFilter })}
+          value={situation}
+          onValueChange={(s) => updateSearch({ situation: s as Situation })}
         >
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="w-36" aria-label="Situation">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {POSITION_FILTERS.map((p) => (
-              <SelectItem key={p.value} value={p.value}>
-                {p.label}
+            {SITUATIONS.map((s) => (
+              <SelectItem key={s.value} value={s.value}>
+                {s.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Tabs
-          value={display}
-          onValueChange={(v) => updateSearch({ display: v as ChemistryView })}
-        >
-          <TabsList className="h-9">
-            <TabsTrigger value="grid" className="text-xs px-3 gap-1.5">
-              <Grid3X3 className="h-3.5 w-3.5" />
-              Grid
-            </TabsTrigger>
-            <TabsTrigger value="ranked" className="text-xs px-3 gap-1.5">
-              <ListOrdered className="h-3.5 w-3.5" />
-              Ranked
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <SegmentedControl
+          aria-label="Positions"
+          value={position}
+          onValueChange={(position) => updateSearch({ position })}
+          options={POSITION_FILTERS}
+        />
       </div>
       {error && (
         <ErrorState
@@ -177,64 +152,31 @@ function TeamChemistryPage() {
           variant="inline"
         />
       )}
-      {isLoading && (
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-125 w-full" />
-        </div>
-      )}
+      {isLoading && <Skeleton className="h-125 w-full rounded-2xl" />}
       {!season && !isLoading && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="font-medium">
-              Select a season to view chemistry data
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No seasons recorded for this team"
+          hint="Chemistry appears once the team has played."
+        />
       )}
       {!isLoading && !error && matrixData && matrixData.players.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Grid3X3 className="h-5 w-5" />
-              Player Pair xG%
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p>
-                    Expected goals percentage when two players are on ice
-                    together. Green indicates the pair generates more offense
-                    than defense, red indicates the opposite.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <ChemistryLegend />
-            {display === "grid" ? (
-              <ChemistryMatrix matrixData={matrixData} />
-            ) : (
-              <ChemistryTopPairsChart matrixData={matrixData} />
-            )}
-          </CardContent>
-        </Card>
+        <div className="space-y-4 overflow-x-auto rounded-2xl border bg-card p-5">
+          <ChemistryLegend />
+          {display === "grid" ? (
+            <ChemistryMatrix matrixData={matrixData} />
+          ) : (
+            <ChemistryTopPairsChart matrixData={matrixData} />
+          )}
+        </div>
       )}
       {!isLoading &&
         !error &&
         season &&
         (!matrixData || matrixData.players.length === 0) && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Grid3X3 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="font-medium">No chemistry data available</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                No player pair data found for this season and situation.
-              </p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="No pairs for this season and situation"
+            hint="Try all situations, or another season."
+          />
         )}
     </div>
   );

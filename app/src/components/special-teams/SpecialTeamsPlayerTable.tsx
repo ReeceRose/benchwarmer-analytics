@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -12,8 +11,8 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HeaderWithTooltip, LoadingState } from "@/components/shared";
-import { formatPosition, formatToi } from "@/lib/formatters";
+import { HeaderWithTooltip, LoadingState, SortableTableHeader } from "@/components/shared";
+import { formatToi, formatPositionShort } from "@/lib/formatters";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import { useSpecialTeamsPlayers } from "@/hooks";
 import type { SpecialTeamsSituation, SpecialTeamsPlayer } from "@/types";
@@ -44,17 +43,14 @@ function SortableHeader({
   onSort,
 }: SortableHeaderProps) {
   return (
-    <TableHead
-      className="text-right cursor-pointer hover:bg-muted/50 select-none"
-      onClick={() => onSort(field)}
-    >
-      <div className="flex items-center justify-end gap-1">
-        <HeaderWithTooltip label={label} tooltip={tooltip} className="text-right" />
-        {sortField === field && (
-          <span className="text-xs">{sortDirection === "desc" ? "▼" : "▲"}</span>
-        )}
-      </div>
-    </TableHead>
+    <SortableTableHeader
+      label={label}
+      tooltip={tooltip}
+      sortKey={field}
+      currentSort={sortField}
+      sortDesc={sortDirection === "desc"}
+      onSort={onSort}
+    />
   );
 }
 
@@ -138,17 +134,17 @@ export function SpecialTeamsPlayerTable({
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <CardTitle className="text-lg">Player Stats</CardTitle>
+          <CardTitle className="text-base">Player stats</CardTitle>
           <Tabs
             value={situation}
             onValueChange={(v) => setSituation(v as SpecialTeamsSituation)}
           >
             <TabsList className="h-8">
               <TabsTrigger value="5on4" className="text-xs px-3">
-                Power Play
+                Power play
               </TabsTrigger>
               <TabsTrigger value="4on5" className="text-xs px-3">
-                Penalty Kill
+                Penalty kill
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -191,7 +187,7 @@ export function SpecialTeamsPlayerTable({
                     <Link
                       to="/players/$id"
                       params={{ id: String(player.playerId) }}
-                      className="flex items-center gap-2 hover:underline"
+                      className="flex items-center gap-2 transition-colors hover:text-link"
                     >
                       <Avatar className="h-6 w-6">
                         <AvatarImage
@@ -207,9 +203,7 @@ export function SpecialTeamsPlayerTable({
                   </TableCell>
                   <TableCell>
                     {player.position && (
-                      <Badge variant="outline" className="font-normal">
-                        {formatPosition(player.position)}
-                      </Badge>
+                      <span className="text-muted-foreground">{formatPositionShort(player.position)}</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">

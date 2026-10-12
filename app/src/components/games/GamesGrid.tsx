@@ -1,4 +1,4 @@
-import { Calendar } from "lucide-react";
+import { EmptyState } from "@/components/layout";
 import { GameCard } from "@/components/games/GameCard";
 import { GameCardSkeleton } from "@/components/games/GameCardSkeleton";
 import type { GameSummary } from "@/types";
@@ -22,10 +22,7 @@ export function GamesGrid({ games, isLoading, emptyMessage }: GamesGridProps) {
 
   if (games.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>{emptyMessage}</p>
-      </div>
+      <EmptyState title={emptyMessage} hint="Use the arrows to check another day." />
     );
   }
 

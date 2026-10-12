@@ -6,7 +6,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatSeason } from "@/lib/formatters";
@@ -30,15 +29,15 @@ const metricConfig: Record<
   { label: string; format: (v: number) => string; domain?: [number, number] }
 > = {
   avgGoalsPerGame: {
-    label: "Goals per Team-Game",
+    label: "Goals per team-game",
     format: (v) => v.toFixed(2),
   },
   avgAssistsPerGame: {
-    label: "Assists per Team-Game",
+    label: "Assists per team-game",
     format: (v) => v.toFixed(2),
   },
   avgToiPerGame: {
-    label: "TOI per Game (sec)",
+    label: "Average TOI per game",
     format: (v) => {
       const mins = Math.floor(v / 60);
       const secs = Math.round(v % 60);
@@ -46,7 +45,7 @@ const metricConfig: Record<
     },
   },
   avgCorsiPct: {
-    label: "Avg CF%",
+    label: "Average CF%",
     format: (v) => `${v.toFixed(1)}%`,
     domain: [45, 55],
   },
@@ -78,6 +77,7 @@ export function LeagueTrendsChart({ data, metric }: LeagueTrendsChartProps) {
               margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
             >
               <CartesianGrid
+                vertical={false}
                 strokeDasharray="3 3"
                 stroke={CHART_AXIS_COLOURS.grid}
                 strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
@@ -85,29 +85,35 @@ export function LeagueTrendsChart({ data, metric }: LeagueTrendsChartProps) {
               <XAxis
                 dataKey="seasonLabel"
                 tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
-                tickLine={{ stroke: CHART_AXIS_COLOURS.tick }}
+                tickLine={false}
                 axisLine={{ stroke: CHART_AXIS_COLOURS.grid }}
               />
               <YAxis
                 domain={config.domain ?? ["auto", "auto"]}
                 tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
-                tickLine={{ stroke: CHART_AXIS_COLOURS.tick }}
-                axisLine={{ stroke: CHART_AXIS_COLOURS.grid }}
+                tickLine={false}
+                axisLine={false}
+                width={56}
                 tickFormatter={config.format}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--popover))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
+                cursor={{ stroke: CHART_AXIS_COLOURS.grid }}
+                content={({ active, payload, label }) => {
+                  const value = payload?.[0]?.value;
+                  if (!active || typeof value !== "number") return null;
+                  return (
+                    <div className="rounded-xl border bg-popover p-3 text-sm text-popover-foreground shadow-lg shadow-black/5">
+                      <p className="font-semibold">{label}</p>
+                      <p className="mt-1 text-muted-foreground">
+                        {config.label}:{" "}
+                        <span className="font-medium text-foreground tabular-nums">
+                          {config.format(value)}
+                        </span>
+                      </p>
+                    </div>
+                  );
                 }}
-                labelStyle={{ color: "hsl(var(--foreground))" }}
-                formatter={(value) => [
-                  config.format(value as number),
-                  config.label,
-                ]}
               />
-              <Legend />
               <Line
                 type="monotone"
                 dataKey="value"

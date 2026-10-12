@@ -59,7 +59,7 @@ function CustomTooltip({
   const isGoodQuantity = data.corsiPct > 50;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <TeamLogo abbrev={data.abbrev} size="sm" />
         <span className="font-semibold">{data.name}</span>
@@ -68,7 +68,7 @@ function CustomTooltip({
         <p>
           <span className="text-muted-foreground">CF% (Quantity):</span>{" "}
           <span
-            className={`font-mono ${isGoodQuantity ? "text-success" : "text-error"}`}
+            className={`tabular-nums ${isGoodQuantity ? "text-success" : "text-error"}`}
           >
             {data.corsiPct.toFixed(1)}%
           </span>
@@ -76,7 +76,7 @@ function CustomTooltip({
         <p>
           <span className="text-muted-foreground">xG% (Quality):</span>{" "}
           <span
-            className={`font-mono ${isGoodQuality ? "text-success" : "text-error"}`}
+            className={`tabular-nums ${isGoodQuality ? "text-success" : "text-error"}`}
           >
             {data.xGoalsPct.toFixed(1)}%
           </span>
@@ -109,7 +109,7 @@ function CustomDot(props: {
         height={size * 2}
         style={{
           transition: "all 0.15s",
-          filter: isSelected ? "drop-shadow(0 0 4px hsl(var(--primary)))" : undefined,
+          filter: isSelected ? "drop-shadow(0 0 4px var(--primary))" : undefined,
         }}
       />
       {isSelected && (
@@ -118,7 +118,7 @@ function CustomDot(props: {
           cy={cy}
           r={size + 3}
           fill="none"
-          stroke="hsl(var(--primary))"
+          stroke="var(--primary)"
           strokeWidth={2}
         />
       )}
@@ -141,7 +141,7 @@ function SelectionPanel({
   const isStruggling = !isGoodQuality && !isGoodQuantity;
 
   return (
-    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+    <div className="mt-3 animate-in rounded-xl border bg-card p-3 duration-200 slide-in-from-bottom-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <TeamLogo abbrev={data.abbrev} size="md" />
@@ -158,13 +158,13 @@ function SelectionPanel({
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">CF%:</span>{" "}
-                <span className={`font-mono ${isGoodQuantity ? "text-success" : "text-error"}`}>
+                <span className={`tabular-nums ${isGoodQuantity ? "text-success" : "text-error"}`}>
                   {data.corsiPct.toFixed(1)}%
                 </span>
               </span>
               <span>
                 <span className="text-xs">xG%:</span>{" "}
-                <span className={`font-mono ${isGoodQuality ? "text-success" : "text-error"}`}>
+                <span className={`tabular-nums ${isGoodQuality ? "text-success" : "text-error"}`}>
                   {data.xGoalsPct.toFixed(1)}%
                 </span>
               </span>
@@ -229,8 +229,8 @@ export function QualityVsQuantityChart({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Quality vs Quantity</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Quality vs quantity</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -247,8 +247,8 @@ export function QualityVsQuantityChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">
-          Quality vs Quantity of Chances
+        <CardTitle className="text-base">
+          Quality vs quantity of chances
         </CardTitle>
         <CardDescription>
           xG% (quality) vs CF% (volume) - top-right is dominant, bottom-left is
@@ -269,7 +269,7 @@ export function QualityVsQuantityChart({
               x2={50}
               y1={50}
               y2={yMax}
-              fill="hsl(217, 91%, 60%)"
+              fill="var(--chart-1)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -277,7 +277,7 @@ export function QualityVsQuantityChart({
               x2={xMax}
               y1={50}
               y2={yMax}
-              fill="hsl(142, 76%, 36%)"
+              fill="var(--chart-3)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -285,7 +285,7 @@ export function QualityVsQuantityChart({
               x2={50}
               y1={yMin}
               y2={50}
-              fill="hsl(0, 72%, 51%)"
+              fill="var(--chart-2)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -293,7 +293,7 @@ export function QualityVsQuantityChart({
               x2={xMax}
               y1={yMin}
               y2={50}
-              fill="hsl(45, 93%, 47%)"
+              fill="var(--chart-4)"
               fillOpacity={0.08}
             />
 
@@ -369,29 +369,25 @@ export function QualityVsQuantityChart({
 
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(217, 91%, 60%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium">Quality over Volume</span>
             <p className="text-muted-foreground">High xG%, Low CF%</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(142, 76%, 36%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium text-success">Dominant</span>
             <p className="text-muted-foreground">High xG%, High CF%</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(0, 72%, 51%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium text-error">Struggling</span>
             <p className="text-muted-foreground">Low xG%, Low CF%</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(45, 93%, 47%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium">Volume over Quality</span>
             <p className="text-muted-foreground">Low xG%, High CF%</p>

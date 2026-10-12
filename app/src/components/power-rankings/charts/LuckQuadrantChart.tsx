@@ -62,7 +62,7 @@ function CustomTooltip({
   const isLucky = data.pdo > 100;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <TeamLogo abbrev={data.abbrev} size="sm" />
         <span className="font-semibold">{data.name}</span>
@@ -70,15 +70,15 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Shooting %:</span>{" "}
-          <span className="font-mono">{data.shootingPct.toFixed(1)}%</span>
+          <span className="tabular-nums">{data.shootingPct.toFixed(1)}%</span>
         </p>
         <p>
           <span className="text-muted-foreground">Save %:</span>{" "}
-          <span className="font-mono">{data.savePct.toFixed(1)}%</span>
+          <span className="tabular-nums">{data.savePct.toFixed(1)}%</span>
         </p>
         <p className={isLucky ? "text-warning" : "text-success"}>
           <span className="text-muted-foreground">PDO:</span>{" "}
-          <span className="font-mono font-semibold">{data.pdo.toFixed(1)}</span>
+          <span className="tabular-nums font-semibold">{data.pdo.toFixed(1)}</span>
           <span className="ml-1">({isLucky ? "Lucky" : "Unlucky"})</span>
         </p>
       </div>
@@ -109,7 +109,7 @@ function CustomDot(props: {
         height={size * 2}
         style={{
           transition: "all 0.15s",
-          filter: isSelected ? "drop-shadow(0 0 4px hsl(var(--primary)))" : undefined,
+          filter: isSelected ? "drop-shadow(0 0 4px var(--primary))" : undefined,
         }}
       />
       {isSelected && (
@@ -118,7 +118,7 @@ function CustomDot(props: {
           cy={cy}
           r={size + 3}
           fill="none"
-          stroke="hsl(var(--primary))"
+          stroke="var(--primary)"
           strokeWidth={2}
         />
       )}
@@ -138,7 +138,7 @@ function SelectionPanel({
   const isLucky = data.pdo > 100;
 
   return (
-    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+    <div className="mt-3 animate-in rounded-xl border bg-card p-3 duration-200 slide-in-from-bottom-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <TeamLogo abbrev={data.abbrev} size="md" />
@@ -154,13 +154,13 @@ function SelectionPanel({
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">Sh%:</span>{" "}
-                <span className="font-mono">{data.shootingPct.toFixed(1)}%</span>
+                <span className="tabular-nums">{data.shootingPct.toFixed(1)}%</span>
               </span>
               <span>
                 <span className="text-xs">Sv%:</span>{" "}
-                <span className="font-mono">{data.savePct.toFixed(1)}%</span>
+                <span className="tabular-nums">{data.savePct.toFixed(1)}%</span>
               </span>
-              <span className="font-mono font-semibold">
+              <span className="tabular-nums font-semibold">
                 PDO: {data.pdo.toFixed(1)}
               </span>
             </div>
@@ -222,8 +222,8 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Luck Quadrant</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Luck quadrant</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -240,7 +240,7 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Luck Quadrant (Sh% vs Sv%)</CardTitle>
+        <CardTitle className="text-base">Luck quadrant (Sh% vs Sv%)</CardTitle>
         <CardDescription>
           PDO components - teams in upper-right are "lucky", lower-left are
           "unlucky"
@@ -260,7 +260,7 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
               x2={AVG_SHOOTING_PCT}
               y1={AVG_SAVE_PCT}
               y2={yMax}
-              fill="hsl(217, 91%, 60%)"
+              fill="var(--chart-1)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -268,7 +268,7 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
               x2={xMax}
               y1={AVG_SAVE_PCT}
               y2={yMax}
-              fill="hsl(45, 93%, 47%)"
+              fill="var(--chart-4)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -276,7 +276,7 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
               x2={AVG_SHOOTING_PCT}
               y1={yMin}
               y2={AVG_SAVE_PCT}
-              fill="hsl(142, 76%, 36%)"
+              fill="var(--chart-3)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -284,7 +284,7 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
               x2={xMax}
               y1={yMin}
               y2={AVG_SAVE_PCT}
-              fill="hsl(0, 72%, 51%)"
+              fill="var(--chart-2)"
               fillOpacity={0.08}
             />
 
@@ -360,31 +360,27 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
 
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(217, 91%, 60%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
-            <span className="font-medium">Good Defense</span>
+            <span className="font-medium">Good defense</span>
             <p className="text-muted-foreground">High Sv%, Low Sh%</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(45, 93%, 47%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium text-warning">Lucky</span>
             <p className="text-muted-foreground">High Sv%, High Sh%</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(142, 76%, 36%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
             <span className="font-medium text-success">Unlucky</span>
             <p className="text-muted-foreground">Low Sv%, Low Sh%</p>
           </div>
           <div
-            className="p-2 rounded"
-            style={{ backgroundColor: "hsla(0, 72%, 51%, 0.15)" }}
+            className="rounded-xl bg-muted/60 p-2"
           >
-            <span className="font-medium">Good Offense</span>
+            <span className="font-medium">Good offense</span>
             <p className="text-muted-foreground">Low Sv%, High Sh%</p>
           </div>
         </div>

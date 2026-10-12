@@ -70,11 +70,12 @@ export function AgeCurvesChart({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={chartData}
-              margin={{ top: 10, right: 50, left: 0, bottom: 0 }}
+              margin={{ top: 0, right: 8, left: 0, bottom: 0 }}
               onClick={handleChartClick}
               style={{ cursor: "pointer" }}
             >
               <CartesianGrid
+                vertical={false}
                 strokeDasharray="3 3"
                 stroke={CHART_AXIS_COLOURS.grid}
                 strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
@@ -83,13 +84,6 @@ export function AgeCurvesChart({
                 dataKey="age"
                 tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
                 tickFormatter={(v: number) => `${v}`}
-                label={{
-                  value: "Age",
-                  position: "insideBottom",
-                  offset: -5,
-                  fontSize: 12,
-                  fill: CHART_AXIS_COLOURS.tick,
-                }}
                 stroke={CHART_AXIS_COLOURS.grid}
                 strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               />
@@ -124,7 +118,7 @@ export function AgeCurvesChart({
                   );
                   const row = payload[0]?.payload as ChartDataPoint | undefined;
                   return (
-                    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+                    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
                       <p className="font-semibold mb-2">Age {label}</p>
                       {row?.leagueP25 != null &&
                         row?.leagueP75 != null &&
@@ -171,13 +165,19 @@ export function AgeCurvesChart({
                   );
                 }}
               />
-              <Legend />
+              <Legend
+                verticalAlign="top"
+                align="right"
+                height={32}
+                iconType="plainline"
+                wrapperStyle={{ fontSize: 12 }}
+              />
               <ReferenceArea
                 x1={18}
-                x2={23}
+                x2={24}
                 yAxisId="left"
                 fill={AGE_PHASE_COLOURS.development}
-                fillOpacity={0.08}
+                fillOpacity={0.04}
                 label={{
                   value: "Development",
                   position: "insideTopLeft",
@@ -188,10 +188,10 @@ export function AgeCurvesChart({
               />
               <ReferenceArea
                 x1={24}
-                x2={29}
+                x2={30}
                 yAxisId="left"
                 fill={AGE_PHASE_COLOURS.prime}
-                fillOpacity={0.08}
+                fillOpacity={0.04}
                 label={{
                   value: "Prime",
                   position: "insideTopLeft",
@@ -205,7 +205,7 @@ export function AgeCurvesChart({
                 x2={45}
                 yAxisId="left"
                 fill={AGE_PHASE_COLOURS.decline}
-                fillOpacity={0.08}
+                fillOpacity={0.04}
                 label={{
                   value: "Decline",
                   position: "insideTopLeft",
@@ -218,10 +218,10 @@ export function AgeCurvesChart({
                 yAxisId="right"
                 type="monotone"
                 dataKey="leagueSample"
-                name="Sample Size"
+                name="Sample size"
                 fill={CHART_AXIS_COLOURS.reference}
                 stroke="none"
-                fillOpacity={0.1}
+                fillOpacity={0.035}
                 legendType="none"
               />
               <Area
@@ -249,7 +249,7 @@ export function AgeCurvesChart({
                 yAxisId="left"
                 type="monotone"
                 dataKey="league"
-                name={useMedian ? "League Median" : "League Average"}
+                name={useMedian ? "League median" : "League average"}
                 stroke={CHART_AXIS_COLOURS.reference}
                 strokeWidth={2}
                 dot={false}
@@ -271,10 +271,11 @@ export function AgeCurvesChart({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-        <p className="text-xs text-muted-foreground mt-4">
-          League {useMedian ? "medians" : "averages"} based on all qualifying
-          seasons (min {minGames} games played). The subtle shading shows sample
-          size — note the drop after age 35.
+        <p className="mt-4 text-xs text-muted-foreground">
+          Ages along the bottom. League {useMedian ? "medians" : "averages"} use
+          every qualifying season (at least {minGames} games); the darker band is
+          the middle half of players, and the faint shading is sample size
+          (right axis), which thins out after 35.
           {playerInfo.length > 0 &&
             " Player data points shown for each season played."}{" "}
           Click on any age to see the distribution.

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Users, Building2, BarChart3, TableIcon, Zap, Shield, Scale } from "lucide-react";
-import { z } from "zod";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
+import * as z from "zod/mini";
 import {
   useSpecialTeamsTeamRankings,
   useSpecialTeamsPlayerLeaders,
@@ -9,7 +9,6 @@ import {
   usePageTitle,
 } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -17,12 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState } from "@/components/shared";
+import { ErrorState, TableSkeleton } from "@/components/shared";
+import { PageHeader, SegmentedControl, ViewToggle } from "@/components/layout";
 import {
   TeamRankingsTable,
   PlayerLeadersTable,
@@ -34,18 +30,20 @@ import {
 } from "@/components/special-teams-stats";
 
 const searchSchema = z.object({
-  tab: z.enum(["teams", "players"]).optional(),
-  season: z.number().optional(),
-  view: z.enum(["charts", "table"]).optional(),
-  subTab: z.enum(["pp", "pk", "penalties"]).optional(),
-  penaltyScope: z.enum(["best", "worst", "both"]).optional(),
-  minToi: z.number().optional(),
-  position: z.enum(["F", "D"]).optional(),
-  team: z.string().optional(),
+  tab: z.optional(z.enum(["teams", "players"])),
+  season: z.optional(z.number()),
+  view: z.optional(z.enum(["charts", "table"])),
+  subTab: z.optional(z.enum(["pp", "pk", "penalties"])),
+  penaltyScope: z.optional(z.enum(["best", "worst", "both"])),
+  minToi: z.optional(z.number()),
+  position: z.optional(z.enum(["F", "D"])),
+  team: z.optional(z.string()),
 });
 
 export const Route = createFileRoute("/special-teams")({
   component: SpecialTeamsPage,
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery(seasonsQueryOptions),
   validateSearch: searchSchema,
 });
 
@@ -246,25 +244,16 @@ function SpecialTeamsPage() {
         : playerLeadersError;
 
   return (
-    <div className="container mx-auto py-6 px-4 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Zap className="h-6 w-6 text-warning" />
-            Special Teams
-          </h1>
-          <p className="text-muted-foreground">
-            League-wide power play and penalty kill statistics
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Label className="text-sm text-muted-foreground">Season</Label>
+    <div className="container space-y-6 py-8">
+      <PageHeader
+        title="Special teams"
+        description="Power play and penalty kill across the league, for teams and the players on those units."
+        actions={
           <Select
             value={String(effectiveSeason)}
             onValueChange={(v) => updateSearch({ season: Number(v) })}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32" aria-label="Season">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -275,168 +264,93 @@ function SpecialTeamsPage() {
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <Tabs
-          value={currentTab}
-          onValueChange={(v) => updateSearch({ tab: v as "teams" | "players" })}
-        >
-          <TabsList>
-            <TabsTrigger value="teams" className="gap-2">
-              <Building2 className="h-4 w-4" />
-              Teams
-            </TabsTrigger>
-            <TabsTrigger value="players" className="gap-2">
-              <Users className="h-4 w-4" />
-              Players
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          <Button
-            variant={currentView === "charts" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateSearch({ view: "charts" })}
-            className="gap-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Charts
-          </Button>
-          <Button
-            variant={currentView === "table" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => updateSearch({ view: "table" })}
-            className="gap-2"
-          >
-            <TableIcon className="h-4 w-4" />
-            Table
-          </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl
+            aria-label="Teams or players"
+            value={currentTab}
+            onValueChange={(tab) => updateSearch({ tab })}
+            options={[
+              { value: "teams", label: "Teams" },
+              { value: "players", label: "Players" },
+            ]}
+          />
+          {currentTab === "players" && (
+            <SegmentedControl
+              aria-label="Player stats"
+              value={currentSubTab}
+              onValueChange={(subTab) => updateSearch({ subTab })}
+              options={[
+                { value: "pp", label: "Power play" },
+                { value: "pk", label: "Penalty kill" },
+                { value: "penalties", label: "Penalties" },
+              ]}
+            />
+          )}
         </div>
+        <ViewToggle
+          value={currentView}
+          onValueChange={(view) => updateSearch({ view })}
+        />
       </div>
 
       {currentTab === "players" && (
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Tabs
-                value={currentSubTab}
-                onValueChange={(v) =>
-                  updateSearch({ subTab: v as "pp" | "pk" | "penalties" })
-                }
-              >
-                <TabsList>
-                  <TabsTrigger value="pp" className="gap-1.5">
-                    <Zap className="h-3.5 w-3.5" />
-                    Power Play
-                  </TabsTrigger>
-                  <TabsTrigger value="pk" className="gap-1.5">
-                    <Shield className="h-3.5 w-3.5" />
-                    Penalty Kill
-                  </TabsTrigger>
-                  <TabsTrigger value="penalties" className="gap-1.5">
-                    <Scale className="h-3.5 w-3.5" />
-                    Penalties
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              <div className="flex flex-wrap items-center gap-4 ml-auto">
-                {currentSubTab === "penalties" && (
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground whitespace-nowrap">
-                      Scope
-                    </Label>
-                    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-                      <Button
-                        variant={penaltyScope === "best" ? "default" : "ghost"}
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={() => updateSearch({ penaltyScope: "best" })}
-                      >
-                        Best
-                      </Button>
-                      <Button
-                        variant={penaltyScope === "both" ? "default" : "ghost"}
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={() => updateSearch({ penaltyScope: "both" })}
-                      >
-                        Both
-                      </Button>
-                      <Button
-                        variant={penaltyScope === "worst" ? "default" : "ghost"}
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={() => updateSearch({ penaltyScope: "worst" })}
-                      >
-                        Worst
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground whitespace-nowrap">
-                    Min TOI
-                  </Label>
-                  <Input
-                    type="number"
-                    value={minToi}
-                    onChange={(e) =>
-                      updateSearch({ minToi: Number(e.target.value) || 50 })
-                    }
-                    className="w-20 h-8"
-                    min={0}
-                    max={500}
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Position
-                  </Label>
-                  <Select
-                    value={position ?? "all"}
-                    onValueChange={(v) =>
-                      updateSearch({
-                        position: v === "all" ? undefined : (v as "F" | "D"),
-                      })
-                    }
-                  >
-                    <SelectTrigger className="w-24 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="F">Forwards</SelectItem>
-                      <SelectItem value="D">Defense</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
+          {currentSubTab === "penalties" && (
+            <label className="flex items-center gap-2 text-muted-foreground">
+              Show
+              <SegmentedControl
+                aria-label="Penalty scope"
+                value={penaltyScope}
+                onValueChange={(penaltyScope) => updateSearch({ penaltyScope })}
+                options={[
+                  { value: "best", label: "Best" },
+                  { value: "both", label: "Both" },
+                  { value: "worst", label: "Worst" },
+                ]}
+              />
+            </label>
+          )}
+          <label className="flex items-center gap-2 text-muted-foreground">
+            Position
+            <SegmentedControl
+              aria-label="Position"
+              value={position ?? "all"}
+              onValueChange={(v) =>
+                updateSearch({ position: v === "all" ? undefined : v })
+              }
+              options={[
+                { value: "all", label: "All" },
+                { value: "F", label: "Forwards" },
+                { value: "D", label: "Defense" },
+              ]}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-muted-foreground">
+            Minimum minutes
+            <Input
+              type="number"
+              value={minToi}
+              onChange={(e) =>
+                updateSearch({ minToi: Number(e.target.value) || 50 })
+              }
+              className="h-9 w-20"
+              min={0}
+              max={500}
+            />
+          </label>
+        </div>
       )}
 
       {isLoading ? (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-            </div>
-          </CardContent>
-        </Card>
+        <TableSkeleton rows={10} columns={10} />
       ) : hasError ? (
         <ErrorState
-          title="Failed to load data"
-          message="Unable to fetch special teams statistics."
+          title="Couldn't load special teams"
+          message="The special teams request failed."
           onRetry={
             currentTab === "teams"
               ? refetchTeamRankings
@@ -467,11 +381,7 @@ function SpecialTeamsPage() {
             </div>
           </div>
         ) : (
-          <Card>
-            <CardContent className="pt-4">
-              <TeamRankingsTable teams={teamRankingsData?.teams ?? []} season={effectiveSeason} />
-            </CardContent>
-          </Card>
+<TeamRankingsTable teams={teamRankingsData?.teams ?? []} season={effectiveSeason} />
         )
       ) : // Players Tab
       currentView === "charts" ? (
@@ -497,21 +407,13 @@ function SpecialTeamsPage() {
         )
       ) : // Players Table View
       currentSubTab === "penalties" ? (
-        <Card>
-          <CardContent className="pt-4">
-            <PenaltyStatsTable players={penaltyPlayers} season={effectiveSeason} />
-          </CardContent>
-        </Card>
+<PenaltyStatsTable players={penaltyPlayers} season={effectiveSeason} />
       ) : (
-        <Card>
-          <CardContent className="pt-4">
-            <PlayerLeadersTable
-              players={playerLeadersData?.players ?? []}
-              situation={situation}
-              season={effectiveSeason}
-            />
-          </CardContent>
-        </Card>
+        <PlayerLeadersTable
+          players={playerLeadersData?.players ?? []}
+          situation={situation}
+          season={effectiveSeason}
+        />
       )}
     </div>
   );

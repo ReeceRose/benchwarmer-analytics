@@ -2,7 +2,6 @@ import { useQuery, useQueries, keepPreviousData } from "@tanstack/react-query";
 import {
   getPlayer,
   getPlayerStats,
-  getPlayerLinemates,
   searchPlayers,
   comparePlayers,
   getPlayerRollingStats,
@@ -33,19 +32,6 @@ export function usePlayerStats(
   });
 }
 
-export function usePlayerLinemates(
-  id: number,
-  season?: number,
-  situation?: string
-) {
-  return useQuery({
-    queryKey: ["players", id, "linemates", { season, situation }],
-    queryFn: () => getPlayerLinemates(id, season, situation),
-    enabled: !!id,
-    staleTime: 1000 * 60 * 5,
-  });
-}
-
 export function usePlayerSearch(
   query: string,
   page?: number,
@@ -66,11 +52,9 @@ export function usePlayerComparison(
   situation?: string
 ) {
   return useQuery({
-    // Use the raw ids array length and joined string to ensure refetch on change
-    queryKey: ["players", "compare", ids.length, ids.join(","), season, situation],
+    queryKey: ["players", "compare", ids.join(","), season, situation],
     queryFn: () => comparePlayers(ids, season, situation),
     enabled: ids.length >= 2,
-    staleTime: 0, // Always refetch to ensure fresh data
   });
 }
 

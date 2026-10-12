@@ -48,7 +48,7 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <Avatar className="h-6 w-6">
           <AvatarImage
@@ -65,22 +65,22 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Points:</span>{" "}
-          <span className="font-mono font-semibold">{data.points}</span>
+          <span className="tabular-nums font-semibold">{data.points}</span>
           <span className="text-muted-foreground ml-1">
             ({data.goals}G + {data.assists}A)
           </span>
         </p>
         <p>
           <span className="text-muted-foreground">Games Played:</span>{" "}
-          <span className="font-mono">{data.gamesPlayed}</span>
+          <span className="tabular-nums">{data.gamesPlayed}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Age:</span>{" "}
-          <span className="font-mono">{data.age}</span>
+          <span className="tabular-nums">{data.age}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Rank:</span>{" "}
-          <span className="font-mono">#{data.rank}</span>
+          <span className="tabular-nums">#{data.rank}</span>
         </p>
       </div>
     </div>
@@ -122,7 +122,7 @@ function CustomYAxisTick({
         cy={0}
         r={12}
         fill="none"
-        stroke="hsl(var(--border))"
+        stroke="var(--border)"
         strokeWidth={1}
       />
     </g>
@@ -159,8 +159,8 @@ export function RookieProductionChart({ rookies }: RookieProductionChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Top Rookie Scorers</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Top rookie scorers</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -169,7 +169,7 @@ export function RookieProductionChart({ rookies }: RookieProductionChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Top Rookie Scorers</CardTitle>
+        <CardTitle className="text-base">Top rookie scorers</CardTitle>
         <CardDescription>
           First-year players ranked by total points
         </CardDescription>
@@ -197,13 +197,13 @@ export function RookieProductionChart({ rookies }: RookieProductionChartProps) {
             />
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.3 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
             />
             <Bar
               dataKey="points"
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
-              radius={[0, 4, 4, 0]}
+              radius={4}
             >
               {chartData.map((_, index) => (
                 <Cell

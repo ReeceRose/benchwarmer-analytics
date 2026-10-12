@@ -46,7 +46,7 @@ export function SelectedPlayersBar({
           <Link
             to="/players/$id"
             params={{ id: String(player.playerId) }}
-            className="hover:underline"
+            className="transition-colors hover:text-link"
           >
             {player.playerName}
           </Link>

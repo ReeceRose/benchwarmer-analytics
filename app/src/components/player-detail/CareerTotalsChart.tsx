@@ -49,17 +49,17 @@ interface SeasonData {
 const VIEWS: { key: ViewMode; label: string; description: string }[] = [
   {
     key: "totals",
-    label: "Season Totals",
+    label: "Season totals",
     description: "Total goals, assists, and points per season",
   },
   {
     key: "perGame",
-    label: "Per Game",
+    label: "Per game",
     description: "Goals, assists, and points per game played",
   },
   {
     key: "toi",
-    label: "Ice Time",
+    label: "Ice time",
     description: "Average time on ice per game (minutes)",
   },
 ];
@@ -142,7 +142,7 @@ export function CareerTotalsChart({ stats, className }: CareerTotalsChartProps) 
   return (
     <Card className={cn(className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-semibold">Career Stats</CardTitle>
+        <CardTitle className="text-base font-semibold">Career stats</CardTitle>
         <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>
           <SelectTrigger className="w-36 h-8 text-sm">
             <SelectValue />
@@ -333,7 +333,7 @@ function TotalsTooltip({
   if (!active || !payload?.length) return null;
   const data = payload[0].payload;
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <p className="font-semibold">{data.seasonLabel}</p>
       <p className="text-muted-foreground">{data.gamesPlayed} GP</p>
       <div className="mt-2 space-y-1">
@@ -373,7 +373,7 @@ function PerGameTooltip({
   if (!active || !payload?.length) return null;
   const data = payload[0].payload;
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <p className="font-semibold">{data.seasonLabel}</p>
       <p className="text-muted-foreground">{data.gamesPlayed} GP</p>
       <div className="mt-2 space-y-1">
@@ -415,7 +415,7 @@ function TOITooltip({
   const avgSecondsPerGame =
     data.gamesPlayed > 0 ? data.toiSeconds / data.gamesPlayed : 0;
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <p className="font-semibold">{data.seasonLabel}</p>
       <p className="text-muted-foreground">{data.gamesPlayed} GP</p>
       <div className="mt-2">

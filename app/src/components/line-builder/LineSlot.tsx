@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
-import { User, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import { PlayerDragCard } from "@/components/line-builder/PlayerDragCard";
+import { cn } from "@/lib/utils";
 import type { RosterPlayer } from "@/types";
 
 interface LineSlotProps {
@@ -26,33 +26,34 @@ export function LineSlot({
 
   return (
     <div className="space-y-1">
-      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        {label}
-      </div>
+      <div className="text-xs text-muted-foreground">{label}</div>
       <div
         ref={setNodeRef}
-        className={`
-          min-h-16 rounded-lg border-2 border-dashed p-2 transition-colors
-          ${isOver ? "border-primary bg-primary/10" : "border-muted-foreground/30"}
-          ${player ? "border-solid border-border bg-card" : ""}
-        `}
+        className={cn(
+          "min-h-16 rounded-xl transition-colors",
+          player
+            ? "p-0"
+            : cn(
+                "border-2 border-dashed p-2",
+                isOver ? "border-foreground/40 bg-muted" : "border-border"
+              )
+        )}
       >
         {player ? (
           <div className="relative group">
             <PlayerDragCard player={player} isInSlot />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -top-1 -right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            <button
+              type="button"
+              aria-label={`Remove ${player.name}`}
+              className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-background opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
               onClick={onRemove}
             >
-              <X className="h-3 w-3" />
-            </Button>
+              <X className="size-3" />
+            </button>
           </div>
         ) : (
-          <div className="flex items-center justify-center h-12 text-muted-foreground">
-            <User className="h-5 w-5 mr-2" />
-            <span className="text-sm">Drop player here</span>
+          <div className="flex h-12 items-center justify-center text-sm text-muted-foreground">
+            Drop a player here
           </div>
         )}
       </div>

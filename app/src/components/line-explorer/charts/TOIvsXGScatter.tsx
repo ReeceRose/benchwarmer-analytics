@@ -16,6 +16,7 @@ import { formatToi } from "@/lib/formatters";
 import { getLineLabel } from "@/components/line-explorer/charts/line-chart-utils";
 import { LineTooltipWrapper } from "@/components/line-explorer/charts/LineTooltipWrapper";
 import type { LineCombination } from "@/types";
+import { EmptyState } from "@/components/layout";
 
 interface TOIvsXGScatterProps {
   lines: LineCombination[];
@@ -60,9 +61,7 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
 
   if (chartData.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No line data available.
-      </div>
+      <EmptyState className="py-8" title="No line data for this selection yet" />
     );
   }
 
@@ -80,7 +79,7 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3">
-        TOI vs xG% — Are the Best Lines Getting the Most Ice Time?
+        TOI vs xG% — are the best lines getting the most ice time?
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <ScatterChart margin={{ top: 10, right: 15, bottom: 25, left: 5 }}>
@@ -139,22 +138,22 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
                       <p>
                         <span className="text-muted-foreground">xG%:</span>{" "}
                         <span
-                          className={`font-mono font-semibold ${d.isGood ? "text-success" : "text-destructive"}`}
+                          className={`tabular-nums font-semibold ${d.isGood ? "text-success" : "text-destructive"}`}
                         >
                           {d.xgPct.toFixed(1)}%
                         </span>
                       </p>
                       <p>
                         <span className="text-muted-foreground">TOI:</span>{" "}
-                        <span className="font-mono">{d.toiFormatted}</span>
+                        <span className="tabular-nums">{d.toiFormatted}</span>
                       </p>
                       <p>
                         <span className="text-muted-foreground">Games:</span>{" "}
-                        <span className="font-mono">{d.gp}</span>
+                        <span className="tabular-nums">{d.gp}</span>
                       </p>
                       <p>
                         <span className="text-muted-foreground">Goals:</span>{" "}
-                        <span className="font-mono">
+                        <span className="tabular-nums">
                           {d.gf} GF / {d.ga} GA
                         </span>
                       </p>
@@ -166,7 +165,7 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
             cursor={{ strokeDasharray: "3 3" }}
           />
           <Scatter
-            name={isForwardLine ? "Forward Lines" : "Defense Pairs"}
+            name={isForwardLine ? "Forward lines" : "Defense pairs"}
             data={chartData}
           >
             {chartData.map((entry, index) => (

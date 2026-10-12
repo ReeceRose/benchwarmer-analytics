@@ -1,9 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Search, Users } from "lucide-react";
+import { seasonsQueryOptions } from "@/hooks/useSeasons";
+import { Search } from "lucide-react";
 import { usePlayerSearch, usePageTitle } from "@/hooks";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,8 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ErrorState } from "@/components/shared";
+import { ErrorState, TableSkeleton, TeamLogo } from "@/components/shared";
+import { EmptyState, PageHeader } from "@/components/layout";
+import { getPlayerHeadshotUrl } from "@/lib/player-headshots";
+import { getTeamName } from "@/lib/team-names";
 import { FeaturedPlayers } from "@/components/players";
 import { formatPosition } from "@/lib/formatters";
 
@@ -23,6 +24,8 @@ type PlayersSearch = {
 
 export const Route = createFileRoute("/players/")({
   component: PlayersPage,
+  loader: ({ context }) =>
+    context.queryClient.prefetchQuery(seasonsQueryOptions),
   validateSearch: (search: Record<string, unknown>): PlayersSearch => ({
     q: typeof search.q === "string" ? search.q : undefined,
   }),
@@ -46,99 +49,95 @@ function PlayersPage() {
   const hasResults = data?.players && data.players.length > 0;
 
   return (
-    <div className="container py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Players</h1>
-        <p className="text-muted-foreground">
-          Search for NHL players by name to view stats and performance metrics.
-        </p>
-      </div>
-      <div className="mb-8 max-w-md">
+    <div className="container space-y-8 py-8">
+      <PageHeader
+        title="Players"
+        description="Find any skater or goalie from 2008 onwards."
+      />
+      <div className="max-w-xl">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search players..."
+            placeholder="Search by name, e.g. Makar"
             value={query}
             onChange={(e) => setQuery(e.currentTarget.value)}
-            className="pl-9"
+            className="h-12 rounded-full pl-12 text-base"
+            autoFocus
           />
         </div>
-        <p className="text-sm text-muted-foreground mt-2">
-          Enter at least 2 characters to search
-        </p>
       </div>
       {error && (
         <ErrorState
           title="Search failed"
-          message="Could not search players. Please try again."
+          message="The player search request failed."
           onRetry={() => refetch()}
           variant="inline"
         />
       )}
       {showResults && !error && (
-        <Card className="py-0 gap-0">
-          <CardContent className={`p-0 transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}>
-            {isLoading ? (
-              <div className="p-4 space-y-3">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : !hasResults ? (
-              <div className="p-12 text-center">
-                <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-lg font-medium">No players found</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  No results for &ldquo;{query}&rdquo;. Try a different search term.
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-2/5">Name</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead>Team</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.players.map((player) => (
-                    <TableRow key={player.id}>
-                      <TableCell>
+        isLoading ? (
+          <TableSkeleton rows={6} columns={3} />
+        ) : !hasResults ? (
+          <EmptyState
+            title={`No players match "${query}"`}
+            hint="Check the spelling, or try just a last name."
+          />
+        ) : (
+          <div
+            className={`overflow-hidden rounded-2xl border bg-card transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-1/2">Player</TableHead>
+                  <TableHead>Position</TableHead>
+                  <TableHead>Team</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.players.map((player) => (
+                  <TableRow key={player.id}>
+                    <TableCell>
+                      <Link
+                        to="/players/$id"
+                        params={{ id: String(player.id) }}
+                        className="flex items-center gap-3 font-medium hover:text-link"
+                      >
+                        <img
+                          src={getPlayerHeadshotUrl(
+                            player.id,
+                            player.currentTeamAbbreviation,
+                          )}
+                          alt=""
+                          className="size-8 rounded-full bg-accent object-cover"
+                        />
+                        {player.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatPosition(player.position)}
+                    </TableCell>
+                    <TableCell>
+                      {player.currentTeamAbbreviation ? (
                         <Link
-                          to="/players/$id"
-                          params={{ id: String(player.id) }}
-                          className="hover:underline font-medium"
+                          to="/teams/$abbrev"
+                          params={{ abbrev: player.currentTeamAbbreviation }}
+                          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
                         >
-                          {player.name}
+                          <TeamLogo abbrev={player.currentTeamAbbreviation} size="sm" />
+                          {getTeamName(player.currentTeamAbbreviation)}
                         </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-normal">
-                          {formatPosition(player.position)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {player.currentTeamAbbreviation ? (
-                          <Link
-                            to="/teams/$abbrev"
-                            params={{ abbrev: player.currentTeamAbbreviation }}
-                            className="hover:underline text-muted-foreground"
-                          >
-                            {player.currentTeamAbbreviation}
-                          </Link>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                      ) : (
+                        <span className="text-muted-foreground">–</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )
       )}
       {!error && <FeaturedPlayers enabled={!showResults} />}
     </div>

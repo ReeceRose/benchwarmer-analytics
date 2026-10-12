@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Benchwarmer</title>
+  <rect width="64" height="64" rx="14" fill="#111111"/>
+  <path d="M27 16.5c-2.2-2.7 2.2-4.7 0-7.5M37 16.5c-2.2-2.7 2.2-4.7 0-7.5" fill="none" stroke="#60a5fa" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M16 27v7c0 3.6 7.2 6.5 16 6.5s16-2.9 16-6.5v-7z" fill="#3a3a3a"/>
+  <ellipse cx="32" cy="27" rx="16" ry="6.5" fill="#6b6b6b"/>
+  <rect x="9" y="43" width="46" height="6.5" rx="3.25" fill="#ffffff"/>
+  <rect x="14" y="49" width="5.5" height="7" rx="1.5" fill="#ffffff"/>
+  <rect x="44.5" y="49" width="5.5" height="7" rx="1.5" fill="#ffffff"/>
+</svg>

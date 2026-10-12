@@ -1,77 +1,32 @@
-import { Badge } from "@/components/ui/badge";
+import { TeamLogo } from "@/components/team-detail/TeamLogo";
+import { formatGameDate } from "@/lib/game-formatters";
 import type { HeadToHead } from "@/types";
 
-interface HeadToHeadSectionProps {
-  data: HeadToHead;
-  homeTeam: string;
-  awayTeam: string;
-}
+/** Earlier meetings this season, most recent first. */
+export function HeadToHeadSection({ data }: { data: HeadToHead }) {
+  const { lastFive } = data;
 
-export function HeadToHeadSection({
-  data,
-  homeTeam,
-  awayTeam,
-}: HeadToHeadSectionProps) {
-  const { season, lastFive } = data;
-  const totalGames = season.homeWins + season.awayWins + season.overtimeLosses;
-
-  // Determine who leads the series
-  let seriesLeader = "";
-  if (season.homeWins > season.awayWins) {
-    seriesLeader = `${homeTeam} leads`;
-  } else if (season.awayWins > season.homeWins) {
-    seriesLeader = `${awayTeam} leads`;
-  } else {
-    seriesLeader = "Series tied";
+  if (lastFive.length === 0) {
+    return <p className="text-sm text-muted-foreground">First meeting of the season</p>;
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Season Series</h3>
-        {totalGames > 0 && (
-          <span className="text-sm text-muted-foreground">
-            {seriesLeader} {season.homeWins}-{season.awayWins}
-            {season.overtimeLosses > 0 && `-${season.overtimeLosses}`}
+    <ol className="divide-y">
+      {lastFive.map((game, idx) => (
+        <li key={idx} className="flex items-center gap-4 py-2.5 text-sm first:pt-0 last:pb-0">
+          <span className="w-24 shrink-0 text-muted-foreground">{formatGameDate(game.date)}</span>
+          <span className="flex-1 tabular-nums">{game.score}</span>
+          {game.overtimeType && (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
+              {game.overtimeType}
+            </span>
+          )}
+          <span className="flex w-16 shrink-0 items-center justify-end gap-1.5 font-semibold">
+            <TeamLogo abbrev={game.winner} size="sm" />
+            {game.winner}
           </span>
-        )}
-      </div>
-
-      {lastFive.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No previous meetings this season
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {lastFive.map((game, idx) => (
-            <div
-              key={idx}
-              className="flex items-center justify-between text-sm py-1.5 px-2 -mx-2 bg-muted/30 rounded"
-            >
-              <span className="text-muted-foreground">
-                {new Date(game.date).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-              <span className="font-mono">{game.score}</span>
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant={game.winner === homeTeam ? "default" : "secondary"}
-                  className="text-xs"
-                >
-                  {game.winner}
-                </Badge>
-                {game.overtimeType && (
-                  <Badge variant="outline" className="text-xs">
-                    {game.overtimeType}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+        </li>
+      ))}
+    </ol>
   );
 }

@@ -16,6 +16,7 @@ import {
 import { RINK_COLOURS, getShotColour } from "@/lib/chart-colours";
 import { getDangerZoneFromXg } from "@/lib/danger-zones";
 import type { GameShotsResponse, GameShot } from "@/types";
+import { EmptyState } from "@/components/layout";
 
 interface GameShotMapProps {
   shotsData: GameShotsResponse;
@@ -96,12 +97,12 @@ function ShotTooltip({ shot, isHomeTeam }: { shot: GameShot; isHomeTeam: boolean
       {(shot.shotRebound || shot.shotRush) && (
         <div className="flex gap-2 text-xs">
           {shot.shotRebound && (
-            <span className="bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
               Rebound
             </span>
           )}
           {shot.shotRush && (
-            <span className="bg-cold/20 text-cold px-1.5 py-0.5 rounded font-medium">
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
               Rush
             </span>
           )}
@@ -157,7 +158,7 @@ function HalfRink({
         viewBox={`0 0 ${RINK_LENGTH} ${RINK_HEIGHT}`}
         width={width}
         height={height}
-        className="bg-muted rounded-lg border border-border"
+        className="rounded-xl border bg-muted"
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
@@ -199,7 +200,7 @@ function HalfRink({
             Z
           `}
           fill="white"
-          className="dark:fill-slate-800"
+          className="dark:fill-muted"
         />
 
         <line
@@ -354,12 +355,10 @@ export function GameShotMap({ shotsData }: GameShotMapProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Shot Map</CardTitle>
+          <CardTitle className="text-base">Shot map</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            No shot data available for this game.
-          </div>
+          <EmptyState className="border-0 py-8" title="No shot data for this game" />
         </CardContent>
       </Card>
     );
@@ -369,13 +368,13 @@ export function GameShotMap({ shotsData }: GameShotMapProps) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="text-lg">Shot Map</CardTitle>
+          <CardTitle className="text-base">Shot map</CardTitle>
           <Select value={periodFilter} onValueChange={setPeriodFilter}>
-            <SelectTrigger className="w-28 h-8">
+            <SelectTrigger className="h-8 w-36">
               <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Periods</SelectItem>
+              <SelectItem value="all">All periods</SelectItem>
               {periods.map((p) => (
                 <SelectItem key={p} value={p.toString()}>
                   {formatPeriod(p)}
@@ -402,7 +401,7 @@ export function GameShotMap({ shotsData }: GameShotMapProps) {
         </div>
 
         <div className="mt-4 pt-4 border-t">
-          <div className="text-sm font-medium mb-2">Period Breakdown</div>
+          <div className="text-sm font-medium mb-2">Period breakdown</div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -493,7 +492,7 @@ export function GameShotMapSkeleton() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col items-center">
             <Skeleton className="h-4 w-12 mb-2" />
-            <Skeleton className="w-72 h-60 rounded-lg" />
+            <Skeleton className="w-72 h-60 rounded-xl" />
             <div className="mt-2 flex gap-4">
               <Skeleton className="h-3 w-16" />
               <Skeleton className="h-3 w-16" />
@@ -502,7 +501,7 @@ export function GameShotMapSkeleton() {
           </div>
           <div className="flex flex-col items-center">
             <Skeleton className="h-4 w-12 mb-2" />
-            <Skeleton className="w-72 h-60 rounded-lg" />
+            <Skeleton className="w-72 h-60 rounded-xl" />
             <div className="mt-2 flex gap-4">
               <Skeleton className="h-3 w-16" />
               <Skeleton className="h-3 w-16" />

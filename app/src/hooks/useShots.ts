@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getTeamShots, getTeamShotsAgainst, getShooterStats, getPlayerShots } from "@/lib/api";
+import { getTeamShots, getTeamShotsAgainst, getPlayerShots } from "@/lib/api";
 import type { ShotQueryParams } from "@/types";
 
 export function useTeamShots(abbrev: string, params: ShotQueryParams) {
@@ -16,19 +16,6 @@ export function useTeamShotsAgainst(abbrev: string, params: ShotQueryParams) {
     queryKey: ["teams", abbrev, "shots", "against", params],
     queryFn: () => getTeamShotsAgainst(abbrev, params),
     enabled: !!abbrev && !!params.season,
-    staleTime: 1000 * 60 * 5,
-  });
-}
-
-export function useShooterStats(
-  abbrev: string,
-  season?: number,
-  playoffs?: boolean
-) {
-  return useQuery({
-    queryKey: ["teams", abbrev, "shots", "shooters", { season, playoffs }],
-    queryFn: () => getShooterStats(abbrev, season!, playoffs),
-    enabled: !!abbrev && !!season,
     staleTime: 1000 * 60 * 5,
   });
 }

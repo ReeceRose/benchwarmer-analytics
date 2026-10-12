@@ -97,7 +97,7 @@ export function AgeDistributionDialog({
                           count: number;
                         };
                         return (
-                          <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-2 text-sm">
+                          <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-2 text-sm">
                             <p className="font-medium">
                               {metricLabel}: {data.range}
                             </p>
@@ -124,7 +124,7 @@ export function AgeDistributionDialog({
             </>
           ) : (
             <p className="text-center text-muted-foreground py-8">
-              No data available for age {selectedAge}.
+              No data for this selection yet for age {selectedAge}.
             </p>
           )}
         </div>

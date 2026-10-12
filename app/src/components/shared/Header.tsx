@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { MenuIcon, ChevronDownIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { Logo } from "@/components/shared/Logo";
+import { GlobalSearch } from "@/components/shared/GlobalSearch";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -32,53 +34,8 @@ type NavItem = {
   search?: { view: "table" | "charts" | "explorer" | "heatmaps" };
 };
 
-// Inline SVG logo that uses currentColor for theme support
-function Logo({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 64 64"
-      className={className}
-      aria-hidden="true"
-    >
-      <ellipse
-        cx="32"
-        cy="40"
-        rx="24"
-        ry="10"
-        fill="currentColor"
-        opacity="0.6"
-      />
-      <rect
-        x="8"
-        y="30"
-        width="48"
-        height="10"
-        fill="currentColor"
-        opacity="0.6"
-      />
-      <ellipse
-        cx="32"
-        cy="30"
-        rx="24"
-        ry="10"
-        fill="currentColor"
-        opacity="0.8"
-      />
-      <polyline
-        points="16,32 26,28 36,30 46,24"
-        fill="none"
-        stroke="#22c55e"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 const linkClass =
-  "text-muted-foreground hover:text-foreground transition-colors [&.active]:text-foreground text-sm";
+  "rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground [&.active]:bg-secondary [&.active]:font-medium [&.active]:text-secondary-foreground";
 
 const navItems = [
   { to: "/games", label: "Games" },
@@ -94,7 +51,7 @@ const statsItems: NavItem[] = [
   },
   {
     to: "/category-rankings",
-    label: "Category Rankings",
+    label: "Category rankings",
     description: "Team ranks across all stats",
   },
   {
@@ -109,12 +66,12 @@ const statsItems: NavItem[] = [
   },
   {
     to: "/special-teams",
-    label: "Special Teams",
+    label: "Special teams",
     description: "PP & PK league stats",
   },
   {
     to: "/league-trends",
-    label: "League Trends",
+    label: "League trends",
     description: "Season-over-season stats",
   },
 ];
@@ -139,15 +96,25 @@ const toolsItems: NavItem[] = [
   },
   {
     to: "/age-curves",
-    label: "Age Curves",
+    label: "Age curves",
     description: "Performance by age trends",
   },
 ];
 
 // Desktop navigation with dropdowns
+const triggerClass =
+  "h-auto rounded-full bg-transparent px-3 py-1.5 text-sm font-normal text-muted-foreground hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground";
+
+const activeTriggerClass =
+  "bg-secondary font-medium text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground";
+
 function DesktopNav() {
+  const { pathname } = useLocation();
+  const isSection = (items: NavItem[]) =>
+    items.some((item) => pathname.startsWith(item.to));
+
   return (
-    <nav className="hidden lg:flex items-center gap-4 flex-1">
+    <nav className="hidden lg:flex items-center gap-1 flex-1">
       {navItems.map((item) => (
         <Link key={item.to} to={item.to} className={linkClass}>
           {item.label}
@@ -157,7 +124,9 @@ function DesktopNav() {
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
-            <NavigationMenuTrigger className="h-auto bg-transparent px-2 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=open]:bg-transparent">
+            <NavigationMenuTrigger
+              className={cn(triggerClass, isSection(statsItems) && activeTriggerClass)}
+            >
               Stats
             </NavigationMenuTrigger>
             <NavigationMenuContent>
@@ -170,7 +139,7 @@ function DesktopNav() {
                         className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
                         <div className="text-sm font-medium">{item.label}</div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="mt-1.5 text-xs leading-snug text-muted-foreground">
                           {item.description}
                         </p>
                       </Link>
@@ -186,7 +155,9 @@ function DesktopNav() {
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
-            <NavigationMenuTrigger className="h-auto bg-transparent px-2 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=open]:bg-transparent">
+            <NavigationMenuTrigger
+              className={cn(triggerClass, isSection(toolsItems) && activeTriggerClass)}
+            >
               Tools
             </NavigationMenuTrigger>
             <NavigationMenuContent>
@@ -200,7 +171,7 @@ function DesktopNav() {
                         className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
                         <div className="text-sm font-medium">{item.label}</div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="mt-1.5 text-xs leading-snug text-muted-foreground">
                           {item.description}
                         </p>
                       </Link>
@@ -311,8 +282,8 @@ function MobileNav() {
       </SheetTrigger>
       <SheetContent side="left" className="w-80 p-0">
         <SheetHeader className="border-b px-4 py-4">
-          <SheetTitle className="flex items-center gap-2 text-left">
-            <Logo className="size-6" />
+          <SheetTitle className="flex items-center gap-2 text-left font-display text-lg">
+            <Logo className="size-7" />
             Benchwarmer
           </SheetTitle>
         </SheetHeader>
@@ -344,18 +315,21 @@ function MobileNav() {
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="container flex h-14 items-center gap-4">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/90 backdrop-blur supports-backdrop-filter:bg-background/75">
+      <div className="container flex h-16 items-center gap-4">
         <MobileNav />
 
-        <Link to="/" className="flex items-center gap-2">
-          <Logo className="size-6" />
-          <span className="font-semibold">Benchwarmer</span>
+        <Link to="/" className="mr-2 flex items-center gap-2">
+          <Logo className="size-8" />
+          <span className="font-display text-xl font-bold tracking-tight">
+            Benchwarmer
+          </span>
         </Link>
 
         <DesktopNav />
 
         <div className="ml-auto flex items-center gap-2">
+          <GlobalSearch className="w-9 justify-center px-0 sm:w-56 sm:justify-start sm:px-3.5 xl:w-64" />
           <ThemeToggle />
         </div>
       </div>

@@ -1,8 +1,9 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { ShotSummary } from "@/types";
 
 interface ShotSummaryCardProps {
   summary: ShotSummary;
+  className?: string;
 }
 
 function StatItem({
@@ -22,14 +23,16 @@ function StatItem({
         : "text-foreground";
 
   return (
-    <div className="text-center">
-      <div className={`text-2xl font-bold ${colorClass}`}>{value}</div>
+    <div className="bg-card px-3 py-3">
       <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={cn("font-display text-xl font-bold tabular-nums", colorClass)}>
+        {value}
+      </div>
     </div>
   );
 }
 
-export function ShotSummaryCard({ summary }: ShotSummaryCardProps) {
+export function ShotSummaryCard({ summary, className }: ShotSummaryCardProps) {
   const goalsAboveExpected = summary.goalsAboveExpected;
   const luckHighlight =
     goalsAboveExpected > 0.5
@@ -39,16 +42,19 @@ export function ShotSummaryCard({ summary }: ShotSummaryCardProps) {
         : "neutral";
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-4">
+    <div
+      className={cn(
+        "grid h-fit grid-cols-3 gap-px overflow-hidden rounded-xl border bg-border",
+        className,
+      )}
+    >
           <StatItem label="Shots" value={summary.totalShots} />
-          <StatItem label="On Goal" value={summary.shotsOnGoal} />
+          <StatItem label="On goal" value={summary.shotsOnGoal} />
           <StatItem label="Goals" value={summary.goals} />
           <StatItem label="Sh%" value={`${summary.shootingPct}%`} />
           <StatItem label="xG" value={summary.totalXGoal.toFixed(1)} />
           <StatItem
-            label="G - xG"
+            label="Goals vs xG"
             value={
               goalsAboveExpected >= 0
                 ? `+${goalsAboveExpected.toFixed(1)}`
@@ -56,11 +62,9 @@ export function ShotSummaryCard({ summary }: ShotSummaryCardProps) {
             }
             highlight={luckHighlight}
           />
-          <StatItem label="High Danger" value={summary.highDangerShots} />
-          <StatItem label="Med Danger" value={summary.mediumDangerShots} />
-          <StatItem label="Low Danger" value={summary.lowDangerShots} />
-        </div>
-      </CardContent>
-    </Card>
+          <StatItem label="High danger" value={summary.highDangerShots} />
+          <StatItem label="Medium danger" value={summary.mediumDangerShots} />
+          <StatItem label="Low danger" value={summary.lowDangerShots} />
+    </div>
   );
 }

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
+import * as z from "zod/mini";
 import { ScoreStateDashboard } from "@/components/team-detail";
 
 const searchSchema = z.object({
-  season: z.number().optional(),
+  season: z.optional(z.number()),
 });
 
 export const Route = createFileRoute("/teams/$abbrev/score-state")({

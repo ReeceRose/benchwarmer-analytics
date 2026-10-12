@@ -47,7 +47,7 @@ function CustomTooltip({
   const isPositive = data.diff > 0;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
       <div className="flex items-center gap-2 mb-2">
         <TeamLogo abbrev={data.abbrev} size="sm" />
         <span className="font-semibold">{data.name}</span>
@@ -55,15 +55,15 @@ function CustomTooltip({
       <div className="space-y-1 text-xs">
         <p>
           <span className="text-muted-foreground">Goals For:</span>{" "}
-          <span className="font-mono">{data.goalsFor}</span>
+          <span className="tabular-nums">{data.goalsFor}</span>
         </p>
         <p>
           <span className="text-muted-foreground">Goals Against:</span>{" "}
-          <span className="font-mono">{data.goalsAgainst}</span>
+          <span className="tabular-nums">{data.goalsAgainst}</span>
         </p>
         <p className={isPositive ? "text-success" : "text-destructive"}>
           <span className="text-muted-foreground">Differential:</span>{" "}
-          <span className="font-mono font-semibold">
+          <span className="tabular-nums font-semibold">
             {isPositive ? "+" : ""}
             {data.diff}
           </span>
@@ -123,8 +123,8 @@ export function GoalDifferentialChart({ teams }: GoalDifferentialChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Goal Differential</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Goal differential</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -137,7 +137,7 @@ export function GoalDifferentialChart({ teams }: GoalDifferentialChartProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Goal Differential</CardTitle>
+        <CardTitle className="text-base">Goal differential</CardTitle>
         <CardDescription>
           Goals for minus goals against - sorted by differential
         </CardDescription>
@@ -166,7 +166,7 @@ export function GoalDifferentialChart({ teams }: GoalDifferentialChartProps) {
             />
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.5 }}
+              cursor={{ fill: "var(--muted)", fillOpacity: 0.5 }}
             />
 
             <ReferenceLine
@@ -179,13 +179,13 @@ export function GoalDifferentialChart({ teams }: GoalDifferentialChartProps) {
               dataKey="diff"
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
-              radius={[0, 4, 4, 0]}
+              radius={4}
             >
               {chartData.map((entry) => (
                 <Cell
                   key={entry.abbrev}
                   fill={
-                    entry.diff >= 0 ? "hsl(142, 76%, 36%)" : "hsl(0, 72%, 51%)"
+                    entry.diff >= 0 ? "var(--chart-3)" : "var(--chart-2)"
                   }
                 />
               ))}
@@ -195,8 +195,8 @@ export function GoalDifferentialChart({ teams }: GoalDifferentialChartProps) {
         <div className="flex justify-center gap-8 mt-4 text-xs">
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(142, 76%, 36%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-3)" }}
             />
             <span className="text-muted-foreground">
               Positive (More GF than GA)
@@ -204,8 +204,8 @@ export function GoalDifferentialChart({ teams }: GoalDifferentialChartProps) {
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="w-3 h-3 rounded"
-              style={{ backgroundColor: "hsl(0, 72%, 51%)" }}
+              className="size-2.5 rounded-[3px]"
+              style={{ backgroundColor: "var(--chart-2)" }}
             />
             <span className="text-muted-foreground">
               Negative (More GA than GF)

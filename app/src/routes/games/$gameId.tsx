@@ -4,6 +4,7 @@ import { ErrorState } from "@/components/shared";
 import {
   GameDetailHeader,
   GameDetailHeaderSkeleton,
+  GameScoringSummary,
   GameBoxscoreTable,
   GameBoxscoreTableSkeleton,
   GameShotMap,
@@ -26,9 +27,12 @@ import {
   useGamePreview,
   useGoalieRecentForm,
   useDeserveToWin,
+  useGameLive,
   usePageTitle,
 } from "@/hooks";
 import { getSeasonFromDate } from "@/lib/date-utils";
+import { EmptyState } from "@/components/layout";
+import { GameCentre } from "@/components/game-live";
 
 export const Route = createFileRoute("/games/$gameId")({
   component: GameDetailPage,
@@ -79,6 +83,12 @@ function GameDetailPage() {
   // Determine game state for conditional rendering (queries already running)
   const isFutureGame = game?.gameState === "FUT" || game?.gameState === "PRE";
   const isCompletedOrLive = game && !isFutureGame;
+  const isLive = game?.gameState === "LIVE" || game?.gameState === "CRIT";
+
+  const { data: liveData, isLoading: liveLoading } = useGameLive(
+    gameId,
+    !!isCompletedOrLive
+  );
 
   const season = game
     ? getSeasonFromDate(new Date(game.gameDate + "T12:00:00"))
@@ -96,7 +106,7 @@ function GameDetailPage() {
           className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mb-4"
         >
           <ChevronLeft className="h-4 w-4" />
-          Back to Games
+          Back to games
         </button>
         <ErrorState
           title="Failed to load game"
@@ -108,20 +118,17 @@ function GameDetailPage() {
   }
 
   return (
-    <div className="container py-6 space-y-6">
-      <button
-        onClick={handleBack}
-        className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Back to Games
-      </button>
-
+    <>
       {gameLoading && !game ? (
         <GameDetailHeaderSkeleton />
       ) : game || previewData ? (
         <GameDetailHeader game={game} preview={previewData} />
       ) : null}
+
+      <div className="container space-y-8 py-8">
+      {isCompletedOrLive && <GameScoringSummary game={game} />}
+
+      {gameLoading && !game && <GameBoxscoreTableSkeleton />}
 
       {isFutureGame &&
         (previewLoading ? (
@@ -139,42 +146,50 @@ function GameDetailPage() {
           />
         ) : null)}
 
-      {isCompletedOrLive &&
-        (boxscoreLoading ? (
-          <GameBoxscoreTableSkeleton />
-        ) : boxscoreData ? (
-          <GameBoxscoreTable
-            boxscoreData={boxscoreData}
-            season={season}
-            goals={game.goals}
-          />
-        ) : (
-          <div className="text-center py-12 text-muted-foreground">
-            Box score not available for this game.
-          </div>
-        ))}
-
-      {game?.gameState === "OFF" &&
-        game?.hasShotData &&
-        (shotsLoading ? (
-          <>
-            <GameShotMapSkeleton />
-            <XGProgressionChartSkeleton />
-            <DeserveToWinChartSkeleton />
-            <ShotGoalTimelineChartSkeleton />
-          </>
-        ) : shotsData ? (
-          <>
-            <GameShotMap shotsData={shotsData} />
-            <XGProgressionChart shotsData={shotsData} />
-            {deserveToWinLoading ? (
-              <DeserveToWinChartSkeleton />
-            ) : deserveToWinData ? (
-              <DeserveToWinChart data={deserveToWinData} />
-            ) : null}
-            <ShotGoalTimelineChart shotsData={shotsData} />
-          </>
-        ) : null)}
-    </div>
+      {isCompletedOrLive && (
+        <GameCentre
+          data={liveData}
+          isLoading={liveLoading}
+          isLive={isLive}
+          boxscore={
+            boxscoreLoading ? (
+              <GameBoxscoreTableSkeleton />
+            ) : boxscoreData ? (
+              <GameBoxscoreTable
+                boxscoreData={boxscoreData}
+                season={season}
+                goals={game.goals}
+              />
+            ) : (
+              <EmptyState title="No box score for this game yet" />
+            )
+          }
+          moneyPuckCharts={
+            shouldFetchShots
+              ? shotsLoading ? (
+                <>
+                  <GameShotMapSkeleton />
+                  <XGProgressionChartSkeleton />
+                  <DeserveToWinChartSkeleton />
+                  <ShotGoalTimelineChartSkeleton />
+                </>
+              ) : shotsData ? (
+                <>
+                  <GameShotMap shotsData={shotsData} />
+                  <XGProgressionChart shotsData={shotsData} />
+                  {deserveToWinLoading ? (
+                    <DeserveToWinChartSkeleton />
+                  ) : deserveToWinData ? (
+                    <DeserveToWinChart data={deserveToWinData} />
+                  ) : null}
+                  <ShotGoalTimelineChart shotsData={shotsData} />
+                </>
+              ) : null
+              : null
+          }
+        />
+      )}
+      </div>
+    </>
   );
 }

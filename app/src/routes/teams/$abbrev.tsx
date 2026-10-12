@@ -5,11 +5,16 @@ import {
   useLocation,
   useNavigate,
 } from "@tanstack/react-router";
-import { z } from "zod";
-import { Calendar, BarChart3, TableIcon } from "lucide-react";
-import { useTeam, useTeamRoster, useTeamSeasons, usePageTitle, useCategoryRankings } from "@/hooks";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import * as z from "zod/mini";
+import {
+  useTeam,
+  useTeamRoster,
+  useTeamSeasons,
+  usePageTitle,
+  useCategoryRankings,
+  useOfficialStandings,
+  teamSeasonsQueryOptions,
+} from "@/hooks";
 import {
   Select,
   SelectContent,
@@ -17,9 +22,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ErrorState, BackButton } from "@/components/shared";
+import { ErrorState } from "@/components/shared";
 import {
-  TeamHeader,
+  EntityHeroSkeleton,
+  PageTabs,
+  SegmentedControl,
+  pageTabClass,
+} from "@/components/layout";
+import { getTeamName } from "@/lib/team-names";
+import { formatSeason } from "@/lib/formatters";
+import {
+  TeamHero,
   RosterTable,
   GoalieRosterTable,
   RosterSkeleton,
@@ -28,17 +41,18 @@ import {
   IceTimeDistributionChart,
   PointsContributionChart,
 } from "@/components/team-detail";
-import { TeamRankingSummary } from "@/components/category-rankings";
 
 const searchSchema = z.object({
-  season: z.number().optional(),
-  type: z.enum(["regular", "playoffs", "all"]).optional(),
+  season: z.optional(z.number()),
+  type: z.optional(z.enum(["regular", "playoffs", "all"])),
   // Include all view values used by this route and child routes
-  view: z.enum(["table", "charts", "explorer", "heatmaps"]).optional(),
+  view: z.optional(z.enum(["table", "charts", "explorer", "heatmaps"])),
 });
 
 export const Route = createFileRoute("/teams/$abbrev")({
   component: TeamDetailPage,
+  loader: ({ context, params }) =>
+    context.queryClient.prefetchQuery(teamSeasonsQueryOptions(params.abbrev)),
   validateSearch: searchSchema,
 });
 
@@ -50,10 +64,14 @@ function TeamDetailPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const location = useLocation();
 
-  // Derive state from URL params
-  const selectedSeason = season;
+  const { data: seasons } = useTeamSeasons(abbrev);
+  const latestSeason = seasons?.seasons[0]?.year;
+
+  // The roster defaults to the team's latest season.
+  const selectedSeason = season ?? latestSeason;
   const seasonType: SeasonType = type ?? "regular";
-  const currentView = view ?? "table";
+  // `view` is shared with child routes; the roster only has table and charts.
+  const currentView = view === "charts" ? "charts" : "table";
 
   const updateView = (newView: "table" | "charts") => {
     navigate({ search: (prev) => ({ ...prev, view: newView }) });
@@ -65,9 +83,14 @@ function TeamDetailPage() {
     error: teamError,
     refetch,
   } = useTeam(abbrev);
-  const { data: seasons } = useTeamSeasons(abbrev);
+  usePageTitle(getTeamName(abbrev));
 
-  usePageTitle(team?.name);
+  // Official standings are only available for the current season.
+  const { data: standingsData } = useOfficialStandings();
+  const standings =
+    selectedSeason === latestSeason
+      ? standingsData?.teams.find((t) => t.abbreviation === abbrev)
+      : undefined;
 
   // Map seasonType to playoffs param: "regular" -> false, "playoffs" -> true, "all" -> undefined
   const playoffsParam =
@@ -78,7 +101,7 @@ function TeamDetailPage() {
     playoffsParam,
   );
 
-  const { data: categoryRankings, isLoading: rankingsLoading } = useCategoryRankings(
+  const { data: categoryRankings } = useCategoryRankings(
     selectedSeason,
     abbrev,
   );
@@ -92,34 +115,17 @@ function TeamDetailPage() {
     location.pathname.includes("/score-state") ||
     location.pathname.includes("/builder");
 
-  // Determine active tab based on route
-  const getActiveTab = () => {
-    if (location.pathname.includes("/lines")) return "lines";
-    if (location.pathname.includes("/chemistry")) return "chemistry";
-    if (location.pathname.includes("/shots")) return "shots";
-    if (location.pathname.includes("/special-teams")) return "special-teams";
-    if (location.pathname.includes("/score-state")) return "score-state";
-    if (location.pathname.includes("/builder")) return "builder";
-    return "roster";
-  };
-
   const handleSeasonChange = (value: string) => {
-    const newSeason = value === "all" ? undefined : parseInt(value, 10);
     navigate({
-      search: (prev) => ({
-        ...prev,
-        season: newSeason,
-        // Reset type to regular when clearing season
-        type: newSeason ? prev.type : undefined,
-      }),
+      search: (prev) => ({ ...prev, season: parseInt(value, 10) }),
     });
   };
 
-  const handleTypeChange = (value: string) => {
+  const handleTypeChange = (value: SeasonType) => {
     navigate({
       search: (prev) => ({
         ...prev,
-        type: value as SeasonType,
+        type: value,
       }),
     });
   };
@@ -129,7 +135,7 @@ function TeamDetailPage() {
       <div className="container py-8">
         <ErrorState
           title="Team not found"
-          message={`Could not find team with abbreviation "${abbrev}". The team may not exist or the server may be unavailable.`}
+          message={`There's no team with the abbreviation "${abbrev}", or the stats service is unavailable.`}
           onRetry={() => refetch()}
         />
       </div>
@@ -145,227 +151,127 @@ function TeamDetailPage() {
   const defensemen = roster?.players.filter((p) => p.position === "D") ?? [];
   const goalies = roster?.players.filter((p) => p.position === "G") ?? [];
 
+  const tabs = [
+    { to: "/teams/$abbrev", label: "Roster" },
+    { to: "/teams/$abbrev/lines", label: "Lines" },
+    { to: "/teams/$abbrev/chemistry", label: "Chemistry" },
+    { to: "/teams/$abbrev/shots", label: "Shots" },
+    { to: "/teams/$abbrev/special-teams", label: "Special teams" },
+    { to: "/teams/$abbrev/score-state", label: "Score state" },
+    { to: "/teams/$abbrev/builder", label: "Line builder" },
+  ] as const;
+
   return (
-    <div className="container py-8">
-      <BackButton fallbackPath="/teams" label="Teams" />
-
-      <div className="mb-6">
-        <TeamHeader team={team} abbrev={abbrev} isLoading={teamLoading} />
-      </div>
-
-      {selectedSeason && (
-        <div className="mb-6">
-          <TeamRankingSummary
-            rankings={categoryRankings?.teams[0]}
-            isLoading={rankingsLoading}
-          />
-        </div>
+    <>
+      {teamLoading ? (
+        <EntityHeroSkeleton />
+      ) : (
+        <TeamHero
+          abbrev={abbrev}
+          team={team}
+          season={selectedSeason}
+          standings={standings}
+          ranks={categoryRankings?.teams[0]}
+        />
       )}
 
-      <Tabs value={getActiveTab()} className="mb-8">
-        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="w-max md:w-auto">
-            <TabsTrigger value="roster" asChild>
-              <Link
-                to="/teams/$abbrev"
-                params={{ abbrev }}
-                search={{ season, type }}
-              >
-                Roster
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="lines" asChild>
-              <Link
-                to="/teams/$abbrev/lines"
-                params={{ abbrev }}
-                search={{ season }}
-              >
-                Lines
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="chemistry" asChild>
-              <Link
-                to="/teams/$abbrev/chemistry"
-                params={{ abbrev }}
-                search={{ season }}
-              >
-                Chemistry
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="shots" asChild>
-              <Link
-                to="/teams/$abbrev/shots"
-                params={{ abbrev }}
-                search={{ season }}
-              >
-                Shots
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="special-teams" asChild>
-              <Link
-                to="/teams/$abbrev/special-teams"
-                params={{ abbrev }}
-                search={{ season }}
-              >
-                Special Teams
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="score-state" asChild>
-              <Link
-                to="/teams/$abbrev/score-state"
-                params={{ abbrev }}
-                search={{ season }}
-              >
-                Score State
-              </Link>
-            </TabsTrigger>
-            <TabsTrigger value="builder" asChild>
-              <Link
-                to="/teams/$abbrev/builder"
-                params={{ abbrev }}
-                search={{ season }}
-              >
-                Builder
-              </Link>
-            </TabsTrigger>
-          </TabsList>
-        </div>
-      </Tabs>
+      <PageTabs aria-label="Team sections">
+        {tabs.map((tab) => (
+          <Link
+            key={tab.to}
+            to={tab.to}
+            params={{ abbrev }}
+            search={{ season }}
+            activeOptions={{ exact: true, includeSearch: false }}
+            className={pageTabClass}
+            resetScroll={false}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </PageTabs>
 
-      <Outlet />
+      <div className="container py-8">
+        <Outlet />
 
-      {!isOnChildRoute && (
-        <div className="space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <Select
-                value={selectedSeason?.toString() ?? "all"}
-                onValueChange={handleSeasonChange}
-              >
-                <SelectTrigger className="w-45">
-                  <SelectValue placeholder="Select season" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Seasons</SelectItem>
-                  {seasons?.seasons.map((s) => (
-                    <SelectItem key={s.year} value={s.year.toString()}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {selectedSeason && (
-                <Select value={seasonType} onValueChange={handleTypeChange}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
+        {!isOnChildRoute && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Select
+                  value={selectedSeason?.toString()}
+                  onValueChange={handleSeasonChange}
+                >
+                  <SelectTrigger className="w-32" aria-label="Season">
+                    <SelectValue placeholder="Season" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="regular">Regular Season</SelectItem>
-                    <SelectItem value="playoffs">Playoffs</SelectItem>
-                    <SelectItem value="all">Both</SelectItem>
+                    {seasons?.seasons.map((s) => (
+                      <SelectItem key={s.year} value={s.year.toString()}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-              )}
-
-              {selectedSeason && (
-                <span className="text-sm text-muted-foreground">
-                  Showing players from {selectedSeason}-
-                  {(selectedSeason + 1).toString().slice(-2)}
-                  {seasonType === "regular" && " regular season"}
-                  {seasonType === "playoffs" && " playoffs"}
-                </span>
-              )}
+                <SegmentedControl
+                  aria-label="Season type"
+                  value={seasonType}
+                  onValueChange={handleTypeChange}
+                  options={[
+                    { value: "regular", label: "Regular season" },
+                    { value: "playoffs", label: "Playoffs" },
+                    { value: "all", label: "Both" },
+                  ]}
+                />
+              </div>
+              <SegmentedControl
+                aria-label="View"
+                value={currentView}
+                onValueChange={updateView}
+                options={[
+                  { value: "table", label: "Table" },
+                  { value: "charts", label: "Charts" },
+                ]}
+              />
             </div>
 
-            {selectedSeason && (
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-                <Button
-                  variant={currentView === "charts" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => updateView("charts")}
-                  className="gap-2"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  Charts
-                </Button>
-                <Button
-                  variant={currentView === "table" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => updateView("table")}
-                  className="gap-2"
-                >
-                  <TableIcon className="h-4 w-4" />
-                  Table
-                </Button>
+            {rosterLoading || !roster ? (
+              <RosterSkeleton />
+            ) : roster.players.length === 0 ? (
+              <p className="py-12 text-center text-muted-foreground">
+                No players recorded for this team
+                {selectedSeason ? ` in ${formatSeason(selectedSeason)}` : ""}.
+                Try another season.
+              </p>
+            ) : currentView === "charts" ? (
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <RosterXGScatter players={roster.players} teamAbbrev={abbrev} />
+                <AgeDistributionChart players={roster.players} teamAbbrev={abbrev} />
+                <IceTimeDistributionChart
+                  players={roster.players}
+                  teamAbbrev={abbrev}
+                />
+                <PointsContributionChart
+                  players={roster.players}
+                  teamAbbrev={abbrev}
+                />
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {forwards.length > 0 && (
+                  <RosterTable title="Forwards" players={forwards} showStats />
+                )}
+                {defensemen.length > 0 && (
+                  <RosterTable title="Defense" players={defensemen} showStats />
+                )}
+                {goalies.length > 0 && (
+                  <GoalieRosterTable title="Goalies" players={goalies} showStats />
+                )}
               </div>
             )}
           </div>
-
-          {rosterLoading ? (
-            <RosterSkeleton />
-          ) : roster?.players.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <p className="text-lg">
-                No roster data available
-                {selectedSeason
-                  ? ` for ${selectedSeason}-${(selectedSeason + 1).toString().slice(-2)}`
-                  : ""}
-                .
-              </p>
-              <p className="text-sm mt-2">
-                {selectedSeason
-                  ? "Try selecting a different season or 'All Seasons'."
-                  : "Run the data ingestion to populate player data."}
-              </p>
-            </div>
-          ) : currentView === "charts" && selectedSeason ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RosterXGScatter
-                players={roster?.players ?? []}
-                teamAbbrev={abbrev}
-              />
-              <AgeDistributionChart
-                players={roster?.players ?? []}
-                teamAbbrev={abbrev}
-              />
-              <IceTimeDistributionChart
-                players={roster?.players ?? []}
-                teamAbbrev={abbrev}
-              />
-              <PointsContributionChart
-                players={roster?.players ?? []}
-                teamAbbrev={abbrev}
-              />
-            </div>
-          ) : (
-            <>
-              {forwards.length > 0 && (
-                <RosterTable
-                  title="Forwards"
-                  players={forwards}
-                  showStats={!!selectedSeason}
-                />
-              )}
-              {defensemen.length > 0 && (
-                <RosterTable
-                  title="Defensemen"
-                  players={defensemen}
-                  showStats={!!selectedSeason}
-                />
-              )}
-              {goalies.length > 0 && (
-                <GoalieRosterTable
-                  title="Goalies"
-                  players={goalies}
-                  showStats={!!selectedSeason}
-                />
-              )}
-            </>
-          )}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }

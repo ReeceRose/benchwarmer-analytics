@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { TeamTag } from "@/components/shared/TeamTag";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -12,6 +12,7 @@ import { HeaderWithTooltip } from "@/components/shared";
 import { formatToi, formatSeason, formatSavePct } from "@/lib/formatters";
 import { formatGaa, formatGsax } from "@/components/player-detail/goalie-stats";
 import type { GoalieSeasonRow, GoalieCareerTotals } from "@/components/player-detail/goalie-stats";
+import { EmptyState } from "@/components/layout";
 
 interface GoalieStatsTableProps {
   rows: GoalieSeasonRow[];
@@ -23,10 +24,10 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
 
   if (rows.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground border rounded-md">
-        <p className="font-medium">No statistics available</p>
-        <p className="text-sm mt-1">This goalie may not have NHL stats recorded yet.</p>
-      </div>
+      <EmptyState
+        title="No stats yet"
+        hint="This goalie hasn't played an NHL game we have data for."
+      />
     );
   }
 
@@ -35,9 +36,9 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
       <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="font-semibold">Season</TableHead>
-              <TableHead className="font-semibold">Team</TableHead>
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Season</TableHead>
+              <TableHead>Team</TableHead>
               <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
               <HeaderWithTooltip label="TOI" tooltip="Total time on ice" className="text-right hidden md:table-cell" />
               <HeaderWithTooltip label="GA" tooltip="Goals against" className="text-right" />
@@ -55,8 +56,8 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
               )}
             </TableRow>
           {hasPlayoffData && (
-            <TableRow className="bg-muted/30">
-              <TableHead colSpan={5} className="text-xs text-muted-foreground py-1">Regular Season</TableHead>
+            <TableRow className="hover:bg-transparent">
+              <TableHead colSpan={5} className="text-xs text-muted-foreground py-1">Regular season</TableHead>
               <TableHead colSpan={4} className="text-xs text-muted-foreground py-1 hidden md:table-cell" />
               <TableHead colSpan={4} className="text-xs text-muted-foreground py-1 border-l">Playoffs</TableHead>
             </TableRow>
@@ -67,14 +68,7 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
             <TableRow key={`${row.season}-${row.team}`} className="hover:bg-muted/30">
               <TableCell className="font-medium">{formatSeason(row.season)}</TableCell>
               <TableCell>
-                <Link
-                  to="/teams/$abbrev"
-                  params={{ abbrev: row.team }}
-                  search={{ season: row.season }}
-                  className="hover:underline"
-                >
-                  {row.team}
-                </Link>
+                <TeamTag abbrev={row.team} season={row.season} />
               </TableCell>
               <TableCell className="text-right tabular-nums">{row.gp}</TableCell>
               <TableCell className="text-right tabular-nums hidden md:table-cell">{formatToi(row.toi)}</TableCell>
@@ -85,15 +79,15 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
               <TableCell className="text-right tabular-nums hidden lg:table-cell">{formatGsax(row.gsax)}</TableCell>
               {hasPlayoffData && (
                 <>
-                  <TableCell className="text-right tabular-nums border-l">{row.playoffGp ?? "-"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{row.playoffGa ?? "-"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{row.playoffSa ?? "-"}</TableCell>
+                  <TableCell className="text-right tabular-nums border-l">{row.playoffGp ?? "–"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{row.playoffGa ?? "–"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{row.playoffSa ?? "–"}</TableCell>
                   <TableCell className="text-right tabular-nums font-medium">{formatSavePct(row.playoffSvPct)}</TableCell>
                 </>
               )}
             </TableRow>
           ))}
-          <TableRow className="bg-muted/50 font-semibold border-t-2">
+          <TableRow className="border-t font-semibold hover:bg-transparent">
             <TableCell>Totals</TableCell>
             <TableCell></TableCell>
             <TableCell className="text-right tabular-nums">{totals.gp}</TableCell>

@@ -1,9 +1,7 @@
-import { BarChart3, Clock, Target, TrendingUp, HelpCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel } from "@/components/layout";
 import {
   Tooltip,
   TooltipContent,
-  
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatToi, formatPercent } from "@/lib/formatters";
@@ -19,14 +17,13 @@ interface LineStatsPanelProps {
 }
 
 interface StatRowProps {
-  icon: React.ReactNode;
   label: string;
   value: string | number;
   tooltip?: string;
   highlight?: "good" | "bad" | "neutral";
 }
 
-function StatRow({ icon, label, value, tooltip, highlight }: StatRowProps) {
+function StatRow({ label, value, tooltip, highlight }: StatRowProps) {
   const colorClass =
     highlight === "good"
       ? "text-success"
@@ -36,23 +33,21 @@ function StatRow({ icon, label, value, tooltip, highlight }: StatRowProps) {
 
   return (
     <div className="flex items-center justify-between py-2 border-b last:border-0">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        {icon}
-        <span className="text-sm">{label}</span>
-        {tooltip && (
-          
-            <Tooltip>
-              <TooltipTrigger>
-                <HelpCircle className="h-3.5 w-3.5" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>{tooltip}</p>
-              </TooltipContent>
-            </Tooltip>
-          
-        )}
-      </div>
-      <span className={`font-mono font-medium ${colorClass}`}>{value}</span>
+      {tooltip ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="cursor-help text-sm text-muted-foreground underline decoration-muted-foreground/40 decoration-dotted underline-offset-4">
+              {label}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p>{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <span className="text-sm text-muted-foreground">{label}</span>
+      )}
+      <span className={`tabular-nums font-medium ${colorClass}`}>{value}</span>
     </div>
   );
 }
@@ -110,16 +105,10 @@ export function LineStatsPanel({
     avgCfPct != null ? (avgCfPct > 52 ? "good" : avgCfPct < 48 ? "bad" : "neutral") : "neutral";
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <BarChart3 className="h-5 w-5" />
-          Line Stats
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Panel>
+      <h3 className="mb-2 text-sm font-semibold">Together this season</h3>
         {!hasEnoughPlayers ? (
-          <div className="text-center py-6 text-muted-foreground">
+          <div className="py-6 text-center text-muted-foreground">
             <p className="text-sm">
               Add {requiredPlayers - playerCount} more player
               {requiredPlayers - playerCount > 1 ? "s" : ""} to see stats
@@ -135,40 +124,34 @@ export function LineStatsPanel({
         ) : (
           <div className="space-y-1">
             <StatRow
-              icon={<Clock className="h-4 w-4" />}
-              label="Total TOI"
+              label="Time on ice"
               value={formatToi(aggregateStats.totalToi / pairStats.length)}
               tooltip="Average time on ice together per pair"
             />
             <StatRow
-              icon={<Target className="h-4 w-4" />}
-              label="Goals For/Against"
+              label="Goals for / against"
               value={`${aggregateStats.totalGf} / ${aggregateStats.totalGa}`}
               tooltip="Combined goals for and against when on ice together"
             />
             <StatRow
-              icon={<TrendingUp className="h-4 w-4" />}
               label="xG%"
-              value={avgXgPct != null ? formatPercent(avgXgPct, false) : "-"}
+              value={avgXgPct != null ? formatPercent(avgXgPct, false) : "–"}
               tooltip="Expected goals percentage (>50% is good)"
               highlight={xgHighlight}
             />
             <StatRow
-              icon={<BarChart3 className="h-4 w-4" />}
               label="CF%"
-              value={avgCfPct != null ? formatPercent(avgCfPct, false) : "-"}
+              value={avgCfPct != null ? formatPercent(avgCfPct, false) : "–"}
               tooltip="Corsi for percentage - shot attempt share (>50% is good)"
               highlight={cfHighlight}
             />
             <StatRow
-              icon={<Target className="h-4 w-4" />}
-              label="Games Played"
+              label="Games played"
               value={aggregateStats.totalGp}
               tooltip="Games played together"
             />
           </div>
         )}
-      </CardContent>
-    </Card>
+    </Panel>
   );
 }

@@ -1,6 +1,7 @@
+import { ArrowDown } from "lucide-react";
 import { useState } from "react";
+import { TeamTag } from "@/components/shared/TeamTag";
 import { Link } from "@tanstack/react-router";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -15,8 +16,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TeamLogo } from "@/components/shared";
-import { formatPosition } from "@/lib/formatters";
+import { formatPositionShort } from "@/lib/formatters";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { PlayerPenaltyStats } from "@/types";
 
@@ -52,15 +52,13 @@ function SortableHeader({
     <Tooltip>
       <TooltipTrigger asChild>
         <TableHead
-          className="text-right cursor-pointer hover:bg-muted/50 select-none"
+          className="text-right cursor-pointer select-none transition-colors hover:text-foreground"
           onClick={() => onSort(field)}
         >
           <div className="flex items-center justify-end gap-1">
             <span>{label}</span>
             {sortField === field && (
-              <span className="text-xs">
-                {sortDirection === "desc" ? "▼" : "▲"}
-              </span>
+              <ArrowDown className={`size-3 shrink-0 text-foreground ${sortDirection === "desc" ? "" : "rotate-180"}`} />
             )}
           </div>
         </TableHead>
@@ -141,7 +139,7 @@ export function PenaltyStatsTable({ players, season }: PenaltyStatsTableProps) {
   const sortedPlayers = sortPlayers(players, sortField, sortDirection);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-hidden rounded-2xl border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -225,7 +223,7 @@ export function PenaltyStatsTable({ players, season }: PenaltyStatsTableProps) {
                 <Link
                   to="/players/$id"
                   params={{ id: String(player.playerId) }}
-                  className="flex items-center gap-2 hover:underline"
+                  className="flex items-center gap-2 transition-colors hover:text-link"
                 >
                   <Avatar className="h-6 w-6">
                     <AvatarImage
@@ -240,21 +238,11 @@ export function PenaltyStatsTable({ players, season }: PenaltyStatsTableProps) {
                 </Link>
               </TableCell>
               <TableCell>
-                <Link
-                  to="/teams/$abbrev"
-                  params={{ abbrev: player.team }}
-                  search={season ? { season } : undefined}
-                  className="flex items-center gap-2"
-                >
-                  <TeamLogo abbrev={player.team} size="xs" />
-                  <span className="text-muted-foreground">{player.team}</span>
-                </Link>
+                <TeamTag abbrev={player.team} season={season} />
               </TableCell>
               <TableCell>
                 {player.position && (
-                  <Badge variant="outline" className="font-normal">
-                    {formatPosition(player.position)}
-                  </Badge>
+                  <span className="text-muted-foreground">{formatPositionShort(player.position)}</span>
                 )}
               </TableCell>
               <TableCell className="text-right tabular-nums">

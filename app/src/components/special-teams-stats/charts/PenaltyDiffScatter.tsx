@@ -53,7 +53,7 @@ function formatRate(v: number) {
 }
 
 function getNetColor(netPer60: number) {
-  return netPer60 > 0 ? "hsl(142, 76%, 36%)" : "hsl(0, 72%, 51%)";
+  return netPer60 > 0 ? "var(--chart-3)" : "var(--chart-2)";
 }
 
 function CustomDot(props: {
@@ -76,7 +76,7 @@ function CustomDot(props: {
       cy={cy}
       r={radius}
       fill={getNetColor(payload.netPer60)}
-      stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--background))"}
+      stroke={isSelected ? "var(--primary)" : "var(--background)"}
       strokeWidth={isSelected ? 3 : 1.5}
       style={{ transition: "r 0.15s, stroke-width 0.15s" }}
     />
@@ -99,7 +99,7 @@ function CustomTooltip({
   const data = payload[0].payload;
 
   return (
-    <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-3 text-sm min-w-45">
+    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm min-w-45">
       <div className="flex items-center gap-2 mb-2">
         <Avatar className="h-6 w-6">
           <AvatarImage
@@ -115,16 +115,16 @@ function CustomTooltip({
       </div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
         <span className="text-muted-foreground">Drawn/60:</span>
-        <span className="font-mono text-success">
+        <span className="tabular-nums text-success">
           {data.drawnPer60.toFixed(2)}
         </span>
         <span className="text-muted-foreground">Taken/60:</span>
-        <span className="font-mono text-error">
+        <span className="tabular-nums text-error">
           {data.takenPer60.toFixed(2)}
         </span>
         <span className="text-muted-foreground">Net/60:</span>
         <span
-          className={`font-mono font-semibold ${
+          className={`tabular-nums font-semibold ${
             data.netPer60 > 0
               ? "text-success"
               : data.netPer60 < 0
@@ -136,9 +136,9 @@ function CustomTooltip({
           {data.netPer60.toFixed(2)}
         </span>
         <span className="text-muted-foreground">Total Drawn:</span>
-        <span className="font-mono">{data.drawn}</span>
+        <span className="tabular-nums">{data.drawn}</span>
         <span className="text-muted-foreground">Total Taken:</span>
-        <span className="font-mono">{data.taken}</span>
+        <span className="tabular-nums">{data.taken}</span>
       </div>
     </div>
   );
@@ -156,7 +156,7 @@ function SelectionPanel({
   const isPositive = data.netPer60 > 0;
 
   return (
-    <div className="mt-3 p-3 border rounded-lg bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+    <div className="mt-3 animate-in rounded-xl border bg-card p-3 duration-200 slide-in-from-bottom-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <Avatar className="h-10 w-10 shrink-0">
@@ -172,24 +172,24 @@ function SelectionPanel({
               <span
                 className={`ml-2 text-xs ${isPositive ? "text-success" : "text-destructive"}`}
               >
-                {isPositive ? "Net Positive" : "Net Negative"}
+                {isPositive ? "Net positive" : "Net negative"}
               </span>
             </p>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">Drawn/60:</span>{" "}
-                <span className="font-mono text-success">
+                <span className="tabular-nums text-success">
                   {data.drawnPer60.toFixed(2)}
                 </span>
               </span>
               <span>
                 <span className="text-xs">Taken/60:</span>{" "}
-                <span className="font-mono text-error">
+                <span className="tabular-nums text-error">
                   {data.takenPer60.toFixed(2)}
                 </span>
               </span>
               <span
-                className={`font-mono font-semibold ${isPositive ? "text-success" : "text-destructive"}`}
+                className={`tabular-nums font-semibold ${isPositive ? "text-success" : "text-destructive"}`}
               >
                 {isPositive ? "+" : ""}
                 {data.netPer60.toFixed(2)}
@@ -256,8 +256,8 @@ export function PenaltyDiffScatter({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Penalty Drawing vs Taking</CardTitle>
-          <CardDescription>No data available</CardDescription>
+          <CardTitle>Penalty drawing vs taking</CardTitle>
+          <CardDescription>No data for this selection yet</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -283,7 +283,7 @@ export function PenaltyDiffScatter({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Penalty Drawing vs Taking</CardTitle>
+        <CardTitle className="text-base">Penalty drawing vs taking</CardTitle>
         <CardDescription>
           Penalties drawn per 60 (X) vs taken per 60 (Y). Players below the
           diagonal line have positive net impact.
@@ -306,7 +306,7 @@ export function PenaltyDiffScatter({
               x2={maxDrawn}
               y1={0}
               y2={avgTaken}
-              fill="hsl(142, 76%, 36%)"
+              fill="var(--chart-3)"
               fillOpacity={0.08}
             />
             <ReferenceArea
@@ -314,7 +314,7 @@ export function PenaltyDiffScatter({
               x2={avgDrawn}
               y1={avgTaken}
               y2={maxTaken}
-              fill="hsl(0, 72%, 51%)"
+              fill="var(--chart-2)"
               fillOpacity={0.08}
             />
 
@@ -410,7 +410,7 @@ export function PenaltyDiffScatter({
           >
             <span
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "hsl(142, 76%, 36%)" }}
+              style={{ backgroundColor: "var(--chart-3)" }}
             />
             <span className="text-muted-foreground">
               Below line = Net positive (best)
@@ -421,7 +421,7 @@ export function PenaltyDiffScatter({
           >
             <span
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "hsl(0, 72%, 51%)" }}
+              style={{ backgroundColor: "var(--chart-2)" }}
             />
             <span className="text-muted-foreground">
               Above line = Net negative (worst)

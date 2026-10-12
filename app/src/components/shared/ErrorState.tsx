@@ -32,7 +32,7 @@ export function ErrorState({
     return (
       <div
         className={cn(
-          "flex items-center gap-3 rounded-md bg-destructive/10 p-4 text-destructive",
+          "flex items-center gap-3 rounded-2xl bg-destructive/10 p-4 text-destructive",
           className
         )}
       >
