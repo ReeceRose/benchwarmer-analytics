@@ -66,3 +66,4 @@ app/src/routeTree.gen.ts
 
 # Vercel project link
 .vercel
+.neon

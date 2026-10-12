@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ageAsOfSept15, breakoutScore, percentileThresholds, rookieScore, seasonTrend } from "@/server/api/stats";
+import { ageAsOfSept15, breakoutScore, percentileThresholds, rookieScore, seasonTrend, thresholds } from "@/server/api/stats";
 
 const skater = { goals: 10, assists: 15, shots: 120, iceTimeSeconds: 60_000, expectedGoals: 14, corsiForPct: 55 };
 
@@ -15,6 +15,25 @@ describe("percentileThresholds", () => {
 
   it("handles a single value", () => {
     expect(new Set(percentileThresholds([0.5]))).toEqual(new Set([0.5]));
+  });
+});
+
+describe("thresholds", () => {
+  it("uses full thresholds from the season midpoint on", () => {
+    const full = { minIceTime: 30_000, minGoals: 10, minLineToi: 18_000, minGoalieGames: 10 };
+    expect(thresholds("5on5")).toEqual(full);
+    expect(thresholds("5on5", 41)).toEqual(full);
+    expect(thresholds("5on5", 82)).toEqual(full);
+  });
+
+  it("scales with games played before the midpoint", () => {
+    // progress = 20/41
+    expect(thresholds("5on5", 20)).toEqual({ minIceTime: 14_634, minGoals: 5, minLineToi: 8_780, minGoalieGames: 5 });
+  });
+
+  it("never drops below the floors", () => {
+    expect(thresholds("5on5", 0)).toEqual({ minIceTime: 3_000, minGoals: 2, minLineToi: 1_200, minGoalieGames: 2 });
+    expect(thresholds("5on4", 3)).toEqual({ minIceTime: 300, minGoals: 1, minLineToi: 300, minGoalieGames: 2 });
   });
 });
 

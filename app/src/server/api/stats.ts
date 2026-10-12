@@ -1,4 +1,4 @@
-import { and, asc, avg, count, desc, eq, gte, inArray, isNotNull, sql, sum as sqlSum, type SQL } from "drizzle-orm";
+import { and, asc, avg, count, desc, eq, gte, inArray, isNotNull, max, sql, sum as sqlSum, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { queryRows, type Database } from "@/server/db/client";
 import {
@@ -19,17 +19,36 @@ import { currentSeason } from "@/server/ingestion/normalize";
 
 type SkaterSeasonRow = typeof skaterSeasons.$inferSelect;
 
+// Full thresholds apply from the midpoint of the regular season. Before that
+// they scale with games played (down to a floor), so early-season pages
+// aren't empty.
+const FULL_THRESHOLD_GAMES = 41;
+
 // Thresholds scale down for special-teams situations, which have far less ice time.
-function thresholds(situation: string) {
+export function thresholds(situation: string, gamesPlayed: number = FULL_THRESHOLD_GAMES) {
   const evenStrength = situation === "5on5" || situation === "all";
+  const progress = Math.min(Math.max(gamesPlayed, 0) / FULL_THRESHOLD_GAMES, 1);
+  const scaled = (full: number, floor: number) => Math.max(Math.round(full * progress), floor);
   return {
-    minIceTime: evenStrength ? 500 * 60 : 50 * 60,
-    minGoals: evenStrength ? 10 : 3,
-    minLineToi: evenStrength ? 300 * 60 : 30 * 60,
+    minIceTime: evenStrength ? scaled(500 * 60, 50 * 60) : scaled(50 * 60, 5 * 60),
+    minGoals: evenStrength ? scaled(10, 2) : scaled(3, 1),
+    minLineToi: evenStrength ? scaled(300 * 60, 20 * 60) : scaled(30 * 60, 5 * 60),
+    minGoalieGames: scaled(10, 2),
   };
 }
 
-const MIN_GOALIE_GAMES = 10;
+// Most regular-season games any team has played in the season.
+async function seasonGamesPlayed(db: Database, season: number): Promise<number> {
+  const [row] = await db
+    .select({ value: max(teamSeasons.gamesPlayed) })
+    .from(teamSeasons)
+    .where(and(eq(teamSeasons.season, season), eq(teamSeasons.situation, "all"), eq(teamSeasons.isPlayoffs, false)));
+  return row?.value ?? 0;
+}
+
+async function seasonThresholds(db: Database, season: number, situation: string) {
+  return thresholds(situation, await seasonGamesPlayed(db, season));
+}
 
 // ORDER BY with NULLs last in both directions (Postgres puts NULLs first for
 // DESC by default).
@@ -148,8 +167,7 @@ async function topLines(db: Database, season: number, situation: string, limit: 
 }
 
 // League averages (50 when there is nothing to average).
-async function leagueAverages(db: Database, season: number, situation: string) {
-  const { minIceTime, minLineToi } = thresholds(situation);
+async function leagueAverages(db: Database, season: number, situation: string, minIceTime: number, minLineToi: number) {
   const [[corsi], [xg]] = await Promise.all([
     db
       .select({ value: avg(skaterSeasons.corsiForPct).mapWith(Number), n: count() })
@@ -181,8 +199,8 @@ async function leagueAverages(db: Database, season: number, situation: string) {
   };
 }
 
-// Regular-season "all" goalie rows with at least 10 GP.
-function goalieBase(db: Database, season: number, extra: SQL | undefined) {
+// Regular-season "all" goalie rows with at least minGames GP.
+function goalieBase(db: Database, season: number, minGames: number, extra: SQL | undefined) {
   return db
     .select({
       playerId: goalieSeasons.playerId,
@@ -202,13 +220,13 @@ function goalieBase(db: Database, season: number, extra: SQL | undefined) {
         eq(goalieSeasons.season, season),
         eq(goalieSeasons.situation, "all"),
         eq(goalieSeasons.isPlayoffs, false),
-        gte(goalieSeasons.gamesPlayed, MIN_GOALIE_GAMES),
+        gte(goalieSeasons.gamesPlayed, minGames),
         extra,
       ),
     );
 }
 
-async function goalieLeaders(db: Database, season: number, limit: number) {
+async function goalieLeaders(db: Database, season: number, limit: number, minGames: number) {
   const leader = (value: (r: Awaited<ReturnType<typeof goalieBase>>[number]) => number | null) =>
     (r: Awaited<ReturnType<typeof goalieBase>>[number]) => ({
       playerId: r.playerId,
@@ -218,13 +236,13 @@ async function goalieLeaders(db: Database, season: number, limit: number) {
       value: value(r) ?? 0,
     });
   const [savePct, gaa, gsax] = await Promise.all([
-    goalieBase(db, season, isNotNull(goalieSeasons.savePercentage))
+    goalieBase(db, season, minGames, isNotNull(goalieSeasons.savePercentage))
       .orderBy(desc(goalieSeasons.savePercentage), asc(goalieSeasons.id))
       .limit(limit),
-    goalieBase(db, season, isNotNull(goalieSeasons.goalsAgainstAverage))
+    goalieBase(db, season, minGames, isNotNull(goalieSeasons.goalsAgainstAverage))
       .orderBy(asc(goalieSeasons.goalsAgainstAverage), asc(goalieSeasons.id))
       .limit(limit),
-    goalieBase(db, season, isNotNull(goalieSeasons.goalsSavedAboveExpected))
+    goalieBase(db, season, minGames, isNotNull(goalieSeasons.goalsSavedAboveExpected))
       .orderBy(desc(goalieSeasons.goalsSavedAboveExpected), asc(goalieSeasons.id))
       .limit(limit),
   ]);
@@ -235,7 +253,7 @@ async function goalieLeaders(db: Database, season: number, limit: number) {
   };
 }
 
-async function goalieOutliers(db: Database, season: number, limit: number) {
+async function goalieOutliers(db: Database, season: number, limit: number, minGames: number) {
   const filter = and(isNotNull(goalieSeasons.goalsSavedAboveExpected), isNotNull(goalieSeasons.expectedGoalsAgainst));
   const entry = (r: Awaited<ReturnType<typeof goalieBase>>[number]) => ({
     playerId: r.playerId,
@@ -247,8 +265,8 @@ async function goalieOutliers(db: Database, season: number, limit: number) {
     goalsSavedAboveExpected: r.goalsSavedAboveExpected ?? 0,
   });
   const [hot, cold] = await Promise.all([
-    goalieBase(db, season, filter).orderBy(desc(goalieSeasons.goalsSavedAboveExpected), asc(goalieSeasons.id)).limit(limit),
-    goalieBase(db, season, filter).orderBy(asc(goalieSeasons.goalsSavedAboveExpected), asc(goalieSeasons.id)).limit(limit),
+    goalieBase(db, season, minGames, filter).orderBy(desc(goalieSeasons.goalsSavedAboveExpected), asc(goalieSeasons.id)).limit(limit),
+    goalieBase(db, season, minGames, filter).orderBy(asc(goalieSeasons.goalsSavedAboveExpected), asc(goalieSeasons.id)).limit(limit),
   ]);
   return { runningHot: hot.map(entry), runningCold: cold.map(entry) };
 }
@@ -256,7 +274,7 @@ async function goalieOutliers(db: Database, season: number, limit: number) {
 export async function getHomepage({ db, query }: ApiContext) {
   const season = query.int("season") ?? currentSeason();
   const situation = query.string("situation") ?? "5on5";
-  const { minIceTime, minGoals, minLineToi } = thresholds(situation);
+  const { minIceTime, minGoals, minLineToi, minGoalieGames } = await seasonThresholds(db, season, situation);
   const n = 5;
 
   const [points, goals, xg, corsi, iceTime, hot, cold, lines, averages, goalies, goalieOut] = await Promise.all([
@@ -271,9 +289,9 @@ export async function getHomepage({ db, query }: ApiContext) {
     runningHot(db, season, situation, 15, minGoals),
     runningCold(db, season, situation, 15, minGoals),
     topLines(db, season, situation, 5, minLineToi),
-    leagueAverages(db, season, situation),
-    goalieLeaders(db, season, n),
-    goalieOutliers(db, season, 15),
+    leagueAverages(db, season, situation, minIceTime, minLineToi),
+    goalieLeaders(db, season, n, minGoalieGames),
+    goalieOutliers(db, season, 15, minGoalieGames),
   ]);
 
   return {
@@ -297,13 +315,13 @@ export async function getOutliers({ db, query }: ApiContext) {
   const situation = query.string("situation") ?? "5on5";
   const skaterLimit = clamp(query.int("skaterLimit") ?? 15, 1, 50);
   const goalieLimit = clamp(query.int("goalieLimit") ?? 5, 1, 20);
-  const { minGoals } = thresholds(situation);
+  const { minIceTime, minGoals, minLineToi, minGoalieGames } = await seasonThresholds(db, season, situation);
 
   const [hot, cold, averages, goalies] = await Promise.all([
     runningHot(db, season, situation, skaterLimit, minGoals),
     runningCold(db, season, situation, skaterLimit, minGoals),
-    leagueAverages(db, season, situation),
-    goalieOutliers(db, season, goalieLimit),
+    leagueAverages(db, season, situation, minIceTime, minLineToi),
+    goalieOutliers(db, season, goalieLimit, minGoalieGames),
   ]);
   return {
     season,
@@ -318,7 +336,8 @@ export async function getTopLines({ db, query }: ApiContext) {
   const season = query.int("season") ?? currentSeason();
   const situation = query.string("situation") ?? "5on5";
   const limit = clamp(query.int("limit") ?? 5, 1, 20);
-  return { season, situation, lines: await topLines(db, season, situation, limit, thresholds(situation).minLineToi) };
+  const { minLineToi } = await seasonThresholds(db, season, situation);
+  return { season, situation, lines: await topLines(db, season, situation, limit, minLineToi) };
 }
 
 type ScoreInput = Pick<SkaterSeasonRow, "goals" | "assists" | "shots" | "iceTimeSeconds" | "expectedGoals" | "corsiForPct">;
@@ -671,7 +690,10 @@ async function skaterLeaderboard(db: Database, category: string, season: number,
     eq(skaterSeasons.situation, situation),
     eq(skaterSeasons.isPlayoffs, false),
   ];
-  if (category === "corsipct") filters.push(gte(skaterSeasons.iceTimeSeconds, thresholds(situation).minIceTime));
+  if (category === "corsipct") {
+    const { minIceTime } = await seasonThresholds(db, season, situation);
+    filters.push(gte(skaterSeasons.iceTimeSeconds, minIceTime));
+  }
   // Faceoff % needs at least 100 faceoffs taken.
   if (category === "faceoffpct") filters.push(sql`${adv.faceoffsWon} + ${adv.faceoffsLost} >= 100`);
   const where = and(...filters);
@@ -761,11 +783,12 @@ async function skaterLeaderboard(db: Database, category: string, season: number,
 
 async function goalieLeaderboard(db: Database, category: string, season: number, limit: number, ascending: boolean) {
   const g = goalieSeasons;
+  const { minGoalieGames } = await seasonThresholds(db, season, "all");
   const base = and(
     eq(g.season, season),
     eq(g.situation, "all"),
     eq(g.isPlayoffs, false),
-    gte(g.gamesPlayed, MIN_GOALIE_GAMES),
+    gte(g.gamesPlayed, minGoalieGames),
   );
   const reboundRatio = sql`${g.rebounds}::numeric / ${g.expectedRebounds}`;
   // Each category sorts by its own value.
