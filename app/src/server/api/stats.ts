@@ -31,8 +31,8 @@ function thresholds(situation: string) {
 
 const MIN_GOALIE_GAMES = 10;
 
-// ORDER BY with NULLs last in both directions. (The C# sorted nullable
-// columns DESC in SQL, where Postgres puts NULLs first.)
+// ORDER BY with NULLs last in both directions (Postgres puts NULLs first for
+// DESC by default).
 function orderBy(expr: SQL, ascending: boolean): SQL {
   return ascending ? sql`${expr} asc nulls last` : sql`${expr} desc nulls last`;
 }
@@ -693,7 +693,7 @@ async function skaterLeaderboard(db: Database, category: string, season: number,
     faceoffpct: sql`${faceoffPct}`,
   };
 
-  // Advanced stats are matched by player/season/situation (not team), as in the C#.
+  // Advanced stats are matched by player/season/situation (not team).
   const joinAdvanced = and(
     eq(adv.playerId, skaterSeasons.playerId),
     eq(adv.season, skaterSeasons.season),
@@ -768,9 +768,7 @@ async function goalieLeaderboard(db: Database, category: string, season: number,
     gte(g.gamesPlayed, MIN_GOALIE_GAMES),
   );
   const reboundRatio = sql`${g.rebounds}::numeric / ${g.expectedRebounds}`;
-  // Each category sorts by its own value. (The C# fell back to save % for
-  // goalieTime, goalsAgainst and xGA, so those boards weren't sorted by the
-  // stat they showed.)
+  // Each category sorts by its own value.
   const orderColumns: Record<string, SQL> = {
     savepct: sql`coalesce(${g.savePercentage}, 0)`,
     gaa: sql`coalesce(${g.goalsAgainstAverage}, 0)`,

@@ -1,8 +1,7 @@
-// Live NHL API reads used by request handlers. Port of the request-time parts
-// of NhlScheduleService. Like the C#, a failed request (HTTP error, network
-// error, timeout) yields null / empty instead of failing the endpoint.
-// Response types list only the fields the API reads; C# deserialization
-// defaulted missing numbers to 0 and strings to "", so callers do the same.
+// Live NHL API reads used by request handlers. A failed request (HTTP error,
+// network error, timeout) yields null / empty instead of failing the endpoint.
+// Response types list only the fields the API reads; callers treat missing
+// numbers as 0 and missing strings as "".
 
 import { addDays } from "@/server/api/format";
 import { scheduleToGames, type NhlScheduleResponse, type ScheduledGame } from "@/server/ingestion/nhl";
@@ -287,7 +286,7 @@ export async function getTeamSpecialTeams(season: number): Promise<Map<string, N
   const result = new Map<string, NhlTeamSpecialTeams>();
   for (const t of response?.data ?? []) {
     if (!t.teamFullName) continue;
-    // Unknown names fall back to their first three letters, as in the C#.
+    // Unknown names fall back to their first three letters.
     const abbrev = TEAM_NAME_TO_ABBREV[t.teamFullName] ?? t.teamFullName.slice(0, 3).toUpperCase();
     result.set(abbrev, {
       powerPlayPct: t.powerPlayPct ?? null,

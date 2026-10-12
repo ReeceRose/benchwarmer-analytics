@@ -17,12 +17,12 @@ const techStack = [
   {
     title: "Backend",
     icon: Server,
-    items: [".NET 10", "ASP.NET Core", "Entity Framework Core", "PostgreSQL 17"],
+    items: ["TanStack Start", "Node.js", "Drizzle ORM", "PostgreSQL 18"],
   },
   {
     title: "Infrastructure",
     icon: Database,
-    items: ["Docker", "Azure Container Apps", "GitHub Actions"],
+    items: ["Vercel", "Vercel Cron", "Neon", "GitHub Actions"],
   },
 ];
 

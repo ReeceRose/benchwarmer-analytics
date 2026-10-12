@@ -1,5 +1,5 @@
-// Backfill CLI: loads MoneyPuck + NHL data season by season (port of the C#
-// InitialSeedJob, which also never loaded games or score-state; this does).
+// Backfill CLI: loads MoneyPuck + NHL data season by season, including games
+// and score-state.
 //
 //   npm run backfill -- [--from-season 2008] [--to-season 2025]
 //                       [--dataset teams,skaters,...] [--force] [--yes]

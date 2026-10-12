@@ -1,10 +1,8 @@
 // Benchwarmer Analytics database schema.
 //
-// Derived from the C# EF Core model (server/Benchwarmer.Data, latest
-// AppDbContextModelSnapshot). Table and column names are kept identical to the
-// EF model so ported queries and raw SQL translate directly; TS keys use the
-// same camelCase the C# API emitted in JSON. Deliberate differences from the
-// EF model are listed in docs/SCHEMA_NOTES.md.
+// Table and column names are snake_case (with some odd spellings that raw SQL
+// relies on); TS keys use the same camelCase as the API's JSON. Design
+// decisions are in docs/SCHEMA_NOTES.md.
 //
 // Materialized views are declared with .existing(): their DDL lives as custom
 // SQL in drizzle/0000_init.sql, so drizzle-kit never tries to manage them.

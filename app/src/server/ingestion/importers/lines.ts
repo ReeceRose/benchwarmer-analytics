@@ -15,7 +15,6 @@ interface Candidate {
 const LAST_NAME_PREFIXES = ["st.", "st", "van", "de", "del", "da", "la", "le", "mc", "mac", "o'"];
 
 // Last name from a full name, keeping particles ("Van Riemsdyk", "St. Louis").
-// Port of LineImporter.ExtractLastName.
 export function extractLastName(fullName: string): string {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length <= 1) return parts[0] ?? "";
@@ -26,7 +25,7 @@ export function extractLastName(fullName: string): string {
 }
 
 // Splits "Ekman-Larsson-Keller" into last names, greedily joining up to three
-// hyphen-separated parts that form a known last name. Port of ParsePlayerNames.
+// hyphen-separated parts that form a known last name.
 export function parsePlayerNames(lineName: string, knownLastNames: Set<string>): string[] {
   const parts = lineName
     .split("-")
@@ -56,8 +55,7 @@ export function parsePlayerNames(lineName: string, knownLastNames: Set<string>):
 
 // Line names are ASCII ("Valimaki") and occasionally mangled ("Blmel" for
 // Blümel), so players are indexed under an accent-folded and a non-ASCII-
-// stripped form of their last name. The C# importer matched exact text and
-// skipped these lines.
+// stripped form of their last name.
 export function nameKeys(lastName: string): string[] {
   const lower = lastName.toLowerCase();
   const folded = lower.normalize("NFD").replace(/\p{M}/gu, "");
@@ -135,9 +133,8 @@ export function decodeLineId(lineId: string, known: Set<number>): number[] | nul
   return ids;
 }
 
-// Port of the per-name resolution in LineImporter.ImportAsync. Addition: when
-// the last-name fallback is still ambiguous, prefer players who played that
-// season. MoneyPuck lists one (final) team per skater season, so players
+// Resolves one last name to a player on the line's team and season. When
+// that's still ambiguous, prefer players who played that season. MoneyPuck lists one (final) team per skater season, so players
 // traded mid-season miss the season+team lookup.
 export function resolvePlayer(index: PlayerIndex, lastName: string, season: number, team: string, defenseLine: boolean): Resolution {
   const name = nameKeys(lastName)[0] ?? "";
@@ -160,7 +157,7 @@ export function resolvePlayer(index: PlayerIndex, lastName: string, season: numb
   return { error: "not found" };
 }
 
-// Fallback when lineId can't be decoded: the C# importer's last-name matching.
+// Fallback when lineId can't be decoded: match players by last name.
 function resolveByNames(index: PlayerIndex, r: LineRecord, team: string): { ids: number[] } | { error: string } {
   const names = parsePlayerNames(r.name, index.knownLastNames);
   if (names.length < 2) return { error: "invalid name" };
@@ -194,9 +191,8 @@ function lineRow(r: LineRecord, team: string, ids: number[]): UpsertRow<typeof l
   };
 }
 
-// Port of LineImporter. Players come from the lineId column (exact), falling
-// back to the C# last-name matching; unresolvable lines are skipped and
-// counted. Run after the season's skaters are imported.
+// Players come from the lineId column (exact), falling back to last-name
+// matching; unresolvable lines are skipped and counted. Run after the season's skaters are imported.
 export async function importLines(db: Queryable, csv: string, logger: Logger): Promise<{ written: number; skipped: number }> {
   const records: LineRecord[] = [];
   for await (const r of parseCsv(csv, lineFields)) records.push(r);
@@ -223,7 +219,7 @@ export async function importLines(db: Queryable, csv: string, logger: Logger): P
       fromNames++;
     }
     ids.sort((a, b) => a - b);
-    // First occurrence wins, as in the C# importer.
+    // First occurrence wins.
     const key = [r.season, team, r.situation, ids[0], ids[1], ids[2] ?? null].join("|");
     if (seen.has(key)) continue;
     seen.add(key);

@@ -23,7 +23,7 @@ describe("estimatedRecord", () => {
     expect(estimatedRecord(10, 0, 0)).toEqual({ wins: 5, regLosses: 5, otLosses: 0, points: 10 });
   });
 
-  it("rounds exact halves to even, like C# Math.Round(double)", () => {
+  it("rounds exact halves to even", () => {
     // 5 losses * 0.1 = 0.5 → 0; 15 * 0.1 = 1.5 → 2
     expect(estimatedRecord(10, 0, 0).otLosses).toBe(0);
     expect(estimatedRecord(15, 1, 1000).otLosses).toBe(2);

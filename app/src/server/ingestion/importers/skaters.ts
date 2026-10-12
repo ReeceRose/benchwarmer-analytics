@@ -7,7 +7,7 @@ import { skaterFields } from "@/server/ingestion/records";
 
 type SkaterRecord = ParsedRecord<typeof skaterFields>;
 
-// value / seconds * 3600, rounded to 3 places. Port of SkaterImporter.CalculatePer60.
+// value / seconds * 3600, rounded to 3 places.
 export function per60(value: string | null, iceTimeSeconds: number): string | null {
   if (value === null || iceTimeSeconds <= 0) return null;
   return roundHalfEven(toDecimal(value).div(iceTimeSeconds).mul(3600), 3);
@@ -54,10 +54,9 @@ function skaterSeasonRow(r: SkaterRecord, isPlayoffs: boolean): UpsertRow<typeof
 }
 
 // Inserts players seen in a season file, or refreshes name/current team (and
-// position when known) for existing ones. Port of
-// PlayerRepository.UpsertBasicInfoAsync, except that a season older than the
-// player's newest stored season leaves the player untouched, so re-importing
-// an old season doesn't roll back current teams.
+// position when known) for existing ones. A season older than the player's
+// newest stored season leaves the player untouched, so re-importing an old
+// season doesn't roll back current teams.
 export async function upsertBasicPlayers(
   db: Queryable,
   season: number,
@@ -85,7 +84,7 @@ export function singleSeason(rows: { season?: unknown }[]): number {
   return [...seasons][0] as number;
 }
 
-// Port of SkaterImporter: per player (first row wins for name/team/position),
+// skaters.csv → players (first row wins for name/team/position),
 // then skater_seasons with derived rates and skater_season_advanced with every
 // remaining MoneyPuck column.
 export async function importSkaters(db: Queryable, csv: string, isPlayoffs: boolean): Promise<number> {

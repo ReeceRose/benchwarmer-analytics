@@ -43,10 +43,8 @@ export function finalPeriod(maxShotPeriod: number, wentToOT: boolean, wentToShoo
   return period;
 }
 
-// Seconds each team spent leading/trailing/tied. Port of
-// ScoreStateTimeCalculator.CalculateGameScoreStateTimes, fixed to convert
-// MoneyPuck's cumulative game time into time within the period (the C# code
-// treated it as period-relative, inflating every period after the first).
+// Seconds each team spent leading/trailing/tied. MoneyPuck's goal times are
+// cumulative game time, so they're converted to time within the period.
 // An OT goal ends the game; regulation periods always run to 20:00.
 export function computeScoreState(goals: Goal[], game: GameInfo): { home: TeamStateSeconds; away: TeamStateSeconds } {
   const home = { leading: 0, trailing: 0, tied: 0 };

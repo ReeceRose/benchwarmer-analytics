@@ -10,8 +10,8 @@ type ShotRecord = ParsedRecord<typeof shotFields>;
 
 const BATCH_SIZE = 1000;
 
-// Port of ShotImporter.ConvertToEntity: 128 same-named fields are copied by
-// the generic mapper; these are the exceptions.
+// 128 same-named fields are copied by the generic mapper; these are the
+// exceptions.
 export const mapShot = buildMapper(shots, shotFields, {
   computed: {
     gameId: (r: ShotRecord) => toNhlGameId(r.gameId, r.season),
@@ -36,7 +36,7 @@ export interface ShotImportResult {
   gameIds: Set<string>;
 }
 
-// Streams a season's shots CSV in batches. Port of ShotImporter.ImportFromStreamAsync.
+// Streams a season's shots CSV in batches.
 export async function importShots(db: Queryable, csv: Readable | string, options: ShotImportOptions = {}): Promise<ShotImportResult> {
   let batch: UpsertRow<typeof shots>[] = [];
   const result: ShotImportResult = { written: 0, rowsRead: 0, rowsConsidered: 0, gameIds: new Set() };

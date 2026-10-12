@@ -8,9 +8,9 @@ type Convert = (value: string | number | null) => Value;
 
 const isZero = (value: string | number) => Number(value) === 0;
 
-// Conversion for a same-named source field, matching the C# importers:
-// (int)decimal truncates, `decimal != 0` becomes a bool, `X.HasValue ? ... : null`
-// keeps nulls, and decimals pass through as exact text.
+// Conversion for a same-named source field: decimals into integer columns
+// truncate, non-zero numbers into boolean columns are true, nulls stay null
+// for nullable sources, and decimals pass through as exact text.
 function converterFor(field: FieldSpec, columnType: string, notNull: boolean, key: string): Convert {
   const nullableSource = field.type.endsWith("?");
   const nullGuard = (convert: (value: string | number) => Value): Convert => (value) => {

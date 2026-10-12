@@ -52,13 +52,13 @@ describe("toNhlGameId", () => {
 });
 
 describe("numeric helpers", () => {
-  it("truncInt truncates toward zero like a C# int cast", () => {
+  it("truncInt truncates toward zero", () => {
     expect(truncInt("82298.9")).toBe(82298);
     expect(truncInt(-1.7)).toBe(-1);
     expect(truncInt("0.0")).toBe(0);
   });
 
-  it("roundHalfEven uses banker's rounding like C# Math.Round", () => {
+  it("roundHalfEven uses banker's rounding", () => {
     expect(roundHalfEven("0.0625", 3)).toBe("0.062");
     expect(roundHalfEven("0.0635", 3)).toBe("0.064");
     expect(roundHalfEven("2.5", 0)).toBe("2");
@@ -66,7 +66,7 @@ describe("numeric helpers", () => {
     expect(roundHalfEven("1.23456", 4)).toBe("1.2346");
   });
 
-  it("doubleToDecimal keeps at most 15 significant digits like (decimal)double", () => {
+  it("doubleToDecimal keeps at most 15 significant digits", () => {
     expect(doubleToDecimal(0.1 + 0.2)).toBe("0.3");
     expect(doubleToDecimal(12.5)).toBe("12.5");
     expect(doubleToDecimal(1 / 3)).toBe("0.333333333333333");

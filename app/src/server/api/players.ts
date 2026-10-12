@@ -19,7 +19,7 @@ export async function findPlayer(db: Database, id: number): Promise<PlayerRow | 
   return player;
 }
 
-// `{id:int}` route: a non-integer id matched no C# route (404).
+// Integer `{id}` route param: anything else is a 404.
 export async function requirePlayer(db: Database, rawId: string | undefined): Promise<PlayerRow> {
   const id = intRouteParam(rawId);
   if (id === undefined) throw new HttpError(404, { error: "Not found", code: "NOT_FOUND" });
@@ -31,7 +31,7 @@ export async function searchPlayers({ db, query }: ApiContext) {
   if (!q?.trim()) badRequest(ApiError.missingQuery);
   const paging = parsePagination(query.int("page"), query.int("pageSize"));
 
-  // EF's ToLower().Contains() → strpos, so % and _ are literal.
+  // Case-insensitive substring match with strpos, so % and _ are literal.
   const needle = q.toLowerCase();
   const where = or(
     sql`strpos(lower(${players.name}), ${needle}) > 0`,
@@ -277,7 +277,7 @@ export async function getPlayerShots({ db, params, query }: ApiContext) {
   const player = await requirePlayer(db, params.id);
   const season = query.int("season");
   const period = query.int("period");
-  // Matched as given (no upper-casing or validation), as in the C# endpoint.
+  // Matched as given (no upper-casing or validation).
   const shotType = query.string("shotType");
   const goalsOnly = query.bool("goalsOnly") === true;
   const limit = query.int("limit");
@@ -445,8 +445,8 @@ export interface GoalieShot {
   awayTeamCode: string;
 }
 
-// GoalieWorkloadBuilder.CalculateGoaliePerGameStats: shots on goal faced per
-// game, newest game date first. Unknown dates sort last as DateOnly.MinValue.
+// Shots on goal faced per game, newest game date first. Unknown dates use
+// MIN_DATE and sort last.
 export function goaliePerGameStats(shotRows: readonly GoalieShot[], gameDates: Map<string, string>): GoalieGame[] {
   const result: GoalieGame[] = [];
   for (const [gameId, rows] of groupBy(shotRows, (s) => s.gameId)) {
@@ -514,7 +514,7 @@ function avgSavePct(gamesList: readonly GoalieGame[]): number {
   return totalSA > 0 ? round((totalSA - totalGA) / totalSA, 4) : 0;
 }
 
-// "GAA" here is goals against per game, as in the C#.
+// "GAA" here is goals against per game.
 function goalsPerGame(gamesList: readonly GoalieGame[]): number {
   return gamesList.length > 0 ? round(sum(gamesList, (g) => g.goalsAgainst) / gamesList.length, 2) : 0;
 }
@@ -630,7 +630,7 @@ export async function comparePlayers({ db, query }: ApiContext) {
   const season = query.int("season");
   const situation = query.string("situation");
 
-  // Unparseable entries are skipped, as in the C#.
+  // Unparseable entries are skipped.
   const playerIds = ids
     .split(",")
     .map((s) => s.trim())

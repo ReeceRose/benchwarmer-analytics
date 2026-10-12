@@ -29,8 +29,7 @@ export function parseBirthDate(value: string | null): string | null {
   return date.toISOString().slice(0, 10);
 }
 
-// Port of PlayerBioImporter + PlayerRepository.UpsertBatchAsync: every bio
-// field is overwritten for existing players.
+// Player bios: every bio field is overwritten for existing players.
 export async function importPlayerBios(db: Queryable, csv: string): Promise<number> {
   const rows: UpsertRow<typeof players>[] = [];
   for await (const bio of parseCsv(csv, playerBioFields)) {
@@ -38,8 +37,8 @@ export async function importPlayerBios(db: Queryable, csv: string): Promise<numb
       id: bio.playerId,
       name: bio.name,
       ...parseName(bio.name),
-      // Normalized like season imports (L/R → LW/RW). The C# bio import stored
-      // raw L/R, which dropped wingers from LW/RW-based forward filters.
+      // Normalized like season imports (L/R → LW/RW); raw L/R would drop
+      // wingers from LW/RW-based forward filters.
       position: normalizePosition(bio.primaryPosition ?? bio.position),
       currentTeamAbbreviation: normalizeTeam(bio.team),
       headshotUrl: null,

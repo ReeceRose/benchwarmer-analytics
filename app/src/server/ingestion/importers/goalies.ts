@@ -9,7 +9,7 @@ type GoalieRecord = ParsedRecord<typeof goalieFields>;
 
 const count = (value: string | null) => truncInt(value ?? 0);
 
-// Port of GoalieImporter's derived stats (full decimal precision, no rounding).
+// Derived goalie stats (full decimal precision, no rounding).
 export function goalieDerived(goalsAgainst: number, shotsAgainst: number, iceTimeSeconds: number, xGoalsAgainst: string | null) {
   return {
     savePercentage: shotsAgainst > 0 ? toDecimal(shotsAgainst - goalsAgainst).div(shotsAgainst).toString() : null,
@@ -46,7 +46,7 @@ function goalieSeasonRow(r: GoalieRecord, isPlayoffs: boolean): UpsertRow<typeof
   };
 }
 
-// Port of GoalieImporter.
+// goalies.csv → players (basic info) and goalie_seasons.
 export async function importGoalies(db: Queryable, csv: string, isPlayoffs: boolean): Promise<number> {
   const basics = new Map<number, Parameters<typeof upsertBasicPlayers>[2][number]>();
   const rows: UpsertRow<typeof goalieSeasons>[] = [];

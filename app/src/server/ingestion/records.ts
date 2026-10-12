@@ -1,6 +1,6 @@
-// MoneyPuck CSV field specs, extracted mechanically from the C# CsvHelper
-// records in server/Benchwarmer.Ingestion/Parsers/*Record.cs (header names or
-// column indexes, and types). Keys are camelCase C# property names.
+// MoneyPuck CSV field specs: header names (or column indexes) and types.
+// Keys are camelCase and match the schema's property names, so importers can
+// copy same-named fields generically.
 // teams.csv is bound by column index because its header repeats "team".
 import type { FieldSpec } from "@/server/ingestion/csv";
 

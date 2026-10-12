@@ -151,7 +151,7 @@ function teamStats(teamCode: string, rows: readonly StatShot[]): TeamStats {
   };
 }
 
-// Port of GameStatsRepository: per-team and per-period shot totals for games
+// Per-team and per-period shot totals for games
 // that have MoneyPuck shot data.
 export function buildGameStats(rows: readonly StatShot[]): GameStats[] {
   const result: GameStats[] = [];
@@ -484,9 +484,8 @@ async function enrichLiveGames(db: Database, list: NhlLiveGame[], standings: Map
 }
 
 // Stored games for the date, refreshed from the NHL schedule when the date is
-// today or later, or any stored game isn't final yet. (The C# also wrote the
-// refreshed games back; the API is read-only and the schedule cron keeps the
-// table current.)
+// today or later, or any stored game isn't final yet. Nothing is written back:
+// the API is read-only and the schedule cron keeps the table current.
 async function gamesForDate(db: Database, date: string): Promise<GameInfo[]> {
   const stored = await db.select(gameColumns).from(games).where(eq(games.gameDate, date)).orderBy(asc(games.gameId));
   const refresh = stored.length === 0 || date >= todayEastern() || stored.some((g) => g.gameState !== GameState.final);

@@ -1,8 +1,7 @@
 # Ingestion notes
 
-TypeScript port of `server/Benchwarmer.Ingestion` (code in
-`app/src/server/ingestion/`). This records how it works and where it
-deliberately differs from the C# jobs.
+Code in `app/src/server/ingestion/`. This records how ingestion works and the
+data quirks it handles.
 
 ## Sources
 
@@ -53,8 +52,8 @@ it) and accepts `?season=YYYY` for manual re-runs.
 
 Incremental shots: rows are imported only for games with no stored shots,
 plus games from the last 3 days (MoneyPuck revises recent data). The season
-zip is still downloaded and parsed (~5-15 s), but writes drop from the whole
-season (C#) to the new games.
+zip is still downloaded and parsed (~5-15 s), but only the new games are
+written.
 
 Vercel Hobby runs crons once a day at most and only guarantees the hour, so
 the stagger isn't strict there. Each step tolerates running before the
@@ -69,66 +68,46 @@ npm run backfill -- --from-season 2024 --dataset shots,score_state --force --yes
 ```
 
 Resumable: (step, season) pairs that already succeeded are skipped unless
-`--force`. Views are always refreshed at the end. Unlike the C# seed, the
-backfill also loads games and score-state for every season.
+`--force`. Views are always refreshed at the end. The backfill loads games
+and score-state for every season too.
 
-## Differences from the C# ingestion
+## Data quirks and decisions
 
-The schedule cron covers the coming week because the API no longer stores
-games while serving requests (the C# API did; see `API_NOTES.md`).
-
-Bugs fixed:
-
-0. **Shots overwrote each other.** The C# schema and upsert keyed shots on
-   MoneyPuck's `shotID`, which isn't unique: it restarts at 0 every season
-   since 2018 (2008-2017 are numbered continuously), restarts mid-file in the
-   in-progress season's file, and the 2008 file repeats some events under new
-   shotIDs. Each season's import replaced other seasons' shots, which is why
-   production held ~1.1M shots instead of ~2M. Shots are now keyed on
-   `(game_id, event_id)`, and repeated events in a file are imported once.
-1. **Score-state used the wrong clock.** MoneyPuck's `time` column is seconds
-   since the start of the game (period 2 runs 1200-2400), but
-   `ScoreStateTimeCalculator` treated it as time within the period. Every
-   period after the first was inflated (and remaining time could go
-   negative). The port converts to period-relative time. Each game now sums
-   to 3600 s plus OT played, and home/away are symmetric.
-2. **Line players came from last-name guessing.** `lines.csv` has a `lineId`
-   that is the players' 7-digit NHL IDs concatenated. The port decodes it
-   (exact). The C# matching skipped ~7% of lines (shared last names,
-   accents such as "Valimaki" vs "Välimäki", mid-season trades) and could
-   mis-assign players. Name matching remains only as a fallback, with accent
-   folding and a played-that-season tiebreak.
-3. **Playoff lines overwrote regular-season lines.** `line_combinations` has
-   no playoffs column, so importing the playoff file replaced the
-   regular-season numbers for every line that played in both. The lines API
-   only serves regular season, so only regular-season files are imported.
-4. **Nightly job wrote playoff team stats as regular season.** It called
-   `TeamImporter.ImportAsync` without the playoffs flag. Fixed.
-5. **Weekly bio sync un-normalized positions.** Bios store `L`/`R`, while
-   season imports store `LW`/`RW`, and forward filters (special teams,
-   chemistry) only match `C`/`LW`/`RW`. Bio positions are now normalized too.
-6. **Re-importing an old season rolled back current teams.** Season imports
-   overwrote `players.current_team_abbreviation` regardless of season. Now a
-   season older than the player's newest stored season leaves them alone.
-7. **Score-state for games without shot data.** C# wrote final NHL games
-   with no MoneyPuck shots yet as 60 minutes tied. They're now skipped until
-   shots arrive. Home/away codes come from the shots themselves (same source
-   as the goal team codes), and shootouts count the OT period consistently.
-
-Behavior kept on purpose:
-
+- **Games.** The API doesn't write to the DB, so the schedule cron stores the
+  coming week up front (see `API_NOTES.md`).
+- **Shot keys.** MoneyPuck's `shotID` isn't unique: it restarts at 0 every
+  season since 2018 (2008-2017 are numbered continuously), restarts mid-file
+  in the in-progress season's file, and the 2008 file repeats some events
+  under new shotIDs. Shots are keyed on `(game_id, event_id)`, and repeated
+  events in a file are imported once.
+- **Score-state clock.** MoneyPuck's `time` column is seconds since the start
+  of the game (period 2 runs 1200-2400); it's converted to period-relative
+  time. Each game sums to 3600 s plus OT played, and home/away are symmetric.
+- **Line players.** `lines.csv` has a `lineId` that is the players' 7-digit
+  NHL IDs concatenated; it's decoded exactly. Last-name matching would skip
+  ~7% of lines (shared last names, accents such as "Valimaki" vs
+  "Välimäki", mid-season trades), so it's only a fallback, with accent
+  folding and a played-that-season tiebreak. Lines whose IDs can't be
+  decoded and whose names are genuinely ambiguous (for example two Nylanders
+  on TOR in 2024) are skipped and counted in the log.
+- **Playoff lines.** `line_combinations` has no playoffs column and the lines
+  API only serves regular season, so only regular-season line files are
+  imported (a playoff import would overwrite regular-season rows).
+- **Team stats.** The playoffs flag is passed through for team imports, so
+  playoff rows never land as regular season.
+- **Positions.** Bios store `L`/`R`, while season files use `LW`/`RW`, and
+  forward filters (special teams, chemistry) only match `C`/`LW`/`RW`, so bio
+  positions are normalized to `LW`/`RW`.
+- **Current team.** Importing a season older than a player's newest stored
+  season leaves `players.current_team_abbreviation` alone.
+- **Score-state without shots.** Final games with no MoneyPuck shots yet are
+  skipped until shots arrive. Home/away codes come from the shots themselves
+  (same source as the goal team codes), and shootouts count the OT period.
 - `players.position` / `current_team_abbreviation` are written by both bio
   and season imports and can disagree for a few hundred players (traded
   players, position labels). That produces small, harmless churn between the
-  weekly bio run and the daily season runs, as before.
-- Team divisions use the current alignment for all seasons (C# table).
-- Lines whose IDs can't be decoded and whose names are genuinely ambiguous
-  (for example two Nylanders on TOR in 2024) are skipped and counted in the
-  log.
-
-Other differences:
-
-- Empty optional text values are stored as NULL instead of `""`.
+  weekly bio run and the daily season runs.
+- Team divisions use the current alignment for all seasons.
+- Empty optional text values are stored as NULL.
 - Derived decimals use decimal.js at 28 significant digits with banker's
-  rounding (System.Decimal semantics). Results can differ only in the last
-  digits of unrounded ratios.
+  rounding.

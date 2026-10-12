@@ -1,10 +1,9 @@
 import Decimal from "decimal.js";
 import { seasonForDate } from "@/server/ingestion/normalize";
 
-// C# Math.Round(decimal, digits): banker's rounding (MidpointRounding.ToEven).
-// The double is read through its shortest decimal form, so a value stored as
-// numeric 0.125 rounds the way System.Decimal would (0.12), not by its binary
-// expansion.
+// Banker's rounding (half to even). The double is read through its shortest
+// decimal form, so a value stored as numeric 0.125 rounds to 0.12, not by its
+// binary expansion.
 export function round(value: number, digits = 0): number {
   if (!Number.isFinite(value)) return value;
   return new Decimal(value).toDecimalPlaces(digits, Decimal.ROUND_HALF_EVEN).toNumber();
@@ -19,7 +18,7 @@ export function seasonLabel(year: number): string {
   return `${year}-${String((year + 1) % 100).padStart(2, "0")}`;
 }
 
-// Port of PlayerHelpers: stored headshot URL, else the NHL mug URL for the
+// Stored headshot URL, else the NHL mug URL for the
 // player's current team in the current season.
 export function headshotUrl(playerId: number, storedUrl: string | null, teamAbbreviation: string | null): string | null {
   if (storedUrl) return storedUrl;
@@ -45,7 +44,7 @@ export function groupBy<T, K>(items: readonly T[], key: (item: T) => K): Map<K, 
   return groups;
 }
 
-// Today's date (UTC) as YYYY-MM-DD, like C# DateOnly.FromDateTime(DateTime.UtcNow).
+// Today's date (UTC) as YYYY-MM-DD.
 export function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -53,10 +52,10 @@ export function todayUtc(): string {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DAY_ONE = Date.parse("0001-01-01T00:00:00Z");
 
-// C# DateOnly.MinValue, used where a game date is unknown.
+// Placeholder date (sorts before every real date) where a game date is unknown.
 export const MIN_DATE = "0001-01-01";
 
-// C# DateOnly.DayNumber: days since 0001-01-01.
+// Days since 0001-01-01, for differences between dates.
 export function dayNumber(date: string): number {
   return Math.round((Date.parse(`${date}T00:00:00Z`) - DAY_ONE) / DAY_MS);
 }

@@ -37,8 +37,8 @@ async function importSeasonFile(db: Queryable, dataset: SeasonDataset, season: n
 
 // One MoneyPuck season-summary dataset (regular season + playoffs).
 // Lines are regular season only: line_combinations has no playoffs column, so
-// the C# import let playoff numbers overwrite regular-season rows for every
-// line that played in both (and the API only serves regular-season lines).
+// playoff numbers would overwrite regular-season rows for every line that
+// played in both (and the API only serves regular-season lines).
 export function syncSeasonDataset(db: Queryable, dataset: SeasonDataset, season: number, logger = consoleLogger) {
   return runStep(db, dataset, season, async (): Promise<StepResult> => {
     let rowsWritten = await importSeasonFile(db, dataset, season, false, logger);
@@ -88,10 +88,9 @@ export function syncSeasonGames(db: Queryable, season: number, logger = consoleL
   return syncGames(db, start, end, season, logger);
 }
 
-// Yesterday (ET) through the next 7 days. The C# nightly job synced
-// yesterday and today; the C# API also stored upcoming games as pages were
-// viewed. The API is read-only now, so the cron stores the coming week up
-// front (game previews and goalie form look games up by ID).
+// Yesterday (ET) through the next 7 days. The API is read-only, so the cron
+// stores the coming week up front (game previews and goalie form look games
+// up by ID).
 export function syncRecentGames(db: Queryable, logger = consoleLogger) {
   const today = todayEastern();
   return syncGames(db, addDays(today, -1), addDays(today, 7), null, logger);
