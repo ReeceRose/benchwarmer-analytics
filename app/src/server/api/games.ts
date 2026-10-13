@@ -465,16 +465,6 @@ async function enrichGames(db: Database, list: GameInfo[], standings: Map<string
   );
 }
 
-async function enrichLiveGames(db: Database, list: NhlLiveGame[], standings: Map<string, NhlTeamStandings>, series: Map<string, string>) {
-  if (list.length === 0) return [];
-  const stats = await gameStatsByGame(db, list.map((g) => String(g.id ?? 0)));
-  return list.map((g) => {
-    const home = g.homeTeam?.abbrev ?? "";
-    const away = g.awayTeam?.abbrev ?? "";
-    return liveGameToDto(g, stats.get(String(g.id ?? 0)), standings.get(home), standings.get(away), series.get(`${home}-${away}`));
-  });
-}
-
 // Stored games for the date, refreshed from the NHL schedule when the date is
 // today or later, or any stored game isn't final yet. Nothing is written back:
 // the API is read-only and the schedule cron keeps the table current.
@@ -503,7 +493,7 @@ export async function getYesterdaysGames({ db }: ApiContext) {
   return gamesResponse(db, addDays(todayEastern(), -1), (g) => g.gameState === GameState.final || g.homeScore > 0 || g.awayScore > 0);
 }
 
-export async function getTodaysGames({ db }: ApiContext) {
+export async function getTodaysGames() {
   const today = todayEastern();
   const now = Date.now();
   const [liveScores, scheduled, standings] = await Promise.all([getLiveScores(), getScheduleWeek(today), getStandings()]);
@@ -529,10 +519,17 @@ export async function getTodaysGames({ db }: ApiContext) {
     g.gameState = box.gameState ?? "";
   });
 
-  const [liveDtos, missingDtos] = await Promise.all([
-    enrichLiveGames(db, live, standings, series),
-    enrichGames(db, missing, standings, series),
-  ]);
+  // No shot stats: a date's shots are ingested the next morning, once it's no
+  // longer today. Skipping that query keeps the scores strip (rendered on every
+  // page and polled while games are on) off the database.
+  const liveDtos = live.map((g) => {
+    const home = g.homeTeam?.abbrev ?? "";
+    const away = g.awayTeam?.abbrev ?? "";
+    return liveGameToDto(g, undefined, standings.get(home), standings.get(away), series.get(`${home}-${away}`));
+  });
+  const missingDtos = missing.map((g) =>
+    gameToDto(g, undefined, standings.get(g.homeTeamCode), standings.get(g.awayTeamCode), series.get(`${g.homeTeamCode}-${g.awayTeamCode}`)),
+  );
   const startTime = (t: string | null) => (t ? Date.parse(t) : Number.NEGATIVE_INFINITY);
   const all = [...liveDtos, ...missingDtos].sort((a, b) => startTime(a.startTimeUtc) - startTime(b.startTimeUtc));
   return { date: today, games: all };
