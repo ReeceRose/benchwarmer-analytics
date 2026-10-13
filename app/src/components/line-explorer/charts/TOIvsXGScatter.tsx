@@ -138,7 +138,7 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
                       <p>
                         <span className="text-muted-foreground">xG%:</span>{" "}
                         <span
-                          className={`tabular-nums font-semibold ${d.isGood ? "text-success" : "text-destructive"}`}
+                          className={`tabular-nums font-semibold ${d.isGood ? "text-success" : "text-error"}`}
                         >
                           {d.xgPct.toFixed(1)}%
                         </span>

@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { SegmentedControl } from "@/components/layout";
 import * as z from "zod/mini";
+import { EmptyState, SegmentedControl } from "@/components/layout";
+import { SeasonSelector } from "@/components/shared/SeasonSelector";
 import { ShotExplorer, TeamShotHeatMaps } from "@/components/shot-explorer";
-import type { DangerLevel, ScoreState } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTeamSeasons } from "@/hooks";
 
 const searchSchema = z.object({
   season: z.optional(z.number()),
@@ -25,67 +27,72 @@ function TeamShotsPage() {
   const { abbrev } = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const { data: seasonsData, isLoading: seasonsLoading } = useTeamSeasons(abbrev);
 
-  // Derive state from URL params with defaults
-  const goalsOnly = search.goalsOnly ?? false;
-  const limit = search.limit; // undefined means "all"
-  const dangerLevel: DangerLevel = search.dangerLevel ?? "all";
-  const scoreState: ScoreState = search.scoreState ?? "all";
+  const season = search.season ?? seasonsData?.seasons[0]?.year;
   const view = search.view ?? "explorer";
 
-  const updateSearch = (updates: {
-    season?: number;
-    period?: number;
-    shotType?: string;
-    playerId?: number;
-    goalsOnly?: boolean;
-    limit?: number;
-    dangerLevel?: DangerLevel;
-    scoreState?: ScoreState;
-    view?: "explorer" | "heatmaps";
-  }) => {
-    navigate({
-      search: (prev) => ({
-        ...prev,
-        ...updates,
-      }),
-    });
+  const updateSearch = (updates: Partial<typeof search>) => {
+    navigate({ search: (prev) => ({ ...prev, ...updates }) });
   };
 
   return (
     <div className="space-y-6">
-      <SegmentedControl
-        aria-label="Shot view"
-        value={view}
-        onValueChange={(view) => updateSearch({ view })}
-        options={[
-          { value: "explorer", label: "Shot explorer" },
-          { value: "heatmaps", label: "For and against heat maps" },
-        ]}
-      />
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">Shots</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {view === "explorer"
+              ? "Every unblocked shot attempt, sized and coloured by expected goals."
+              : "Where the team shoots from, next to where its opponents shoot from."}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl
+            aria-label="Shot view"
+            value={view}
+            onValueChange={(view) => updateSearch({ view })}
+            options={[
+              { value: "explorer", label: "Shot map" },
+              { value: "heatmaps", label: "For and against" },
+            ]}
+          />
+          <SeasonSelector
+            value={season}
+            onValueChange={(season) => updateSearch({ season })}
+            teamAbbrev={abbrev}
+          />
+        </div>
+      </div>
 
-      {view === "explorer" ? (
+      {season === undefined ? (
+        seasonsLoading ? (
+          <Skeleton className="h-96 rounded-2xl" />
+        ) : (
+          <EmptyState title="No shot data for this team" hint="Try another team." />
+        )
+      ) : view === "explorer" ? (
         <ShotExplorer
           teamAbbrev={abbrev}
-          season={search.season}
-          onSeasonChange={(season) => updateSearch({ season })}
+          season={season}
           period={search.period}
           onPeriodChange={(period) => updateSearch({ period })}
           shotType={search.shotType}
           onShotTypeChange={(shotType) => updateSearch({ shotType })}
           playerId={search.playerId}
           onPlayerIdChange={(playerId) => updateSearch({ playerId })}
-          goalsOnly={goalsOnly}
-          onGoalsOnlyChange={(goalsOnly) => updateSearch({ goalsOnly })}
-          limit={limit}
+          goalsOnly={search.goalsOnly ?? false}
+          onGoalsOnlyChange={(goalsOnly) => updateSearch({ goalsOnly: goalsOnly || undefined })}
+          limit={search.limit}
           onLimitChange={(limit) => updateSearch({ limit })}
-          dangerLevel={dangerLevel}
+          dangerLevel={search.dangerLevel ?? "all"}
           onDangerLevelChange={(dangerLevel) => updateSearch({ dangerLevel })}
-          scoreState={scoreState}
+          scoreState={search.scoreState ?? "all"}
           onScoreStateChange={(scoreState) => updateSearch({ scoreState })}
+          onClearFilters={() => navigate({ search: { season: search.season, view: search.view } })}
         />
       ) : (
-        <TeamShotHeatMaps teamAbbrev={abbrev} />
+        <TeamShotHeatMaps teamAbbrev={abbrev} season={season} />
       )}
     </div>
   );

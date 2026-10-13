@@ -1,60 +1,63 @@
 import type { ChemistryPair } from "@/types";
 import { getChemistryHeatColour } from "@/lib/chart-colours";
 
-// Re-export for backwards compatibility
 export const getHeatColor = getChemistryHeatColour;
 
 export interface MatrixPlayer {
   id: number;
   name: string;
+  position?: string;
 }
 
 export interface MatrixData {
   players: MatrixPlayer[];
   pairLookup: Map<string, ChemistryPair>;
+  /** The most time any pair in the group has spent together. */
+  maxToi: number;
 }
 
-export function buildMatrixData(pairs: ChemistryPair[]): MatrixData | null {
-  if (!pairs) return null;
+/** Pairs with under this share of the group's most-used pair's time are faded as small samples. */
+export const SMALL_SAMPLE_SHARE = 0.2;
 
-  // Get unique players and build lookup
-  const playerMap = new Map<number, MatrixPlayer>();
-  for (const pair of pairs) {
-    playerMap.set(pair.player1Id, {
-      id: pair.player1Id,
-      name: pair.player1Name,
-    });
-    playerMap.set(pair.player2Id, {
-      id: pair.player2Id,
-      name: pair.player2Name,
-    });
+export const pairKey = (a: number, b: number) => (a < b ? `${a}-${b}` : `${b}-${a}`);
+
+export const lastName = (name: string) => name.split(" ").slice(1).join(" ") || name;
+
+const isDefence = (position?: string) => position === "D";
+
+/** Most-used players first, by total ice time across their pairs. */
+function orderByIceTime(players: MatrixPlayer[], pairs: ChemistryPair[]): MatrixPlayer[] {
+  const toi = new Map<number, number>();
+  for (const p of pairs) {
+    toi.set(p.player1Id, (toi.get(p.player1Id) ?? 0) + p.totalIceTimeSeconds);
+    toi.set(p.player2Id, (toi.get(p.player2Id) ?? 0) + p.totalIceTimeSeconds);
   }
+  return [...players].sort((a, b) => (toi.get(b.id) ?? 0) - (toi.get(a.id) ?? 0));
+}
 
-  // Sort players by total ice time
-  const playerToi = new Map<number, number>();
-  for (const pair of pairs) {
-    playerToi.set(
-      pair.player1Id,
-      (playerToi.get(pair.player1Id) ?? 0) + pair.totalIceTimeSeconds
-    );
-    playerToi.set(
-      pair.player2Id,
-      (playerToi.get(pair.player2Id) ?? 0) + pair.totalIceTimeSeconds
-    );
-  }
-
-  const players = Array.from(playerMap.values()).sort(
-    (a, b) => (playerToi.get(b.id) ?? 0) - (playerToi.get(a.id) ?? 0)
-  );
-
-  // Build pair lookup
+function toMatrix(pairs: ChemistryPair[]): MatrixData {
+  const players = new Map<number, MatrixPlayer>();
   const pairLookup = new Map<string, ChemistryPair>();
-  for (const pair of pairs) {
-    const key1 = `${pair.player1Id}-${pair.player2Id}`;
-    const key2 = `${pair.player2Id}-${pair.player1Id}`;
-    pairLookup.set(key1, pair);
-    pairLookup.set(key2, pair);
+  for (const p of pairs) {
+    players.set(p.player1Id, { id: p.player1Id, name: p.player1Name, position: p.player1Position });
+    players.set(p.player2Id, { id: p.player2Id, name: p.player2Name, position: p.player2Position });
+    pairLookup.set(pairKey(p.player1Id, p.player2Id), p);
   }
+  return {
+    players: orderByIceTime([...players.values()], pairs),
+    pairLookup,
+    maxToi: Math.max(0, ...pairs.map((p) => p.totalIceTimeSeconds)),
+  };
+}
 
-  return { players, pairLookup };
+/**
+ * Pairs come from line combinations, so forwards only pair with forwards and
+ * defencemen with defencemen. Each group gets its own matrix rather than one
+ * grid with an always-empty forward × defence block.
+ */
+export function buildChemistryGroups(pairs: ChemistryPair[]): { forwards: MatrixData; defense: MatrixData } {
+  return {
+    forwards: toMatrix(pairs.filter((p) => !isDefence(p.player1Position) && !isDefence(p.player2Position))),
+    defense: toMatrix(pairs.filter((p) => isDefence(p.player1Position) && isDefence(p.player2Position))),
+  };
 }

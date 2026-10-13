@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { DANGER_LEVEL_OPTIONS } from "@/components/shot-explorer/shot-utils";
 import type { DangerLevel } from "@/types";
 import { formatSeason } from "@/lib/formatters";
 
@@ -48,13 +49,6 @@ const LIMITS = [
   { value: "250", label: "250 shots" },
   { value: "500", label: "500 shots" },
   { value: "all", label: "All shots" },
-];
-
-const DANGER_LEVELS = [
-  { value: "all", label: "All shots" },
-  { value: "high", label: "High danger (xG > 15%)" },
-  { value: "medium-high", label: "Medium+ (xG > 6%)" },
-  { value: "low", label: "Low danger (xG < 6%)" },
 ];
 
 export function PlayerShotFilters({
@@ -154,7 +148,7 @@ export function PlayerShotFilters({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {DANGER_LEVELS.map((d) => (
+            {DANGER_LEVEL_OPTIONS.map((d) => (
               <SelectItem key={d.value} value={d.value}>
                 {d.label}
               </SelectItem>

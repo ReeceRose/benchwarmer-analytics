@@ -90,8 +90,8 @@ Rules:
 
 ### Allowed hard-coded colours
 
-Rink drawings (`RINK_COLOURS`), heat-map gradients (`HEATMAP_COLOURS`) and the
-team colour table. All of them live in `lib/`, not in components.
+The team colour table, in `lib/`. Rink drawings use tokens (`Rink`,
+`HalfRink`).
 
 ## Typography
 
@@ -204,6 +204,11 @@ render (see CLAUDE.md).
   next to `SegmentedControl`s in a `flex flex-wrap items-center gap-2/3` row.
 - **Filters go in the URL** (`validateSearch` + `navigate({ search })`), so
   views can be shared.
+- **Filter rows** with many filters (team shot map, `shot-explorer/ShotFilters`):
+  one wrapping row of label-less selects (an `aria-label` on each trigger, and
+  "All periods"-style default values that say what they filter), a
+  `SegmentedControl` for a two-way toggle rather than a `Switch`, and a ghost
+  "Clear filters" button that only appears when something is filtered.
 
 ### Tables
 
@@ -265,12 +270,35 @@ the hero and scoreboard.
 - Tooltips: `rounded-xl border bg-popover text-popover-foreground p-3 text-sm
   shadow-lg shadow-black/5`, with `TooltipTitle` (swatch + name) from
   `game-live/ChartTooltip.tsx`. Skip hover tooltips on coarse pointers.
-- Legends: a row of `Swatch` + `text-xs text-muted-foreground` labels under the
-  chart, not Recharts' default legend boxes.
+- Legends: `ChartLegend` (`components/charts`), a row of swatches and muted
+  labels (dashed lines for expected or reference series), not Recharts'
+  default legend boxes.
+- **Bars start at zero.** If a stat can't sensibly start at zero (save %,
+  CF%), draw a dot on a fitted range instead (`fitDomain` in
+  `charts/comparison-utils.ts`), or bars growing out from a meaningful
+  middle (50% xG share, 0 GSAx).
+- **One y-axis.** Two measures on different scales get two charts stacked on
+  the same x-axis (see the age curves' sample-size bars), never a second axis.
+- **Colour by series, never by rank or position.** A single-measure bar chart
+  is one colour (`chart-1`); fade bars below a reference instead of
+  colouring rank buckets. No pies: a ranked list with share bars reads better.
+- Comparing a few players or seasons on several stats: `ComparisonBars`
+  (`components/charts`), a row per stat and a bar or dot per series, best in
+  bold. Not radar charts.
 - Put a one-line caption under a chart when the scale needs explaining
   ("Values normalised per metric (0–100)").
 - Shot maps: `SHOT_DANGER_COLOURS` (goal green, high red, medium amber, low
-  blue) and the `Rink` component.
+  blue) on the `Rink` component (full rink, game centre) or `HalfRink`
+  (`shot-explorer/`, one offensive zone; place shots with `toHalfRink`, which
+  works out which net a shot was aimed at). Size is xG with an
+  area-proportional radius; shape is the result (filled = on goal, ring =
+  missed). Use `useChartTooltip` for hover, not a Radix tooltip per mark, and
+  pin a clicked mark in a detail panel so touch works.
+- Heat maps: one hue (`chart-1`) from clear to full strength, drawn under
+  the rink markings (`HalfRink underlay`). Leave out cells too small to mean
+  anything and say so in the caption.
+- Pair matrices (chemistry): one triangle only, a diverging red–grey–green
+  scale around 50%, small samples faded, hover for numbers, click to pin.
 - Quadrant legends under scatter charts: neutral `rounded-xl bg-muted/60 p-2`
   tiles, with the label coloured only when it means good or bad.
 - Chart selection detail panels (click a dot): `rounded-xl border bg-card p-3`

@@ -1,15 +1,6 @@
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_COLOURS } from "@/lib/chart-colours";
+import { ComparisonBars } from "@/components/charts/ComparisonBars";
+import { fitDomain } from "@/components/charts/comparison-utils";
 import type { GoalieStats } from "@/types";
 
 interface GoalieData {
@@ -56,135 +47,31 @@ function calculateDangerZoneStats(stats: GoalieStats): DangerZoneStats {
   };
 }
 
-function formatPct(value: number | null): string {
-  if (value === null) return "-";
-  return (value * 100).toFixed(1) + "%";
-}
-
-// Custom tooltip
-function RadarChartTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{
-    name: string;
-    value: number;
-    dataKey: string;
-    color: string;
-    payload: {
-      zone: string;
-      leagueRaw: string;
-      [key: string]: string | number;
-    };
-  }>;
-}) {
-  if (!active || !payload?.length) return null;
-
-  const data = payload[0].payload;
-
-  return (
-    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
-      <p className="font-semibold mb-2">{data.zone}</p>
-      <div className="space-y-1 text-xs">
-        {payload.map((entry) => (
-          <div key={entry.dataKey} className="flex justify-between gap-4">
-            <span className="flex items-center gap-1.5">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
-              {entry.name}:
-            </span>
-            <span className="tabular-nums">
-              {data[`${entry.dataKey}Raw`] || "-"}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
+/** Each goalie's save percentage by shot danger, against the league average. */
 export function GoalieDangerZoneComparison({
   players,
   leagueAverages,
   title = "Danger zone comparison",
   className,
 }: GoalieDangerZoneComparisonProps) {
-  const validPlayers = players.filter((p) => p.stats != null);
-
-  if (validPlayers.length === 0) {
+  const valid = players.filter((p): p is GoalieData & { stats: GoalieStats } => p.stats != null);
+  const zoneStats = valid.map((p) => calculateDangerZoneStats(p.stats));
+  if (!zoneStats.some((z) => z.lowSvPct != null || z.medSvPct != null || z.highSvPct != null)) {
     return null;
   }
 
-  // Calculate danger zone stats for each player
-  const playerStats = validPlayers.map((player) => ({
-    name: player.name,
-    stats: calculateDangerZoneStats(player.stats!),
-  }));
-
-  // Check if we have any valid data
-  const hasData = playerStats.some(
-    (p) =>
-      p.stats.lowSvPct !== null ||
-      p.stats.medSvPct !== null ||
-      p.stats.highSvPct !== null,
-  );
-
-  if (!hasData) {
-    return null;
-  }
-
-  // Normalize save percentages to 0-100 scale (80% to 100% mapped to 0-100)
-  const minSvPct = 0.8;
-  const maxSvPct = 1.0;
-  const normalize = (svPct: number | null): number => {
-    if (svPct === null) return 0;
-    return Math.max(
-      0,
-      Math.min(100, ((svPct - minSvPct) / (maxSvPct - minSvPct)) * 100),
-    );
-  };
-
-  // Build radar data with all players
   const baselines = leagueAverages ?? DEFAULT_LEAGUE_AVERAGES;
-  const zones = [
-    { key: "low", label: "Low danger", leagueAvg: baselines.lowDanger },
-    {
-      key: "med",
-      label: "Medium danger",
-      leagueAvg: baselines.mediumDanger,
-    },
-    {
-      key: "high",
-      label: "High danger",
-      leagueAvg: baselines.highDanger,
-    },
-  ];
-
-  const radarData = zones.map((zone) => {
-    const dataPoint: Record<string, string | number> = {
-      zone: zone.label,
-      league: normalize(zone.leagueAvg),
-      leagueRaw: formatPct(zone.leagueAvg),
-      fullMark: 100,
+  const format = (v: number) => v.toFixed(3).replace(/^0/, "");
+  const zone = (label: string, key: keyof DangerZoneStats, league: number) => {
+    const values = zoneStats.map((z) => z[key]);
+    return {
+      label,
+      values,
+      format,
+      domain: fitDomain(values, { reference: league, max: 1 }),
+      reference: { value: league, label: "League" },
     };
-
-    playerStats.forEach((player) => {
-      const svPct =
-        zone.key === "low"
-          ? player.stats.lowSvPct
-          : zone.key === "med"
-            ? player.stats.medSvPct
-            : player.stats.highSvPct;
-
-      dataPoint[player.name] = normalize(svPct);
-      dataPoint[`${player.name}Raw`] = formatPct(svPct);
-    });
-
-    return dataPoint;
-  });
+  };
 
   return (
     <Card className={className}>
@@ -192,115 +79,17 @@ export function GoalieDangerZoneComparison({
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
-            <PolarGrid className="stroke-muted" />
-            <PolarAngleAxis
-              dataKey="zone"
-              tick={({ x, y, payload, textAnchor }) => (
-                <text
-                  x={x}
-                  y={y}
-                  textAnchor={textAnchor}
-                  fontSize={11}
-                  className="fill-foreground"
-                >
-                  {payload.value}
-                </text>
-              )}
-            />
-            <PolarRadiusAxis
-              angle={90}
-              domain={[0, 100]}
-              tick={false}
-              axisLine={false}
-            />
-            <Radar
-              name="League avg"
-              dataKey="league"
-              stroke="var(--muted-foreground)"
-              fill="var(--muted-foreground)"
-              fillOpacity={0.1}
-              strokeWidth={1}
-              strokeDasharray="5 5"
-            />
-            {playerStats.map((player, i) => (
-              <Radar
-                key={player.name}
-                name={player.name}
-                dataKey={player.name}
-                stroke={CHART_COLOURS[i % CHART_COLOURS.length]}
-                fill={CHART_COLOURS[i % CHART_COLOURS.length]}
-                fillOpacity={0.25}
-                strokeWidth={2}
-              />
-            ))}
-            <Tooltip
-              content={<RadarChartTooltip />}
-              wrapperStyle={{
-                outline: "none",
-                background: "transparent",
-                border: "none",
-              }}
-            />
-            <Legend
-              wrapperStyle={{ fontSize: "12px" }}
-              formatter={(value) => (
-                <span className="text-foreground">{value}</span>
-              )}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
-
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b text-muted-foreground">
-                <th className="text-left py-1.5 font-medium">Goalie</th>
-                <th className="text-right py-1.5 font-medium">Low</th>
-                <th className="text-right py-1.5 font-medium">Medium</th>
-                <th className="text-right py-1.5 font-medium">High</th>
-              </tr>
-            </thead>
-            <tbody>
-              {playerStats.map((player, i) => (
-                <tr key={player.name} className="border-b border-border/50">
-                  <td className="py-1.5 flex items-center gap-1.5">
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{
-                        backgroundColor:
-                          CHART_COLOURS[i % CHART_COLOURS.length],
-                      }}
-                    />
-                    {player.name.split(" ").pop()}
-                  </td>
-                  <td className="text-right tabular-nums">
-                    {formatPct(player.stats.lowSvPct)}
-                  </td>
-                  <td className="text-right tabular-nums">
-                    {formatPct(player.stats.medSvPct)}
-                  </td>
-                  <td className="text-right tabular-nums">
-                    {formatPct(player.stats.highSvPct)}
-                  </td>
-                </tr>
-              ))}
-              <tr className="text-muted-foreground">
-                <td className="py-1.5">League avg</td>
-                <td className="text-right tabular-nums">
-                  {formatPct(baselines.lowDanger)}
-                </td>
-                <td className="text-right tabular-nums">
-                  {formatPct(baselines.mediumDanger)}
-                </td>
-                <td className="text-right tabular-nums">
-                  {formatPct(baselines.highDanger)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <ComparisonBars
+          series={valid.map((p) => ({ name: p.name }))}
+          rows={[
+            zone("Low danger", "lowSvPct", baselines.lowDanger),
+            zone("Medium danger", "medSvPct", baselines.mediumDanger),
+            zone("High danger", "highSvPct", baselines.highDanger),
+          ]}
+        />
+        <p className="mt-3 text-xs text-muted-foreground">
+          Save percentage on shots of each danger level, on a range fitted to these goalies. The tick is the league average.
+        </p>
       </CardContent>
     </Card>
   );

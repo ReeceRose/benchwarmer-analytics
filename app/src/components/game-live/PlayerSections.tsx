@@ -11,7 +11,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "go
   return (
     <div className="rounded-lg bg-muted/60 px-3 py-2">
       <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className={cn("font-display text-lg font-bold tabular-nums", tone === "good" && "text-success", tone === "bad" && "text-destructive")}>
+      <div className={cn("font-display text-lg font-bold tabular-nums", tone === "good" && "text-success", tone === "bad" && "text-error")}>
         {value}
       </div>
     </div>
@@ -202,7 +202,7 @@ export function AdvancedSkatersTable({ data }: { data: LiveGameResponse }) {
                   const v = c.value(r);
                   const tone = c.tone?.(v);
                   return (
-                    <td key={c.key} className={cn("relative py-1.5 pl-3 text-right", tone === "good" && "text-success", tone === "bad" && "text-destructive")}>
+                    <td key={c.key} className={cn("relative py-1.5 pl-3 text-right", tone === "good" && "text-success", tone === "bad" && "text-error")}>
                       {c.format ? c.format(v) : (v ?? "–")}
                       {c.bar && (
                         <div className="absolute right-0 bottom-0.5 h-0.5 rounded-full opacity-60" style={{ width: `${(100 * (v ?? 0)) / max[c.key]}%`, background: teamColour(team) }} />

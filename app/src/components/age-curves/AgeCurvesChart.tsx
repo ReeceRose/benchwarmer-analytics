@@ -1,4 +1,6 @@
 import {
+  Bar,
+  BarChart,
   ComposedChart,
   Line,
   Area,
@@ -7,10 +9,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   ReferenceArea,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Swatch } from "@/components/game-live/parts";
 import { CHART_AXIS_COLOURS, AGE_PHASE_COLOURS } from "@/lib/chart-colours";
 
 export interface PlayerInfo {
@@ -66,11 +68,30 @@ export function AgeCurvesChart({
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <svg width={18} height={10} aria-hidden>
+              <line x1={0} x2={18} y1={5} y2={5} stroke={CHART_AXIS_COLOURS.reference} strokeWidth={2} strokeDasharray="4 3" />
+            </svg>
+            {useMedian ? "League median" : "League average"}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Swatch colour={`color-mix(in srgb, ${CHART_AXIS_COLOURS.reference} 25%, transparent)`} />
+            Middle half of players
+          </span>
+          {playerInfo.map((p) => (
+            <span key={p.playerId} className="inline-flex items-center gap-1.5">
+              <Swatch colour={p.color} />
+              {p.playerName}
+            </span>
+          ))}
+        </div>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={chartData}
-              margin={{ top: 0, right: 8, left: 0, bottom: 0 }}
+              margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+              syncId="age-curves"
               onClick={handleChartClick}
               style={{ cursor: "pointer" }}
             >
@@ -94,18 +115,6 @@ export function AgeCurvesChart({
                 tickFormatter={(v: number) => v.toFixed(1)}
                 stroke={CHART_AXIS_COLOURS.grid}
                 strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
-                width={35}
-                tickFormatter={(v: number) =>
-                  v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
-                }
-                stroke={CHART_AXIS_COLOURS.grid}
-                strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-                domain={[0, "auto"]}
               />
               <Tooltip
                 content={({ active, payload, label }) => {
@@ -165,13 +174,6 @@ export function AgeCurvesChart({
                   );
                 }}
               />
-              <Legend
-                verticalAlign="top"
-                align="right"
-                height={32}
-                iconType="plainline"
-                wrapperStyle={{ fontSize: 12 }}
-              />
               <ReferenceArea
                 x1={18}
                 x2={24}
@@ -213,16 +215,6 @@ export function AgeCurvesChart({
                   fill: CHART_AXIS_COLOURS.tick,
                   fillOpacity: 0.6,
                 }}
-              />
-              <Area
-                yAxisId="right"
-                type="monotone"
-                dataKey="leagueSample"
-                name="Sample size"
-                fill={CHART_AXIS_COLOURS.reference}
-                stroke="none"
-                fillOpacity={0.035}
-                legendType="none"
               />
               <Area
                 yAxisId="left"
@@ -271,11 +263,29 @@ export function AgeCurvesChart({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+        <div className="mt-1 h-16">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 0, right: 8, left: 0, bottom: 0 }} syncId="age-curves">
+              <XAxis dataKey="age" hide />
+              <YAxis
+                width={45}
+                tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
+                tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
+                axisLine={false}
+                tickLine={false}
+                tickCount={2}
+              />
+              <Tooltip cursor={{ fill: "var(--muted)", fillOpacity: 0.4 }} content={() => null} />
+              <Bar dataKey="leagueSample" fill={CHART_AXIS_COLOURS.reference} fillOpacity={0.35} radius={[2, 2, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">Player-seasons at each age</p>
         <p className="mt-4 text-xs text-muted-foreground">
           Ages along the bottom. League {useMedian ? "medians" : "averages"} use
           every qualifying season (at least {minGames} games); the darker band is
-          the middle half of players, and the faint shading is sample size
-          (right axis), which thins out after 35.
+          the middle half of players. The small bars below count the
+          player-seasons behind each age, which thin out after 35.
           {playerInfo.length > 0 &&
             " Player data points shown for each season played."}{" "}
           Click on any age to see the distribution.

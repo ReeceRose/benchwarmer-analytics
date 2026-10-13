@@ -16,7 +16,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CHART_AXIS_COLOURS, CHART_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { Rookie } from "@/types";
 
@@ -208,7 +208,7 @@ export function RookieProductionChart({ rookies }: RookieProductionChartProps) {
               {chartData.map((_, index) => (
                 <Cell
                   key={index}
-                  fill={CHART_COLOURS[index % CHART_COLOURS.length]}
+                  fill="var(--chart-1)"
                   fillOpacity={0.85}
                 />
               ))}

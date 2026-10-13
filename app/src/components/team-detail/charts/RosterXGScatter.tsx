@@ -84,7 +84,7 @@ function CustomTooltip({
           <span className="text-muted-foreground">Expected Goals:</span>{" "}
           <span className="tabular-nums">{data.expectedGoals.toFixed(1)}</span>
         </p>
-        <p className={isOverperforming ? "text-success" : "text-destructive"}>
+        <p className={isOverperforming ? "text-success" : "text-error"}>
           <span className="text-muted-foreground">Difference:</span>{" "}
           <span className="tabular-nums font-semibold">
             {isOverperforming ? "+" : ""}
@@ -169,7 +169,7 @@ function SelectionPanel({
                 ({data.position})
               </span>
               <span
-                className={`ml-2 text-xs ${isOverperforming ? "text-success" : "text-destructive"}`}
+                className={`ml-2 text-xs ${isOverperforming ? "text-success" : "text-error"}`}
               >
                 {isOverperforming ? "Hot" : "Cold"}
               </span>
@@ -184,7 +184,7 @@ function SelectionPanel({
                 <span className="tabular-nums">{data.expectedGoals.toFixed(1)}</span>
               </span>
               <span
-                className={`tabular-nums font-semibold ${isOverperforming ? "text-success" : "text-destructive"}`}
+                className={`tabular-nums font-semibold ${isOverperforming ? "text-success" : "text-error"}`}
               >
                 {isOverperforming ? "+" : ""}
                 {data.diff.toFixed(1)}

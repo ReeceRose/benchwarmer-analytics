@@ -170,7 +170,7 @@ function SelectionPanel({
             <p className="font-semibold truncate">
               {data.name}
               <span
-                className={`ml-2 text-xs ${isPositive ? "text-success" : "text-destructive"}`}
+                className={`ml-2 text-xs ${isPositive ? "text-success" : "text-error"}`}
               >
                 {isPositive ? "Net positive" : "Net negative"}
               </span>
@@ -189,7 +189,7 @@ function SelectionPanel({
                 </span>
               </span>
               <span
-                className={`tabular-nums font-semibold ${isPositive ? "text-success" : "text-destructive"}`}
+                className={`tabular-nums font-semibold ${isPositive ? "text-success" : "text-error"}`}
               >
                 {isPositive ? "+" : ""}
                 {data.netPer60.toFixed(2)}

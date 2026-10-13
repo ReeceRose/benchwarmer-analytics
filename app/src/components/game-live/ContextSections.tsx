@@ -7,7 +7,7 @@ function Kpi({ label, value, tone }: { label: string; value: React.ReactNode; to
   return (
     <div className="rounded-lg bg-muted/60 px-3 py-2">
       <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className={cn("font-display text-lg font-bold tabular-nums", tone === "good" && "text-success", tone === "bad" && "text-destructive")}>{value}</div>
+      <div className={cn("font-display text-lg font-bold tabular-nums", tone === "good" && "text-success", tone === "bad" && "text-error")}>{value}</div>
     </div>
   );
 }

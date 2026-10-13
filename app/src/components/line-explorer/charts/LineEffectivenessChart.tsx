@@ -26,6 +26,8 @@ interface ChartDataPoint {
   id: number;
   label: string;
   xgPct: number;
+  /** Points above or below an even share; the bars are drawn from here. */
+  diff: number;
   toi: number;
   toiFormatted: string;
   gf: number;
@@ -49,6 +51,7 @@ export function LineEffectivenessChart({
           id: line.id,
           label: getLineLabel(line),
           xgPct,
+          diff: xgPct - 50,
           toi: line.iceTimeSeconds,
           toiFormatted: formatToi(line.iceTimeSeconds),
           gf: line.goalsFor,
@@ -65,13 +68,8 @@ export function LineEffectivenessChart({
     );
   }
 
-  // Calculate domain based on actual data
-  const xgValues = chartData.map((d) => d.xgPct);
-  const minXg = Math.min(...xgValues);
-  const maxXg = Math.max(...xgValues);
-  const padding = (maxXg - minXg) * 0.1;
-  const domainMin = Math.max(30, Math.floor(minXg - padding));
-  const domainMax = Math.min(70, Math.ceil(maxXg + padding));
+  // Bars grow out from 50% on a symmetric scale, so length is the distance from even.
+  const span = Math.min(25, Math.max(5, Math.ceil(Math.max(...chartData.map((d) => Math.abs(d.diff))) / 5) * 5));
 
   return (
     <div>
@@ -92,11 +90,11 @@ export function LineEffectivenessChart({
           />
           <XAxis
             type="number"
-            domain={[domainMin, domainMax]}
+            domain={[-span, span]}
             tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
             stroke={CHART_AXIS_COLOURS.grid}
             strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-            tickFormatter={(v: number) => `${v}%`}
+            tickFormatter={(v: number) => `${v + 50}%`}
           />
           <YAxis
             type="category"
@@ -108,17 +106,7 @@ export function LineEffectivenessChart({
             tickLine={false}
             axisLine={false}
           />
-          <ReferenceLine
-            x={50}
-            stroke={CHART_AXIS_COLOURS.reference}
-            strokeDasharray="3 3"
-            label={{
-              value: "50%",
-              position: "top",
-              fill: CHART_AXIS_COLOURS.tick,
-              fontSize: 10,
-            }}
-          />
+          <ReferenceLine x={0} stroke={CHART_AXIS_COLOURS.reference} />
           <Tooltip
             content={({ active, payload }) => (
               <LineTooltipWrapper active={active} payload={payload as Array<{ payload: ChartDataPoint }>}>
@@ -129,7 +117,7 @@ export function LineEffectivenessChart({
                       <p>
                         <span className="text-muted-foreground">xG%:</span>{" "}
                         <span
-                          className={`tabular-nums font-semibold ${d.isGood ? "text-success" : "text-destructive"}`}
+                          className={`tabular-nums font-semibold ${d.isGood ? "text-success" : "text-error"}`}
                         >
                           {d.xgPct.toFixed(1)}%
                         </span>
@@ -151,7 +139,7 @@ export function LineEffectivenessChart({
             )}
             cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
           />
-          <Bar dataKey="xgPct" radius={4}>
+          <Bar dataKey="diff" radius={4}>
             {chartData.map((entry, index) => (
               <Cell
                 key={index}
@@ -162,8 +150,8 @@ export function LineEffectivenessChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      <p className="text-xs text-muted-foreground text-center mt-2">
-        Green = above 50% xG (offensive), Red = below 50% (defensive)
+      <p className="mt-2 text-xs text-muted-foreground">
+        Bars grow from an even 50% share of expected goals. Green lines out-chanced their opponents; red lines were out-chanced.
       </p>
     </div>
   );

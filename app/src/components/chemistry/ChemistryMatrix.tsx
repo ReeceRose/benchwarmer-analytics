@@ -1,157 +1,134 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { TooltipTitle } from "@/components/game-live/ChartTooltip";
+import { useChartTooltip } from "@/components/game-live/useChartTooltip";
 import {
+  SMALL_SAMPLE_SHARE,
   getHeatColor,
+  lastName,
+  pairKey,
   type MatrixData,
 } from "@/components/chemistry/chemistry-utils";
-import { ChemistryTooltip } from "@/components/chemistry/ChemistryTooltip";
-import {
-  CHEMISTRY_MATRIX_COLOURS,
-  getChemistryTextColour,
-} from "@/lib/chart-colours";
+import { getChemistryTextColour } from "@/lib/chart-colours";
+import { formatIceTimeLong } from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 import type { ChemistryPair } from "@/types";
 
 interface ChemistryMatrixProps {
   matrixData: MatrixData;
+  selectedKey?: string;
+  onSelect: (pair: ChemistryPair) => void;
 }
 
-export function ChemistryMatrix({ matrixData }: ChemistryMatrixProps) {
-  const [hoveredPair, setHoveredPair] = useState<ChemistryPair | null>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+/**
+ * One triangle of the pair matrix (the other half would repeat it), most-used
+ * players first. Small samples are faded. Hover a cell for the numbers;
+ * click it to pin the pair below.
+ */
+export function ChemistryMatrix({ matrixData, selectedKey, onSelect }: ChemistryMatrixProps) {
+  const { bind, tooltip } = useChartTooltip();
+  const [hover, setHover] = useState<{ row: number; col: number } | null>(null);
+  const { players, pairLookup, maxToi } = matrixData;
+  const rows = players.slice(1);
+  const cols = players.slice(0, -1);
 
-  // Cell size for the matrix
-  const cellSize = 32;
-  const labelWidth = 130;
-  const headerHeight = 80; // More space for rotated names
+  if (rows.length === 0) return null;
 
   return (
-    <div className="relative">
-      <svg
-        width={labelWidth + matrixData.players.length * cellSize + 10}
-        height={headerHeight + matrixData.players.length * cellSize + 10}
-        className="text-xs"
-      >
-        {matrixData.players.map((player, i) => (
-          <Link
-            key={`row-${player.id}`}
-            to="/players/$id"
-            params={{ id: String(player.id) }}
-          >
-            <text
-              x={labelWidth - 4}
-              y={headerHeight + i * cellSize + cellSize / 2 + 4}
-              textAnchor="end"
-              className="fill-foreground hover:fill-primary cursor-pointer text-[11px]"
-            >
-              {player.name.length > 16
-                ? player.name.slice(0, 14) + "..."
-                : player.name}
-            </text>
-          </Link>
-        ))}
-        {matrixData.players.map((player, i) => {
-          const lastName = player.name.split(" ").pop() || player.name;
-          return (
-            <Link
-              key={`col-${player.id}`}
-              to="/players/$id"
-              params={{ id: String(player.id) }}
-            >
-              <text
-                x={labelWidth + i * cellSize + cellSize / 2}
-                y={headerHeight - 4}
-                textAnchor="start"
-                transform={`rotate(-55, ${labelWidth + i * cellSize + cellSize / 2}, ${headerHeight - 4})`}
-                className="fill-foreground hover:fill-primary cursor-pointer text-[10px]"
-              >
-                {lastName.length > 10 ? lastName.slice(0, 9) + "…" : lastName}
-              </text>
-            </Link>
-          );
-        })}
-        {matrixData.players.map((rowPlayer, i) =>
-          matrixData.players.map((colPlayer, j) => {
-            if (i === j) {
-              // Diagonal - self (grey)
-              return (
-                <rect
-                  key={`cell-${i}-${j}`}
-                  x={labelWidth + j * cellSize}
-                  y={headerHeight + i * cellSize}
-                  width={cellSize - 1}
-                  height={cellSize - 1}
-                  fill={CHEMISTRY_MATRIX_COLOURS.diagonal}
-                  fillOpacity={0.25}
-                  rx={4}
-                />
-              );
-            }
-
-            const pair = matrixData.pairLookup.get(
-              `${rowPlayer.id}-${colPlayer.id}`
-            );
-            const xgPct = pair?.expectedGoalsPct ?? null;
-            const hasData = pair != null;
-
-            return (
-              <g key={`cell-${i}-${j}`}>
-                <rect
-                  x={labelWidth + j * cellSize}
-                  y={headerHeight + i * cellSize}
-                  width={cellSize - 1}
-                  height={cellSize - 1}
-                  fill={hasData ? getHeatColor(xgPct, true) : CHEMISTRY_MATRIX_COLOURS.empty}
-                  stroke={hasData ? "none" : CHEMISTRY_MATRIX_COLOURS.emptyBorder}
-                  strokeWidth={hasData ? 0 : 1}
-                  strokeDasharray={hasData ? "none" : "2,2"}
-                  rx={4}
-                  className={
-                    hasData
-                      ? "cursor-pointer transition-opacity hover:opacity-80"
-                      : ""
-                  }
-                  onMouseEnter={(e) => {
-                    if (hasData) {
-                      const rect = (e.target as SVGRectElement).ownerSVGElement?.getBoundingClientRect();
-                      if (rect) {
-                        setMousePos({
-                          x: e.clientX - rect.left,
-                          y: e.clientY - rect.top,
-                        });
-                      }
-                      setHoveredPair(pair || null);
-                    }
-                  }}
-                  onMouseMove={(e) => {
-                    if (hasData) {
-                      const rect = (e.target as SVGRectElement).ownerSVGElement?.getBoundingClientRect();
-                      if (rect) {
-                        setMousePos({
-                          x: e.clientX - rect.left,
-                          y: e.clientY - rect.top,
-                        });
-                      }
-                    }
-                  }}
-                  onMouseLeave={() => setHoveredPair(null)}
-                />
-                {xgPct != null && (
-                  <text
-                    x={labelWidth + j * cellSize + cellSize / 2}
-                    y={headerHeight + i * cellSize + cellSize / 2 + 3}
-                    textAnchor="middle"
-                    fill={getChemistryTextColour(xgPct)}
-                    className="pointer-events-none text-[10px] font-semibold tabular-nums"
-                  >
-                    {xgPct.toFixed(0)}
-                  </text>
-                )}
-              </g>
-            );
-          })
-        )}
-      </svg>
-      {hoveredPair && <ChemistryTooltip pair={hoveredPair} position={mousePos} />}
+    <div className="overflow-x-auto">
+      <table className="border-separate border-spacing-0.5" onMouseLeave={() => setHover(null)}>
+        <thead>
+          <tr>
+            <th className="sticky left-0 z-10 bg-card" />
+            {cols.map((player, c) => (
+              <th key={player.id} scope="col" className="h-24 w-9 p-0 text-center align-bottom">
+                <Link
+                  to="/players/$id"
+                  params={{ id: String(player.id) }}
+                  className={cn(
+                    "inline-block max-h-24 truncate pb-1 text-xs font-normal [writing-mode:vertical-rl] rotate-180 hover:text-link",
+                    hover?.col === c ? "font-semibold text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {lastName(player.name)}
+                </Link>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((rowPlayer, r) => (
+            <tr key={rowPlayer.id}>
+              <th scope="row" className="sticky left-0 z-10 bg-card pr-2 text-right">
+                <Link
+                  to="/players/$id"
+                  params={{ id: String(rowPlayer.id) }}
+                  className={cn(
+                    "block max-w-36 truncate text-xs font-normal hover:text-link",
+                    hover?.row === r ? "font-semibold text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {rowPlayer.name}
+                </Link>
+              </th>
+              {cols.map((colPlayer, c) => {
+                if (c > r) return <td key={colPlayer.id} />;
+                const key = pairKey(rowPlayer.id, colPlayer.id);
+                const pair = pairLookup.get(key);
+                if (!pair || pair.expectedGoalsPct == null) {
+                  return (
+                    <td key={colPlayer.id} className="size-9 p-0">
+                      <div className="mx-auto size-1 rounded-full bg-border" />
+                    </td>
+                  );
+                }
+                const xg = pair.expectedGoalsPct;
+                const small = pair.totalIceTimeSeconds < maxToi * SMALL_SAMPLE_SHARE;
+                const handlers = bind(
+                  <>
+                    <TooltipTitle>
+                      {lastName(pair.player1Name)} & {lastName(pair.player2Name)}
+                    </TooltipTitle>
+                    <div className="tabular-nums">
+                      xG share <b>{xg.toFixed(1)}%</b>
+                      {pair.corsiPct != null && ` · CF ${pair.corsiPct.toFixed(1)}%`}
+                    </div>
+                    <div className="text-muted-foreground tabular-nums">
+                      {formatIceTimeLong(pair.totalIceTimeSeconds)} together · {pair.gamesPlayed} GP
+                      {small && " · small sample"}
+                    </div>
+                  </>,
+                );
+                return (
+                  <td key={colPlayer.id} className="size-9 p-0">
+                    <button
+                      type="button"
+                      aria-label={`${pair.player1Name} and ${pair.player2Name}: ${xg.toFixed(1)}% xG share`}
+                      aria-pressed={selectedKey === key}
+                      onClick={() => onSelect(pair)}
+                      onMouseMove={(e) => {
+                        setHover({ row: r, col: c });
+                        handlers.onMouseMove(e);
+                      }}
+                      onMouseLeave={handlers.onMouseLeave}
+                      className={cn(
+                        "flex size-9 items-center justify-center rounded-md text-[11px] font-semibold tabular-nums outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring",
+                        small && "opacity-45",
+                        (selectedKey === key || (hover?.row === r && hover?.col === c)) &&
+                          "ring-2 ring-foreground ring-offset-1 ring-offset-card",
+                      )}
+                      style={{ background: getHeatColor(xg, true), color: getChemistryTextColour(xg) }}
+                    >
+                      {xg.toFixed(0)}
+                    </button>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {tooltip}
     </div>
   );
 }

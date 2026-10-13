@@ -147,7 +147,7 @@ function SelectionPanel({
                 <span className="ml-2 text-success text-xs">Elite</span>
               )}
               {isPoor && (
-                <span className="ml-2 text-destructive text-xs">Struggling</span>
+                <span className="ml-2 text-error text-xs">Struggling</span>
               )}
             </p>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -374,7 +374,7 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
           <div
             className="rounded-xl bg-muted/60 p-2"
           >
-            <span className="font-medium text-destructive">Poor special teams</span>
+            <span className="font-medium text-error">Poor special teams</span>
             <p className="text-muted-foreground">Below Avg PP% & PK%</p>
           </div>
           <div

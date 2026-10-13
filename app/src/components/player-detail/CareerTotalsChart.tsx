@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ChartLegend } from "@/components/charts/ChartLegend";
 import {
   LineChart,
   Line,
@@ -7,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -157,6 +157,16 @@ export function CareerTotalsChart({ stats, className }: CareerTotalsChartProps) 
         </Select>
       </CardHeader>
       <CardContent>
+        {view !== "toi" && (
+          <ChartLegend
+            className="mb-2"
+            items={[
+              { label: "Goals", colour: CHART_COLOURS[1] },
+              { label: "Assists", colour: CHART_COLOURS[0] },
+              { label: "Points", colour: CHART_COLOURS[3] },
+            ]}
+          />
+        )}
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             {view === "toi" ? (
@@ -197,7 +207,6 @@ function TotalsChart({ data }: { data: SeasonData[] }) {
         strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
       />
       <Tooltip content={<TotalsTooltip />} />
-      <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
       <Line
         type="monotone"
         dataKey="goals"
@@ -251,7 +260,6 @@ function PerGameChart({ data }: { data: SeasonData[] }) {
         strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
       />
       <Tooltip content={<PerGameTooltip />} />
-      <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
       <Line
         type="monotone"
         dataKey="goalsPerGame"

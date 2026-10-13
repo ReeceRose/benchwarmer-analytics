@@ -26,25 +26,6 @@ interface ChartDataPoint {
   rank: number;
 }
 
-// Generate gradient color based on rank (1-32)
-function getRankColor(rank: number, total: number): string {
-  // Top teams: blue/green, bottom teams: red/orange
-  const ratio = (rank - 1) / (total - 1);
-
-  if (ratio < 0.25) {
-    // Top 8: Success green
-    return "var(--chart-3)"; // green-600
-  } else if (ratio < 0.5) {
-    // 9-16: Blue
-    return "var(--chart-1)"; // blue-500
-  } else if (ratio < 0.75) {
-    // 17-24: Amber/warning
-    return "var(--chart-4)"; // amber-500
-  } else {
-    // 25-32: Red/error
-    return "var(--chart-2)"; // red-600
-  }
-}
 
 // Custom Y-axis tick with team logo using native SVG image
 function CustomYAxisTick({
@@ -180,30 +161,12 @@ export function TeamRankingBars({ teams, season }: TeamRankingBarsProps) {
               {chartData.map((entry) => (
                 <Cell
                   key={`cell-${entry.abbrev}`}
-                  fill={getRankColor(entry.rank, chartData.length)}
+                  fill="var(--chart-1)"
                 />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-        <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 rounded-[3px]" style={{ backgroundColor: "var(--chart-3)" }} />
-            <span>Top 8</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 rounded-[3px]" style={{ backgroundColor: "var(--chart-1)" }} />
-            <span>9-16</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 rounded-[3px]" style={{ backgroundColor: "var(--chart-4)" }} />
-            <span>17-24</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 rounded-[3px]" style={{ backgroundColor: "var(--chart-2)" }} />
-            <span>25-32</span>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

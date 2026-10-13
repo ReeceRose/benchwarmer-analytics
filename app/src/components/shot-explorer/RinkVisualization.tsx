@@ -1,347 +1,372 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { X } from "lucide-react";
 import type { Shot } from "@/types";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { TooltipTitle } from "@/components/game-live/ChartTooltip";
+import { useChartTooltip } from "@/components/game-live/useChartTooltip";
+import { mmss, periodName } from "@/components/game-live/live-utils";
+import { Swatch } from "@/components/game-live/parts";
+import { HalfRink } from "@/components/shot-explorer/HalfRink";
+import { toHalfRink } from "@/components/shot-explorer/shot-utils";
+import { SHOT_DANGER_COLOURS, getShotColour } from "@/lib/chart-colours";
+import { MONEYPUCK_DANGER_THRESHOLDS } from "@/lib/danger-zones";
 import {
-  RINK_COLOURS,
-  SHOT_DANGER_COLOURS,
-  getShotColour as getShotColourFromLib,
-} from "@/lib/chart-colours";
-import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+  getPlayerHeadshotUrl,
+  getPlayerInitials,
+} from "@/lib/player-headshots";
+import { cn } from "@/lib/utils";
 
 interface RinkVisualizationProps {
   shots: Shot[];
-  width?: number;
   showLegend?: boolean;
   teamAbbreviation?: string;
+  className?: string;
 }
 
-// NHL rink dimensions (in feet): 200ft long x 85ft wide
-// Half-rink (offensive zone): 100ft x 85ft
-// MoneyPuck coordinates: x from -100 to 100, y from -42.5 to 42.5
-// Offensive shots have |x| typically from 0 to ~89 (goal line at 89)
-//
-// Our SVG uses feet as units for the half-rink, with goal on LEFT
-// SVG coordinate system: x=0 is end boards, x=100 is center ice
-//                        y=0 is top (one side), y=85 is bottom (other side)
-const RINK_LENGTH = 100; // half-rink length (horizontal in SVG)
-const RINK_HEIGHT = 85;  // rink width (vertical in SVG)
-const GOAL_LINE_X = 11;  // 11ft from end boards
-const BLUE_LINE_X = 75;  // 75ft from end boards (25ft from center)
-const CREASE_DEPTH = 6;    // crease extends 6ft from goal line
-const CREASE_WIDTH = 8;    // crease is 8ft wide (4ft each side of center)
-const FACEOFF_CIRCLE_RADIUS = 15;
-const FACEOFF_DOT_RADIUS = 1;
-const FACEOFF_X = 31; // 20ft from goal line = 31ft from boards
-const FACEOFF_Y_OFFSET = 22; // 22ft from center
+const SHOT_TYPE_LABEL: Record<string, string> = {
+  WRIST: "Wrist shot",
+  SLAP: "Slap shot",
+  SNAP: "Snap shot",
+  BACKHAND: "Backhand",
+  TIP: "Tip-in",
+  WRAP: "Wraparound",
+  DEFLECTED: "Deflection",
+};
 
-function getShotColor(shot: Shot): string {
-  return getShotColourFromLib(shot.isGoal, shot.xGoal ?? 0);
+/** "2nd 4:15": the period and the time elapsed in it. */
+function shotClock(shot: Shot): string {
+  const intoPeriod =
+    shot.gameTimeSeconds - (Math.min(shot.period, 4) - 1) * 1200;
+  return `${periodName(shot.period)} ${mmss(intoPeriod)}`;
 }
 
-function getShotSize(shot: Shot, totalShots: number): number {
-  const xg = shot.xGoal ?? 0;
-  // Scale size based on shot count - smaller dots when many shots
-  // Made smaller overall per user feedback
-  const baseMin = totalShots > 300 ? 1.2 : totalShots > 150 ? 1.5 : 1.8;
-  const baseMax = totalShots > 300 ? 3 : totalShots > 150 ? 3.5 : 4;
-  return Math.max(baseMin, Math.min(baseMax, baseMin + xg * 12));
+function resultLabel(shot: Shot): string {
+  if (shot.isGoal) return shot.shotOnEmptyNet ? "Empty-net goal" : "Goal";
+  return shot.shotWasOnGoal ? "Saved" : "Missed the net";
 }
 
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
+/** Area-proportional radius: a shot with 4× the xG gets 2× the radius. */
+function radius(xg: number, scale: number): number {
+  return (0.35 + Math.sqrt(Math.max(xg, 0)) * 1.8) * scale;
 }
 
-function ShotTooltipContent({ shot, teamAbbreviation }: { shot: Shot; teamAbbreviation?: string }) {
+interface PlacedShot {
+  shot: Shot;
+  x: number;
+  y: number;
+  r: number;
+  colour: string;
+}
+
+function ShotMark({
+  placed,
+  highlighted,
+}: {
+  placed: PlacedShot;
+  highlighted: boolean;
+}) {
+  const { shot, x, y, r, colour } = placed;
+  const ring = highlighted ? "var(--foreground)" : "var(--card)";
+  if (shot.isGoal) {
+    return (
+      <circle
+        cx={x}
+        cy={y}
+        r={r + 0.15}
+        fill={colour}
+        stroke={ring}
+        strokeWidth={highlighted ? 0.4 : 0.25}
+      />
+    );
+  }
+  // Low-danger shots are most of any map, so they sit back.
+  const low = (shot.xGoal ?? 0) < MONEYPUCK_DANGER_THRESHOLDS.medium;
+  if (shot.shotWasOnGoal) {
+    return (
+      <circle
+        cx={x}
+        cy={y}
+        r={r}
+        fill={colour}
+        fillOpacity={low ? 0.55 : 0.85}
+        stroke={ring}
+        strokeWidth={highlighted ? 0.4 : 0.2}
+      />
+    );
+  }
   return (
-    <div className="space-y-1 text-sm">
-      <div className="font-semibold flex items-center gap-2">
-        {shot.shooterPlayerId && (
-          <Avatar className="h-6 w-6">
-            <AvatarImage
-              src={getPlayerHeadshotUrl(shot.shooterPlayerId, teamAbbreviation)}
-              alt={shot.shooterName || "Unknown"}
-            />
-            <AvatarFallback className="text-[10px]">
-              {getPlayerInitials(shot.shooterName || "?")}
-            </AvatarFallback>
-          </Avatar>
-        )}
-        <span>
-          {shot.shooterName || "Unknown"}{" "}
-          {shot.shooterPosition && (
-            <span className="text-muted-foreground">({shot.shooterPosition})</span>
-          )}
-        </span>
+    <circle
+      cx={x}
+      cy={y}
+      r={Math.max(r - 0.15, 0.35)}
+      fill="none"
+      stroke={highlighted ? "var(--foreground)" : colour}
+      strokeOpacity={highlighted ? 1 : low ? 0.5 : 0.8}
+      strokeWidth={0.3}
+    />
+  );
+}
+
+function ShotTooltip({ shot }: { shot: Shot }) {
+  return (
+    <>
+      <TooltipTitle colour={getShotColour(shot.isGoal, shot.xGoal ?? 0)}>
+        {shot.shooterName ?? "Unknown shooter"} · {resultLabel(shot)}
+      </TooltipTitle>
+      <div className="text-muted-foreground">
+        {shotClock(shot)} · {SHOT_TYPE_LABEL[shot.shotType ?? ""] ?? "Shot"}
       </div>
-      <div className="flex gap-3 text-muted-foreground">
-        <span>P{shot.period}</span>
-        <span>{formatTime(shot.gameTimeSeconds)}</span>
-        <span>{shot.shotType || "Shot"}</span>
+      <div className="tabular-nums">
+        xG <b>{((shot.xGoal ?? 0) * 100).toFixed(1)}%</b>
+        {shot.shotDistance != null && ` · ${shot.shotDistance.toFixed(0)} ft`}
+        {shot.shotRebound && " · rebound"}
+        {shot.shotRush && " · rush"}
       </div>
-      <div className="flex gap-3">
-        <span>
-          xG: <span className="font-medium">{((shot.xGoal ?? 0) * 100).toFixed(1)}%</span>
-        </span>
-        <span>
-          {shot.shotDistance?.toFixed(0)}ft @ {shot.shotAngle?.toFixed(0)}°
-        </span>
-      </div>
-      <div
-        className={`font-semibold ${shot.isGoal ? "text-success" : "text-muted-foreground"}`}
-      >
-        {shot.isGoal ? "GOAL" : shot.shotWasOnGoal ? "Save" : "Missed"}
-      </div>
-      {(shot.shotRebound || shot.shotRush || shot.shotOnEmptyNet) && (
-        <div className="flex gap-2 text-xs">
-          {shot.shotRebound && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
-              Rebound
-            </span>
-          )}
-          {shot.shotRush && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
-              Rush
-            </span>
-          )}
-          {shot.shotOnEmptyNet && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold uppercase">
-              Empty net
-            </span>
-          )}
-        </div>
+    </>
+  );
+}
+
+function ShotDetail({
+  shot,
+  team,
+  onClose,
+}: {
+  shot: Shot;
+  team?: string;
+  onClose: () => void;
+}) {
+  const tags = [
+    shot.shotRebound && "Rebound",
+    shot.shotRush && "Rush",
+    shot.shotOnEmptyNet && "Empty net",
+  ].filter(Boolean);
+  return (
+    <div className="flex items-start gap-3 rounded-xl border bg-card p-3">
+      {shot.shooterPlayerId && (
+        <Avatar className="size-9">
+          <AvatarImage
+            src={getPlayerHeadshotUrl(shot.shooterPlayerId, team)}
+            alt={shot.shooterName ?? ""}
+          />
+          <AvatarFallback className="text-[10px]">
+            {getPlayerInitials(shot.shooterName ?? "?")}
+          </AvatarFallback>
+        </Avatar>
       )}
+      <div className="min-w-0 flex-1 text-sm">
+        <div className="font-medium">
+          {shot.shooterPlayerId ? (
+            <Link
+              to="/players/$id"
+              params={{ id: String(shot.shooterPlayerId) }}
+              className="hover:text-link"
+            >
+              {shot.shooterName}
+            </Link>
+          ) : (
+            "Unknown shooter"
+          )}
+          <span
+            className={cn(
+              "ml-2 font-semibold",
+              shot.isGoal ? "text-success" : "text-muted-foreground",
+            )}
+          >
+            {resultLabel(shot)}
+          </span>
+        </div>
+        <div className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+          {shotClock(shot)} · {SHOT_TYPE_LABEL[shot.shotType ?? ""] ?? "Shot"}
+          {shot.shotDistance != null && ` · ${shot.shotDistance.toFixed(0)} ft`}
+          {" · "}xG {((shot.xGoal ?? 0) * 100).toFixed(1)}%
+        </div>
+        {tags.length > 0 && (
+          <div className="mt-1.5 flex gap-1.5">
+            {tags.map((tag) => (
+              <span
+                key={String(tag)}
+                className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Clear selected shot"
+        className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <X className="size-4" />
+      </button>
     </div>
   );
 }
 
+function ResultKey({ kind }: { kind: "saved" | "missed" }) {
+  return (
+    <svg width={14} height={14} aria-hidden>
+      {kind === "saved" && (
+        <circle cx={7} cy={7} r={4.5} fill="var(--muted-foreground)" />
+      )}
+      {kind === "missed" && (
+        <circle
+          cx={7}
+          cy={7}
+          r={4}
+          fill="none"
+          stroke="var(--muted-foreground)"
+          strokeWidth={1.6}
+        />
+      )}
+    </svg>
+  );
+}
+
+/**
+ * Unblocked shots on one offensive zone. Size is xG, colour is danger
+ * (goals in green), and shape is the result. Hover for details; click (or
+ * tap) a shot to pin it below the rink.
+ */
 export function RinkVisualization({
   shots,
-  width = 560,
   showLegend = true,
   teamAbbreviation,
+  className,
 }: RinkVisualizationProps) {
-  // Calculate height to maintain proper NHL rink aspect ratio (100:85)
-  const height = Math.round(width * (RINK_HEIGHT / RINK_LENGTH));
+  const { bind, tooltip } = useChartTooltip();
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Transform shot coordinates to SVG coordinates
-  // MoneyPuck arena-adjusted coords: x from -100 to 100, y from -42.5 to 42.5
-  // For offensive shots (team shooting), |x| is typically 0-89 (goal line at ~89)
-  // Our SVG: half-rink 100x85 feet, goal on LEFT at x=11
-  const transformedShots = useMemo(() => {
-    const validShots = shots.filter(
-      (s) => s.arenaAdjustedXCoord != null && s.arenaAdjustedYCoord != null
+  const placed = useMemo<PlacedShot[]>(() => {
+    const onIce = shots.filter(
+      (s) => s.arenaAdjustedXCoord != null && s.arenaAdjustedYCoord != null,
     );
-    const totalCount = validShots.length;
-
-    return validShots.map((shot) => {
-      // Use absolute X coordinate (shots are normalized to offensive end)
-      const rawX = Math.abs(shot.arenaAdjustedXCoord ?? 0);
-      const rawY = shot.arenaAdjustedYCoord ?? 0;
-
-      // Transform MoneyPuck coords to SVG coords
-      // MoneyPuck: |x|=89 is at goal line, |x|=0 is center ice
-      // SVG: x=11 is goal line, x=100 is center ice (right edge)
-      // Clamp rawX to [0, 100] to handle edge cases
-      const clampedX = Math.min(Math.max(rawX, 0), 100);
-      // Linear map: rawX 0->100 maps to svgX 100->0 (flip direction)
-      // Then offset by GOAL_LINE_X since goal line is at x=11, not x=0
-      const svgX = GOAL_LINE_X + ((89 - clampedX) / 89) * (RINK_LENGTH - GOAL_LINE_X);
-
-      // Y: MoneyPuck -42.5 to 42.5 maps to SVG 0 to 85
-      // Clamp to valid range
-      const clampedY = Math.min(Math.max(rawY, -42.5), 42.5);
-      const svgY = clampedY + 42.5;
-
-      return {
-        shot,
-        x: svgX,
-        y: svgY,
-        color: getShotColor(shot),
-        size: getShotSize(shot, totalCount),
-      };
-    });
+    // Shrink the dots a little on busy maps so the shape of the zone still shows.
+    const scale = onIce.length > 1500 ? 0.85 : 1;
+    return (
+      onIce
+        .map((shot) => {
+          const { x, y } = toHalfRink(
+            shot.arenaAdjustedXCoord!,
+            shot.arenaAdjustedYCoord!,
+            shot.shotDistance,
+          );
+          return {
+            shot,
+            x,
+            y,
+            r: radius(shot.xGoal ?? 0, scale),
+            colour: getShotColour(shot.isGoal, shot.xGoal ?? 0),
+          };
+        })
+        // Small chances underneath, goals on top.
+        .sort(
+          (a, b) =>
+            Number(a.shot.isGoal) - Number(b.shot.isGoal) ||
+            (a.shot.xGoal ?? 0) - (b.shot.xGoal ?? 0),
+        )
+    );
   }, [shots]);
 
+  const marks = useMemo(
+    () =>
+      placed.map((p) => (
+        <ShotMark key={p.shot.shotId} placed={p} highlighted={false} />
+      )),
+    [placed],
+  );
+  const selected = placed.find((p) => p.shot.shotId === selectedId)?.shot;
+  const focus = new Set([hoveredId, selectedId]);
+
   return (
-    <div className="relative w-full" style={{ maxWidth: width }}>
-      
-        <svg
-          viewBox={`0 0 ${RINK_LENGTH} ${RINK_HEIGHT}`}
-          width={width}
-          height={height}
-          className="h-auto w-full rounded-xl border border-border bg-muted"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <path
-            d={`
-              M ${RINK_LENGTH} 0
-              L 10 0
-              Q 0 0 0 10
-              L 0 ${RINK_HEIGHT - 10}
-              Q 0 ${RINK_HEIGHT} 10 ${RINK_HEIGHT}
-              L ${RINK_LENGTH} ${RINK_HEIGHT}
-              L ${RINK_LENGTH} 0
-              Z
-            `}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="0.5"
-            className="text-muted-foreground/30"
-          />
-          <path
-            d={`
-              M ${RINK_LENGTH - 1} 1
-              L 10 1
-              Q 1 1 1 10
-              L 1 ${RINK_HEIGHT - 10}
-              Q 1 ${RINK_HEIGHT - 1} 10 ${RINK_HEIGHT - 1}
-              L ${RINK_LENGTH - 1} ${RINK_HEIGHT - 1}
-              L ${RINK_LENGTH - 1} 1
-              Z
-            `}
-            fill="white"
-            className="dark:fill-muted"
-          />
-          <line
-            x1={GOAL_LINE_X}
-            y1="0"
-            x2={GOAL_LINE_X}
-            y2={RINK_HEIGHT}
-            stroke={RINK_COLOURS.goalLine}
-            strokeWidth="0.5"
-          />
-          <line
-            x1={BLUE_LINE_X}
-            y1="0"
-            x2={BLUE_LINE_X}
-            y2={RINK_HEIGHT}
-            stroke={RINK_COLOURS.blueLine}
-            strokeWidth="1"
-          />
-          <rect
-            x={GOAL_LINE_X}
-            y={RINK_HEIGHT / 2 - CREASE_WIDTH / 2}
-            width={CREASE_DEPTH}
-            height={CREASE_WIDTH}
-            fill={RINK_COLOURS.creaseFill}
-            fillOpacity="0.3"
-            stroke={RINK_COLOURS.goalLine}
-            strokeWidth="0.3"
-            rx="1"
-          />
-          <rect
-            x={GOAL_LINE_X - 4}
-            y={RINK_HEIGHT / 2 - 3}
-            width="4"
-            height="6"
-            fill="none"
-            stroke={RINK_COLOURS.goalLine}
-            strokeWidth="0.5"
-          />
-          <circle
-            cx={FACEOFF_X}
-            cy={RINK_HEIGHT / 2 - FACEOFF_Y_OFFSET}
-            r={FACEOFF_CIRCLE_RADIUS}
-            fill="none"
-            stroke={RINK_COLOURS.goalLine}
-            strokeWidth="0.3"
-          />
-          <circle
-            cx={FACEOFF_X}
-            cy={RINK_HEIGHT / 2 - FACEOFF_Y_OFFSET}
-            r={FACEOFF_DOT_RADIUS}
-            fill={RINK_COLOURS.goalLine}
-          />
-          <circle
-            cx={FACEOFF_X}
-            cy={RINK_HEIGHT / 2 + FACEOFF_Y_OFFSET}
-            r={FACEOFF_CIRCLE_RADIUS}
-            fill="none"
-            stroke={RINK_COLOURS.goalLine}
-            strokeWidth="0.3"
-          />
-          <circle
-            cx={FACEOFF_X}
-            cy={RINK_HEIGHT / 2 + FACEOFF_Y_OFFSET}
-            r={FACEOFF_DOT_RADIUS}
-            fill={RINK_COLOURS.goalLine}
-          />
-          {transformedShots
-            .filter(({ shot }) => !shot.isGoal)
-            .map(({ shot, x, y, color, size }) => {
-              // Lower opacity when many shots
-              const baseOpacity =
-                transformedShots.length > 500
-                  ? 0.4
-                  : transformedShots.length > 200
-                    ? 0.5
-                    : 0.7;
-              return (
-                <Tooltip key={shot.shotId}>
-                  <TooltipTrigger asChild>
-                    <circle
-                      cx={x}
-                      cy={y}
-                      r={size}
-                      fill={color}
-                      fillOpacity={baseOpacity}
-                      className="cursor-pointer transition-all hover:opacity-100"
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    <ShotTooltipContent shot={shot} teamAbbreviation={teamAbbreviation} />
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          {transformedShots
-            .filter(({ shot }) => shot.isGoal)
-            .map(({ shot, x, y, color, size }) => (
-            <Tooltip key={shot.shotId}>
-              <TooltipTrigger asChild>
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={size}
-                  fill={color}
-                  fillOpacity={1}
-                  stroke="var(--card)"
-                  strokeWidth={0.6}
-                  className="cursor-pointer transition-all hover:opacity-100"
-                />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs">
-                <ShotTooltipContent shot={shot} teamAbbreviation={teamAbbreviation} />
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </svg>
-      
-      {showLegend && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-          <LegendDot colour={SHOT_DANGER_COLOURS.goal} label="Goal" />
-          <LegendDot colour={SHOT_DANGER_COLOURS.highDanger} label="High danger (xG 15%+)" />
-          <LegendDot colour={SHOT_DANGER_COLOURS.mediumDanger} label="Medium (6–15%)" />
-          <LegendDot colour={SHOT_DANGER_COLOURS.lowDanger} label="Low (under 6%)" />
-          <span>Bigger dot, better chance</span>
-        </div>
+    <div className={cn("w-full max-w-140 space-y-3", className)}>
+      <div onClick={() => setSelectedId(null)}>
+        <HalfRink label={`Shot map, ${placed.length} shots`}>
+          {marks}
+          {placed
+            .filter((p) => focus.has(p.shot.shotId))
+            .map((p) => (
+              <ShotMark key={`focus-${p.shot.shotId}`} placed={p} highlighted />
+            ))}
+          {placed.map((p) => {
+            const handlers = bind(<ShotTooltip shot={p.shot} />);
+            return (
+              <circle
+                key={`hit-${p.shot.shotId}`}
+                cx={p.x}
+                cy={p.y}
+                r={Math.max(p.r, 1.6)}
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseMove={(e) => {
+                  setHoveredId(p.shot.shotId);
+                  handlers.onMouseMove(e);
+                }}
+                onMouseLeave={() => {
+                  setHoveredId(null);
+                  handlers.onMouseLeave();
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedId((id) =>
+                    id === p.shot.shotId ? null : p.shot.shotId,
+                  );
+                }}
+              />
+            );
+          })}
+        </HalfRink>
+      </div>
+      {selected && (
+        <ShotDetail
+          shot={selected}
+          team={teamAbbreviation}
+          onClose={() => setSelectedId(null)}
+        />
       )}
+      {showLegend && <ShotMapLegend />}
+      {tooltip}
     </div>
   );
 }
 
-function LegendDot({ colour, label }: { colour: string; label: string }) {
+/** Colour, shape and size key for `RinkVisualization`. */
+export function ShotMapLegend() {
   return (
-    <span className="flex items-center gap-1.5">
-      <span className="size-2.5 rounded-full" style={{ backgroundColor: colour }} />
-      {label}
-    </span>
+    <div className="space-y-1.5 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <span className="inline-flex items-center gap-1.5">
+          <Swatch colour={SHOT_DANGER_COLOURS.goal} />
+          Goal
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Swatch colour={SHOT_DANGER_COLOURS.highDanger} />
+          High danger (xG 20%+)
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Swatch colour={SHOT_DANGER_COLOURS.mediumDanger} />
+          Medium (8–20%)
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Swatch colour={SHOT_DANGER_COLOURS.lowDanger} />
+          Low (under 8%)
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <span className="inline-flex items-center gap-1">
+          <ResultKey kind="saved" />
+          On goal
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <ResultKey kind="missed" />
+          Missed
+        </span>
+        <span>Size = xG · dashed box = the slot</span>
+      </div>
+    </div>
   );
 }

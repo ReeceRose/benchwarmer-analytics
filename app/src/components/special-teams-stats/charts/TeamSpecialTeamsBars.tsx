@@ -7,6 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  ReferenceLine,
 } from "recharts";
 import {
   Card,
@@ -34,20 +35,6 @@ interface ChartDataPoint {
 }
 
 // Generate gradient color based on rank (1-32)
-function getRankColor(rank: number, total: number): string {
-  const ratio = (rank - 1) / (total - 1);
-
-  if (ratio < 0.25) {
-    return "var(--chart-3)"; // green-600 (top 8)
-  } else if (ratio < 0.5) {
-    return "var(--chart-1)"; // blue-500 (9-16)
-  } else if (ratio < 0.75) {
-    return "var(--chart-4)"; // amber-500 (17-24)
-  } else {
-    return "var(--chart-2)"; // red-600 (25-32)
-  }
-}
-
 // Custom Y-axis tick with team logo
 function CustomYAxisTick({
   x,
@@ -101,7 +88,9 @@ function CustomTooltip({
         </p>
         <p>
           <span className="text-muted-foreground">{label}:</span>{" "}
-          <span className="tabular-nums font-semibold">{data.value.toFixed(1)}%</span>
+          <span className="tabular-nums font-semibold">
+            {data.value.toFixed(1)}%
+          </span>
         </p>
       </div>
     </div>
@@ -154,10 +143,10 @@ export function TeamSpecialTeamsBars({
     );
   }
 
-  // Calculate domain for x-axis (percentages)
+  // Bars start at zero so their lengths stay honest; the line marks the league average.
   const values = chartData.map((d) => d.value);
-  const minVal = Math.floor(Math.min(...values) - 2);
-  const maxVal = Math.ceil(Math.max(...values) + 2);
+  const maxVal = Math.ceil(Math.max(...values) / 10) * 10;
+  const average = values.reduce((sum, v) => sum + v, 0) / values.length;
 
   return (
     <Card>
@@ -174,7 +163,7 @@ export function TeamSpecialTeamsBars({
           >
             <XAxis
               type="number"
-              domain={[minVal, maxVal]}
+              domain={[0, maxVal]}
               tickFormatter={(v: number) => `${v.toFixed(0)}%`}
               tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
               axisLine={false}
@@ -201,42 +190,22 @@ export function TeamSpecialTeamsBars({
               {chartData.map((entry) => (
                 <Cell
                   key={`cell-${entry.abbrev}`}
-                  fill={getRankColor(entry.rank, chartData.length)}
+                  fill="var(--chart-1)"
+                  fillOpacity={entry.value >= average ? 0.9 : 0.45}
                 />
               ))}
             </Bar>
+            <ReferenceLine
+              x={average}
+              stroke={CHART_AXIS_COLOURS.reference}
+              strokeDasharray="4 3"
+            />
           </BarChart>
         </ResponsiveContainer>
-        <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-3)" }}
-            />
-            <span>Top 8</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-1)" }}
-            />
-            <span>9-16</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-4)" }}
-            />
-            <span>17-24</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-2)" }}
-            />
-            <span>25-32</span>
-          </div>
-        </div>
+        <p className="mt-3 text-xs text-muted-foreground tabular-nums">
+          Dashed line: league average ({average.toFixed(1)}%). Faded bars are
+          below it.
+        </p>
       </CardContent>
     </Card>
   );

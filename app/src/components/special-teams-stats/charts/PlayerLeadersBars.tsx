@@ -39,18 +39,6 @@ interface ChartDataPoint {
   playerKey: string;
 }
 
-// Generate gradient color based on rank
-function getRankColor(rank: number): string {
-  if (rank <= 5) {
-    return "var(--chart-3)"; // green-600 (top 5)
-  } else if (rank <= 10) {
-    return "var(--chart-1)"; // blue-500 (6-10)
-  } else if (rank <= 15) {
-    return "var(--chart-4)"; // amber-500 (11-15)
-  } else {
-    return "var(--muted-foreground)"; // gray (16+)
-  }
-}
 
 // Custom Y-axis tick with player headshot
 function CustomYAxisTick({
@@ -249,42 +237,12 @@ export function PlayerLeadersBars({
               {chartData.map((entry) => (
                 <Cell
                   key={`cell-${entry.playerId}`}
-                  fill={getRankColor(entry.rank)}
+                  fill="var(--chart-1)"
                 />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-        <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-3)" }}
-            />
-            <span>Top 5</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-1)" }}
-            />
-            <span>6-10</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-4)" }}
-            />
-            <span>11-15</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--muted-foreground)" }}
-            />
-            <span>16-20</span>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

@@ -1,292 +1,117 @@
 import { useMemo } from "react";
 import type { Shot } from "@/types";
-import {
-  Tooltip,
-  TooltipContent,
-  
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { RINK_COLOURS, getHeatmapColour } from "@/lib/chart-colours";
+import { TooltipTitle } from "@/components/game-live/ChartTooltip";
+import { useChartTooltip } from "@/components/game-live/useChartTooltip";
+import { HalfRink } from "@/components/shot-explorer/HalfRink";
+import { toHalfRink } from "@/components/shot-explorer/shot-utils";
+import { cn } from "@/lib/utils";
 
 interface ShotHeatMapProps {
   shots: Shot[];
-  width?: number;
   mode?: "xg" | "volume";
-  title?: string;
+  className?: string;
 }
 
-// NHL rink dimensions
-const RINK_LENGTH = 100;
-const RINK_HEIGHT = 85;
-const GOAL_LINE_X = 11;
-const BLUE_LINE_X = 75;
-const CREASE_DEPTH = 6;
-const CREASE_WIDTH = 8;
+// 10 ft × 8.5 ft cells over the whole half rink (the boards clip the corners).
+const COLS = 10;
+const ROWS = 10;
+const CELL_W = 100 / COLS;
+const CELL_H = 85 / ROWS;
+/** Below this many shots a cell's average xG is mostly noise, so it isn't shaded in xG mode. */
+const MIN_SHOTS_FOR_XG = 3;
+const HUE = "var(--chart-1)";
 
-// Grid configuration for heat map
-const GRID_COLS = 10;
-const GRID_ROWS = 8;
-const CELL_WIDTH = (RINK_LENGTH - GOAL_LINE_X) / GRID_COLS;
-const CELL_HEIGHT = RINK_HEIGHT / GRID_ROWS;
+/** One hue from clear to full strength: sequential, so no rainbow. */
+function shade(intensity: number): string {
+  return `color-mix(in oklab, ${HUE} ${Math.round(8 + intensity * 82)}%, transparent)`;
+}
 
-interface HeatZone {
-  row: number;
-  col: number;
+interface Zone {
+  key: string;
   x: number;
   y: number;
   shots: number;
   goals: number;
-  totalXg: number;
-  avgXg: number;
-  shootingPct: number;
+  xg: number;
 }
 
-function getZoneColor(
-  value: number,
-  max: number,
-  mode: "xg" | "volume"
-): string {
-  if (value === 0) return "transparent";
-  const intensity = Math.min(value / max, 1);
-  return getHeatmapColour(intensity, mode);
-}
+/**
+ * Shots binned into a grid on one offensive zone, shaded by average xG per
+ * shot (where the good chances come from) or by shot count (where the
+ * shots come from).
+ */
+export function ShotHeatMap({ shots, mode = "xg", className }: ShotHeatMapProps) {
+  const { bind, tooltip } = useChartTooltip();
 
-export function ShotHeatMap({
-  shots,
-  width = 560,
-  mode = "xg",
-  title,
-}: ShotHeatMapProps) {
-  const height = Math.round(width * (RINK_HEIGHT / RINK_LENGTH));
-
-  // Calculate heat zones from shots
-  const { zones, maxValue } = useMemo(() => {
-    const zoneMap = new Map<string, HeatZone>();
-
-    // Initialize zones
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < GRID_COLS; col++) {
-        const key = `${row}-${col}`;
-        zoneMap.set(key, {
-          row,
-          col,
-          x: GOAL_LINE_X + col * CELL_WIDTH,
-          y: row * CELL_HEIGHT,
-          shots: 0,
-          goals: 0,
-          totalXg: 0,
-          avgXg: 0,
-          shootingPct: 0,
-        });
-      }
-    }
-
-    // Populate zones with shot data
+  const { zones, max } = useMemo(() => {
+    const grid = new Map<string, Zone>();
     for (const shot of shots) {
-      if (shot.arenaAdjustedXCoord == null || shot.arenaAdjustedYCoord == null)
-        continue;
-
-      const rawX = Math.abs(shot.arenaAdjustedXCoord);
-      const rawY = shot.arenaAdjustedYCoord;
-
-      // Transform to SVG coordinates
-      const clampedX = Math.min(Math.max(rawX, 0), 100);
-      const svgX =
-        GOAL_LINE_X + ((89 - clampedX) / 89) * (RINK_LENGTH - GOAL_LINE_X);
-      const clampedY = Math.min(Math.max(rawY, -42.5), 42.5);
-      const svgY = clampedY + 42.5;
-
-      // Find which zone this shot belongs to
-      const col = Math.min(
-        Math.floor((svgX - GOAL_LINE_X) / CELL_WIDTH),
-        GRID_COLS - 1
-      );
-      const row = Math.min(Math.floor(svgY / CELL_HEIGHT), GRID_ROWS - 1);
-
-      if (col < 0 || row < 0) continue;
-
+      if (shot.arenaAdjustedXCoord == null || shot.arenaAdjustedYCoord == null) continue;
+      // Empty-net shots from distance have huge xG and would light up the neutral zone.
+      if (mode === "xg" && shot.shotOnEmptyNet) continue;
+      const { x, y } = toHalfRink(shot.arenaAdjustedXCoord, shot.arenaAdjustedYCoord, shot.shotDistance);
+      if (x >= 100) continue;
+      const col = Math.min(Math.floor(x / CELL_W), COLS - 1);
+      const row = Math.min(Math.floor((y + 42.5) / CELL_H), ROWS - 1);
       const key = `${row}-${col}`;
-      const zone = zoneMap.get(key);
-      if (zone) {
-        zone.shots++;
-        zone.totalXg += shot.xGoal ?? 0;
-        if (shot.isGoal) zone.goals++;
+      let zone = grid.get(key);
+      if (!zone) {
+        zone = { key, x: col * CELL_W, y: row * CELL_H - 42.5, shots: 0, goals: 0, xg: 0 };
+        grid.set(key, zone);
       }
+      zone.shots++;
+      zone.xg += shot.xGoal ?? 0;
+      if (shot.isGoal) zone.goals++;
     }
-
-    // Calculate averages and find max
-    let max = 0;
-    for (const zone of zoneMap.values()) {
-      if (zone.shots > 0) {
-        zone.avgXg = zone.totalXg / zone.shots;
-        zone.shootingPct = (zone.goals / zone.shots) * 100;
-        const value = mode === "xg" ? zone.avgXg : zone.shots;
-        max = Math.max(max, value);
-      }
-    }
-
-    return { zones: Array.from(zoneMap.values()), maxValue: max };
+    const list = [...grid.values()];
+    const value = (z: Zone) => (mode === "xg" ? (z.shots >= MIN_SHOTS_FOR_XG ? z.xg / z.shots : 0) : z.shots);
+    return { zones: list.map((z) => ({ ...z, value: value(z) })), max: Math.max(0, ...list.map(value)) };
   }, [shots, mode]);
 
-  const totalShots = shots.length;
-  const totalGoals = shots.filter((s) => s.isGoal).length;
-  const totalXg = shots.reduce((sum, s) => sum + (s.xGoal ?? 0), 0);
+  const format = (v: number) => (mode === "xg" ? `${(v * 100).toFixed(0)}%` : String(Math.round(v)));
 
   return (
-    <div className="w-full space-y-3" style={{ maxWidth: width }}>
-      {title && (
-        <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
-      )}
-      
-        <svg
-          viewBox={`0 0 ${RINK_LENGTH} ${RINK_HEIGHT}`}
-          width={width}
-          height={height}
-          className="h-auto w-full rounded-xl border border-border bg-muted"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <path
-            d={`
-              M ${RINK_LENGTH} 0
-              L 10 0
-              Q 0 0 0 10
-              L 0 ${RINK_HEIGHT - 10}
-              Q 0 ${RINK_HEIGHT} 10 ${RINK_HEIGHT}
-              L ${RINK_LENGTH} ${RINK_HEIGHT}
-              L ${RINK_LENGTH} 0
-              Z
-            `}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="0.5"
-            className="text-muted-foreground/30"
-          />
-          <path
-            d={`
-              M ${RINK_LENGTH - 1} 1
-              L 10 1
-              Q 1 1 1 10
-              L 1 ${RINK_HEIGHT - 10}
-              Q 1 ${RINK_HEIGHT - 1} 10 ${RINK_HEIGHT - 1}
-              L ${RINK_LENGTH - 1} ${RINK_HEIGHT - 1}
-              L ${RINK_LENGTH - 1} 1
-              Z
-            `}
-            fill="white"
-            className="dark:fill-muted"
-          />
-
-          {zones.map((zone) => {
-            const value = mode === "xg" ? zone.avgXg : zone.shots;
-            const color = getZoneColor(value, maxValue, mode);
-
-            return (
-              <Tooltip key={`${zone.row}-${zone.col}`}>
-                <TooltipTrigger asChild>
-                  <rect
-                    x={zone.x}
-                    y={zone.y}
-                    width={CELL_WIDTH}
-                    height={CELL_HEIGHT}
-                    fill={color}
-                    className="cursor-pointer transition-opacity hover:opacity-80"
-                  />
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-sm">
-                  <div className="space-y-1">
-                    <div className="font-semibold">{zone.shots} shots</div>
-                    <div className="grid grid-cols-2 gap-x-3">
-                      <span className="opacity-70">Goals:</span>
-                      <span className="font-medium">{zone.goals}</span>
-                      <span className="opacity-70">Avg xG:</span>
-                      <span className="font-medium">
-                        {(zone.avgXg * 100).toFixed(1)}%
-                      </span>
-                      <span className="opacity-70">Sh%:</span>
-                      <span className="font-medium">
-                        {zone.shootingPct.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-
-          <line
-            x1={GOAL_LINE_X}
-            y1="0"
-            x2={GOAL_LINE_X}
-            y2={RINK_HEIGHT}
-            stroke={RINK_COLOURS.goalLine}
-            strokeWidth="0.5"
-            opacity="0.6"
-          />
-          <line
-            x1={BLUE_LINE_X}
-            y1="0"
-            x2={BLUE_LINE_X}
-            y2={RINK_HEIGHT}
-            stroke={RINK_COLOURS.blueLine}
-            strokeWidth="1"
-            opacity="0.6"
-          />
+    <div className={cn("w-full max-w-140 space-y-3", className)}>
+      <HalfRink label={mode === "xg" ? "Heat map of average xG per shot" : "Heat map of shot volume"} showSlot={false} underlay>
+        {zones.map((z) => (
           <rect
-            x={GOAL_LINE_X}
-            y={RINK_HEIGHT / 2 - CREASE_WIDTH / 2}
-            width={CREASE_DEPTH}
-            height={CREASE_WIDTH}
-            fill={RINK_COLOURS.creaseFill}
-            fillOpacity="0.3"
-            stroke={RINK_COLOURS.goalLine}
-            strokeWidth="0.3"
-            rx="1"
+            key={z.key}
+            x={z.x + 0.15}
+            y={z.y + 0.15}
+            width={CELL_W - 0.3}
+            height={CELL_H - 0.3}
+            rx={0.8}
+            fill={z.value > 0 && max > 0 ? shade(z.value / max) : "transparent"}
+            {...bind(
+              <>
+                <TooltipTitle>
+                  {z.shots} {z.shots === 1 ? "shot" : "shots"}, {z.goals} {z.goals === 1 ? "goal" : "goals"}
+                </TooltipTitle>
+                <div className="tabular-nums">
+                  {z.xg.toFixed(1)} xG · {((z.xg / z.shots) * 100).toFixed(1)}% per shot
+                </div>
+                {mode === "xg" && z.shots < MIN_SHOTS_FOR_XG && (
+                  <div className="text-muted-foreground">Too few shots to shade</div>
+                )}
+              </>,
+            )}
           />
-          <rect
-            x={GOAL_LINE_X - 4}
-            y={RINK_HEIGHT / 2 - 3}
-            width="4"
-            height="6"
-            fill="none"
-            stroke={RINK_COLOURS.goalLine}
-            strokeWidth="0.5"
-            opacity="0.6"
+        ))}
+      </HalfRink>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-2">
+          <span>{mode === "xg" ? "xG per shot" : "Shots"}</span>
+          <span className="tabular-nums">{format(0)}</span>
+          <span
+            aria-hidden
+            className="h-2.5 w-24 rounded-full"
+            style={{ background: `linear-gradient(to right, ${shade(0)}, ${shade(1)})`, boxShadow: "inset 0 0 0 1px var(--border)" }}
           />
-        </svg>
-      
-
-      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-        <div>
-          <span className="font-medium text-foreground">{totalShots}</span>{" "}
-          shots
-        </div>
-        <div>
-          <span className="font-medium text-foreground">{totalGoals}</span>{" "}
-          goals
-        </div>
-        <div>
-          <span className="font-medium text-foreground">
-            {totalXg.toFixed(1)}
-          </span>{" "}
-          xG
-        </div>
-        <div>
-          <span className="font-medium text-foreground">
-            {totalShots > 0 ? ((totalGoals / totalShots) * 100).toFixed(1) : 0}%
-          </span>{" "}
-          Sh%
-        </div>
+          <span className="tabular-nums">{format(max)}</span>
+        </span>
+        {mode === "xg" && <span>Zones with fewer than {MIN_SHOTS_FOR_XG} shots are left blank; empty-net shots are left out</span>}
       </div>
-
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span>{mode === "xg" ? "Low xG" : "Few shots"}</span>
-        <div className="flex h-2.5 w-24 overflow-hidden rounded-full">
-          <div className="flex-1 bg-cold/30" />
-          <div className="flex-1 bg-warning/50" />
-          <div className="flex-1 bg-error/70" />
-        </div>
-        <span>{mode === "xg" ? "High xG" : "Many shots"}</span>
-      </div>
+      {tooltip}
     </div>
   );
 }

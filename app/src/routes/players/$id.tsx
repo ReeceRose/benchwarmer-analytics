@@ -25,7 +25,7 @@ import {
   CareerTotalsChart,
   RollingPerformance,
   SkaterPercentilePanel,
-  SeasonComparisonRadar,
+  SeasonComparisonChart,
   SituationBreakdownChart,
   GoalieWorkloadMonitor,
   GoalieDangerZones,
@@ -316,7 +316,7 @@ function PlayerDetailPage() {
                       stats={allStats as SkaterStats[]}
                       season={currentSeason}
                     />
-                    <SeasonComparisonRadar
+                    <SeasonComparisonChart
                       stats={allStats as SkaterStats[]}
                       season={currentSeason}
                     />

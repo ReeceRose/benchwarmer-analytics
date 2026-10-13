@@ -61,7 +61,7 @@ function CustomTooltip({
           <span className="text-muted-foreground">Goals Against:</span>{" "}
           <span className="tabular-nums">{data.goalsAgainst}</span>
         </p>
-        <p className={isPositive ? "text-success" : "text-destructive"}>
+        <p className={isPositive ? "text-success" : "text-error"}>
           <span className="text-muted-foreground">Differential:</span>{" "}
           <span className="tabular-nums font-semibold">
             {isPositive ? "+" : ""}

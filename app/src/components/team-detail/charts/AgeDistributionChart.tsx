@@ -7,7 +7,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 import {
   Card,
@@ -17,7 +16,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CHART_COLOURS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { RosterPlayer } from "@/types/player";
 
@@ -49,13 +48,6 @@ const AGE_BINS: Omit<AgeBin, "count" | "players">[] = [
   { label: "35+", range: "Late career", min: 35, max: 99 },
 ];
 
-const BIN_COLOURS = [
-  CHART_COLOURS[0], // Blue - Entry level
-  CHART_COLOURS[4], // Violet - Rising
-  CHART_COLOURS[2], // Green - Prime
-  CHART_COLOURS[3], // Gold - Veteran
-  CHART_COLOURS[1], // Red - Late career
-];
 
 function calculateAge(birthDate: string): number {
   const birth = new Date(birthDate);
@@ -115,6 +107,20 @@ function CustomTooltip({
         </div>
       )}
     </div>
+  );
+}
+
+/** Age range with its career phase underneath, in place of a colour legend. */
+function AgeBinTick(props: unknown) {
+  const { x, y, payload } = props as { x: number; y: number; payload: { value: string } };
+  const phase = AGE_BINS.find((b) => b.label === payload.value)?.range;
+  return (
+    <text x={x} y={y + 12} textAnchor="middle" fontSize={11} fill={CHART_AXIS_COLOURS.tick}>
+      <tspan x={x}>{payload.value}</tspan>
+      <tspan x={x} dy={14} fontSize={10} opacity={0.75}>
+        {phase}
+      </tspan>
+    </text>
   );
 }
 
@@ -202,7 +208,8 @@ export function AgeDistributionChart({
             />
             <XAxis
               dataKey="label"
-              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
+              height={36}
+              tick={AgeBinTick}
               stroke={CHART_AXIS_COLOURS.grid}
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
               tickLine={false}
@@ -224,24 +231,10 @@ export function AgeDistributionChart({
               radius={[6, 6, 0, 0]}
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as AgeBin)}
-            >
-              {chartData.map((_, index) => (
-                <Cell key={index} fill={BIN_COLOURS[index]} fillOpacity={0.85} />
-              ))}
-            </Bar>
+              fill="var(--chart-1)"
+            />
           </BarChart>
         </ResponsiveContainer>
-        <div className="flex flex-wrap justify-center gap-4 mt-4 text-xs">
-          {AGE_BINS.map((bin, index) => (
-            <div key={bin.label} className="flex items-center gap-1.5">
-              <span
-                className="w-3 h-3 rounded-sm"
-                style={{ backgroundColor: BIN_COLOURS[index] }}
-              />
-              <span className="text-muted-foreground">{bin.range}</span>
-            </div>
-          ))}
-        </div>
       </CardContent>
     </Card>
   );

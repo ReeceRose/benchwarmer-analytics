@@ -8,7 +8,10 @@ import {
   PeriodBreakdownCard,
 } from "@/components/shot-explorer";
 import { usePlayerShots } from "@/hooks";
-import { MONEYPUCK_DANGER_THRESHOLDS } from "@/lib/danger-zones";
+import {
+  filterShotsByDanger,
+  summariseShots,
+} from "@/components/shot-explorer/shot-utils";
 import { cn } from "@/lib/utils";
 import type { DangerLevel } from "@/types";
 import { EmptyState } from "@/components/layout";
@@ -46,24 +49,11 @@ export function PlayerShotMap({
   });
 
   // Filter shots by danger level client-side
-  const shots = shotsData?.shots;
-  const filteredShots = useMemo(() => {
-    if (!shots) return [];
-
-    return shots.filter((shot) => {
-      const xg = shot.xGoal ?? 0;
-      switch (dangerLevel) {
-        case "high":
-          return xg >= MONEYPUCK_DANGER_THRESHOLDS.high;
-        case "medium-high":
-          return xg >= MONEYPUCK_DANGER_THRESHOLDS.medium;
-        case "low":
-          return xg < MONEYPUCK_DANGER_THRESHOLDS.medium;
-        default:
-          return true;
-      }
-    });
-  }, [shots, dangerLevel]);
+  const filteredShots = useMemo(
+    () => filterShotsByDanger(shotsData?.shots ?? [], dangerLevel),
+    [shotsData?.shots, dangerLevel],
+  );
+  const summary = useMemo(() => summariseShots(filteredShots), [filteredShots]);
 
   if (effectiveShotSeason === null) {
     return (
@@ -109,7 +99,7 @@ export function PlayerShotMap({
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
               <RinkVisualization shots={filteredShots} showLegend teamAbbreviation={playerTeamAbbreviation} />
               <div className="space-y-3">
-                {shotsData?.summary && <ShotSummaryCard summary={shotsData.summary} />}
+                <ShotSummaryCard summary={summary} />
                 <p className="text-xs text-muted-foreground">
                   Showing {filteredShots.length} shots
                   {dangerLevel !== "all" && ` (${dangerLevel} danger)`}

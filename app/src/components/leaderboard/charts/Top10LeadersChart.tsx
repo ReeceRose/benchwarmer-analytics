@@ -6,7 +6,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 import {
   Card,
@@ -17,7 +16,10 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CHART_AXIS_COLOURS, CHART_COLOURS } from "@/lib/chart-colours";
-import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
+import {
+  getPlayerHeadshotUrl,
+  getPlayerInitials,
+} from "@/lib/player-headshots";
 import type { LeaderboardEntry, LeaderboardCategory } from "@/types";
 
 interface Top10LeadersChartProps {
@@ -173,6 +175,40 @@ function formatValue(value: number, category: LeaderboardCategory): string {
   }
 }
 
+/**
+ * Percentages sit on a zoomed range, so they get a dot on a thin track rather
+ * than a bar whose length would exaggerate the gaps.
+ */
+function PercentDot(props: unknown) {
+  const { x, y, width, height, fill } = props as {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    fill: string;
+  };
+  return (
+    <g>
+      <line
+        x1={x}
+        x2={x + width}
+        y1={y + height / 2}
+        y2={y + height / 2}
+        stroke="var(--border)"
+        strokeWidth={1}
+      />
+      <circle
+        cx={x + width}
+        cy={y + height / 2}
+        r={6}
+        fill={fill}
+        stroke="var(--card)"
+        strokeWidth={2}
+      />
+    </g>
+  );
+}
+
 export function Top10LeadersChart({
   entries,
   category,
@@ -282,15 +318,9 @@ export function Top10LeadersChart({
               cursor="pointer"
               onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
               radius={4}
-            >
-              {chartData.map((_, index) => (
-                <Cell
-                  key={index}
-                  fill={CHART_COLOURS[index % CHART_COLOURS.length]}
-                  fillOpacity={0.85}
-                />
-              ))}
-            </Bar>
+              fill={CHART_COLOURS[0]}
+              shape={xDomain ? PercentDot : undefined}
+            />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

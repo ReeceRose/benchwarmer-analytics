@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { ChartLegend } from "@/components/charts/ChartLegend";
 import {
   BarChart,
   Bar,
@@ -7,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
 import { formatToi } from "@/lib/formatters";
@@ -67,8 +67,15 @@ export function GoalsForAgainstChart({
   return (
     <div>
       <h3 className="text-sm font-semibold mb-3">
-        Goals for vs against by {isForwardLine ? "Forward line" : "Defense pair"}
+        Goals for and against by {isForwardLine ? "forward line" : "defense pair"}
       </h3>
+      <ChartLegend
+        className="mb-2"
+        items={[
+          { label: "Goals for", colour: SEMANTIC_COLOURS.success },
+          { label: "Goals against", colour: SEMANTIC_COLOURS.danger },
+        ]}
+      />
       <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 32)}>
         <BarChart
           data={chartData}
@@ -105,7 +112,7 @@ export function GoalsForAgainstChart({
                   const d = data as ChartDataPoint;
                   const diffSign = d.diff > 0 ? "+" : "";
                   const diffColor =
-                    d.diff > 0 ? "text-success" : d.diff < 0 ? "text-destructive" : "";
+                    d.diff > 0 ? "text-success" : d.diff < 0 ? "text-error" : "";
                   return (
                     <>
                       <p>
@@ -114,7 +121,7 @@ export function GoalsForAgainstChart({
                       </p>
                       <p>
                         <span className="text-muted-foreground">Goals Against:</span>{" "}
-                        <span className="tabular-nums text-destructive">{d.ga}</span>
+                        <span className="tabular-nums text-error">{d.ga}</span>
                       </p>
                       <p>
                         <span className="text-muted-foreground">Differential:</span>{" "}
@@ -140,7 +147,6 @@ export function GoalsForAgainstChart({
             )}
             cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
           />
-          <Legend wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
           <Bar
             dataKey="gf"
             name="Goals for"

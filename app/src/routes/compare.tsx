@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SeasonSelector, ErrorState, TableSkeleton } from "@/components/shared";
-import { RadarComparison, GoalieComparison, GoalieDangerZoneComparison } from "@/components/charts";
+import { StatComparisonChart, GoalieComparison, GoalieDangerZoneComparison } from "@/components/charts";
 import {
   SelectedPlayersCard,
   ComparisonTable,
@@ -205,7 +205,7 @@ function ComparePage() {
         </Section>
       )}
       {hasComparisonData && selectedPositionType !== "goalie" && (
-        <RadarComparison
+        <StatComparisonChart
           players={comparisonData.players.map((p) => ({
             name: p.name,
             stats: p.stats ?? null,

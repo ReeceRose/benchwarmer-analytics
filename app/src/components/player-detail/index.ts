@@ -7,7 +7,7 @@ export { CareerTrajectory } from "@/components/player-detail/CareerTrajectory";
 export { CareerTotalsChart } from "@/components/player-detail/CareerTotalsChart";
 export { RollingPerformance } from "@/components/player-detail/RollingPerformance";
 export { SkaterPercentilePanel } from "@/components/player-detail/SkaterPercentilePanel";
-export { SeasonComparisonRadar } from "@/components/player-detail/SeasonComparisonRadar";
+export { SeasonComparisonChart } from "@/components/player-detail/SeasonComparisonChart";
 export { SituationBreakdownChart } from "@/components/player-detail/SituationBreakdownChart";
 export { GoalieWorkloadMonitor } from "@/components/player-detail/GoalieWorkloadMonitor";
 export { GoalieDangerZones } from "@/components/player-detail/GoalieDangerZones";

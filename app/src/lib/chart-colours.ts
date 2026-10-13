@@ -9,8 +9,6 @@
  * - CHART_COLOURS: Primary palette for multi-series charts (5 distinct colours)
  * - CHART_AXIS_COLOURS: Consistent axis, grid, and tick styling
  * - SHOT_DANGER_COLOURS: Shot visualisation danger zone colours
- * - HEATMAP_COLOURS: Heat map gradient colours (low/medium/high)
- * - RINK_COLOURS: Hockey rink element colours
  */
 
 import { getDangerZoneFromXg } from "@/lib/danger-zones";
@@ -58,36 +56,6 @@ export const SHOT_DANGER_COLOURS = {
 } as const;
 
 /**
- * Heat map gradient colours for zone-based visualisations.
- * RGB values for use with rgba() opacity.
- * Cold (blue) -> Warm (amber) -> Hot (red)
- */
-export const HEATMAP_COLOURS = {
-  /** Low intensity - blue */
-  low: { r: 37, g: 99, b: 235 }, // #2563eb
-  /** Medium intensity - amber */
-  medium: { r: 245, g: 158, b: 11 }, // #f59e0b
-  /** High intensity - red */
-  high: { r: 229, g: 72, b: 77 }, // #e5484d
-} as const;
-
-/**
- * Hockey rink element colours.
- */
-export const RINK_COLOURS = {
-  /** Goal line - red */
-  goalLine: "#e5484d",
-  /** Blue line */
-  blueLine: "#2563eb",
-  /** Crease fill - pale blue */
-  creaseFill: "#bfd3fb",
-  /** Ice surface */
-  ice: "#ffffff",
-  /** Centre ice - red */
-  centreRed: "#e5484d",
-} as const;
-
-/**
  * Chart gradient colours (for area charts).
  */
 export const CHART_GRADIENT_COLOURS = {
@@ -98,51 +66,6 @@ export const CHART_GRADIENT_COLOURS = {
   /** Success green gradient - glass green */
   success: "var(--chart-3)",
 } as const;
-
-/**
- * Chemistry matrix colours for player pair visualisations.
- */
-export const CHEMISTRY_MATRIX_COLOURS = {
-  /** Diagonal cells (self) */
-  diagonal: "var(--muted-foreground)",
-  /** Empty cells (no data) */
-  empty: "transparent",
-  /** Empty cell border */
-  emptyBorder: "var(--border)",
-} as const;
-
-/**
- * Get heat map colour based on intensity value.
- * Returns rgba string for gradual colour transitions.
- *
- * @param intensity - Value from 0 to 1
- * @param mode - 'xg' for blue->amber->red, 'volume' for red intensity
- */
-export function getHeatmapColour(
-  intensity: number,
-  mode: "xg" | "volume"
-): string {
-  if (intensity === 0) return "transparent";
-
-  const clampedIntensity = Math.min(Math.max(intensity, 0), 1);
-
-  if (mode === "xg") {
-    const { low, medium, high } = HEATMAP_COLOURS;
-    if (clampedIntensity < 0.33) {
-      const t = clampedIntensity / 0.33;
-      return `rgba(${low.r}, ${low.g}, ${low.b}, ${0.2 + t * 0.3})`;
-    } else if (clampedIntensity < 0.66) {
-      const t = (clampedIntensity - 0.33) / 0.33;
-      return `rgba(${medium.r}, ${medium.g}, ${medium.b}, ${0.3 + t * 0.4})`;
-    } else {
-      const t = (clampedIntensity - 0.66) / 0.34;
-      return `rgba(${high.r}, ${high.g}, ${high.b}, ${0.4 + t * 0.5})`;
-    }
-  } else {
-    const { high } = HEATMAP_COLOURS;
-    return `rgba(${high.r}, ${high.g}, ${high.b}, ${0.15 + clampedIntensity * 0.65})`;
-  }
-}
 
 /**
  * Get chemistry heat colour based on xG percentage: goal-light red (35%)

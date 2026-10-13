@@ -1,3 +1,8 @@
+import { Panel, StatTile } from "@/components/layout";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SplitBar } from "@/components/player-detail/UsageCard";
+import { formatSigned } from "@/components/shot-explorer/shot-utils";
+import { SHOT_DANGER_COLOURS } from "@/lib/chart-colours";
 import { cn } from "@/lib/utils";
 import type { ShotSummary } from "@/types";
 
@@ -6,65 +11,67 @@ interface ShotSummaryCardProps {
   className?: string;
 }
 
-function StatItem({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string | number;
-  highlight?: "positive" | "negative" | "neutral";
-}) {
-  const colorClass =
-    highlight === "positive"
-      ? "text-success"
-      : highlight === "negative"
-        ? "text-error"
-        : "text-foreground";
+/** Headline shot numbers plus the high / medium / low danger split. */
+export function ShotSummaryCard({ summary, className }: ShotSummaryCardProps) {
+  const gax = summary.goalsAboveExpected;
 
   return (
-    <div className="bg-card px-3 py-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={cn("font-display text-xl font-bold tabular-nums", colorClass)}>
-        {value}
+    <div className={cn("space-y-4", className)}>
+      <div className="grid grid-cols-2 gap-4">
+        <StatTile
+          label="Shots"
+          value={summary.totalShots}
+          note={`${summary.shotsOnGoal} on goal`}
+        />
+        <StatTile
+          label="Goals"
+          value={summary.goals}
+          note={`${summary.shootingPct.toFixed(1)}% of shots`}
+        />
+        <StatTile
+          label="xG"
+          value={summary.totalXGoal.toFixed(1)}
+          note="Expected goals"
+        />
+        <StatTile
+          label="Goals vs xG"
+          value={
+            <span
+              className={cn(
+                gax > 0.5 && "text-success",
+                gax < -0.5 && "text-error",
+              )}
+            >
+              {formatSigned(gax)}
+            </span>
+          }
+          note={gax >= 0 ? "Finishing above expected" : "Finishing below expected"}
+        />
       </div>
+      <Panel>
+        <SplitBar
+          label="Shot danger"
+          parts={[
+            { label: "High", value: summary.highDangerShots, colour: SHOT_DANGER_COLOURS.highDanger },
+            { label: "Medium", value: summary.mediumDangerShots, colour: SHOT_DANGER_COLOURS.mediumDanger },
+            { label: "Low", value: summary.lowDangerShots, colour: SHOT_DANGER_COLOURS.lowDanger },
+          ]}
+        />
+      </Panel>
     </div>
   );
 }
 
-export function ShotSummaryCard({ summary, className }: ShotSummaryCardProps) {
-  const goalsAboveExpected = summary.goalsAboveExpected;
-  const luckHighlight =
-    goalsAboveExpected > 0.5
-      ? "positive"
-      : goalsAboveExpected < -0.5
-        ? "negative"
-        : "neutral";
-
+/** Same footprint as `ShotSummaryCard`. */
+export function ShotSummaryCardSkeleton() {
   return (
-    <div
-      className={cn(
-        "grid h-fit grid-cols-3 gap-px overflow-hidden rounded-xl border bg-border",
-        className,
-      )}
-    >
-          <StatItem label="Shots" value={summary.totalShots} />
-          <StatItem label="On goal" value={summary.shotsOnGoal} />
-          <StatItem label="Goals" value={summary.goals} />
-          <StatItem label="Sh%" value={`${summary.shootingPct}%`} />
-          <StatItem label="xG" value={summary.totalXGoal.toFixed(1)} />
-          <StatItem
-            label="Goals vs xG"
-            value={
-              goalsAboveExpected >= 0
-                ? `+${goalsAboveExpected.toFixed(1)}`
-                : goalsAboveExpected.toFixed(1)
-            }
-            highlight={luckHighlight}
-          />
-          <StatItem label="High danger" value={summary.highDangerShots} />
-          <StatItem label="Medium danger" value={summary.mediumDangerShots} />
-          <StatItem label="Low danger" value={summary.lowDangerShots} />
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-27 rounded-2xl" />
+        ))}
+      </div>
+      <Skeleton className="h-24 rounded-2xl" />
     </div>
   );
 }

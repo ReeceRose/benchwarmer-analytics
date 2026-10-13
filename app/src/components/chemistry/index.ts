@@ -1,5 +1,11 @@
 export { ChemistryMatrix } from "@/components/chemistry/ChemistryMatrix";
-export { ChemistryTopPairsChart } from "@/components/chemistry/ChemistryTopPairsChart";
+export { ChemistryRankedPairs } from "@/components/chemistry/ChemistryRankedPairs";
+export { ChemistryPairDetail } from "@/components/chemistry/ChemistryPairDetail";
 export { ChemistryLegend } from "@/components/chemistry/ChemistryLegend";
-export { ChemistryTooltip } from "@/components/chemistry/ChemistryTooltip";
-export { getHeatColor, buildMatrixData, type MatrixData, type MatrixPlayer } from "@/components/chemistry/chemistry-utils";
+export {
+  getHeatColor,
+  buildChemistryGroups,
+  pairKey,
+  type MatrixData,
+  type MatrixPlayer,
+} from "@/components/chemistry/chemistry-utils";

@@ -6,9 +6,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   ReferenceLine,
 } from "recharts";
+import { ChartLegend } from "@/components/charts/ChartLegend";
 import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
 import type { PowerPlaySummary, PenaltyKillSummary } from "@/types";
 
@@ -38,7 +38,7 @@ function CustomTooltip({
   const data = payload[0].payload;
   const diff = data.goals - data.xGoals;
   const diffSign = diff > 0 ? "+" : "";
-  const diffColor = diff > 0 ? "text-success" : diff < 0 ? "text-destructive" : "";
+  const diffColor = diff > 0 ? "text-success" : diff < 0 ? "text-error" : "";
   const isLucky = data.type === "pp" ? diff > 0 : diff < 0;
 
   return (
@@ -101,6 +101,13 @@ export function GoalsVsXGChart({ powerPlay, penaltyKill }: GoalsVsXGChartProps) 
       <h3 className="text-sm font-semibold mb-3">
         Goals vs expected goals
       </h3>
+      <ChartLegend
+        className="mb-2"
+        items={[
+          { label: "Actual goals", colour: SEMANTIC_COLOURS.primary },
+          { label: "Expected (xG)", colour: SEMANTIC_COLOURS.muted },
+        ]}
+      />
       <ResponsiveContainer width="100%" height={200}>
         <BarChart
           data={chartData}
@@ -130,9 +137,6 @@ export function GoalsVsXGChart({ powerPlay, penaltyKill }: GoalsVsXGChartProps) 
           <Tooltip
             content={<CustomTooltip />}
             cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: 11, paddingTop: 10 }}
           />
           <ReferenceLine y={0} stroke={CHART_AXIS_COLOURS.grid} />
           <Bar

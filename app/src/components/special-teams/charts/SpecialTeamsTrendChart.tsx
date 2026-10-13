@@ -1,4 +1,7 @@
 import { useMemo } from "react";
+import { Swatch } from "@/components/game-live/parts";
+import { formatGameDate } from "@/lib/game-formatters";
+import { ChartLegend } from "@/components/charts/ChartLegend";
 import {
   LineChart,
   Line,
@@ -7,7 +10,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,31 +60,31 @@ function CustomTooltip({
         Game {label}: vs {data.opponent}
       </div>
       <div className="text-xs text-muted-foreground mb-2">
-        {new Date(data.gameDate).toLocaleDateString()}
+        {formatGameDate(data.gameDate)}
       </div>
       <div className="space-y-2 text-xs">
         <div>
-          <div className="font-medium text-success mb-1">Power play</div>
+          <div className="mb-1 flex items-center gap-1.5 font-medium"><Swatch colour={SEMANTIC_COLOURS.primary} />Power play</div>
           <p>
             <span className="text-muted-foreground">Cumulative:</span>{" "}
             <span className="tabular-nums">{data.cumulativePpGoals} G / {data.cumulativePpXGoals.toFixed(1)} xG</span>
           </p>
           <p>
             <span className="text-muted-foreground">Diff:</span>{" "}
-            <span className={`tabular-nums font-semibold ${ppDiff >= 0 ? "text-success" : "text-destructive"}`}>
+            <span className={`tabular-nums font-semibold ${ppDiff >= 0 ? "text-success" : "text-error"}`}>
               {ppDiffSign}{ppDiff.toFixed(1)}
             </span>
           </p>
         </div>
         <div>
-          <div className="font-medium text-destructive mb-1">Penalty kill</div>
+          <div className="mb-1 flex items-center gap-1.5 font-medium"><Swatch colour="var(--chart-5)" />Penalty kill</div>
           <p>
             <span className="text-muted-foreground">Cumulative:</span>{" "}
             <span className="tabular-nums">{data.cumulativePkGoalsAgainst} GA / {data.cumulativePkXGoalsAgainst.toFixed(1)} xGA</span>
           </p>
           <p>
             <span className="text-muted-foreground">Diff:</span>{" "}
-            <span className={`tabular-nums font-semibold ${pkDiff <= 0 ? "text-success" : "text-destructive"}`}>
+            <span className={`tabular-nums font-semibold ${pkDiff <= 0 ? "text-success" : "text-error"}`}>
               {pkDiffSign}{pkDiff.toFixed(1)}
             </span>
             <span className="text-muted-foreground ml-1">(lower is better)</span>
@@ -149,6 +151,15 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
       <h3 className="text-sm font-semibold mb-3">
         Cumulative goals vs expected through season
       </h3>
+      <ChartLegend
+        className="mb-2"
+        items={[
+          { label: "PP goals", colour: SEMANTIC_COLOURS.primary },
+          { label: "PP xG", colour: SEMANTIC_COLOURS.primary, dashed: true },
+          { label: "PK goals against", colour: "var(--chart-5)" },
+          { label: "PK xGA", colour: "var(--chart-5)", dashed: true },
+        ]}
+      />
       <ResponsiveContainer width="100%" height={300}>
         <LineChart
           data={chartData}
@@ -181,10 +192,6 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
             axisLine={false}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{ fontSize: 11, paddingTop: 15 }}
-            iconType="line"
-          />
           <Line
             type="monotone"
             dataKey="cumulativePpGoals"

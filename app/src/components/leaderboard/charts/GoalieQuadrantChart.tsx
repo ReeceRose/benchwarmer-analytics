@@ -86,7 +86,7 @@ function CustomTooltip({
         <p>
           <span className="text-muted-foreground">GSAx:</span>{" "}
           <span
-            className={`tabular-nums font-semibold ${data.gsax > 0 ? "text-success" : "text-destructive"}`}
+            className={`tabular-nums font-semibold ${data.gsax > 0 ? "text-success" : "text-error"}`}
           >
             {data.gsax > 0 ? "+" : ""}
             {data.gsax.toFixed(1)}
@@ -167,7 +167,7 @@ function SelectionPanel({
                 <span className="tabular-nums">{data.savePct.toFixed(1)}%</span>
               </span>
               <span
-                className={`tabular-nums font-semibold ${data.gsax > 0 ? "text-success" : "text-destructive"}`}
+                className={`tabular-nums font-semibold ${data.gsax > 0 ? "text-success" : "text-error"}`}
               >
                 GSAx: {data.gsax > 0 ? "+" : ""}
                 {data.gsax.toFixed(1)}
@@ -386,7 +386,7 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
           <div
             className="rounded-xl bg-muted/60 p-2"
           >
-            <span className="font-medium text-destructive">Struggling</span>
+            <span className="font-medium text-error">Struggling</span>
             <p className="text-muted-foreground">Low Sv%, Negative GSAx</p>
           </div>
           <div

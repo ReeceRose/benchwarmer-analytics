@@ -5,7 +5,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 import {
   Card,
@@ -14,7 +13,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { CHART_AXIS_COLOURS, CHART_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import type { Rookie } from "@/types";
 
 interface RookieAgeDistributionChartProps {
@@ -120,15 +119,9 @@ export function RookieAgeDistributionChart({
               content={<CustomTooltip />}
               cursor={{ fill: "var(--muted)", fillOpacity: 0.3 }}
             />
-            <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${entry.age}`}
-                  fill={CHART_COLOURS[index % CHART_COLOURS.length]}
-                  fillOpacity={0.85}
-                />
-              ))}
-            </Bar>
+            <Bar dataKey="count" radius={[6, 6, 0, 0]}
+              fill="var(--chart-1)"
+            />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
