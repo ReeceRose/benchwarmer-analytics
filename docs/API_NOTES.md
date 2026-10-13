@@ -34,7 +34,7 @@ and the cache tag `api` (`Vercel-Cache-Tag`):
 |---|---|---|
 | `static` | 24 h | teams list/detail, game shots |
 | `ingested` | 24 h | endpoints that read only our DB: players, stats, lines, team stats, power rankings, standings analytics, special teams |
-| `semiStatic` | 6 h | seasons, games by date, yesterday, final-game boxscore and game centre, deserve-to-win |
+| `semiStatic` | 6 h | seasons, games by date, yesterday, final-game detail, boxscore and game centre, deserve-to-win |
 | `team` | 30 min | endpoints that also call the NHL API: official standings, category rankings, game preview, goalie form |
 | `search` | 5 min | player search |
 | `live` | 15 s | today, live, game detail, boxscore and game centre (`/api/games/{id}/live`) until the game is final |
@@ -48,6 +48,10 @@ and the cache tag `api` (`Vercel-Cache-Tag`):
 - Errors are `no-store`. The CDN keys on the full URL.
 - The UI's React Query default `staleTime` is 5 minutes (live hooks set their
   own).
+- Today's scoreboard and live game detail don't query the DB: a game's shots
+  are ingested the morning after it, so there are none to read yet. That keeps
+  the scores strip (server-rendered on every page, polled while games are on)
+  and live polling from waking Neon.
 - Pages (HTML) are CDN-cached too: `s-maxage=300, stale-while-revalidate=1 day`,
   browsers always revalidate, same `api` tag (`src/lib/cache-headers.ts`).
   Server-rendered pages embed API data, so the cron invalidation covers them.

@@ -551,12 +551,17 @@ export async function getGame({ db, params }: ApiContext) {
   if (liveGame) {
     const home = liveGame.homeTeam?.abbrev ?? "";
     const away = liveGame.awayTeam?.abbrev ?? "";
+    const final = isFinalState(liveGame.gameState);
+    // Shots are ingested the morning after a game, so only a finished game
+    // (e.g. last night's, still on the scoreboard) can have any. Skipping the
+    // query keeps polling of live games off the database.
     const [stats, standings, series] = await Promise.all([
-      gameStatsByGame(db, [gameId]),
+      final ? gameStatsByGame(db, [gameId]) : new Map<string, GameStats>(),
       standingsPromise,
       seasonSeries([{ home, away, season: seasonFromGameId(gameId) }]),
     ]);
-    return liveGameToDto(liveGame, stats.get(gameId), standings.get(home), standings.get(away), series.get(`${home}-${away}`));
+    const body = liveGameToDto(liveGame, stats.get(gameId), standings.get(home), standings.get(away), series.get(`${home}-${away}`));
+    return json(body, final ? CacheTier.semiStatic : CacheTier.live);
   }
 
   const game = await findGameWithFallback(db, gameId, 7, 7);
@@ -569,7 +574,7 @@ export async function getGame({ db, params }: ApiContext) {
     game.gameState === GameState.final ? getGameLanding(gameId) : Promise.resolve(null),
   ]);
   const goals = landing?.summary?.scoring ? landingGoals(landing, game.homeTeamCode) : null;
-  return gameToDto(
+  const body = gameToDto(
     game,
     stats.get(gameId),
     standings.get(game.homeTeamCode),
@@ -577,6 +582,7 @@ export async function getGame({ db, params }: ApiContext) {
     series.get(`${game.homeTeamCode}-${game.awayTeamCode}`),
     goals,
   );
+  return json(body, isFinalState(game.gameState) ? CacheTier.semiStatic : CacheTier.live);
 }
 
 export async function getGameShots({ db, params }: ApiContext) {
