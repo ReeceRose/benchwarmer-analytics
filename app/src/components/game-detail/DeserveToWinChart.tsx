@@ -18,7 +18,9 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { TeamLabel } from "@/components/game-live/parts";
+import { teamColour } from "@/components/game-live/live-utils";
 import { formatGameTime, formatPercent } from "@/lib/formatters";
 import type { DeserveToWinResponse } from "@/types";
 
@@ -61,7 +63,7 @@ function GoalDot(props: {
       cx={cx}
       cy={cy}
       r={5}
-      fill={isHomeGoal ? SEMANTIC_COLOURS.primary : SEMANTIC_COLOURS.danger}
+      fill={teamColour(isHomeGoal ? "home" : "away")}
       stroke="var(--card)"
       strokeWidth={2}
     />
@@ -94,38 +96,38 @@ function CustomTooltip({
       <div className="space-y-2 text-xs">
         <div>
           <p className="text-muted-foreground mb-1">Monte Carlo</p>
-          {mcHome && (
+          {mcAway && (
             <p className="flex justify-between gap-4">
-              <span style={{ color: mcHome.color }}>{data.homeTeamCode}:</span>
+              <TeamLabel side="away">{data.awayTeamCode}</TeamLabel>
               <span className="tabular-nums font-semibold">
-                {mcHome.value.toFixed(1)}%
+                {mcAway.value.toFixed(1)}%
               </span>
             </p>
           )}
-          {mcAway && (
+          {mcHome && (
             <p className="flex justify-between gap-4">
-              <span style={{ color: mcAway.color }}>{data.awayTeamCode}:</span>
+              <TeamLabel side="home">{data.homeTeamCode}</TeamLabel>
               <span className="tabular-nums font-semibold">
-                {mcAway.value.toFixed(1)}%
+                {mcHome.value.toFixed(1)}%
               </span>
             </p>
           )}
         </div>
         <div>
           <p className="text-muted-foreground mb-1">Poisson</p>
-          {poissonHome && (
+          {poissonAway && (
             <p className="flex justify-between gap-4">
-              <span style={{ color: poissonHome.color }}>{data.homeTeamCode}:</span>
+              <TeamLabel side="away">{data.awayTeamCode}</TeamLabel>
               <span className="tabular-nums font-semibold">
-                {poissonHome.value.toFixed(1)}%
+                {poissonAway.value.toFixed(1)}%
               </span>
             </p>
           )}
-          {poissonAway && (
+          {poissonHome && (
             <p className="flex justify-between gap-4">
-              <span style={{ color: poissonAway.color }}>{data.awayTeamCode}:</span>
+              <TeamLabel side="home">{data.homeTeamCode}</TeamLabel>
               <span className="tabular-nums font-semibold">
-                {poissonAway.value.toFixed(1)}%
+                {poissonHome.value.toFixed(1)}%
               </span>
             </p>
           )}
@@ -274,39 +276,39 @@ export function DeserveToWinChart({ data }: DeserveToWinChartProps) {
               type="stepAfter"
               dataKey="homeMonteCarloPct"
               name={`${data.homeTeamCode} (MC)`}
-              stroke={SEMANTIC_COLOURS.primary}
+              stroke={teamColour("home")}
               strokeWidth={2}
               dot={<GoalDot />}
-              activeDot={{ r: 4, fill: SEMANTIC_COLOURS.primary }}
+              activeDot={{ r: 4, fill: teamColour("home") }}
             />
             <Line
               type="stepAfter"
               dataKey="homePoissonPct"
               name={`${data.homeTeamCode} (Poisson)`}
-              stroke={SEMANTIC_COLOURS.primary}
+              stroke={teamColour("home")}
               strokeWidth={1.5}
               strokeDasharray="5 5"
               dot={false}
-              activeDot={{ r: 3, fill: SEMANTIC_COLOURS.primary }}
+              activeDot={{ r: 3, fill: teamColour("home") }}
             />
             <Line
               type="stepAfter"
               dataKey="awayMonteCarloPct"
               name={`${data.awayTeamCode} (MC)`}
-              stroke={SEMANTIC_COLOURS.danger}
+              stroke={teamColour("away")}
               strokeWidth={2}
               dot={<GoalDot />}
-              activeDot={{ r: 4, fill: SEMANTIC_COLOURS.danger }}
+              activeDot={{ r: 4, fill: teamColour("away") }}
             />
             <Line
               type="stepAfter"
               dataKey="awayPoissonPct"
               name={`${data.awayTeamCode} (Poisson)`}
-              stroke={SEMANTIC_COLOURS.danger}
+              stroke={teamColour("away")}
               strokeWidth={1.5}
               strokeDasharray="5 5"
               dot={false}
-              activeDot={{ r: 3, fill: SEMANTIC_COLOURS.danger }}
+              activeDot={{ r: 3, fill: teamColour("away") }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -316,20 +318,8 @@ export function DeserveToWinChart({ data }: DeserveToWinChartProps) {
           aria-label="Chart legend"
         >
           <div className="flex justify-center gap-6">
-            <div className="flex items-center gap-2">
-              <span
-                className="inline-block h-0.5 w-5 rounded-sm"
-                style={{ backgroundColor: SEMANTIC_COLOURS.primary }}
-              />
-              <span>{data.homeTeamCode}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className="inline-block h-0.5 w-5 rounded-sm"
-                style={{ backgroundColor: SEMANTIC_COLOURS.danger }}
-              />
-              <span>{data.awayTeamCode}</span>
-            </div>
+            <TeamLabel side="away">{data.awayTeamCode}</TeamLabel>
+            <TeamLabel side="home">{data.homeTeamCode}</TeamLabel>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
@@ -352,32 +342,32 @@ export function DeserveToWinChart({ data }: DeserveToWinChartProps) {
         <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t">
           <div className="text-center">
             <div className="text-muted-foreground text-xs mb-1">
-              {data.homeTeamCode}
-            </div>
-            <div
-              className="tabular-nums text-2xl font-bold"
-              style={{ color: SEMANTIC_COLOURS.primary }}
-            >
-              {formatPercent(data.homeSummary.monteCarloWinPct)}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {data.homeSummary.totalXG.toFixed(2)} xG •{" "}
-              {data.homeSummary.shotsExcludingEmptyNet} shots
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-muted-foreground text-xs mb-1">
               {data.awayTeamCode}
             </div>
             <div
               className="tabular-nums text-2xl font-bold"
-              style={{ color: SEMANTIC_COLOURS.danger }}
+              style={{ color: teamColour("away") }}
             >
               {formatPercent(data.awaySummary.monteCarloWinPct)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
               {data.awaySummary.totalXG.toFixed(2)} xG •{" "}
               {data.awaySummary.shotsExcludingEmptyNet} shots
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-muted-foreground text-xs mb-1">
+              {data.homeTeamCode}
+            </div>
+            <div
+              className="tabular-nums text-2xl font-bold"
+              style={{ color: teamColour("home") }}
+            >
+              {formatPercent(data.homeSummary.monteCarloWinPct)}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {data.homeSummary.totalXG.toFixed(2)} xG •{" "}
+              {data.homeSummary.shotsExcludingEmptyNet} shots
             </div>
           </div>
         </div>

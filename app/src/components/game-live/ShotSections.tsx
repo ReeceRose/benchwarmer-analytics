@@ -184,8 +184,15 @@ export function GameFlowChart({ data }: { data: LiveGameResponse }) {
       </svg>
       <svg viewBox={`0 0 ${W} ${MH}`} className="mt-1 w-full" role="img" aria-label="Shot attempts per two minutes">
         <line x1={M.l} x2={W - M.r} y1={mid} y2={mid} stroke="var(--border)" />
-        <text x={M.l - 6} y={12} textAnchor="end" fontSize={10.5} fill="var(--muted-foreground)">{data.home.abbrev}</text>
-        <text x={M.l - 6} y={MH - 4} textAnchor="end" fontSize={10.5} fill="var(--muted-foreground)">{data.away.abbrev}</text>
+        {SIDES.map((side) => {
+          const ty = side === "home" ? 12 : MH - 4;
+          return (
+            <g key={side}>
+              <rect x={2} y={ty - 8} width={8} height={8} rx={2} fill={teamColour(side)} />
+              <text x={13} y={ty} fontSize={10.5} fill="var(--muted-foreground)">{data[side].abbrev}</text>
+            </g>
+          );
+        })}
         <text x={W - M.r + 6} y={mid - 3} fontSize={10.5} fill="var(--muted-foreground)">attempts</text>
         <text x={W - M.r + 6} y={mid + 10} fontSize={10.5} fill="var(--muted-foreground)">per 2 min</text>
         {bins.map((b, i) => {
@@ -310,6 +317,9 @@ export function LiveShotMap({ data }: { data: LiveGameResponse }) {
         <span className="inline-flex items-center gap-1.5"><svg width={14} height={14} aria-hidden><circle cx={7} cy={7} r={4.5} fill="var(--muted-foreground)" /></svg>On goal</span>
         <span className="inline-flex items-center gap-1.5"><svg width={14} height={14} aria-hidden><circle cx={7} cy={7} r={4} fill="none" stroke="var(--muted-foreground)" strokeWidth={1.6} /></svg>Missed</span>
         <span className="inline-flex items-center gap-1.5"><svg width={14} height={14} aria-hidden><path d="M3 3L11 11M11 3L3 11" stroke="var(--muted-foreground)" strokeWidth={1.8} /></svg>Blocked</span>
+        {SIDES.map((side) => (
+          <TeamLabel key={side} side={side}>{data[side].abbrev}</TeamLabel>
+        ))}
         <span>Size = xG · dashed box = high-danger area</span>
         <span className="ml-auto tabular-nums">
           {shots.length} attempts · {unblocked.length} unblocked · {fmt(unblocked.reduce((sum, s) => sum + (s.xg ?? 0), 0), 2)} xG
@@ -330,8 +340,8 @@ function CountTable({ data, counts }: { data: LiveGameResponse; counts: Record<T
       <thead>
         <tr className="text-xs text-muted-foreground">
           <th className="pb-1.5 text-left font-medium" />
-          <th className="pb-1.5 text-right font-medium">{data.away.abbrev}</th>
-          <th className="pb-1.5 text-right font-medium">{data.home.abbrev}</th>
+          <th className="pb-1.5 text-right font-medium"><TeamLabel side="away">{data.away.abbrev}</TeamLabel></th>
+          <th className="pb-1.5 text-right font-medium"><TeamLabel side="home">{data.home.abbrev}</TeamLabel></th>
         </tr>
       </thead>
       <tbody>
@@ -362,6 +372,10 @@ export function ShotProfile({ data }: { data: LiveGameResponse }) {
     <div className="space-y-4">
       <Card title="Shot distance (unblocked)">
         <div className="space-y-1">
+          <div className="flex justify-between pb-0.5 text-xs text-muted-foreground">
+            <TeamLabel side="away">{data.away.abbrev}</TeamLabel>
+            <TeamLabel side="home">{data.home.abbrev}</TeamLabel>
+          </div>
           {bins.map(([, , label], i) => (
             <div key={label} className="grid grid-cols-[1.5rem_1fr_4.5rem_1fr_1.5rem] items-center gap-2 text-xs tabular-nums">
               <span className="text-right">{away[i]}</span>

@@ -84,6 +84,9 @@ Rules:
   (two red teams would clash). Use the side colours from
   `components/game-live/live-utils.ts`: `teamColour("away")` = `chart-2`,
   `teamColour("home")` = `chart-1`, labelled with `TeamLabel`/`Swatch`.
+  Every place a team code names a side (chart axis labels, legends, column
+  headers) gets the swatch next to it, so the colour key is never more than a
+  glance away. In SVG, draw the swatch as an 8px `rect` with `rx={2}`.
 - Logos: `TeamLogo` (`components/team-detail/TeamLogo`). In SSR'd markup (root
   layout, homepage) it swaps variants with the `dark:` class. On a coloured
   hero, pass `variant="dark"`.

@@ -9,6 +9,8 @@ import { PenaltiesSection, PuckEventsMap } from "@/components/game-live/EventSec
 import { SummaryTiles, TeamStatsSection } from "@/components/game-live/OverviewSections";
 import { GameFlowChart, LiveShotMap, ShotProfile } from "@/components/game-live/ShotSections";
 import { GameCentreSettings } from "@/components/game-live/GameCentreSettings";
+import { TeamLabel } from "@/components/game-live/parts";
+import { SIDES } from "@/components/game-live/live-utils";
 import {
   GAME_CENTRE_SECTIONS,
   useGameCentreSections,
@@ -74,6 +76,13 @@ export function GameCentre({ data, isLoading, isLive, boxscore, moneyPuckCharts 
                 ? `${isLive ? "Live from" : "From"} NHL play-by-play and shift charts · ${data.meta.xgSource === "moneypuck" ? "MoneyPuck xG" : "approximate xG until MoneyPuck's arrives"}${updated ? ` · updated ${updated}` : ""}${isLive ? " · refreshes every 20s" : ""}`
                 : "Play-by-play isn't available for this game."}
           </p>
+          {data && (
+            <div className="mt-1.5 flex flex-wrap gap-x-4 text-xs text-muted-foreground">
+              {SIDES.map((side) => (
+                <TeamLabel key={side} side={side}>{data[side].name}</TeamLabel>
+              ))}
+            </div>
+          )}
         </div>
         <GameCentreSettings sections={sections} available={available} />
       </div>

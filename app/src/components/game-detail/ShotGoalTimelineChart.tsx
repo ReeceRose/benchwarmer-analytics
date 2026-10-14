@@ -17,7 +17,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { TeamLabel } from "@/components/game-live/parts";
+import { teamColour } from "@/components/game-live/live-utils";
 import type { GameShotsResponse } from "@/types";
 
 interface ShotGoalTimelineChartProps {
@@ -86,8 +88,7 @@ function TimelineMarker(props: {
   const { cx, cy, payload } = props;
   if (cx == null || cy == null || !payload) return null;
 
-  const teamColour =
-    payload.team === "home" ? SEMANTIC_COLOURS.primary : SEMANTIC_COLOURS.danger;
+  const colour = teamColour(payload.team === "home" ? "home" : "away");
 
   const r = payload.isGoal
     ? 7
@@ -99,7 +100,7 @@ function TimelineMarker(props: {
       <g>
         <polygon
           points={`${cx},${cy - d} ${cx + d},${cy} ${cx},${cy + d} ${cx - d},${cy}`}
-          fill={teamColour}
+          fill={colour}
           stroke="white"
           strokeWidth={1}
         />
@@ -112,9 +113,9 @@ function TimelineMarker(props: {
       cx={cx}
       cy={cy}
       r={r}
-      fill={teamColour}
+      fill={colour}
       fillOpacity={0.25}
-      stroke={teamColour}
+      stroke={colour}
       strokeOpacity={0.8}
       strokeWidth={1}
     />
@@ -371,20 +372,8 @@ export function ShotGoalTimelineChart({ shotsData }: ShotGoalTimelineChartProps)
           className="mt-3 flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground"
           aria-label="Timeline legend"
         >
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: SEMANTIC_COLOURS.primary, opacity: 0.7 }}
-            />
-            <span>{shotsData.homeTeamCode} shot</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: SEMANTIC_COLOURS.danger, opacity: 0.7 }}
-            />
-            <span>{shotsData.awayTeamCode} shot</span>
-          </div>
+          <TeamLabel side="away">{shotsData.awayTeamCode} shot</TeamLabel>
+          <TeamLabel side="home">{shotsData.homeTeamCode} shot</TeamLabel>
           <div className="flex items-center gap-2">
             <span
               className="inline-block h-2 w-2 rotate-45"

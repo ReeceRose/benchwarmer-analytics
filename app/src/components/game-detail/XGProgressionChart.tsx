@@ -17,7 +17,9 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { TeamLabel } from "@/components/game-live/parts";
+import { teamColour } from "@/components/game-live/live-utils";
 import { formatGameTime } from "@/lib/formatters";
 import type { GameShotsResponse, GameShot } from "@/types";
 
@@ -236,19 +238,19 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
               type="stepAfter"
               dataKey="homeXG"
               name={shotsData.homeTeamCode}
-              stroke={SEMANTIC_COLOURS.primary}
+              stroke={teamColour("home")}
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: SEMANTIC_COLOURS.primary }}
+              activeDot={{ r: 4, fill: teamColour("home") }}
             />
             <Line
               type="stepAfter"
               dataKey="awayXG"
               name={shotsData.awayTeamCode}
-              stroke={SEMANTIC_COLOURS.danger}
+              stroke={teamColour("away")}
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: SEMANTIC_COLOURS.danger }}
+              activeDot={{ r: 4, fill: teamColour("away") }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -257,43 +259,31 @@ export function XGProgressionChart({ shotsData }: XGProgressionChartProps) {
           className="mt-2 flex justify-center gap-6 text-xs text-muted-foreground"
           aria-label="Chart legend"
         >
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-0.5 w-5 rounded-sm"
-              style={{ backgroundColor: SEMANTIC_COLOURS.primary }}
-            />
-            <span>{shotsData.homeTeamCode}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-0.5 w-5 rounded-sm"
-              style={{ backgroundColor: SEMANTIC_COLOURS.danger }}
-            />
-            <span>{shotsData.awayTeamCode}</span>
-          </div>
+          <TeamLabel side="away">{shotsData.awayTeamCode}</TeamLabel>
+          <TeamLabel side="home">{shotsData.homeTeamCode}</TeamLabel>
         </div>
 
         <div className="flex justify-center gap-8 mt-8 pt-8 text-sm">
-          <div className="text-center">
-            <div className="text-muted-foreground text-xs">
-              {shotsData.homeTeamCode} xG
-            </div>
-            <div
-              className="tabular-nums font-semibold"
-              style={{ color: SEMANTIC_COLOURS.primary }}
-            >
-              {homeTotal.toFixed(2)}
-            </div>
-          </div>
           <div className="text-center">
             <div className="text-muted-foreground text-xs">
               {shotsData.awayTeamCode} xG
             </div>
             <div
               className="tabular-nums font-semibold"
-              style={{ color: SEMANTIC_COLOURS.danger }}
+              style={{ color: teamColour("away") }}
             >
               {awayTotal.toFixed(2)}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-muted-foreground text-xs">
+              {shotsData.homeTeamCode} xG
+            </div>
+            <div
+              className="tabular-nums font-semibold"
+              style={{ color: teamColour("home") }}
+            >
+              {homeTotal.toFixed(2)}
             </div>
           </div>
         </div>
