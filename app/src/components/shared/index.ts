@@ -11,7 +11,6 @@ export { RoutePending, RouteError } from "@/components/shared/RouteStates";
 export { Logo } from "@/components/shared/Logo";
 export { ThemeToggle } from "@/components/shared/ThemeToggle";
 export { LiveIndicator } from "@/components/shared/LiveIndicator";
-export { GoalsList } from "@/components/shared/GoalsList";
 export { Sparkline } from "@/components/shared/Sparkline";
 export { HeaderWithTooltip } from "@/components/shared/HeaderWithTooltip";
 export { SortableTableHeader } from "@/components/shared/SortableTableHeader";

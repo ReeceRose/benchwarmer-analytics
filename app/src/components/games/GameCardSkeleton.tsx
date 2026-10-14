@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function GameCardSkeleton() {
   return (
-    <div className="rounded-2xl border bg-card p-4">
+    <div className="flex h-full flex-col rounded-2xl border bg-card p-4">
       <div className="mb-3 flex justify-between">
         <Skeleton className="h-3 w-16" />
         <Skeleton className="h-3 w-20" />
@@ -17,6 +17,12 @@ export function GameCardSkeleton() {
           <Skeleton className="h-7 w-6" />
         </div>
       ))}
+      <div className="mt-auto pt-3">
+        <div className="space-y-2 border-t pt-3">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-1.5 w-full rounded-full" />
+        </div>
+      </div>
     </div>
   );
 }

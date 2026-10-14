@@ -9,13 +9,14 @@ import { PenaltiesSection, PuckEventsMap } from "@/components/game-live/EventSec
 import { SummaryTiles, TeamStatsSection } from "@/components/game-live/OverviewSections";
 import { GameFlowChart, LiveShotMap, ShotProfile } from "@/components/game-live/ShotSections";
 import { GameCentreSettings } from "@/components/game-live/GameCentreSettings";
-import { TeamLabel } from "@/components/game-live/parts";
+import { TeamColourPicker } from "@/components/game-live/TeamColourPicker";
 import { SIDES } from "@/components/game-live/live-utils";
 import {
   GAME_CENTRE_SECTIONS,
   useGameCentreSections,
   type GameCentreSectionId,
 } from "@/components/game-live/useGameCentreSections";
+import { useSideColours } from "@/components/game-live/useSideColours";
 import type { LiveGameResponse } from "@/types";
 
 interface GameCentreProps {
@@ -44,6 +45,7 @@ function HideButton({ onClick, label }: { onClick: () => void; label: string }) 
 
 export function GameCentre({ data, isLoading, isLive, boxscore, moneyPuckCharts }: GameCentreProps) {
   const sections = useGameCentreSections();
+  const colours = useSideColours(data);
 
   const available = new Set<GameCentreSectionId>(GAME_CENTRE_SECTIONS.map((s) => s.id));
   if (!isLive) available.delete("onIce");
@@ -79,7 +81,7 @@ export function GameCentre({ data, isLoading, isLive, boxscore, moneyPuckCharts 
           {data && (
             <div className="mt-1.5 flex flex-wrap gap-x-4 text-xs text-muted-foreground">
               {SIDES.map((side) => (
-                <TeamLabel key={side} side={side}>{data[side].name}</TeamLabel>
+                <TeamColourPicker key={side} side={side} name={data[side].name} abbrev={data[side].abbrev} colours={colours} />
               ))}
             </div>
           )}

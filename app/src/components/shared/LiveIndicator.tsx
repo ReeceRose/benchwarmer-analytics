@@ -1,5 +1,5 @@
 /**
- * Pulsing "LIVE" indicator for games in progress
+ * Pulsing "Live" indicator for games in progress
  */
 export function LiveIndicator() {
   return (
@@ -8,7 +8,7 @@ export function LiveIndicator() {
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-live opacity-75"></span>
         <span className="relative inline-flex rounded-full h-2 w-2 bg-live"></span>
       </span>
-      LIVE
+      Live
     </span>
   );
 }

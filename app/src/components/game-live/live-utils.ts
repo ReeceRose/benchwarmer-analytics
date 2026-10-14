@@ -2,8 +2,12 @@ import type { LiveGameResponse, TeamSide } from "@/types";
 
 export const SIDES: readonly TeamSide[] = ["away", "home"];
 
-/** Away is red, home is blue, everywhere in the game centre. */
-export const teamColour = (side: TeamSide) => (side === "away" ? "var(--chart-2)" : "var(--chart-1)");
+/**
+ * Away is red, home is blue, everywhere in the game centre, unless the reader
+ * picks other colours (`useSideColours` sets `--team-away`/`--team-home`).
+ */
+export const teamColour = (side: TeamSide) =>
+  side === "away" ? "var(--team-away, var(--chart-2))" : "var(--team-home, var(--chart-1))";
 export const teamTint = (side: TeamSide, percent = 14) =>
   `color-mix(in srgb, ${teamColour(side)} ${percent}%, transparent)`;
 

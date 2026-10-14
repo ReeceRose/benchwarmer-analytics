@@ -1,3 +1,4 @@
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useTodaysGames } from "@/hooks";
@@ -9,17 +10,100 @@ import type { GameSummary, GameTeam } from "@/types";
 /**
  * Broadcast-style strip of today's games under the header. Hidden on days
  * without games; reserves its height while loading so the page doesn't jump.
+ * Games stay in schedule order, but the strip starts scrolled past finished
+ * games to the first live or upcoming one.
  */
 export function ScoresStrip() {
   const { data, isLoading } = useTodaysGames();
   const games = data?.games ?? [];
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const hidden = !isLoading && games.length === 0;
+  const firstUnfinishedId = games.find((g) => !isFinal(g))?.gameId;
 
-  if (!isLoading && games.length === 0) return null;
+  // Re-runs only when the first unfinished game changes (a game ends), not on
+  // every live poll, so a manual scroll isn't undone.
+  useLayoutEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller || firstUnfinishedId === undefined) return;
+    const target = scroller.querySelector<HTMLElement>(
+      `[data-game-id="${firstUnfinishedId}"]`,
+    );
+    if (target) scroller.scrollLeft = target.offsetLeft;
+  }, [firstUnfinishedId]);
+
+  // The scrollbar is hidden, so a mouse can scroll the strip by dragging it
+  // or with a plain wheel (at either end the wheel falls through to the page).
+  // Touch already scrolls natively.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const max = scroller.scrollWidth - scroller.clientWidth;
+      const atEnd =
+        e.deltaY > 0 ? scroller.scrollLeft >= max - 1 : scroller.scrollLeft <= 0;
+      if (atEnd) return;
+      e.preventDefault();
+      scroller.scrollLeft += e.deltaY;
+    };
+
+    let drag: { startX: number; startScroll: number; moved: boolean } | null =
+      null;
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      drag = { startX: e.clientX, startScroll: scroller.scrollLeft, moved: false };
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.startX;
+      if (!drag.moved && Math.abs(dx) < 5) return;
+      drag.moved = true;
+      scroller.style.cursor = "grabbing";
+      scroller.scrollLeft = drag.startScroll - dx;
+    };
+    const onPointerUp = () => {
+      if (drag?.moved) {
+        // Swallow the click that ends a drag so it doesn't open a game.
+        scroller.addEventListener(
+          "click",
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          },
+          { capture: true, once: true },
+        );
+        // If no click follows (released outside a link), drop the listener.
+        setTimeout(() => scroller.dispatchEvent(new Event("click")), 0);
+      }
+      scroller.style.cursor = "";
+      drag = null;
+    };
+    // Stop the browser's native link/image drag from taking over.
+    const onDragStart = (e: DragEvent) => e.preventDefault();
+
+    scroller.addEventListener("wheel", onWheel, { passive: false });
+    scroller.addEventListener("pointerdown", onPointerDown);
+    scroller.addEventListener("dragstart", onDragStart);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    return () => {
+      scroller.removeEventListener("wheel", onWheel);
+      scroller.removeEventListener("pointerdown", onPointerDown);
+      scroller.removeEventListener("dragstart", onDragStart);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, [hidden]);
+
+  if (hidden) return null;
 
   return (
     <div className="border-b bg-strip text-strip-foreground">
       <div className="container flex items-stretch">
-        <div className="flex min-w-0 flex-1 overflow-x-auto [scrollbar-width:none]">
+        <div
+          ref={scrollerRef}
+          className="relative flex min-w-0 flex-1 overflow-x-auto select-none [scrollbar-width:none]"
+        >
           {isLoading
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div
@@ -45,6 +129,10 @@ export function ScoresStrip() {
   );
 }
 
+function isFinal(game: GameSummary) {
+  return game.gameState === "OFF" || game.gameState === "FINAL";
+}
+
 function gameStatus(game: GameSummary) {
   const state = game.gameState;
   if (state === "LIVE" || state === "CRIT") {
@@ -53,7 +141,7 @@ function gameStatus(game: GameSummary) {
       !game.inIntermission && game.timeRemaining ? ` ${game.timeRemaining}` : "";
     return { live: true, label: `${period}${clock}` };
   }
-  if (state === "OFF" || state === "FINAL") {
+  if (isFinal(game)) {
     const suffix =
       game.periodType && game.periodType !== "REG" ? `/${game.periodType}` : "";
     return { live: false, label: `Final${suffix}` };
@@ -64,7 +152,7 @@ function gameStatus(game: GameSummary) {
 function StripGame({ game }: { game: GameSummary }) {
   const status = gameStatus(game);
   const started = game.away.goals !== null && game.home.goals !== null;
-  const final = game.gameState === "OFF" || game.gameState === "FINAL";
+  const final = isFinal(game);
   const awayLost = final && (game.away.goals ?? 0) < (game.home.goals ?? 0);
   const homeLost = final && (game.home.goals ?? 0) < (game.away.goals ?? 0);
 
@@ -72,6 +160,7 @@ function StripGame({ game }: { game: GameSummary }) {
     <Link
       to="/games/$gameId"
       params={{ gameId: game.gameId }}
+      data-game-id={game.gameId}
       className="block w-40 shrink-0 border-r border-strip-border px-4 py-2.5 transition-colors first:border-l hover:bg-muted"
     >
       <div

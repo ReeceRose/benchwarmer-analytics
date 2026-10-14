@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { LiveIndicator, GoalsList } from "@/components/shared";
+import { LiveIndicator } from "@/components/shared";
 import { TeamLogo } from "@/components/team-detail/TeamLogo";
 import { formatGameTimeShort, formatPeriod } from "@/lib/game-formatters";
 import { getTeamColours } from "@/lib/team-colours";
@@ -74,19 +74,31 @@ export function GameCard({ game }: GameCardProps) {
       )}
 
       {!isCompleted && !isLive && (game.away.streak || game.home.streak) && (
-        <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">
+        <CardFooter className="text-xs text-muted-foreground">
           {game.seasonSeries && <div className="mb-0.5">{game.seasonSeries}</div>}
           Streaks: {game.away.teamCode} {game.away.streak || "–"}, {game.home.teamCode}{" "}
           {game.home.streak || "–"}
-        </div>
-      )}
-
-      {isLive && game.goals && game.goals.length > 0 && (
-        <div className="mt-3 border-t pt-3">
-          <GoalsList goals={game.goals} awayCode={game.away.teamCode} />
-        </div>
+        </CardFooter>
       )}
     </Link>
+  );
+}
+
+/**
+ * Bottom section of a card, pinned to the bottom so footers line up across a
+ * grid row.
+ */
+function CardFooter({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mt-auto pt-3">
+      <div className={cn("border-t pt-3", className)}>{children}</div>
+    </div>
   );
 }
 
@@ -135,7 +147,7 @@ function XgShare({ away, home }: { away: GameTeam; home: GameTeam }) {
   const awayPct = (awayXg / total) * 100;
 
   return (
-    <div className="mt-3 border-t pt-3">
+    <CardFooter>
       <div className="mb-1.5 flex justify-between text-xs text-muted-foreground tabular-nums">
         <span>{awayXg.toFixed(1)} xG</span>
         <span>Expected goals</span>
@@ -150,6 +162,6 @@ function XgShare({ away, home }: { away: GameTeam; home: GameTeam }) {
           style={{ backgroundColor: teamFill(home.teamCode) }}
         />
       </div>
-    </div>
+    </CardFooter>
   );
 }
