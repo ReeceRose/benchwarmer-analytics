@@ -43,11 +43,17 @@ const navItems = [
   { to: "/players", label: "Players" },
 ];
 
-const statsItems: NavItem[] = [
+// Team and season views.
+const standingsItems: NavItem[] = [
   {
     to: "/standings",
     label: "Standings",
     description: "League & division standings",
+  },
+  {
+    to: "/power-rankings",
+    label: "Power rankings",
+    description: "Power rankings & trends",
   },
   {
     to: "/category-rankings",
@@ -55,14 +61,43 @@ const statsItems: NavItem[] = [
     description: "Team ranks across all stats",
   },
   {
+    to: "/playoff-odds",
+    label: "Playoff odds",
+    description: "Season simulations & Cup odds",
+  },
+  {
+    to: "/playoffs",
+    label: "Playoff bracket",
+    description: "Every series, every year since 2008",
+  },
+];
+
+// Player and league numbers.
+const statsItems: NavItem[] = [
+  {
     to: "/leaderboards",
     label: "Leaders",
     description: "Statistical leaderboards",
   },
   {
-    to: "/power-rankings",
-    label: "Rankings",
-    description: "Power rankings & trends",
+    to: "/tracking-leaders",
+    label: "Tracking leaders",
+    description: "Fastest skaters, hardest shots, most miles",
+  },
+  {
+    to: "/trophies",
+    label: "Trophies",
+    description: "Every winner of every NHL award",
+  },
+  {
+    to: "/milestone-clubs",
+    label: "Milestone clubs",
+    description: "Every 1,000-point career and 50-goal season",
+  },
+  {
+    to: "/single-games",
+    label: "Single games",
+    description: "Best and worst games by Game Score",
   },
   {
     to: "/special-teams",
@@ -99,6 +134,24 @@ const toolsItems: NavItem[] = [
     label: "Age curves",
     description: "Performance by age trends",
   },
+  {
+    to: "/draft",
+    label: "Draft",
+    description: "Every draft class and how the picks turned out",
+  },
+  {
+    to: "/officials",
+    label: "Officials",
+    description: "This season's referees and linespeople",
+  },
+];
+
+// The dropdown menus, in order. Keep each to about five items so the
+// dropdown fits on a laptop screen.
+const menus: { title: string; items: NavItem[] }[] = [
+  { title: "Standings", items: standingsItems },
+  { title: "Stats", items: statsItems },
+  { title: "Tools", items: toolsItems },
 ];
 
 // Desktop navigation with dropdowns
@@ -121,68 +174,39 @@ function DesktopNav() {
         </Link>
       ))}
 
-      <NavigationMenu>
-        <NavigationMenuList>
-          <NavigationMenuItem>
-            <NavigationMenuTrigger
-              className={cn(triggerClass, isSection(statsItems) && activeTriggerClass)}
-            >
-              Stats
-            </NavigationMenuTrigger>
-            <NavigationMenuContent>
-              <ul className="grid w-50 gap-1 p-2">
-                {statsItems.map((item) => (
-                  <li key={item.to}>
-                    <NavigationMenuLink asChild>
-                      <Link
-                        to={item.to}
-                        className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                      >
-                        <div className="text-sm font-medium">{item.label}</div>
-                        <p className="mt-1.5 text-xs leading-snug text-muted-foreground">
-                          {item.description}
-                        </p>
-                      </Link>
-                    </NavigationMenuLink>
-                  </li>
-                ))}
-              </ul>
-            </NavigationMenuContent>
-          </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
-
-      <NavigationMenu>
-        <NavigationMenuList>
-          <NavigationMenuItem>
-            <NavigationMenuTrigger
-              className={cn(triggerClass, isSection(toolsItems) && activeTriggerClass)}
-            >
-              Tools
-            </NavigationMenuTrigger>
-            <NavigationMenuContent>
-              <ul className="grid w-50 gap-1 p-2">
-                {toolsItems.map((item) => (
-                  <li key={item.to}>
-                    <NavigationMenuLink asChild>
-                      <Link
-                        to={item.to}
-                        search={item.search}
-                        className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                      >
-                        <div className="text-sm font-medium">{item.label}</div>
-                        <p className="mt-1.5 text-xs leading-snug text-muted-foreground">
-                          {item.description}
-                        </p>
-                      </Link>
-                    </NavigationMenuLink>
-                  </li>
-                ))}
-              </ul>
-            </NavigationMenuContent>
-          </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
+      {menus.map((menu) => (
+        <NavigationMenu key={menu.title}>
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <NavigationMenuTrigger
+                className={cn(triggerClass, isSection(menu.items) && activeTriggerClass)}
+              >
+                {menu.title}
+              </NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid w-56 gap-1 p-2">
+                  {menu.items.map((item) => (
+                    <li key={item.to}>
+                      <NavigationMenuLink asChild>
+                        <Link
+                          to={item.to}
+                          search={item.search}
+                          className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium">{item.label}</div>
+                          <p className="mt-1.5 text-xs leading-snug text-muted-foreground">
+                            {item.description}
+                          </p>
+                        </Link>
+                      </NavigationMenuLink>
+                    </li>
+                  ))}
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+      ))}
     </nav>
   );
 }
@@ -297,16 +321,14 @@ function MobileNav() {
 
           <div className="my-2 border-t" />
 
-          <MobileNavSection
-            title="Stats"
-            items={statsItems}
-            onSelect={handleSelect}
-          />
-          <MobileNavSection
-            title="Tools"
-            items={toolsItems}
-            onSelect={handleSelect}
-          />
+          {menus.map((menu) => (
+            <MobileNavSection
+              key={menu.title}
+              title={menu.title}
+              items={menu.items}
+              onSelect={handleSelect}
+            />
+          ))}
         </nav>
       </SheetContent>
     </Sheet>

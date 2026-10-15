@@ -1,7 +1,7 @@
 export interface MetricDefinition {
   name: string;
   abbreviation?: string;
-  category: "basic" | "possession" | "expected" | "shooting" | "context" | "derived";
+  category: "basic" | "possession" | "expected" | "shooting" | "context" | "tracking" | "records" | "derived";
   description: string;
   formula?: string;
   interpretation?: string;
@@ -12,7 +12,7 @@ export interface MetricDefinition {
 }
 
 export const metrics: MetricDefinition[] = [
-  // Basic Stats
+  // Basic stats
   {
     name: "Goals",
     abbreviation: "G",
@@ -20,14 +20,14 @@ export const metrics: MetricDefinition[] = [
     description: "The number of goals scored by a player.",
   },
   {
-    name: "Primary Assists",
+    name: "Primary assists",
     abbreviation: "A1",
     category: "basic",
     description:
       "Assists credited to the player who made the final pass before the goal. Primary assists are more predictive of future scoring than secondary assists.",
   },
   {
-    name: "Secondary Assists",
+    name: "Secondary assists",
     abbreviation: "A2",
     category: "basic",
     description:
@@ -41,7 +41,7 @@ export const metrics: MetricDefinition[] = [
     formula: "Goals + Assists",
   },
   {
-    name: "Points per Game",
+    name: "Points per game",
     abbreviation: "P/GP",
     aliases: ["PPG"],
     category: "derived",
@@ -50,6 +50,38 @@ export const metrics: MetricDefinition[] = [
     formula: "Points / Games Played",
     interpretation:
       "Useful for comparing players with different games played. More stable over time than raw points early in the season.",
+  },
+  {
+    name: "Game Score per game",
+    abbreviation: "GS/GP",
+    aliases: ["GS", "Game Score"],
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Dom Luszczyszyn's Game Score, a single number for a skater's overall contribution, averaged per game. It weights goals, primary and secondary assists, shots, blocks, penalties drawn and taken, faceoffs, and the shot attempts and goals for and against while on the ice. Individual stats count in all situations and on-ice stats at 5v5. Season totals come from MoneyPuck; game pages calculate it from the NHL play-by-play the same way.",
+    formula: "0.75 G + 0.7 A1 + 0.55 A2 + 0.075 SOG + 0.05 BLK + 0.15 (PD − PT) + 0.01 (FOW − FOL) + 0.05 (CF − CA) + 0.15 (GF − GA); per game = season total / GP",
+    interpretation:
+      "The median regular is around 0.4 for forwards and 0.3 for defencemen. About 0.9 is top 10% and 1.3 or more is elite. It rewards scoring heavily, so defensive specialists rate lower than their value.",
+  },
+  {
+    name: "Win probability",
+    abbreviation: "Win %",
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Each team's chance of winning at any moment of a game, from the score, time left, which team has more skaters and whether a goalie is pulled. It's a logistic model fitted on every regular-season shot since 2008-09 and checked on 2025-26.",
+    interpretation:
+      "Before puck drop the home team is about 55%. A one-goal lead is worth about 74% halfway through and over 90% with three minutes left. Goals late in a close game move it the most.",
+  },
+  {
+    name: "Playoff odds",
+    category: "derived",
+    isCalculated: true,
+    description:
+      "Each team's chance of making the playoffs and of reaching each round, from 20,000 simulations of the rest of the season run every morning. Every remaining game is played out from current standings: the winner is drawn from the pregame win probability, 22% of games go to overtime (a point for the loser), and the playoffs are seeded and played as best-of-seven series.",
+    formula: "Pregame win % = logistic(home ice + 0.63 × 5v5 xG gap per game + 0.52 × goal gap per game)",
+    interpretation:
+      "Team strength blends this season's per-game 5v5 expected goal and goal differentials with half of last season's, which counts as 40 games of evidence, and each simulation draws it with some uncertainty that shrinks as games are played. Tested on 2015-2024, each team's middle-80% points range held its final total 80% of the time.",
   },
   {
     name: "Goals per 60",
@@ -80,21 +112,21 @@ export const metrics: MetricDefinition[] = [
       "A common all-in rate metric for offensive production. Useful for comparing usage tiers (top line vs depth).",
   },
   {
-    name: "Shots on Goal",
+    name: "Shots on goal",
     abbreviation: "SOG",
     category: "basic",
     description:
       "Shots that would have gone in the net if not stopped by the goalie. Does not include missed or blocked shots.",
   },
   {
-    name: "Time on Ice",
+    name: "Time on ice",
     abbreviation: "TOI",
     category: "basic",
     description:
       "Total time a player spends on the ice during a game or season. Often used to normalize other statistics.",
   },
   {
-    name: "Time on Ice per Game",
+    name: "Time on ice per game",
     abbreviation: "TOI/GP",
     aliases: ["ATOI", "Avg TOI"],
     category: "derived",
@@ -106,21 +138,21 @@ export const metrics: MetricDefinition[] = [
       "Top-line forwards typically average 18-22 minutes; top defensemen 22-26 minutes. Fourth-line players may average 8-12 minutes.",
   },
   {
-    name: "Faceoffs Won",
+    name: "Faceoffs won",
     abbreviation: "FOW",
     category: "basic",
     description:
       "The number of faceoffs won by a player. Typically only centers take a significant number of faceoffs.",
   },
   {
-    name: "Faceoffs Lost",
+    name: "Faceoffs lost",
     abbreviation: "FOL",
     category: "basic",
     description:
       "The number of faceoffs lost by a player.",
   },
   {
-    name: "Faceoff Win Percentage",
+    name: "Faceoff win percentage",
     abbreviation: "FO%",
     aliases: ["FOW%", "Faceoff%"],
     category: "derived",
@@ -151,7 +183,7 @@ export const metrics: MetricDefinition[] = [
       "Lower is better. However, high-event players who handle the puck frequently may have more giveaways simply due to volume.",
   },
   {
-    name: "D-Zone Giveaways",
+    name: "Defensive-zone giveaways",
     abbreviation: "DZGA",
     aliases: ["DZoneGiveaways"],
     category: "basic",
@@ -171,7 +203,7 @@ export const metrics: MetricDefinition[] = [
       "A measure of physical play. Teams with high hit totals tend to play a more aggressive, physical style. However, hits can also indicate chasing the play (you can't hit if you have the puck).",
   },
   {
-    name: "Hits Against",
+    name: "Hits against",
     abbreviation: "HitA",
     aliases: ["HitsAgainst"],
     category: "basic",
@@ -181,7 +213,7 @@ export const metrics: MetricDefinition[] = [
       "Lower is generally better as it may indicate better puck possession (harder to hit a team that controls the puck). However, context matters - skilled puck carriers may draw more hits.",
   },
   {
-    name: "Blocked Shots",
+    name: "Blocked shots",
     abbreviation: "Blk",
     aliases: ["BLK", "Blocks", "ShotBlocks"],
     category: "basic",
@@ -191,7 +223,7 @@ export const metrics: MetricDefinition[] = [
       "Can indicate defensive commitment, but context matters. Teams that block many shots may also be defending more often (giving up more shot attempts). For defensemen, blocking shots is an important skill.",
   },
   {
-    name: "Penalty Differential",
+    name: "Penalty differential",
     abbreviation: "Pen±",
     aliases: ["PenDiff", "PenaltyDiff"],
     category: "basic",
@@ -203,7 +235,7 @@ export const metrics: MetricDefinition[] = [
       "Higher is better. A positive differential means more power play opportunities than penalty kills. Disciplined teams that also draw penalties have a significant special teams advantage.",
   },
   {
-    name: "Takeaway/Giveaway Ratio",
+    name: "Takeaway/giveaway ratio",
     abbreviation: "TA/GA",
     aliases: ["TakeawayRatio", "Puck Management"],
     category: "derived",
@@ -215,7 +247,7 @@ export const metrics: MetricDefinition[] = [
       "Higher is better. A ratio of 1.0+ (more takeaways than giveaways) is exceptional. Elite puck managers are above 0.5, while ratios below 0.25 indicate poor puck security.",
   },
   {
-    name: "Overall Rank",
+    name: "Overall rank",
     abbreviation: "OVR",
     aliases: ["OverallRank", "Composite"],
     category: "derived",
@@ -227,7 +259,7 @@ export const metrics: MetricDefinition[] = [
       "Provides a single number summarizing team strength across all metrics. The weighting favors process-driven analytics (expected goals, possession) over results that can be noisy (hits, blocked shots). A team ranked #1 overall is elite across the board.",
   },
 
-  // Possession Metrics
+  // Possession
   {
     name: "Corsi",
     abbreviation: "CF / CA",
@@ -238,7 +270,7 @@ export const metrics: MetricDefinition[] = [
       "Higher Corsi For (CF) suggests the team is generating more offensive opportunities. Corsi is the broadest measure of puck possession.",
   },
   {
-    name: "Corsi For Percentage",
+    name: "Corsi for percentage",
     abbreviation: "CF%",
     category: "possession",
     description:
@@ -257,7 +289,7 @@ export const metrics: MetricDefinition[] = [
       "A slightly refined version of Corsi that removes blocked shots, which can be influenced by shot-blocking systems or random variance.",
   },
   {
-    name: "Fenwick For Percentage",
+    name: "Fenwick for percentage",
     abbreviation: "FF%",
     category: "possession",
     description:
@@ -267,9 +299,9 @@ export const metrics: MetricDefinition[] = [
       "Similar to CF%, but focuses on unblocked attempts. Often used alongside CF% to get a fuller picture of possession.",
   },
 
-  // Expected Goals
+  // Expected goals
   {
-    name: "Expected Goals",
+    name: "Expected goals",
     abbreviation: "xG",
     category: "expected",
     description:
@@ -278,7 +310,7 @@ export const metrics: MetricDefinition[] = [
       "xG values range from 0 to 1 for each shot. A shot from the slot might be worth 0.15 xG (15% chance of scoring), while a shot from the point might only be 0.02 xG.",
   },
   {
-    name: "Expected Goals Against",
+    name: "Expected goals against",
     abbreviation: "xGA",
     category: "expected",
     description:
@@ -287,7 +319,7 @@ export const metrics: MetricDefinition[] = [
       "Lower is better. Comparing xGA to actual goals against helps estimate how much was goaltending vs shot quality.",
   },
   {
-    name: "Expected Rebounds",
+    name: "Expected rebounds",
     abbreviation: "xReb",
     category: "expected",
     description:
@@ -296,7 +328,7 @@ export const metrics: MetricDefinition[] = [
       "Used as a baseline to evaluate rebound control. Goalies facing more shots or higher-danger shots will have higher expected rebounds.",
   },
   {
-    name: "Expected Goals For Percentage",
+    name: "Expected goals for percentage",
     abbreviation: "xGF%",
     aliases: ["xG%"],
     category: "expected",
@@ -307,7 +339,35 @@ export const metrics: MetricDefinition[] = [
       "The most comprehensive single metric for evaluating a player's two-way impact. Above 50% is positive, above 55% is excellent.",
   },
   {
-    name: "Expected Goals Per 60",
+    name: "Last 10 games expected goals share",
+    abbreviation: "L10 xG%",
+    category: "expected",
+    description:
+      "A team's share of 5-on-5 expected goals over its last 10 regular-season games.",
+    formula: "xGF / (xGF + xGA) × 100, 5-on-5, last 10 games",
+    interpretation:
+      "Shows current form rather than the season as a whole. A team well above its season xG% is playing better lately; well below, worse.",
+  },
+  {
+    name: "Strength of schedule",
+    abbreviation: "SOS",
+    category: "context",
+    description:
+      "The average 5-on-5 expected goals share of the opponents a team has played this regular season, using each opponent's season to date.",
+    interpretation:
+      "Above 50% means a tougher schedule than average. A team with a strong record against a hard schedule is better than its record suggests.",
+  },
+  {
+    name: "Remaining strength of schedule",
+    abbreviation: "Rem. SOS",
+    category: "context",
+    description:
+      "The average 5-on-5 expected goals share of the opponents left on a team's regular-season schedule.",
+    interpretation:
+      "Above 50% means a harder run-in than average. Empty once the regular season is over.",
+  },
+  {
+    name: "Expected goals per 60",
     abbreviation: "xG/60",
     category: "expected",
     description:
@@ -317,7 +377,7 @@ export const metrics: MetricDefinition[] = [
       "Useful for comparing players who play different amounts. A first-line forward and fourth-line forward can be compared on equal footing.",
   },
   {
-    name: "Goals Above Expected",
+    name: "Goals above expected",
     abbreviation: "G-xG",
     category: "expected",
     description:
@@ -327,7 +387,7 @@ export const metrics: MetricDefinition[] = [
       "Can indicate shooting skill, finishing ability, or luck. Over small samples, this is often variance. Over large samples, it may reflect true skill.",
   },
   {
-    name: "Goals Below Expected",
+    name: "Goals below expected",
     abbreviation: "xG-G",
     aliases: ["G Diff", "Goals Differential"],
     category: "derived",
@@ -341,7 +401,7 @@ export const metrics: MetricDefinition[] = [
 
   // Derived / calculated metrics (Benchwarmer)
   {
-    name: "Goal Differential",
+    name: "Goal differential",
     abbreviation: "Diff",
     aliases: ["GD"],
     category: "derived",
@@ -352,7 +412,7 @@ export const metrics: MetricDefinition[] = [
       "A simple signal of team strength. More predictive when paired with xG-based metrics.",
   },
   {
-    name: "Expected Goal Differential",
+    name: "Expected goal differential",
     abbreviation: "xG±",
     category: "derived",
     isCalculated: true,
@@ -362,7 +422,7 @@ export const metrics: MetricDefinition[] = [
       "Less noisy than goal differential because it weights shot quality and reduces finishing/goalie variance.",
   },
   {
-    name: "Goals For per Game",
+    name: "Goals for per game",
     abbreviation: "GF/GP",
     category: "derived",
     isCalculated: true,
@@ -370,7 +430,7 @@ export const metrics: MetricDefinition[] = [
     formula: "GF / GP",
   },
   {
-    name: "Goals Against per Game",
+    name: "Goals against per game",
     abbreviation: "GA/GP",
     category: "derived",
     isCalculated: true,
@@ -378,7 +438,7 @@ export const metrics: MetricDefinition[] = [
     formula: "GA / GP",
   },
   {
-    name: "Expected Goals For per Game",
+    name: "Expected goals for per game",
     abbreviation: "xGF/GP",
     category: "derived",
     isCalculated: true,
@@ -386,7 +446,7 @@ export const metrics: MetricDefinition[] = [
     formula: "xGF / GP",
   },
   {
-    name: "Expected Goals Against per Game",
+    name: "Expected goals against per game",
     abbreviation: "xGA/GP",
     category: "derived",
     isCalculated: true,
@@ -394,7 +454,7 @@ export const metrics: MetricDefinition[] = [
     formula: "xGA / GP",
   },
   {
-    name: "Points Percentage",
+    name: "Points percentage",
     abbreviation: "Pts%",
     category: "derived",
     isCalculated: true,
@@ -405,7 +465,7 @@ export const metrics: MetricDefinition[] = [
       "Normalizes standings across teams with different games played. Useful early in the season.",
   },
   {
-    name: "Team Shooting Percentage",
+    name: "Team shooting percentage",
     abbreviation: "Sh%",
     aliases: ["Shooting%"],
     category: "derived",
@@ -416,7 +476,7 @@ export const metrics: MetricDefinition[] = [
       "Often noisy in small samples. Very high or low values frequently regress toward league average.",
   },
   {
-    name: "Team Save Percentage",
+    name: "Team save percentage",
     abbreviation: "Sv%",
     aliases: ["Save%"],
     category: "derived",
@@ -438,7 +498,7 @@ export const metrics: MetricDefinition[] = [
       "Values near 100 are typically sustainable. High PDO (>102) suggests overperformance; low PDO (<98) suggests underperformance.",
   },
   {
-    name: "Expected Points",
+    name: "Expected points",
     abbreviation: "xPts",
     category: "derived",
     isCalculated: true,
@@ -450,7 +510,7 @@ export const metrics: MetricDefinition[] = [
       "A rough expectation of standings points from shot quality. Useful for identifying teams whose results may not match their process.",
   },
   {
-    name: "Points vs Expected",
+    name: "Points vs expected",
     abbreviation: "Pts±",
     aliases: ["Pts+/-", "PtsDiff"],
     category: "derived",
@@ -474,9 +534,9 @@ export const metrics: MetricDefinition[] = [
       "We compute thresholds (not per-player ranks) so charts can show where a given value sits in the league distribution.",
   },
 
-  // Shooting Quality
+  // Shooting quality
   {
-    name: "High Danger Chances",
+    name: "High danger chances",
     abbreviation: "HD",
     category: "shooting",
     description:
@@ -497,8 +557,7 @@ export const metrics: MetricDefinition[] = [
   },
 
   {
-    name: "Breakout Score",
-    abbreviation: "Breakout Score",
+    name: "Breakout score",
     aliases: ["Score", "BreakoutScore"],
     category: "derived",
     isCalculated: true,
@@ -510,8 +569,7 @@ export const metrics: MetricDefinition[] = [
       "This is a lightweight heuristic (not a predictive model). It rewards players with positive xG-goal gaps, above-average possession, and above-average shot volume.",
   },
   {
-    name: "Rookie Score",
-    abbreviation: "Rookie Score",
+    name: "Rookie score",
     aliases: ["RookieScore"],
     category: "derived",
     isCalculated: true,
@@ -523,14 +581,14 @@ export const metrics: MetricDefinition[] = [
       "Defensemen receive a 1.3× multiplier on production metrics since they naturally score less than forwards. Younger rookies (under 22) receive a bonus while older rookies (over 22) receive a penalty, reflecting development potential. An 18-year-old gets +8 points; a 25-year-old gets -6 points.",
   },
   {
-    name: "Medium Danger Chances",
+    name: "Medium danger chances",
     abbreviation: "MD",
     category: "shooting",
     description:
       "Shots with xG between 0.08–0.20 (8–20% chance of scoring). Typically from the top of the circles or lower slot areas. Categorized by MoneyPuck based on their xG model.",
   },
   {
-    name: "Low Danger Chances",
+    name: "Low danger chances",
     abbreviation: "LD",
     category: "shooting",
     description:
@@ -539,7 +597,7 @@ export const metrics: MetricDefinition[] = [
       "These rarely result in goals without deflections or screens. High volume with low conversion.",
   },
   {
-    name: "Shooting Percentage",
+    name: "Shooting percentage",
     abbreviation: "SH%",
     category: "shooting",
     description:
@@ -550,7 +608,7 @@ export const metrics: MetricDefinition[] = [
   },
 
   {
-    name: "Save Percentage",
+    name: "Save percentage",
     abbreviation: "SV%",
     aliases: ["Sv%"],
     category: "derived",
@@ -562,7 +620,7 @@ export const metrics: MetricDefinition[] = [
       "A key goalie metric. Small swings can be meaningful, but it’s also sensitive to shot quality faced.",
   },
   {
-    name: "Goals Against Average",
+    name: "Goals against average",
     abbreviation: "GAA",
     category: "derived",
     isCalculated: true,
@@ -572,7 +630,7 @@ export const metrics: MetricDefinition[] = [
       "Lower is better. Unlike SV%, GAA is heavily influenced by team defense and shot volume/quality.",
   },
   {
-    name: "Goals Saved Above Expected",
+    name: "Goals saved above expected",
     abbreviation: "GSAx",
     aliases: ["GSAE"],
     category: "derived",
@@ -584,7 +642,7 @@ export const metrics: MetricDefinition[] = [
       "Positive is better (saved more than expected). Over small samples, this can be noisy.",
   },
   {
-    name: "Rebound Control",
+    name: "Rebound control",
     abbreviation: "Reb",
     aliases: ["Rebound Ratio", "ReboundControl"],
     category: "derived",
@@ -596,7 +654,7 @@ export const metrics: MetricDefinition[] = [
       "League average is approximately 1.58x (goalies allow ~60% more rebounds than expected). Values below 1.58x indicate above-average rebound control; values above indicate below-average. Elite goalies typically have ratios below 1.40x.",
   },
   {
-    name: "On-Ice Shooting Percentage",
+    name: "On-ice shooting percentage",
     abbreviation: "oiSH%",
     category: "shooting",
     description:
@@ -606,7 +664,7 @@ export const metrics: MetricDefinition[] = [
       "A measure that includes teammates' shooting. High values may indicate good linemates or positive shooting luck.",
   },
   {
-    name: "On-Ice Save Percentage",
+    name: "On-ice save percentage",
     abbreviation: "oiSV%",
     category: "shooting",
     description: "The team's save percentage while this player is on the ice.",
@@ -615,9 +673,9 @@ export const metrics: MetricDefinition[] = [
       "Heavily influenced by goaltending quality. Extreme values in either direction are often not sustainable.",
   },
 
-  // Game Context
+  // Game context
   {
-    name: "5v5 / Even Strength",
+    name: "5v5 / even strength",
     abbreviation: "5v5",
     category: "context",
     description:
@@ -626,7 +684,7 @@ export const metrics: MetricDefinition[] = [
       "5v5 stats remove the noise of special teams and provide the clearest picture of a player's typical impact.",
   },
   {
-    name: "Power Play",
+    name: "Power play",
     abbreviation: "PP / 5v4",
     category: "context",
     description:
@@ -635,7 +693,7 @@ export const metrics: MetricDefinition[] = [
       "PP stats are useful for evaluating offensive skill but should be considered separately from even-strength performance.",
   },
   {
-    name: "Power Play Percentage",
+    name: "Power play percentage",
     abbreviation: "PP%",
     category: "derived",
     isCalculated: true,
@@ -646,7 +704,7 @@ export const metrics: MetricDefinition[] = [
       "In some views we estimate opportunities from special-teams TOI (≈ TOI ÷ 120s). This is an approximation when penalty counts aren’t available.",
   },
   {
-    name: "Penalty Kill",
+    name: "Penalty kill",
     abbreviation: "PK / 4v5",
     category: "context",
     description:
@@ -655,7 +713,7 @@ export const metrics: MetricDefinition[] = [
       "PK specialists often have poor raw numbers due to playing in disadvantaged situations. Context is critical.",
   },
   {
-    name: "Penalty Kill Percentage",
+    name: "Penalty kill percentage",
     abbreviation: "PK%",
     category: "derived",
     isCalculated: true,
@@ -666,7 +724,7 @@ export const metrics: MetricDefinition[] = [
       "In some views we estimate times shorthanded from special-teams TOI (≈ TOI ÷ 120s). This is an approximation when penalty counts aren't available.",
   },
   {
-    name: "Special Teams Percentage",
+    name: "Special teams percentage",
     abbreviation: "ST%",
     aliases: ["Special Teams%", "SpecialTeamsPct"],
     category: "derived",
@@ -678,7 +736,7 @@ export const metrics: MetricDefinition[] = [
       "A quick gauge of overall special teams strength. Values around 100 are average (e.g., 20% PP + 80% PK). Higher is better.",
   },
   {
-    name: "Penalties Drawn",
+    name: "Penalties drawn",
     abbreviation: "PD",
     aliases: ["Drawn"],
     category: "basic",
@@ -688,7 +746,7 @@ export const metrics: MetricDefinition[] = [
       "Players who draw penalties provide value beyond their scoring stats by generating extra offensive chances.",
   },
   {
-    name: "Penalties Drawn per 60",
+    name: "Penalties drawn per 60",
     abbreviation: "PD/60",
     aliases: ["DrawnPer60"],
     category: "derived",
@@ -700,7 +758,7 @@ export const metrics: MetricDefinition[] = [
       "Rate stat for drawing penalties. Higher values indicate players who consistently force opponents into infractions.",
   },
   {
-    name: "Penalties Taken",
+    name: "Penalties taken",
     abbreviation: "PT",
     aliases: ["Taken", "PIM"],
     category: "basic",
@@ -710,7 +768,7 @@ export const metrics: MetricDefinition[] = [
       "Lower is better. Frequent penalties can hurt a team's chances, especially in close games.",
   },
   {
-    name: "Penalties Taken per 60",
+    name: "Penalties taken per 60",
     abbreviation: "PT/60",
     aliases: ["TakenPer60"],
     category: "derived",
@@ -722,7 +780,7 @@ export const metrics: MetricDefinition[] = [
       "Rate stat for taking penalties. Lower values are preferable; high rates indicate discipline issues.",
   },
   {
-    name: "Net Penalties",
+    name: "Net penalties",
     abbreviation: "Net",
     aliases: ["NetPenalties", "Penalty Differential"],
     category: "derived",
@@ -734,7 +792,7 @@ export const metrics: MetricDefinition[] = [
       "Positive values mean the player draws more penalties than they take, providing net PP opportunities. Negative means the opposite.",
   },
   {
-    name: "Net Penalties per 60",
+    name: "Net penalties per 60",
     abbreviation: "Net/60",
     aliases: ["NetPer60", "NetPenaltiesPer60"],
     category: "derived",
@@ -746,7 +804,7 @@ export const metrics: MetricDefinition[] = [
       "The best single metric for penalty impact. Positive values indicate net power play contributors; negative values indicate net penalty killers.",
   },
   {
-    name: "Score-Adjusted",
+    name: "Score-adjusted",
     category: "context",
     description:
       "Statistics adjusted for game score. Teams trailing tend to generate more shots (desperation offense), while leading teams generate fewer (protecting leads).",
@@ -754,9 +812,99 @@ export const metrics: MetricDefinition[] = [
       "Removes the bias caused by game state. Especially important for players on teams that are often ahead or behind.",
   },
 
-  // Deserve to Win / Win Probability
+  // Player tracking (NHL EDGE)
   {
-    name: "Deserve to Win",
+    name: "NHL EDGE",
+    aliases: ["EDGE", "Tracking"],
+    category: "tracking",
+    description:
+      "The NHL's player and puck tracking: sensors in the puck and in every player's sweater record where everyone is through the game. The NHL publishes season summaries for each player and team, which we show on the Tracking tabs and the Tracking leaders page.",
+  },
+  {
+    name: "Tracking percentile",
+    category: "tracking",
+    description:
+      "Where a player's tracking number sits in the league, as the NHL works it out. Higher is always better, so a high percentile for goals against means few goals against. Shown from 1st to 99th; teams get a league rank (1st to 32nd) instead.",
+  },
+  {
+    name: "Top speed",
+    aliases: ["Max speed"],
+    category: "tracking",
+    description: "A skater's fastest skating speed in any game this season, in miles per hour.",
+  },
+  {
+    name: "Speed bursts",
+    aliases: ["Bursts over 20 mph", "Bursts over 22 mph"],
+    category: "tracking",
+    description:
+      "How many times this season a skater went faster than 20 mph (or 22 mph). Top speed is one moment; bursts show how often a player gets there.",
+  },
+  {
+    name: "Distance skated",
+    category: "tracking",
+    description:
+      "Total distance a skater covered this season, in miles, plus the most in a single game. Per-60 versions adjust for ice time.",
+  },
+  {
+    name: "Hardest shot",
+    aliases: ["Shots over 90 mph", "Shot speed"],
+    category: "tracking",
+    description:
+      "A skater's fastest shot this season, in miles per hour, and how many of their shots went over 90 mph.",
+  },
+  {
+    name: "Zone time",
+    aliases: ["Offensive zone time"],
+    category: "tracking",
+    description:
+      "The share of a player's or team's ice time spent in the offensive, neutral and defensive zones.",
+    interpretation:
+      "More offensive-zone time usually means more puck possession, but it also depends on deployment: players who start in the defensive zone spend more time there.",
+  },
+
+  // Streaks and records
+  {
+    name: "Point streak",
+    category: "records",
+    isCalculated: true,
+    description:
+      "Regular-season games in a row with at least one point. A streak ends with a pointless game, or once a player hasn't played for a week.",
+    interpretation:
+      "We follow streaks through the game data we have stored. Where a streak runs back to a game we don't have yet, it's shown with a plus (\"4+\") because it may be longer.",
+  },
+  {
+    name: "Game Score streak",
+    category: "records",
+    isCalculated: true,
+    description:
+      "Regular-season games in a row with a Game Score of 1.0 or more, which is about a player's best quarter of games. It catches runs of strong all-round games that a point streak misses.",
+  },
+  {
+    name: "Milestone clubs",
+    aliases: ["1,000 points", "500 goals", "100-point season", "50-goal season"],
+    category: "records",
+    description:
+      "Every career that reached 1,000 points or 500 goals and every 100-point or 50-goal season, with the game the milestone came in. From NHL records.",
+  },
+  {
+    name: "Game 7 and overtime record",
+    aliases: ["Game 7", "Playoff pressure"],
+    category: "records",
+    description:
+      "A goalie's career playoff record in Game 7s and in overtime games, and their save percentage in playoff overtime. From NHL records.",
+  },
+  {
+    name: "Hockey Hall of Fame",
+    abbreviation: "HHOF",
+    aliases: ["Hall of Fame"],
+    category: "records",
+    description:
+      "Players inducted into the Hockey Hall of Fame in Toronto. Other halls, such as the US Hockey Hall of Fame and the IIHF's, aren't counted.",
+  },
+
+  // Deserve to win and win probability
+  {
+    name: "Deserve to win",
     abbreviation: "DTW",
     aliases: ["Win Probability", "Deserve to Win Meter"],
     category: "derived",
@@ -767,7 +915,7 @@ export const metrics: MetricDefinition[] = [
       "Useful for identifying games where the result didn't match the underlying play. A team can lose while deserving to win if they created better chances but got unlucky with finishing or goaltending.",
   },
   {
-    name: "Monte Carlo Win Probability",
+    name: "Monte Carlo win probability",
     abbreviation: "MC Win%",
     aliases: ["Monte Carlo", "MC"],
     category: "derived",
@@ -780,7 +928,7 @@ export const metrics: MetricDefinition[] = [
       "More realistic than Poisson because it respects the actual shot sequence and handles dependent events (rebounds). The gold standard for deserve-to-win analysis.",
   },
   {
-    name: "Poisson Win Probability",
+    name: "Poisson win probability",
     abbreviation: "Poisson Win%",
     aliases: ["Poisson"],
     category: "derived",
@@ -817,6 +965,14 @@ export const categoryInfo = {
     label: "Game context",
     description: "Situational modifiers that affect how statistics should be interpreted.",
   },
+  tracking: {
+    label: "Player tracking",
+    description: "Speed, distance, shot speed and zone time from NHL EDGE, the league's player and puck tracking.",
+  },
+  records: {
+    label: "Streaks and records",
+    description: "Current streaks, milestones and career records from NHL records and our game data.",
+  },
   derived: {
     label: "Calculated by us",
     description:
@@ -830,5 +986,7 @@ export const categoryOrder: Array<keyof typeof categoryInfo> = [
   "expected",
   "shooting",
   "context",
+  "tracking",
+  "records",
   "derived",
 ];

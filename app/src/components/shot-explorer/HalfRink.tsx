@@ -1,8 +1,8 @@
 import { useId, type ReactNode } from "react";
 
 const LINE = "var(--border)";
-const RED = "color-mix(in srgb, var(--chart-2) 45%, transparent)";
-const BLUE = "color-mix(in srgb, var(--chart-1) 45%, transparent)";
+const RED = "color-mix(in srgb, var(--rink-red) 45%, transparent)";
+const BLUE = "color-mix(in srgb, var(--rink-blue) 45%, transparent)";
 const CORNER = 28;
 const BOARDS = `M100,-42.5 H${CORNER} A${CORNER},${CORNER} 0 0 0 0,${-42.5 + CORNER} V${42.5 - CORNER} A${CORNER},${CORNER} 0 0 0 ${CORNER},42.5 H100 Z`;
 
@@ -43,7 +43,7 @@ export function HalfRink({
         <line x1={11} x2={11} y1={-42.5} y2={42.5} stroke={RED} strokeWidth={0.4} />
         <line x1={75} x2={75} y1={-42.5} y2={42.5} stroke={BLUE} strokeWidth={1} />
         <line x1={99.5} x2={99.5} y1={-42.5} y2={42.5} stroke={RED} strokeWidth={1} />
-        <path d="M11,-4 A6,6 0 0,1 11,4" fill="color-mix(in srgb, var(--chart-1) 10%, transparent)" stroke={RED} strokeWidth={0.3} />
+        <path d="M11,-4 A6,6 0 0,1 11,4" fill="color-mix(in srgb, var(--rink-blue) 10%, transparent)" stroke={RED} strokeWidth={0.3} />
         <rect x={7.7} y={-3} width={3.3} height={6} fill="none" stroke="var(--muted-foreground)" strokeWidth={0.4} />
         {[-22, 22].map((y) => (
           <g key={y}>

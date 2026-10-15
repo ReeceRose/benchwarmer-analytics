@@ -224,9 +224,10 @@ export function AdvancedSkatersTable({ data }: { data: LiveGameResponse }) {
 
 export function GameLeaders({ data }: { data: LiveGameResponse }) {
   const cats: { label: string; value: (s: LiveSkater) => number; format?: (v: number) => string }[] = [
+    // gameScore can be missing from a response cached before it was added.
+    { label: "Game Score", value: (s) => s.gameScore?.total ?? 0, format: (v) => v.toFixed(2) },
     { label: "Points", value: (s) => s.points },
     { label: "Shots on goal", value: (s) => s.shotsOnGoal },
-    { label: "Shot attempts", value: (s) => s.attempts },
     { label: "Individual xG", value: (s) => s.ixg, format: (v) => v.toFixed(2) },
     { label: "Hits", value: (s) => s.hits },
     { label: "Blocked shots", value: (s) => s.blocks },

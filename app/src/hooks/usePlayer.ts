@@ -5,6 +5,7 @@ import {
   searchPlayers,
   comparePlayers,
   getPlayerRollingStats,
+  getPlayerGameLog,
   getGoalieWorkload,
   getGoalieLeagueBaselines,
   getSkaterLeagueBaselines,
@@ -83,6 +84,16 @@ export function usePlayerRollingStats(
     queryFn: () => getPlayerRollingStats(id, season, games),
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function usePlayerGameLog(id: number, season: number | undefined, playoffs: boolean) {
+  return useQuery({
+    queryKey: ["players", id, "game-log", { season, playoffs }],
+    queryFn: () => getPlayerGameLog(id, season!, playoffs),
+    enabled: !!id && season !== undefined,
+    staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -26,8 +26,8 @@ export function getMetricTooltipContent(metricKey: string): ReactNode | null {
           <span className="text-muted-foreground font-normal"> ({metric.abbreviation})</span>
         ) : null}
         {metric.isCalculated ? (
-          <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">
-            Calculated
+          <span className="ml-2 text-[11px] text-muted-foreground">
+            Calculated here
           </span>
         ) : null}
       </div>
@@ -37,7 +37,7 @@ export function getMetricTooltipContent(metricKey: string): ReactNode | null {
       {metric.formula ? (
         <div className="text-xs">
           <span className="text-muted-foreground">Formula: </span>
-          <code className="bg-muted px-1.5 py-0.5 rounded text-[11px]">
+          <code className="rounded-md bg-muted px-1.5 py-0.5 text-[11px]">
             {metric.formula}
           </code>
         </div>

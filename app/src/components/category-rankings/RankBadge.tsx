@@ -4,17 +4,21 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { getRankColour } from "@/lib/stat-colours";
-
 /**
- * Heatmap fill: strongest at 1st and 32nd, fading to nothing by 11th / 22nd.
+ * One-hue heat map: `chart-1` strongest at 1st, fading to nothing by 11th.
+ * The bottom 10 are muted rather than red, so the table doesn't become a
+ * traffic light.
  */
 function rankTint(rank: number): string | undefined {
-  const strength =
-    rank <= 10 ? (11 - rank) / 10 : rank >= 23 ? (rank - 22) / 10 : 0;
-  if (strength === 0) return undefined;
-  const colour = rank <= 10 ? "var(--chart-3)" : "var(--chart-2)";
-  return `color-mix(in oklab, ${colour} ${Math.round(6 + strength * 22)}%, transparent)`;
+  if (rank > 10) return undefined;
+  const strength = (11 - rank) / 10;
+  return `color-mix(in oklab, var(--chart-1) ${Math.round(6 + strength * 24)}%, transparent)`;
+}
+
+function rankText(rank: number): string {
+  if (rank <= 10) return "font-semibold text-foreground";
+  if (rank >= 23) return "text-muted-foreground";
+  return "";
 }
 
 interface RankBadgeProps {
@@ -32,13 +36,12 @@ export function RankBadge({
   format = (v) => v.toFixed(1),
   className,
 }: RankBadgeProps) {
-  const colorClass = getRankColour(rank);
 
   const content = (
     <span
       className={cn(
         "inline-flex min-w-9 items-center justify-center rounded-full px-1.5 py-1 text-sm font-medium tabular-nums",
-        colorClass,
+        rankText(rank),
         className
       )}
       style={{ backgroundColor: rankTint(rank) }}

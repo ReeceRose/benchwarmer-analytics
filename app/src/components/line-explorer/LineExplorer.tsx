@@ -146,20 +146,29 @@ export function LineExplorer({
         {!isLoading && !error && data && (
           <>
             {view === "charts" ? (
-              <div className="space-y-8">
-                <LineEffectivenessChart
-                  lines={data.lines}
-                  isForwardLine={isForwardLine}
+              data.lines.length === 0 ? (
+                <EmptyState
+                  title={`No ${isForwardLine ? "lines" : "pairs"} with ${minToi}+ minutes together`}
+                  hint="Lower the minimum minutes or pick another season."
                 />
-                <TOIvsXGScatter
-                  lines={data.lines}
-                  isForwardLine={isForwardLine}
-                />
-                <GoalsForAgainstChart
-                  lines={data.lines}
-                  isForwardLine={isForwardLine}
-                />
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <LineEffectivenessChart
+                      lines={data.lines}
+                      isForwardLine={isForwardLine}
+                    />
+                    <GoalsForAgainstChart
+                      lines={data.lines}
+                      isForwardLine={isForwardLine}
+                    />
+                  </div>
+                  <TOIvsXGScatter
+                    lines={data.lines}
+                    isForwardLine={isForwardLine}
+                  />
+                </div>
+              )
             ) : (
               <>
                 <LineTable

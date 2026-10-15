@@ -65,3 +65,14 @@ export function getSeasonFromDate(dateStr: string): number {
   // If month is before October (0-9 = Jan-Oct), it's the previous year's season
   return month < 9 ? year - 1 : year;
 }
+
+/** The ET calendar date (YYYY-MM-DD) of a UTC timestamp: the NHL's game date. */
+export function easternDate(utcTime: string): string {
+  return new Date(utcTime).toLocaleDateString("en-CA", { timeZone: ET_TIMEZONE });
+}
+
+/** Whole days from an ET game date (YYYY-MM-DD) to today's ET date: 1 for last night. */
+export function daysSinceGameDate(dateStr: string, now: Date = new Date()): number {
+  const today = easternDate(now.toISOString());
+  return Math.round((Date.parse(today) - Date.parse(dateStr)) / 86_400_000);
+}

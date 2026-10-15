@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Label,
-  ReferenceArea,
   ZAxis,
 } from "recharts";
 import {
@@ -21,7 +20,8 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { X, ExternalLink } from "lucide-react";
+import { X } from "lucide-react";
+import { niceAxis } from "@/components/charts/nice-axis";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import { useChartSelection } from "@/hooks";
@@ -97,7 +97,7 @@ function CustomTooltip({
           <span className="tabular-nums">{data.gamesPlayed}</span>
         </p>
         {isElite && (
-          <p className="text-success font-medium mt-1">Elite performance</p>
+          <p className="mt-1 font-medium text-success">Elite</p>
         )}
       </div>
     </div>
@@ -125,7 +125,7 @@ function CustomDot(props: {
       cx={cx}
       cy={cy}
       r={size}
-      fill={isPositiveGSAx ? "var(--chart-3)" : "var(--chart-2)"}
+      fill={isPositiveGSAx ? "var(--success)" : "var(--error)"}
       fillOpacity={0.7}
       stroke={isSelected ? "var(--primary)" : "var(--background)"}
       strokeWidth={isSelected ? 3 : 1.5}
@@ -159,7 +159,7 @@ function SelectionPanel({
           <div className="min-w-0">
             <p className="font-semibold truncate">
               {data.name}
-              {isElite && <span className="ml-2 text-success text-xs">Elite</span>}
+              {isElite && <span className="ml-2 text-xs text-success">Elite</span>}
             </p>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
@@ -177,11 +177,10 @@ function SelectionPanel({
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="default" onClick={onNavigate}>
-            View
-            <ExternalLink className="h-3 w-3 ml-1" />
+          <Button size="sm" variant="outline" onClick={onNavigate}>
+            Player page
           </Button>
-          <Button size="sm" variant="ghost" onClick={onClose}>
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -235,8 +234,8 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Goalie performance</CardTitle>
-          <CardDescription>No data for this selection yet</CardDescription>
+          <CardTitle className="text-base">Save % vs GSAx</CardTitle>
+          <CardDescription>No qualified goalies for this selection.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -244,17 +243,17 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
 
   const gsaxValues = chartData.map((d) => d.gsax);
   const svPctValues = chartData.map((d) => d.savePct);
-  const xMin = Math.floor(Math.min(...gsaxValues)) - 2;
-  const xMax = Math.ceil(Math.max(...gsaxValues)) + 2;
+  const { domain: xDomain, ticks: xTicks } = niceAxis([0, ...gsaxValues], { pad: 1 });
+  const [xMin, xMax] = xDomain;
   const yMin = Math.floor((Math.min(...svPctValues) - 0.5) * 10) / 10;
   const yMax = Math.ceil((Math.max(...svPctValues) + 0.5) * 10) / 10;
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Goalie performance quadrant</CardTitle>
+        <CardTitle className="text-base">Save % vs GSAx</CardTitle>
         <CardDescription>
-          GSAx vs Save % - size indicates games played (min 5 GP)
+          Save % rewards easy workloads; GSAx adjusts for shot quality. Dot size is games played (5 GP minimum).
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -266,49 +265,18 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
 
-            <ReferenceArea
-              x1={xMin}
-              x2={AVG_GSAX}
-              y1={AVG_SAVE_PCT}
-              y2={yMax}
-              fill="var(--chart-1)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={AVG_GSAX}
-              x2={xMax}
-              y1={AVG_SAVE_PCT}
-              y2={yMax}
-              fill="var(--chart-3)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={xMin}
-              x2={AVG_GSAX}
-              y1={yMin}
-              y2={AVG_SAVE_PCT}
-              fill="var(--chart-2)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={AVG_GSAX}
-              x2={xMax}
-              y1={yMin}
-              y2={AVG_SAVE_PCT}
-              fill="var(--chart-4)"
-              fillOpacity={0.08}
-            />
 
             <XAxis
               type="number"
               dataKey="gsax"
               domain={[xMin, xMax]}
+              ticks={xTicks}
               tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
               stroke={CHART_AXIS_COLOURS.grid}
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Goals Saved Above Expected (GSAx)"
+                value="Goals saved above expected (GSAx)"
                 position="bottom"
                 offset={15}
                 style={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
@@ -371,33 +339,25 @@ export function GoalieQuadrantChart({ entries }: GoalieQuadrantChartProps) {
         )}
 
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium">Lucky</span>
-            <p className="text-muted-foreground">High Sv%, Negative GSAx</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Easy workload</span>
+            <p className="text-muted-foreground">High Sv%, negative GSAx</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
+          <div className="rounded-xl bg-muted/60 p-2">
             <span className="font-medium text-success">Elite</span>
-            <p className="text-muted-foreground">High Sv%, Positive GSAx</p>
+            <p className="text-muted-foreground">High Sv%, positive GSAx</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
+          <div className="rounded-xl bg-muted/60 p-2">
             <span className="font-medium text-error">Struggling</span>
-            <p className="text-muted-foreground">Low Sv%, Negative GSAx</p>
+            <p className="text-muted-foreground">Low Sv%, negative GSAx</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium">Unlucky</span>
-            <p className="text-muted-foreground">Low Sv%, Positive GSAx</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Hard workload</span>
+            <p className="text-muted-foreground">Low Sv%, positive GSAx</p>
           </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
+        <p className="mt-3 text-xs text-muted-foreground sm:hidden">
           Tap a point to see goalie details
         </p>
       </CardContent>

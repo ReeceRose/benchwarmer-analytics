@@ -5,8 +5,15 @@ import type { ApiContext } from "@/server/api/handler";
 import { ApiError, badRequest, HttpError, notFound } from "@/server/api/errors";
 import { addDays, dayNumber, groupBy, headshotUrl, MIN_DATE, round, sum, todayUtc } from "@/server/api/format";
 import { intRouteParam } from "@/server/api/query";
-import { pairPercentage, parsePagination } from "@/server/api/teams";
+import { gameResult, pairPercentage, parsePagination } from "@/server/api/teams";
+import { getPlayerGameLog as fetchNhlGameLog, type NhlPlayerGameLogEntry } from "@/server/api/nhl-client";
+import { isFinalState } from "@/server/api/constants";
+import { playerDraft } from "@/server/api/history";
+import { playerAwards } from "@/server/api/trophies";
+import { playerRecords } from "@/server/api/records";
 import { shotColumns, shotSummary, toShotDto } from "@/server/api/shots";
+import { playerGameScores, type PlayerGameScore } from "@/server/api/game-scores";
+import type { GoalieGameLogEntry, SkaterGameLogEntry } from "@/types";
 import { currentSeason } from "@/server/ingestion/normalize";
 
 type PlayerRow = typeof players.$inferSelect;
@@ -80,7 +87,13 @@ export function toPlayerDetail(p: PlayerRow) {
 }
 
 export async function getPlayer({ db, params }: ApiContext) {
-  return toPlayerDetail(await requirePlayer(db, params.id));
+  const player = await requirePlayer(db, params.id);
+  const [draft, awards, records] = await Promise.all([
+    playerDraft(db, player.id),
+    playerAwards(db, player.id),
+    playerRecords(db, player.id),
+  ]);
+  return { ...toPlayerDetail(player), draft, awards, ...records };
 }
 
 // Skater/goalie season rows for a player, newest first (Get*ByPlayerAsync).
@@ -201,6 +214,8 @@ export function toSkaterStatsDto(s: SkaterSeasonRow, adv?: AdvancedRow | null) {
     giveaways: a?.ifGiveaways ?? null,
     dZoneGiveaways: a?.ifdZoneGiveaways ?? null,
     giveawayDZonePct: rates.giveawayDZonePct,
+    // Season total. Only the "all" row is meaningful (see docs/INGESTION_NOTES.md).
+    gameScore: s.situation === "all" ? (a?.gameScore ?? null) : null,
   };
 }
 
@@ -662,4 +677,152 @@ export async function comparePlayers({ db, query }: ApiContext) {
   );
 
   return { season: season ?? null, situation: situation ?? "all", players: comparisons };
+}
+
+// "MM:SS" → seconds (0 when missing or malformed).
+export function toiSeconds(toi: string | undefined): number {
+  const match = /^(\d+):(\d{2})$/.exec(toi ?? "");
+  return match ? Number(match[1]) * 60 + Number(match[2]) : 0;
+}
+
+export interface GameScore {
+  homeTeamCode: string;
+  homeScore: number;
+  awayScore: number;
+  periodType: string | null;
+  gameState: string;
+}
+
+// Our expected goals for one game: the player's xG (skaters) or xG against
+// (goalies). Absent when the game has no shots stored yet.
+export type GameXg = Map<string, number>;
+
+interface GameLogContext {
+  scores: ReadonlyMap<string, GameScore>;
+  xg: GameXg;
+}
+
+// Fields every game log entry shares: opponent, venue and our final score.
+function baseGameLogEntry(entry: NhlPlayerGameLogEntry, gameId: string, scores: ReadonlyMap<string, GameScore>) {
+  const isHome = entry.homeRoadFlag === "H";
+  const score = scores.get(gameId);
+  const final = score && isFinalState(score.gameState) ? score : undefined;
+  const teamScore = final ? (isHome ? final.homeScore : final.awayScore) : null;
+  const opponentScore = final ? (isHome ? final.awayScore : final.homeScore) : null;
+  return {
+    gameId,
+    gameDate: entry.gameDate!,
+    team: entry.teamAbbrev ?? "",
+    opponent: entry.opponentAbbrev ?? "",
+    isHome,
+    teamScore,
+    opponentScore,
+    periodType: final?.periodType ?? null,
+    result: final && teamScore !== null && opponentScore !== null ? gameResult(teamScore, opponentScore, final.periodType) : null,
+    toiSeconds: toiSeconds(entry.toi),
+  };
+}
+
+// NHL game logs come newest first; entries are returned oldest first.
+function oldestFirst(log: readonly NhlPlayerGameLogEntry[]) {
+  return [...log].reverse().filter((e) => e.gameId !== undefined && Boolean(e.gameDate));
+}
+
+export function buildSkaterGameLog(
+  log: readonly NhlPlayerGameLogEntry[],
+  { scores, xg }: GameLogContext,
+  gameScores: ReadonlyMap<string, PlayerGameScore> = new Map(),
+): SkaterGameLogEntry[] {
+  return oldestFirst(log).map((entry) => {
+    const gameId = String(entry.gameId);
+    const gameXg = xg.get(gameId);
+    const gameScore = gameScores.get(gameId);
+    return {
+      ...baseGameLogEntry(entry, gameId, scores),
+      goals: entry.goals ?? 0,
+      assists: entry.assists ?? 0,
+      points: entry.points ?? 0,
+      plusMinus: entry.plusMinus ?? 0,
+      shots: entry.shots ?? 0,
+      powerPlayPoints: entry.powerPlayPoints ?? 0,
+      xGoals: gameXg !== undefined ? round(gameXg, 2) : null,
+      gameScore: gameScore?.gameScore ?? null,
+      gameScoreScoring: gameScore?.scoring ?? null,
+      gameScoreOnIce: gameScore?.onIce ?? null,
+      gameScoreOther: gameScore?.other ?? null,
+    };
+  });
+}
+
+export function buildGoalieGameLog(log: readonly NhlPlayerGameLogEntry[], { scores, xg }: GameLogContext): GoalieGameLogEntry[] {
+  return oldestFirst(log).map((entry) => {
+    const gameId = String(entry.gameId);
+    const gameXg = xg.get(gameId);
+    const goalsAgainst = entry.goalsAgainst ?? 0;
+    return {
+      ...baseGameLogEntry(entry, gameId, scores),
+      started: (entry.gamesStarted ?? 0) > 0,
+      decision: entry.decision ?? null,
+      shotsAgainst: entry.shotsAgainst ?? 0,
+      goalsAgainst,
+      xGoalsAgainst: gameXg !== undefined ? round(gameXg, 2) : null,
+      goalsSavedAboveExpected: gameXg !== undefined ? round(gameXg - goalsAgainst, 2) : null,
+    };
+  });
+}
+
+// NHL game log (newest first) → oldest-first entries with our final score,
+// xG and (skaters) Game Score merged in.
+export function buildPlayerGameLog(
+  log: readonly NhlPlayerGameLogEntry[],
+  scores: ReadonlyMap<string, GameScore>,
+  xg: GameXg,
+  isGoalie: boolean,
+  gameScores: ReadonlyMap<string, PlayerGameScore> = new Map(),
+): SkaterGameLogEntry[] | GoalieGameLogEntry[] {
+  const context = { scores, xg };
+  return isGoalie ? buildGoalieGameLog(log, context) : buildSkaterGameLog(log, context, gameScores);
+}
+
+export async function getPlayerGameLog({ db, params, query }: ApiContext) {
+  const player = await requirePlayer(db, params.id);
+  const season = query.int("season") ?? currentSeason();
+  const playoffs = query.bool("playoffs") ?? false;
+  const isGoalie = player.position === "G";
+  const meta = { playerId: player.id, season, isPlayoffs: playoffs, isGoalie };
+
+  const log = await fetchNhlGameLog(player.id, season, playoffs);
+  if (log === null) return { ...meta, available: false, games: [] };
+  const gameIds = log.flatMap((g) => (g.gameId !== undefined ? [String(g.gameId)] : []));
+  if (gameIds.length === 0) return { ...meta, available: true, games: [] };
+
+  const playerColumn = isGoalie ? shots.goaliePlayerId : shots.shooterPlayerId;
+  const [scoreRows, xgRows, gameScoreRows] = await Promise.all([
+    db
+      .select({
+        gameId: games.gameId,
+        homeTeamCode: games.homeTeamCode,
+        homeScore: games.homeScore,
+        awayScore: games.awayScore,
+        periodType: games.periodType,
+        gameState: games.gameState,
+      })
+      .from(games)
+      .where(inArray(games.gameId, gameIds)),
+    // Every game with stored shots gets a row, so a game with none by this
+    // player reads as 0 rather than missing.
+    db
+      .select({
+        gameId: shots.gameId,
+        xg: sql<string>`coalesce(sum(${shots.xGoal}) filter (where ${playerColumn} = ${player.id}), 0)`,
+      })
+      .from(shots)
+      .where(and(eq(shots.season, season), inArray(shots.gameId, gameIds)))
+      .groupBy(shots.gameId),
+    isGoalie ? new Map<string, PlayerGameScore>() : playerGameScores(db, player.id, season),
+  ]);
+
+  const scores = new Map(scoreRows.map(({ gameId, ...score }) => [gameId, score]));
+  const xg: GameXg = new Map(xgRows.map((r) => [r.gameId, Number(r.xg)]));
+  return { ...meta, available: true, games: buildPlayerGameLog(log, scores, xg, isGoalie, gameScoreRows) };
 }

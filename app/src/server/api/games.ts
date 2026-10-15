@@ -6,6 +6,7 @@ import { HttpError } from "@/server/api/errors";
 import { addDays, groupBy, round, sum, todayUtc } from "@/server/api/format";
 import { DangerZones, GameState, isFinalState, isLiveState } from "@/server/api/constants";
 import { calculateDeserveToWin } from "@/server/api/deserve-to-win";
+import { allTimeRecord } from "@/server/api/history";
 import {
   getBoxscore,
   getGameLanding,
@@ -194,6 +195,7 @@ function record(wins = 0, losses = 0, otLosses = 0): string {
 function standingsContext(s: NhlTeamStandings | undefined) {
   return {
     streak: s && s.streakCode ? `${s.streakCode}${s.streakCount ?? 0}` : null,
+    overallRecord: s ? record(s.wins, s.losses, s.otLosses) : null,
     homeRecord: s ? record(s.homeWins, s.homeLosses, s.homeOtLosses) : null,
     roadRecord: s ? record(s.roadWins, s.roadLosses, s.roadOtLosses) : null,
     last10: s ? record(s.l10Wins, s.l10Losses, s.l10OtLosses) : null,
@@ -224,6 +226,7 @@ function teamDto(
     avgShotDistance: stats?.avgShotDistance ?? null,
     record: recordText,
     streak: ctx.streak,
+    overallRecord: ctx.overallRecord,
     homeRecord: ctx.homeRecord,
     roadRecord: ctx.roadRecord,
     last10: ctx.last10,
@@ -284,6 +287,7 @@ export function liveGoals(
     strength: g.strength ?? g.goalModifier ?? null,
     assists: assistNames(g.assists),
     isGameWinningGoal: i === gwg,
+    highlightUrl: g.highlightClipSharingUrl || null,
   }));
 }
 
@@ -316,6 +320,7 @@ export function landingGoals(landing: NhlGameLanding, homeTeamCode: string) {
     strength: g.strength ?? null,
     assists: assistNames(g.assists),
     isGameWinningGoal: i === gwg,
+    highlightUrl: g.highlightClipSharingUrl || null,
   }));
 }
 
@@ -494,12 +499,19 @@ export async function getYesterdaysGames({ db }: ApiContext) {
 }
 
 export async function getTodaysGames() {
-  const today = todayEastern();
   const now = Date.now();
-  const [liveScores, scheduled, standings] = await Promise.all([getLiveScores(), getScheduleWeek(today), getStandings()]);
+  const liveScores = await getLiveScores();
+  const scoreboard = liveScores?.games ?? [];
 
-  // The scoreboard can still include last night's late games.
-  const live = (liveScores?.games ?? []).filter((g) => g.gameDate === today);
+  // The scoreboard can still include last night's late games. While any of
+  // them is still being played (West Coast games run past midnight Eastern),
+  // the slate stays on last night.
+  const yesterday = addDays(todayEastern(), -1);
+  const lateGameOn = scoreboard.some((g) => g.gameDate === yesterday && isLiveState(g.gameState));
+  const today = lateGameOn ? yesterday : todayEastern();
+
+  const [scheduled, standings] = await Promise.all([getScheduleWeek(today), getStandings()]);
+  const live = scoreboard.filter((g) => g.gameDate === today);
   const liveIds = new Set(live.map((g) => String(g.id ?? 0)));
   const missing = scheduled.filter((g) => g.gameDate === today && !liveIds.has(g.gameId));
 
@@ -744,7 +756,8 @@ export function teamPreviewStats(
   if (!all) {
     return {
       teamCode, gamesPlayed: 0, xGoalsFor: 0, xGoalsAgainst: 0, xGoalsPct: null, corsiPct: null,
-      powerPlayPct: null, penaltyKillPct: null, streak: null, homeRecord: null, roadRecord: null, last10: null,
+      powerPlayPct: null, penaltyKillPct: null, streak: null,
+      overallRecord: null, homeRecord: null, roadRecord: null, last10: null,
     };
   }
   const gp = all.gamesPlayed;
@@ -847,7 +860,7 @@ export async function getGamePreview({ db, params }: ApiContext) {
   if (!game) throw gameNotFound();
   const { homeTeamCode: home, awayTeamCode: away, season } = game;
 
-  const [homeSchedule, homeStats, awayStats, standings, specialTeams, homeHot, awayHot, homeGoalies, awayGoalies] =
+  const [homeSchedule, homeStats, awayStats, standings, specialTeams, homeHot, awayHot, homeGoalies, awayGoalies, allTime] =
     await Promise.all([
       getTeamSeasonGames(home, season),
       teamSeasonAll(db, home, season),
@@ -858,6 +871,8 @@ export async function getGamePreview({ db, params }: ApiContext) {
       hotPlayers(db, away, season, 3),
       teamGoalies(db, home, season),
       teamGoalies(db, away, season),
+      // The away team's side, matching the page (away on the left).
+      allTimeRecord(db, away, home),
     ]);
 
   const meetings = homeSchedule
@@ -874,7 +889,7 @@ export async function getGamePreview({ db, params }: ApiContext) {
       awayTeamName: teamName(away),
       startTimeUtc: game.startTimeUtc?.toISOString() ?? null,
     },
-    headToHead: headToHeadRecord(meetings, home, away),
+    headToHead: { ...headToHeadRecord(meetings, home, away), allTime },
     teamComparison: {
       home: teamPreviewStats(home, homeStats, standings.get(home), specialTeams.get(home)),
       away: teamPreviewStats(away, awayStats, standings.get(away), specialTeams.get(away)),

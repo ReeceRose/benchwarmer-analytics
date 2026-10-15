@@ -3,6 +3,25 @@ export interface SpecialTeamsOverview {
   season: number;
   powerPlay: PowerPlaySummary;
   penaltyKill: PenaltyKillSummary;
+  /** Null when the team has no all-situations row for the season. */
+  penalties: PenaltySummary | null;
+}
+
+/** Penalties drawn and taken, all situations. Ranks: 1 = best of the league. */
+export interface PenaltySummary {
+  drawn: number;
+  taken: number;
+  net: number;
+  drawnPer60: number;
+  takenPer60: number;
+  netPer60: number;
+  pimDrawn: number;
+  pimTaken: number;
+  drawnRank: number;
+  takenRank: number;
+  netRank: number;
+  leagueDrawnPer60: number;
+  leagueTakenPer60: number;
 }
 
 export interface PowerPlaySummary {
@@ -79,6 +98,21 @@ export interface TeamSpecialTeamsRanking {
   // Combined
   specialTeamsPct: number;
   overallRank: number;
+  // Penalties (all situations). Drawn = the opponent's penalties.
+  gamesPlayed: number;
+  penaltiesDrawn: number;
+  penaltiesTaken: number;
+  netPenalties: number;
+  penaltiesDrawnPer60: number;
+  penaltiesTakenPer60: number;
+  netPenaltiesPer60: number;
+  pimDrawn: number;
+  pimTaken: number;
+  // Time on each unit and its scoring rate
+  ppMinutesPerGame: number;
+  pkMinutesPerGame: number;
+  ppGoalsPer60: number;
+  pkGoalsAgainstPer60: number;
 }
 
 export interface TeamSpecialTeamsRankingsResponse {

@@ -60,7 +60,7 @@ export function TopLinesCard({ lines, season }: TopLinesCardProps) {
             </div>
           </div>
           <div className="text-right">
-            <div className="font-display text-xl font-bold tabular-nums text-success">
+            <div className="font-display text-xl font-bold tabular-nums">
               {line.expectedGoalsPct != null
                 ? formatPercent(line.expectedGoalsPct)
                 : "–"}

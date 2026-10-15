@@ -37,6 +37,15 @@ export interface TeamPowerRanking {
   // Ranks
   pointsRank: number;
   xGoalsPctRank: number;
+
+  /** 5-on-5 xG share (0-1) over the regular season so far */
+  fiveOnFiveXGoalsPct: number | null;
+  /** 5-on-5 xG share (0-1) over the team's last 10 regular-season games */
+  recentXGoalsPct: number | null;
+  /** Average 5-on-5 xG share (0-1) of opponents played */
+  scheduleStrength: number | null;
+  /** Average 5-on-5 xG share (0-1) of opponents left on the schedule; null when none are left */
+  remainingScheduleStrength: number | null;
 }
 
 /** Regression candidate */

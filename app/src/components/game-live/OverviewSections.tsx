@@ -290,12 +290,10 @@ function ShotOutcomes({ data }: { data: LiveGameResponse }) {
 
 export function TeamStatsSection({ data }: { data: LiveGameResponse }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <div className="space-y-4">
-        <HeadToHead data={data} />
-        <ByPeriodTable data={data} />
-      </div>
-      <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <HeadToHead data={data} />
+      <ByPeriodTable data={data} />
+      <div className="grid grid-cols-1 content-start gap-4 lg:col-span-2 lg:grid-cols-3 xl:col-span-1 xl:grid-cols-1">
         <FaceoffZones data={data} />
         <TimeByStrength data={data} />
         <ShotOutcomes data={data} />

@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function StatsTableSkeleton() {
   return (
-    <Card className="py-0 gap-0">
+    <Card className="gap-0 overflow-hidden py-0">
       <CardContent className="p-0 overflow-hidden">
       <div className="border-b p-3">
         <div className="flex gap-4">

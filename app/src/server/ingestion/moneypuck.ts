@@ -51,6 +51,14 @@ export async function downloadPlayerBios(): Promise<string> {
   return response.text();
 }
 
+// Streams careers/gameByGame/all_teams.csv (every season, ~130 MB; served
+// gzipped, which fetch decodes).
+export async function streamTeamGamesCsv(): Promise<Readable> {
+  const response = await fetchWithRetry(`${BASE_URL}/careers/gameByGame/all_teams.csv`);
+  if (!response?.body) throw new Error("team game-by-game file not found");
+  return Readable.fromWeb(response.body as NodeReadableStream<Uint8Array>);
+}
+
 // Streams the CSV inside shots_<season>.zip without buffering the archive.
 // Returns null if the season's file doesn't exist.
 export async function streamShotsCsv(season: number): Promise<Readable | null> {

@@ -6,6 +6,7 @@ import type { GoalieStats } from "@/types";
 interface GoalieData {
   name: string;
   stats: GoalieStats | null | undefined;
+  color?: string;
 }
 
 interface GoalieComparisonProps {
@@ -61,7 +62,7 @@ export function GoalieComparison({ players, title = "Goalie comparison", classNa
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ComparisonBars series={valid.map((p) => ({ name: p.name }))} rows={rows} columns={2} />
+        <ComparisonBars series={valid.map((p) => ({ name: p.name, colour: p.color }))} rows={rows} columns={2} />
         <p className="mt-3 text-xs text-muted-foreground">
           Save percentages are dots on a range fitted to these goalies; goals saved above expected grows from zero.
         </p>

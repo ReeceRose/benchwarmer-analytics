@@ -30,7 +30,34 @@ export const SKATER_CATEGORIES: LeaderboardCategory[] = [
   "iceTime",
   "gamesPlayed",
   "faceoffPct",
+  "gameScore",
 ];
+
+/** Display names, sentence case. */
+export const LEADERBOARD_CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
+  points: "Points",
+  goals: "Goals",
+  assists: "Assists",
+  shots: "Shots",
+  expectedGoals: "Expected goals",
+  xgPer60: "xG/60",
+  corsiPct: "CF%",
+  fenwickPct: "FF%",
+  oiShPct: "On-ice Sh%",
+  oiSvPct: "On-ice Sv%",
+  iceTime: "Ice time",
+  gamesPlayed: "Games played",
+  faceoffPct: "FO%",
+  gameScore: "Game Score/GP",
+  savePct: "Save %",
+  gaa: "GAA",
+  gsax: "GSAx",
+  shotsAgainst: "Shots against",
+  goalieTime: "Ice time",
+  goalsAgainst: "Goals against",
+  xga: "xGA",
+  reboundControl: "Rebound control",
+};
 
 /**
  * Categories where lower values are better (affects sort direction display).

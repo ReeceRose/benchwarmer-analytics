@@ -100,6 +100,48 @@ const noArbitraryTailwind = {
   },
 }
 
+const chartColourRoles = {
+  meta: {
+    type: 'suggestion',
+    docs: {
+      description:
+        'Chart slots 2-5 only through a role (CHART_COLOURS in order, ZONE_COLOURS, UNIT_COLOURS, teamColour). See docs/DESIGN_SYSTEM.md.',
+    },
+  },
+  create(context) {
+    const slotPattern = /(--|\b(?:bg|text|border|fill|stroke|ring)-)chart-[2-5]\b/
+    const message =
+      'Pick chart colours by role (CHART_COLOURS, ZONE_COLOURS, UNIT_COLOURS, STATUS_COLOURS or teamColour), not a raw chart slot.'
+    const check = (node, value) => {
+      if (typeof value === 'string' && slotPattern.test(value)) context.report({ node, message })
+    }
+    return {
+      Literal(node) {
+        check(node, node.value)
+      },
+      TemplateElement(node) {
+        check(node, node.value.raw)
+      },
+      MemberExpression(node) {
+        if (
+          node.computed &&
+          node.object.type === 'Identifier' &&
+          node.object.name === 'CHART_COLOURS' &&
+          node.property.type === 'Literal' &&
+          typeof node.property.value === 'number' &&
+          node.property.value > 0
+        ) {
+          context.report({
+            node,
+            message:
+              'CHART_COLOURS[n] for n > 0 picks a slot by hand. Use a role (ZONE_COLOURS, UNIT_COLOURS) or index series in order.',
+          })
+        }
+      },
+    }
+  },
+}
+
 export default defineConfig([
   globalIgnores(['dist', '.output', '.nitro', '.tanstack', 'src/routeTree.gen.ts']),
   {
@@ -114,7 +156,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    plugins: {
+      colours: { rules: { 'chart-colour-roles': chartColourRoles } },
+    },
     rules: {
+      'colours/chart-colour-roles': 'error',
       'no-restricted-imports': [
         'error',
         {
@@ -127,6 +173,15 @@ export default defineConfig([
         },
       ],
     },
+  },
+  {
+    // The role definitions and the side-colour picker are where slots are named.
+    files: [
+      'src/lib/chart-colours.ts',
+      'src/components/game-live/live-utils.ts',
+      'src/components/game-live/useSideColours.ts',
+    ],
+    rules: { 'colours/chart-colour-roles': 'off' },
   },
   {
     files: ['**/*.tsx'],

@@ -10,7 +10,6 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Label,
-  ReferenceArea,
 } from "recharts";
 import {
   Card,
@@ -21,7 +20,8 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { X, ExternalLink } from "lucide-react";
+import { X } from "lucide-react";
+import { ChartLegend } from "@/components/charts";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import { useChartSelection } from "@/hooks";
@@ -53,7 +53,7 @@ function formatRate(v: number) {
 }
 
 function getNetColor(netPer60: number) {
-  return netPer60 > 0 ? "var(--chart-3)" : "var(--chart-2)";
+  return netPer60 > 0 ? "var(--success)" : "var(--error)";
 }
 
 function CustomDot(props: {
@@ -115,11 +115,11 @@ function CustomTooltip({
       </div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
         <span className="text-muted-foreground">Drawn/60:</span>
-        <span className="tabular-nums text-success">
+        <span className="tabular-nums">
           {data.drawnPer60.toFixed(2)}
         </span>
         <span className="text-muted-foreground">Taken/60:</span>
-        <span className="tabular-nums text-error">
+        <span className="tabular-nums">
           {data.takenPer60.toFixed(2)}
         </span>
         <span className="text-muted-foreground">Net/60:</span>
@@ -178,13 +178,13 @@ function SelectionPanel({
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">Drawn/60:</span>{" "}
-                <span className="tabular-nums text-success">
+                <span className="tabular-nums text-foreground">
                   {data.drawnPer60.toFixed(2)}
                 </span>
               </span>
               <span>
                 <span className="text-xs">Taken/60:</span>{" "}
-                <span className="tabular-nums text-error">
+                <span className="tabular-nums text-foreground">
                   {data.takenPer60.toFixed(2)}
                 </span>
               </span>
@@ -198,11 +198,10 @@ function SelectionPanel({
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="default" onClick={onNavigate}>
-            View
-            <ExternalLink className="h-3 w-3 ml-1" />
+          <Button size="sm" variant="outline" onClick={onNavigate}>
+            Player page
           </Button>
-          <Button size="sm" variant="ghost" onClick={onClose}>
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -256,8 +255,8 @@ export function PenaltyDiffScatter({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Penalty drawing vs taking</CardTitle>
-          <CardDescription>No data for this selection yet</CardDescription>
+          <CardTitle className="text-base">Penalties drawn vs taken</CardTitle>
+          <CardDescription>No players meet these filters. Try a lower minimum.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -283,12 +282,11 @@ export function PenaltyDiffScatter({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Penalty drawing vs taking</CardTitle>
+        <CardTitle className="text-base">Penalties drawn vs taken</CardTitle>
         <CardDescription>
-          Penalties drawn per 60 (X) vs taken per 60 (Y). Players below the
-          diagonal line have positive net impact.
+          Per 60 minutes. Players below the diagonal draw more than they take.
           {scopeLabel ? (
-            <span className="text-muted-foreground"> Showing: {scopeLabel}.</span>
+            <span> Showing the {scopeLabel}.</span>
           ) : null}
         </CardDescription>
       </CardHeader>
@@ -301,22 +299,6 @@ export function PenaltyDiffScatter({
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
 
-            <ReferenceArea
-              x1={avgDrawn}
-              x2={maxDrawn}
-              y1={0}
-              y2={avgTaken}
-              fill="var(--chart-3)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={0}
-              x2={avgDrawn}
-              y1={avgTaken}
-              y2={maxTaken}
-              fill="var(--chart-2)"
-              fillOpacity={0.08}
-            />
 
             <XAxis
               type="number"
@@ -329,7 +311,7 @@ export function PenaltyDiffScatter({
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Penalties Drawn / 60"
+                value="Drawn per 60"
                 position="bottom"
                 offset={15}
                 style={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
@@ -346,7 +328,7 @@ export function PenaltyDiffScatter({
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Penalties Taken / 60"
+                value="Taken per 60"
                 angle={-90}
                 position="insideLeft"
                 offset={10}
@@ -404,33 +386,16 @@ export function PenaltyDiffScatter({
             onNavigate={handleNavigateToPlayer}
           />
         )}
-        <div className="flex justify-center gap-8 mt-4 text-xs">
-          <div
-            className="flex items-center gap-2"
-          >
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "var(--chart-3)" }}
-            />
-            <span className="text-muted-foreground">
-              Below line = Net positive (best)
-            </span>
-          </div>
-          <div
-            className="flex items-center gap-2"
-          >
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "var(--chart-2)" }}
-            />
-            <span className="text-muted-foreground">
-              Above line = Net negative (worst)
-            </span>
-          </div>
-        </div>
+        <ChartLegend
+          className="mt-4 justify-center"
+          items={[
+            { label: "Below the line: draws more than takes", colour: "var(--success)" },
+            { label: "Above the line: takes more than draws", colour: "var(--error)" },
+          ]}
+        />
 
-        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
-          Tap a player to see details
+        <p className="mt-3 text-xs text-muted-foreground sm:hidden">
+          Tap a player for details.
         </p>
       </CardContent>
     </Card>

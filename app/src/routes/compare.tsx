@@ -9,6 +9,7 @@ import {
   usePlayers,
   usePageTitle,
   useGoalieLeagueBaselines,
+  useSeriesColours,
 } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { getDangerZoneLeagueAveragesFromGoalieBaselines } from "@/lib/goalie-baselines";
@@ -66,6 +67,7 @@ function ComparePage() {
       .map((id) => parseInt(id, 10))
       .filter((id) => !isNaN(id));
   }, [search.ids]);
+  const colourOf = useSeriesColours(selectedIds);
 
   // Prefer URL param > API current season > calculated default
   const season = search.season ?? seasonsData?.seasons?.[0]?.year ?? calculatedSeason;
@@ -209,6 +211,7 @@ function ComparePage() {
           players={comparisonData.players.map((p) => ({
             name: p.name,
             stats: p.stats ?? null,
+            color: colourOf(p.playerId),
           }))}
           title="Stat comparison"
         />
@@ -218,6 +221,7 @@ function ComparePage() {
           players={comparisonData.players.map((p) => ({
             name: p.name,
             stats: p.goalieStats ?? null,
+            color: colourOf(p.playerId),
           }))}
           title="Goalie comparison"
         />
@@ -227,6 +231,7 @@ function ComparePage() {
           players={comparisonData.players.map((p) => ({
             name: p.name,
             stats: p.goalieStats ?? null,
+            color: colourOf(p.playerId),
           }))}
           leagueAverages={dangerLeagueAverages}
           title="Danger zone comparison"

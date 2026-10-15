@@ -97,8 +97,8 @@ export function GameInfoSection({ data }: { data: LiveGameResponse }) {
     ["Feed", `${meta.eventCount} events · ${meta.shiftCount} shifts · updated ${new Date(meta.updatedAt).toLocaleTimeString()}`],
   ];
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <Card title="Game info">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr]">
+      <Card title="Game info" className="md:col-span-2 xl:col-span-1">
         <dl className="grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-1.5 text-sm">
           {info.map(([k, v]) => (
             <div key={k} className="contents">

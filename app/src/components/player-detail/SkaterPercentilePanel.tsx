@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSeasonMinGames } from "@/hooks";
 import { getSeasonPercentiles } from "@/lib/api";
 import { formatOrdinal } from "@/lib/formatters";
+import { getPercentileBarClass, getPercentileColour } from "@/lib/stat-colours";
 import { cn } from "@/lib/utils";
 import type { SkaterStats } from "@/types";
 
@@ -17,29 +18,13 @@ function calculatePercentile(value: number, thresholds: number[]): number | null
   return 1;
 }
 
-function getPercentileColor(pctl: number | null): string {
-  if (pctl == null) return "text-muted-foreground";
-  if (pctl >= 90) return "text-success";
-  if (pctl >= 75) return "text-success";
-  if (pctl >= 50) return "text-foreground";
-  if (pctl >= 25) return "text-warning";
-  return "text-error";
-}
-
-function getPercentileBarClass(pctl: number | null): string {
-  if (pctl == null) return "bg-muted";
-  if (pctl >= 75) return "bg-success/70";
-  if (pctl >= 50) return "bg-muted-foreground/50";
-  if (pctl >= 25) return "bg-warning/70";
-  return "bg-error/70";
-}
-
 function aggregateSeasonAll(stats: SkaterStats[], season: number): {
   gp: number;
   goals: number;
   assists: number;
   points: number;
   iceTimeSeconds: number;
+  gameScore: number | null;
 } | null {
   const seasonStats = stats.filter(
     (s) => !s.isPlayoffs && s.situation === "all" && s.season === season
@@ -53,8 +38,9 @@ function aggregateSeasonAll(stats: SkaterStats[], season: number): {
       assists: acc.assists + s.assists,
       points: acc.points + s.points,
       iceTimeSeconds: acc.iceTimeSeconds + s.iceTimeSeconds,
+      gameScore: s.gameScore == null ? acc.gameScore : (acc.gameScore ?? 0) + s.gameScore,
     }),
-    { gp: 0, goals: 0, assists: 0, points: 0, iceTimeSeconds: 0 }
+    { gp: 0, goals: 0, assists: 0, points: 0, iceTimeSeconds: 0, gameScore: null as number | null }
   );
 }
 
@@ -84,6 +70,7 @@ export function SkaterPercentilePanel({
     const gpg = gp > 0 ? seasonAgg.goals / gp : null;
     const pp60 = hours > 0 ? seasonAgg.points / hours : null;
     const gp60 = hours > 0 ? seasonAgg.goals / hours : null;
+    const gsPerGame = gp > 0 && seasonAgg.gameScore != null ? seasonAgg.gameScore / gp : null;
 
     const ppgPctl =
       ppg != null && data?.pointsPerGame ? calculatePercentile(ppg, data.pointsPerGame) : null;
@@ -93,8 +80,13 @@ export function SkaterPercentilePanel({
       pp60 != null && data?.pointsPer60 ? calculatePercentile(pp60, data.pointsPer60) : null;
     const gp60Pctl =
       gp60 != null && data?.goalsPer60 ? calculatePercentile(gp60, data.goalsPer60) : null;
+    const gsPctl =
+      gsPerGame != null && data?.gameScorePerGame
+        ? calculatePercentile(gsPerGame, data.gameScorePerGame)
+        : null;
 
     return [
+      { key: "gs", label: "Game Score/GP", value: gsPerGame, pctl: gsPctl },
       { key: "ppg", label: "Points/GP", value: ppg, pctl: ppgPctl },
       { key: "gpg", label: "Goals/GP", value: gpg, pctl: gpgPctl },
       { key: "pp60", label: "Points/60", value: pp60, pctl: pp60Pctl },
@@ -119,15 +111,15 @@ export function SkaterPercentilePanel({
                 <div className="flex items-baseline gap-3">
                   <span className="text-sm font-medium">{m.label}</span>
                   <span className="text-sm text-muted-foreground tabular-nums">
-                    {m.value != null ? m.value.toFixed(2) : "-"}
+                    {m.value != null ? m.value.toFixed(2) : "–"}
                   </span>
                   <span
                     className={cn(
                       "ml-auto font-display text-lg font-bold tabular-nums",
-                      getPercentileColor(p),
+                      getPercentileColour(p),
                     )}
                   >
-                    {isLoading ? "…" : p != null ? formatOrdinal(p) : "-"}
+                    {isLoading ? "…" : p != null ? formatOrdinal(p) : "–"}
                   </span>
                 </div>
                 <div className="relative h-2 overflow-hidden rounded-full bg-muted">

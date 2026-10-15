@@ -36,6 +36,7 @@ export interface NhlTeamStandings {
   losses?: number;
   otLosses?: number;
   points?: number;
+  regulationWins?: number;
   pointPctg?: number | null;
   goalFor?: number;
   goalAgainst?: number;
@@ -253,6 +254,8 @@ export interface NhlPlay {
     duration?: number | null;
     shootingPlayerId?: number;
     scoringPlayerId?: number;
+    assist1PlayerId?: number;
+    assist2PlayerId?: number;
     goalieInNetId?: number;
     blockingPlayerId?: number;
     hittingPlayerId?: number;
@@ -265,6 +268,8 @@ export interface NhlPlay {
     playerId?: number;
     highlightClipSharingUrl?: string | null;
   } | null;
+  /** Goals only: tracking data for the build-up (see getGoalReplay). */
+  pptReplayUrl?: string | null;
 }
 
 export interface NhlRosterSpot {
@@ -364,6 +369,7 @@ export interface NhlLiveGoal {
   homeScore?: number;
   teamAbbrev?: string | null;
   strength?: string | null;
+  highlightClipSharingUrl?: string | null;
 }
 
 export interface NhlLiveTeam {
@@ -430,7 +436,8 @@ const TEAM_NAME_TO_ABBREV: Record<string, string> = {
   "Nashville Predators": "NSH", "New Jersey Devils": "NJD", "New York Islanders": "NYI", "New York Rangers": "NYR",
   "Ottawa Senators": "OTT", "Philadelphia Flyers": "PHI", "Pittsburgh Penguins": "PIT", "San Jose Sharks": "SJS",
   "Seattle Kraken": "SEA", "St. Louis Blues": "STL", "Tampa Bay Lightning": "TBL", "Toronto Maple Leafs": "TOR",
-  "Utah Hockey Club": "UTA", "Vancouver Canucks": "VAN", "Vegas Golden Knights": "VGK",
+  // Utah Hockey Club in 2024-25, Utah Mammoth since.
+  "Utah Hockey Club": "UTA", "Utah Mammoth": "UTA", "Vancouver Canucks": "VAN", "Vegas Golden Knights": "VGK",
   "Washington Capitals": "WSH", "Winnipeg Jets": "WPG",
 };
 
@@ -476,4 +483,320 @@ export async function getShiftChart(gameId: string): Promise<NhlShift[]> {
     `${STATS_API}/shiftcharts?cayenneExp=gameId=${encodeURIComponent(gameId)}`,
   );
   return response?.data ?? [];
+}
+
+// One game in a player's NHL game log. Skaters and goalies share the
+// endpoint; each fills its own fields.
+export interface NhlPlayerGameLogEntry {
+  gameId?: number;
+  teamAbbrev?: string;
+  opponentAbbrev?: string;
+  homeRoadFlag?: string;
+  gameDate?: string;
+  toi?: string;
+  goals?: number;
+  assists?: number;
+  points?: number;
+  plusMinus?: number;
+  shots?: number;
+  powerPlayPoints?: number;
+  // Goalies
+  gamesStarted?: number;
+  decision?: string | null;
+  shotsAgainst?: number;
+  goalsAgainst?: number;
+  savePctg?: number | null;
+}
+
+// A player's game log for a season (start year), newest first. Null when the
+// request fails, so callers can tell "unavailable" from "no games".
+export async function getPlayerGameLog(
+  playerId: number,
+  season: number,
+  playoffs: boolean,
+): Promise<NhlPlayerGameLogEntry[] | null> {
+  const response = await getJson<{ gameLog?: NhlPlayerGameLogEntry[] }>(
+    `${NHL_API}/player/${playerId}/game-log/${season}${season + 1}/${playoffs ? 3 : 2}`,
+  );
+  return response ? (response.gameLog ?? []) : null;
+}
+
+// --- NHL EDGE (player and puck tracking, 2021-22 on) ---
+// Every stat comes with the league average and a percentile (skaters,
+// goalies) or rank (teams). Percentiles are oriented so higher is better:
+// less defensive-zone time and fewer goals against score high.
+
+export interface NhlEdgeMeasure {
+  imperial?: number | null;
+  percentile?: number | null;
+  rank?: number | null;
+  leagueAvg?: { imperial?: number | null } | null;
+  overlay?: NhlEdgeOverlay | null;
+}
+
+export interface NhlEdgeCount {
+  value?: number | null;
+  percentile?: number | null;
+  rank?: number | null;
+  leagueAvg?: number | { value?: number | null } | null;
+}
+
+export interface NhlEdgeOverlay {
+  player?: { firstName?: Localized | null; lastName?: Localized | null } | null;
+  gameDate?: string | null;
+  awayTeam?: { abbrev?: string | null } | null;
+  homeTeam?: { abbrev?: string | null } | null;
+  periodDescriptor?: NhlPeriodDescriptor | null;
+  timeInPeriod?: string | null;
+}
+
+export interface NhlEdgeSogSummary {
+  locationCode?: string;
+  shots?: number;
+  shotsPercentile?: number | null;
+  shotsRank?: number | null;
+  shotsLeagueAvg?: number | null;
+  goals?: number;
+  goalsPercentile?: number | null;
+  goalsRank?: number | null;
+  goalsLeagueAvg?: number | null;
+  shootingPctg?: number | null;
+  shootingPctgPercentile?: number | null;
+  shootingPctgRank?: number | null;
+  shootingPctgLeagueAvg?: number | null;
+}
+
+export interface NhlEdgeZoneTime {
+  offensiveZonePctg?: number | null;
+  offensiveZonePercentile?: number | null;
+  offensiveZoneRank?: number | null;
+  offensiveZoneLeagueAvg?: number | null;
+  neutralZonePctg?: number | null;
+  neutralZonePercentile?: number | null;
+  neutralZoneRank?: number | null;
+  neutralZoneLeagueAvg?: number | null;
+  defensiveZonePctg?: number | null;
+  defensiveZonePercentile?: number | null;
+  defensiveZoneRank?: number | null;
+  defensiveZoneLeagueAvg?: number | null;
+}
+
+export interface NhlEdgeAreaDetail {
+  area?: string;
+  shots?: number;
+  shotsPercentile?: number | null;
+  shotsRank?: number | null;
+  saves?: number;
+  savePctg?: number | null;
+  savePctgPercentile?: number | null;
+}
+
+export interface NhlEdgeSeasons {
+  seasonsWithEdgeStats?: { id?: number; gameTypes?: number[] }[];
+}
+
+export interface NhlEdgeSkaterDetail extends NhlEdgeSeasons {
+  player?: { gamesPlayed?: number | null; position?: string | null } | null;
+  topShotSpeed?: NhlEdgeMeasure | null;
+  skatingSpeed?: { speedMax?: NhlEdgeMeasure | null; burstsOver20?: NhlEdgeCount | null } | null;
+  totalDistanceSkated?: NhlEdgeMeasure | null;
+  distanceMaxGame?: NhlEdgeMeasure | null;
+  sogSummary?: NhlEdgeSogSummary[];
+  sogDetails?: NhlEdgeAreaDetail[];
+  zoneTimeDetails?: NhlEdgeZoneTime | null;
+}
+
+export interface NhlEdgeGoalieDetail extends NhlEdgeSeasons {
+  player?: { gamesPlayed?: number | null } | null;
+  stats?: Record<string, { value?: number | null; percentile?: number | null; leagueAvg?: number | null } | undefined> | null;
+  shotLocationSummary?: {
+    locationCode?: string;
+    goalsAgainst?: number;
+    saves?: number;
+    savePctg?: number | null;
+    savePctgPercentile?: number | null;
+    savePctgLeagueAvg?: number | null;
+  }[];
+  shotLocationDetails?: NhlEdgeAreaDetail[];
+}
+
+export interface NhlEdgeTeamDetail extends NhlEdgeSeasons {
+  team?: { gamesPlayed?: number | null } | null;
+  shotSpeed?: { topShotSpeed?: NhlEdgeMeasure | null; shotAttemptsOver90?: NhlEdgeCount | null } | null;
+  skatingSpeed?: { speedMax?: NhlEdgeMeasure | null; burstsOver20?: NhlEdgeCount | null; burstsOver22?: NhlEdgeCount | null } | null;
+  distanceSkated?: { total?: NhlEdgeMeasure | null } | null;
+  sogSummary?: NhlEdgeSogSummary[];
+  sogDetails?: NhlEdgeAreaDetail[];
+  zoneTimeDetails?: NhlEdgeZoneTime | null;
+}
+
+// `season` is a start year; omitted means the NHL's "now", which falls back
+// to the player's latest season with tracking data.
+const edgeSuffix = (season?: number) => (season === undefined ? "now" : `${season}${season + 1}/2`);
+
+export function getEdgeSkaterDetail(playerId: number, season?: number): Promise<NhlEdgeSkaterDetail | null> {
+  return getJson<NhlEdgeSkaterDetail>(`${NHL_API}/edge/skater-detail/${playerId}/${edgeSuffix(season)}`);
+}
+
+export function getEdgeGoalieDetail(playerId: number, season?: number): Promise<NhlEdgeGoalieDetail | null> {
+  return getJson<NhlEdgeGoalieDetail>(`${NHL_API}/edge/goalie-detail/${playerId}/${edgeSuffix(season)}`);
+}
+
+export function getEdgeTeamDetail(teamId: number, season?: number): Promise<NhlEdgeTeamDetail | null> {
+  return getJson<NhlEdgeTeamDetail>(`${NHL_API}/edge/team-detail/${teamId}/${edgeSuffix(season)}`);
+}
+
+// --- Milestones (players close to a round career number) ---
+
+export interface NhlMilestone {
+  playerId?: number;
+  playerFullName?: string | null;
+  teamAbbrev?: string | null;
+  gameTypeId?: number;
+  milestone?: string | null;
+  milestoneAmount?: number;
+  gamesPlayed?: number;
+  // Skaters
+  goals?: number;
+  assists?: number;
+  points?: number;
+  // Goalies
+  wins?: number;
+  so?: number;
+  toiMinutes?: number;
+}
+
+export async function getMilestones(kind: "skaters" | "goalies"): Promise<NhlMilestone[] | null> {
+  const response = await getJson<{ data?: NhlMilestone[] }>(`${STATS_API}/milestones/${kind}`);
+  return response ? (response.data ?? []) : null;
+}
+
+// --- Goal replays (player and puck tracking for the seconds before a goal) ---
+
+export interface NhlReplayEntity {
+  id?: number;
+  /** Empty for the puck. */
+  playerId?: number | string;
+  x?: number;
+  y?: number;
+  sweaterNumber?: number | string;
+  teamAbbrev?: string;
+}
+
+export interface NhlReplayFrame {
+  /** Tenths of a second. */
+  timeStamp?: number;
+  onIce?: Record<string, NhlReplayEntity>;
+}
+
+// The sprite host only answers requests that look like they come from
+// nhl.com, so this sends its Referer. Null if it refuses or the goal has no
+// tracking.
+export async function getGoalReplay(season: number, gameId: string, eventId: number): Promise<NhlReplayFrame[] | null> {
+  const url = `https://wsr.nhle.com/sprites/${season}${season + 1}/${encodeURIComponent(gameId)}/ev${eventId}.json`;
+  try {
+    const response = await fetch(url, {
+      headers: { "user-agent": USER_AGENT, referer: "https://www.nhl.com/" },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      console.warn(`NHL replay ${url}: HTTP ${response.status}`);
+      return null;
+    }
+    const frames = (await response.json()) as unknown;
+    return Array.isArray(frames) ? (frames as NhlReplayFrame[]) : null;
+  } catch (error) {
+    console.warn(`NHL replay ${url}: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
+  }
+}
+
+export interface NhlCareerTotals {
+  gamesPlayed?: number;
+  goals?: number;
+  assists?: number;
+  points?: number;
+  wins?: number;
+  shutouts?: number;
+}
+
+// Current regular-season career totals for some players, keyed by player ID
+// (the stats API summed over every season). Null if the request fails.
+export async function getCareerTotals(kind: "skater" | "goalie", playerIds: number[]): Promise<Map<number, NhlCareerTotals> | null> {
+  if (playerIds.length === 0) return new Map();
+  const filter = `gameTypeId=2 and seasonId>=19171918 and seasonId<=21002101 and playerId in (${playerIds.join(",")})`;
+  const params = new URLSearchParams({ isAggregate: "true", isGame: "false", limit: "-1", cayenneExp: filter });
+  const response = await getJson<{ data?: (NhlCareerTotals & { playerId?: number })[] }>(`${STATS_API}/${kind}/summary?${params}`);
+  if (!response) return null;
+  return new Map((response.data ?? []).filter((r) => r.playerId).map((r) => [r.playerId!, r]));
+}
+
+// --- Stats API reports (api.nhle.com/stats/rest) ---
+
+// One stats report (e.g. "team/leadingtrailing") filtered by a cayenne
+// expression, every row. Null if the request fails.
+export async function getStatsReport<T>(report: string, filter: string, aggregate = false): Promise<T[] | null> {
+  const params = new URLSearchParams({ isAggregate: String(aggregate), isGame: "false", limit: "-1", cayenneExp: filter });
+  const response = await getJson<{ data?: T[] }>(`${STATS_API}/${report}?${params}`);
+  return response ? (response.data ?? []) : null;
+}
+
+/** Regular season of a start year, as a stats API filter. */
+export const regularSeasonFilter = (season: number) => `seasonId=${season}${season + 1} and gameTypeId=2`;
+
+// --- NHL EDGE top 10s ---
+
+export interface NhlEdgeLeader {
+  player?: {
+    firstName?: Localized | null;
+    lastName?: Localized | null;
+    /** e.g. "connor-mcdavid-8478402"; the ID is the last part. */
+    slug?: string | null;
+    headshot?: string | null;
+    position?: string | null;
+    team?: { abbrev?: string | null } | null;
+  } | null;
+  maxSpeed?: NhlEdgeMeasure | null;
+  hardestShot?: NhlEdgeMeasure | null;
+  distanceTotal?: NhlEdgeMeasure | null;
+  distancePer60?: NhlEdgeMeasure | null;
+  highDanger?: number | null;
+  all?: number | null;
+  offensiveZoneTime?: number | null;
+  burstsOver22?: number | null;
+  shotAttemptsOver100?: number | null;
+}
+
+// `path` is the part after /edge/, e.g. "skater-speed-top-10/all/max".
+export async function getEdgeTop10(path: string, season: number): Promise<NhlEdgeLeader[] | null> {
+  const response = await getJson<NhlEdgeLeader[]>(`${NHL_API}/edge/${path}/${season}${season + 1}/2`);
+  return Array.isArray(response) ? response : null;
+}
+
+// --- Playoff bracket ---
+
+export interface NhlBracketTeam {
+  id?: number;
+  abbrev?: string | null;
+  name?: Localized | null;
+}
+
+export interface NhlBracketSeries {
+  seriesLetter?: string;
+  playoffRound?: number;
+  seriesTitle?: string | null;
+  topSeedRankAbbrev?: string | null;
+  bottomSeedRankAbbrev?: string | null;
+  topSeedWins?: number;
+  bottomSeedWins?: number;
+  winningTeamId?: number | null;
+  topSeedTeam?: NhlBracketTeam | null;
+  bottomSeedTeam?: NhlBracketTeam | null;
+}
+
+// The bracket for the playoffs that end in `endYear` (2026 = 2025-26). Null
+// when there's none (yet) or the request fails.
+export async function getPlayoffBracket(endYear: number): Promise<NhlBracketSeries[] | null> {
+  const response = await getJson<{ series?: NhlBracketSeries[] }>(`${NHL_API}/playoff-bracket/${endYear}`);
+  return response?.series?.length ? response.series : null;
 }

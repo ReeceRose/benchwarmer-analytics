@@ -206,20 +206,20 @@ function GlossaryPage() {
                   </li>
                 </ul>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  All statistics on this site are calculated from data provided
-                  by{" "}
+                  Season and shot data, including expected goals, come from{" "}
                   <a
                     href="https://moneypuck.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:text-foreground transition-colors"
+                    className="text-link hover:underline"
                   >
                     MoneyPuck
                   </a>
                   . Their expected goals model accounts for shot location, shot
                   type, whether it's a rebound or rush, shooter and goalie
                   information, and game context to produce probability estimates
-                  for each shot.
+                  for each shot. Live games, tracking, the draft, trophies and
+                  career records come from the NHL's own APIs.
                 </p>
               </div>
             </section>

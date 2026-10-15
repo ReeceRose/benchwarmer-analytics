@@ -4,13 +4,17 @@ import { prefetchHomeLeaders } from "@/hooks/useHomeLeaders";
 import { outliersQueryOptions } from "@/hooks/useOutliers";
 import { topLinesQueryOptions } from "@/hooks/useTopLines";
 import { teamsQueryOptions } from "@/hooks/useTeams";
+import { nightlyGameScoresQueryOptions } from "@/hooks/useGameScores";
+import { milestonesQueryOptions } from "@/hooks/useHistory";
 import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import * as z from "zod/mini";
 import { usePageTitle } from "@/hooks";
 import { SeasonSelector } from "@/components/shared";
 import { PageHeader, SegmentedControl } from "@/components/layout";
 import {
+  LastNightSection,
   LeaderStripSection,
+  MilestoneSection,
   OutliersSectionWrapper,
   TopLinesSection,
   TeamGrid,
@@ -53,6 +57,8 @@ export const Route = createFileRoute("/")({
       queryClient.prefetchQuery(outliersQueryOptions(season, situation)),
       queryClient.prefetchQuery(topLinesQueryOptions(season, "5on5")),
       queryClient.prefetchQuery(teamsQueryOptions),
+      queryClient.prefetchQuery(nightlyGameScoresQueryOptions()),
+      queryClient.prefetchQuery(milestonesQueryOptions),
     ]);
   },
 });
@@ -115,6 +121,10 @@ function HomePage() {
       <LeaderStripSection season={effectiveSeason} situation={situation} />
 
       <OutliersSectionWrapper season={effectiveSeason} situation={situation} />
+
+      {isCurrentSeason && <LastNightSection />}
+
+      {isCurrentSeason && <MilestoneSection />}
 
       <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         <TopLinesSection season={effectiveSeason} />

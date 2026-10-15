@@ -4,7 +4,7 @@ import * as z from "zod/mini";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GamesGrid } from "@/components/games";
-import { useTodaysGames, useGamesByDate, usePageTitle } from "@/hooks";
+import { useGameProjections, useTodaysGames, useGamesByDate, usePageTitle } from "@/hooks";
 import { formatGameDateLong } from "@/lib/game-formatters";
 import {
   getYesterdayDate,
@@ -65,6 +65,9 @@ function GamesPage() {
     displayDate = customData?.date ?? activeDate;
   }
 
+  const hasUpcoming = games.some((g) => g.gameState === "FUT" || g.gameState === "PRE");
+  const { data: pregame } = useGameProjections(hasUpcoming ? displayDate : undefined);
+
   const handleTabChange = (tab: string) => {
     if (tab === "yesterday") {
       navigate({ search: { date: yesterdayDate } });
@@ -124,6 +127,7 @@ function GamesPage() {
       <GamesGrid
         games={games}
         isLoading={isLoading}
+        pregame={pregame}
         emptyMessage={`No games ${isYesterday ? "yesterday" : isToday ? "today" : isTomorrow ? "tomorrow" : "on this date"}`}
       />
     </div>

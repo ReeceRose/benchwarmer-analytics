@@ -225,13 +225,13 @@ export function SpecialTeamsPlayerTable({
                     {player.shots}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {player.xGoals?.toFixed(1) ?? "-"}
+                    {player.xGoals?.toFixed(1) ?? "–"}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {player.xGoalsPer60?.toFixed(2) ?? "-"}
+                    {player.xGoalsPer60?.toFixed(2) ?? "–"}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {player.pointsPer60?.toFixed(2) ?? "-"}
+                    {player.pointsPer60?.toFixed(2) ?? "–"}
                   </TableCell>
                 </TableRow>
               ))}

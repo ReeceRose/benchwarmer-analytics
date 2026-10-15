@@ -163,6 +163,10 @@ export interface LiveGoal {
   homeScore: number;
   headshot: string | null;
   highlightUrl: string | null;
+  /** Play-by-play event ID; goal replays are keyed by it. */
+  eventId: number | null;
+  /** The NHL has player and puck tracking for this goal's build-up. */
+  hasReplay: boolean;
 }
 
 export interface LivePenalty {
@@ -221,6 +225,26 @@ export interface LiveSkater {
   evAttemptsAgainst: number;
   penaltiesDrawn: number;
   penaltiesTaken: number;
+  primaryAssists: number;
+  secondaryAssists: number;
+  /** On-ice shot attempts and goals at 5v5 with both goalies in. */
+  onIceAttemptsFor5v5: number;
+  onIceAttemptsAgainst5v5: number;
+  onIceGoalsFor5v5: number;
+  onIceGoalsAgainst5v5: number;
+  gameScore: LiveGameScore;
+}
+
+/**
+ * Game Score (Dom Luszczyszyn) and its parts: scoring is goals, assists and
+ * shots; onIce is 5v5 shot attempts and goals for and against; other is
+ * blocks, penalties and faceoffs.
+ */
+export interface LiveGameScore {
+  total: number;
+  scoring: number;
+  onIce: number;
+  other: number;
 }
 
 export interface LiveGoalie {
@@ -308,6 +332,8 @@ export interface LiveGameResponse {
   /** Total seconds at each skater count, keyed "5v5", "5v4" (away v home). */
   timeBySkaters: Record<string, number>;
   strengthSegments: StrengthSegment[];
+  /** Home team's win probability (0-1) by game second, from the in-game model. */
+  winProbability: { t: number; home: number }[];
   goals: LiveGoal[];
   shots: LiveShot[];
   events: LivePuckEvent[];

@@ -1,3 +1,5 @@
+import type { GoaliePlayoffRecord, MilestoneMoment, PlayerAward } from "@/types/history";
+
 /** Basic player info used in lists and search results */
 export interface Player {
   id: number;
@@ -19,6 +21,24 @@ export interface PlayerDetail {
   heightInches?: number;
   weightLbs?: number;
   shoots?: string;
+  /** Latest entry draft selection; null when undrafted. Only on the player detail endpoint. */
+  draft?: PlayerDraft | null;
+  /** Trophies won or contended for, most wins first. Only on the player detail endpoint. */
+  awards?: PlayerAward[];
+  /** 1,000-point, 500-goal, 100-point and 50-goal moments, oldest first. Detail endpoint only. */
+  milestones?: MilestoneMoment[];
+  /** Hockey Hall of Fame induction (year may be unknown). Detail endpoint only. */
+  hallOfFame?: { inductedYear: number | null } | null;
+  /** Goalies: Game 7 and playoff overtime record. Detail endpoint only. */
+  goaliePlayoffs?: GoaliePlayoffRecord | null;
+}
+
+export interface PlayerDraft {
+  year: number;
+  round: number;
+  overallPick: number;
+  /** Team code at the time of the draft. */
+  team: string;
 }
 
 /** Player with optional stats for roster display */
@@ -76,6 +96,8 @@ export interface SkaterStats {
   giveaways?: number;
   dZoneGiveaways?: number;
   giveawayDZonePct?: number;
+  /** Season total Game Score. Set on "all" rows only. */
+  gameScore?: number | null;
 }
 
 /** Goalie statistics for a season/situation */
@@ -276,3 +298,52 @@ export interface GoalieWorkloadResponse {
   backToBackSplits: BackToBackSplits;
   workloadTrend: "heavy" | "moderate" | "light";
 }
+
+/** Fields shared by skater and goalie game log entries. */
+interface PlayerGameLogBase {
+  gameId: string;
+  gameDate: string;
+  team: string;
+  opponent: string;
+  isHome: boolean;
+  /** Null until the game is final. */
+  teamScore: number | null;
+  opponentScore: number | null;
+  periodType: string | null;
+  result: "W" | "L" | "OTL" | null;
+  toiSeconds: number;
+}
+
+export interface SkaterGameLogEntry extends PlayerGameLogBase {
+  goals: number;
+  assists: number;
+  points: number;
+  plusMinus: number;
+  shots: number;
+  powerPlayPoints: number;
+  /** Null when the game has no shots stored yet. */
+  xGoals: number | null;
+  /** Null when the game has no Game Score (no NHL shift data, or not imported yet). */
+  gameScore: number | null;
+  gameScoreScoring: number | null;
+  gameScoreOnIce: number | null;
+  gameScoreOther: number | null;
+}
+
+export interface GoalieGameLogEntry extends PlayerGameLogBase {
+  started: boolean;
+  decision: string | null;
+  shotsAgainst: number;
+  goalsAgainst: number;
+  xGoalsAgainst: number | null;
+  goalsSavedAboveExpected: number | null;
+}
+
+/** Response from GET /api/players/:id/game-log. Games are oldest first. */
+export type PlayerGameLogResponse = {
+  playerId: number;
+  season: number;
+  isPlayoffs: boolean;
+  /** False when the NHL game log couldn't be fetched. */
+  available: boolean;
+} & ({ isGoalie: false; games: SkaterGameLogEntry[] } | { isGoalie: true; games: GoalieGameLogEntry[] });

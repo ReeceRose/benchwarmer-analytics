@@ -41,7 +41,7 @@ export function GoalieRosterTable({ title, players, showStats = false }: GoalieR
   return (
     <div>
       <h2 className="text-lg font-semibold mb-3">{title}</h2>
-      <Card className="py-0 gap-0">
+      <Card className="gap-0 overflow-hidden py-0">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
@@ -93,10 +93,10 @@ export function GoalieRosterTable({ title, players, showStats = false }: GoalieR
                   </TableCell>
                   {showStats ? (
                     <>
-                      <TableCell className="text-right tabular-nums">{player.gamesPlayed ?? "-"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.gamesPlayed ?? "–"}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatToi(player.iceTimeSeconds)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{player.goalsAgainst ?? "-"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{player.shotsAgainst ?? "-"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.goalsAgainst ?? "–"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.shotsAgainst ?? "–"}</TableCell>
                       <TableCell className="text-right tabular-nums font-medium">{formatSavePct(player.savePercentage)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatGaa(player.goalsAgainstAverage)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatGsax(player.goalsSavedAboveExpected)}</TableCell>

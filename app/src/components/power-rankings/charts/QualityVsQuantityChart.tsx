@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Label,
-  ReferenceArea,
 } from "recharts";
 import {
   Card,
@@ -19,11 +18,12 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, ExternalLink } from "lucide-react";
+import { X } from "lucide-react";
 import { TeamLogo } from "@/components/shared";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getTeamLogoUrl } from "@/lib/team-logos";
 import { useChartSelection } from "@/hooks";
+import { cn } from "@/lib/utils";
 import type { TeamPowerRanking } from "@/types";
 
 interface QualityVsQuantityChartProps {
@@ -66,18 +66,14 @@ function CustomTooltip({
       </div>
       <div className="space-y-1 text-xs">
         <p>
-          <span className="text-muted-foreground">CF% (Quantity):</span>{" "}
-          <span
-            className={`tabular-nums ${isGoodQuantity ? "text-success" : "text-error"}`}
-          >
+          <span className="text-muted-foreground">CF% (volume):</span>{" "}
+          <span className={cn("tabular-nums", isGoodQuantity && "font-semibold")}>
             {data.corsiPct.toFixed(1)}%
           </span>
         </p>
         <p>
-          <span className="text-muted-foreground">xG% (Quality):</span>{" "}
-          <span
-            className={`tabular-nums ${isGoodQuality ? "text-success" : "text-error"}`}
-          >
+          <span className="text-muted-foreground">xG% (quality):</span>{" "}
+          <span className={cn("tabular-nums", isGoodQuality && "font-semibold")}>
             {data.xGoalsPct.toFixed(1)}%
           </span>
         </p>
@@ -149,22 +145,22 @@ function SelectionPanel({
             <p className="font-semibold truncate">
               {data.name}
               {isDominant && (
-                <span className="ml-2 text-success text-xs">Dominant</span>
+                <span className="ml-2 text-xs text-success">Dominant</span>
               )}
               {isStruggling && (
-                <span className="ml-2 text-error text-xs">Struggling</span>
+                <span className="ml-2 text-xs text-error">Struggling</span>
               )}
             </p>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 <span className="text-xs">CF%:</span>{" "}
-                <span className={`tabular-nums ${isGoodQuantity ? "text-success" : "text-error"}`}>
+                <span className={cn("tabular-nums", isGoodQuantity && "font-semibold text-foreground")}>
                   {data.corsiPct.toFixed(1)}%
                 </span>
               </span>
               <span>
                 <span className="text-xs">xG%:</span>{" "}
-                <span className={`tabular-nums ${isGoodQuality ? "text-success" : "text-error"}`}>
+                <span className={cn("tabular-nums", isGoodQuality && "font-semibold text-foreground")}>
                   {data.xGoalsPct.toFixed(1)}%
                 </span>
               </span>
@@ -172,11 +168,10 @@ function SelectionPanel({
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="default" onClick={onNavigate}>
-            View
-            <ExternalLink className="h-3 w-3 ml-1" />
+          <Button size="sm" variant="outline" onClick={onNavigate}>
+            Team page
           </Button>
-          <Button size="sm" variant="ghost" onClick={onClose}>
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -239,20 +234,18 @@ export function QualityVsQuantityChart({
   // Calculate domain with padding
   const cfPcts = chartData.map((d) => d.corsiPct);
   const xgPcts = chartData.map((d) => d.xGoalsPct);
-  const xMin = Math.floor(Math.min(...cfPcts) - 1);
-  const xMax = Math.ceil(Math.max(...cfPcts) + 1);
-  const yMin = Math.floor(Math.min(...xgPcts) - 1);
-  const yMax = Math.ceil(Math.max(...xgPcts) + 1);
+  const xMin = Math.floor(Math.min(50, ...cfPcts) - 1);
+  const xMax = Math.ceil(Math.max(50, ...cfPcts) + 1);
+  const yMin = Math.floor(Math.min(50, ...xgPcts) - 1);
+  const yMax = Math.ceil(Math.max(50, ...xgPcts) + 1);
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">
-          Quality vs quantity of chances
-        </CardTitle>
+        <CardTitle className="text-base">Shot quality vs volume</CardTitle>
         <CardDescription>
-          xG% (quality) vs CF% (volume) - top-right is dominant, bottom-left is
-          struggling
+          Share of expected goals against share of shot attempts. Teams top
+          right control both.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -262,39 +255,6 @@ export function QualityVsQuantityChart({
               strokeDasharray="3 3"
               stroke={CHART_AXIS_COLOURS.grid}
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-            />
-
-            <ReferenceArea
-              x1={xMin}
-              x2={50}
-              y1={50}
-              y2={yMax}
-              fill="var(--chart-1)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={50}
-              x2={xMax}
-              y1={50}
-              y2={yMax}
-              fill="var(--chart-3)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={xMin}
-              x2={50}
-              y1={yMin}
-              y2={50}
-              fill="var(--chart-2)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={50}
-              x2={xMax}
-              y1={yMin}
-              y2={50}
-              fill="var(--chart-4)"
-              fillOpacity={0.08}
             />
 
             <XAxis
@@ -307,7 +267,7 @@ export function QualityVsQuantityChart({
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Corsi For % (Shot Attempt Share)"
+                value="CF% (shot attempt share)"
                 position="bottom"
                 offset={15}
                 style={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
@@ -323,7 +283,7 @@ export function QualityVsQuantityChart({
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Expected Goals %"
+                value="xG% (expected goal share)"
                 angle={-90}
                 position="insideLeft"
                 offset={10}
@@ -368,34 +328,27 @@ export function QualityVsQuantityChart({
         )}
 
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium">Quality over Volume</span>
-            <p className="text-muted-foreground">High xG%, Low CF%</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Quality over volume</span>
+            <p className="text-muted-foreground">High xG%, low CF%</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
+          <div className="rounded-xl bg-muted/60 p-2">
             <span className="font-medium text-success">Dominant</span>
-            <p className="text-muted-foreground">High xG%, High CF%</p>
+            <p className="text-muted-foreground">High xG%, high CF%</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
+          <div className="rounded-xl bg-muted/60 p-2">
             <span className="font-medium text-error">Struggling</span>
-            <p className="text-muted-foreground">Low xG%, Low CF%</p>
+            <p className="text-muted-foreground">Low xG%, low CF%</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium">Volume over Quality</span>
-            <p className="text-muted-foreground">Low xG%, High CF%</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Volume over quality</span>
+            <p className="text-muted-foreground">Low xG%, high CF%</p>
           </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
-          Tap a team to see details
+        <p className="mt-3 text-xs text-muted-foreground">
+          Dashed lines are 50%.
+          <span className="sm:hidden"> Tap a team for details.</span>
         </p>
       </CardContent>
     </Card>

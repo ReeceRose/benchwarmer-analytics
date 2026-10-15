@@ -9,7 +9,7 @@ import {
   type SideColourChoice,
   type useSideColours,
 } from "@/components/game-live/useSideColours";
-import { getTeamColours } from "@/lib/team-colours";
+import { getBrandPalette } from "@/lib/team-colours";
 import { cn } from "@/lib/utils";
 import type { TeamSide } from "@/types";
 
@@ -24,8 +24,7 @@ interface TeamColourPickerProps {
 export function TeamColourPicker({ side, name, abbrev, colours }: TeamColourPickerProps) {
   const current = colours.choices[side];
   const other = colours.choices[opposite(side)];
-  const { primary, accent } = getTeamColours(abbrev);
-  const brand: SideColourChoice[] = primary === accent ? ["brand-primary"] : ["brand-primary", "brand-accent"];
+  const palette = getBrandPalette(abbrev);
   const custom = current.startsWith("#") ? current : "#ff4c00";
 
   const option = (choice: SideColourChoice, label: string) => {
@@ -65,12 +64,16 @@ export function TeamColourPicker({ side, name, abbrev, colours }: TeamColourPick
       <PopoverContent align="start" className="w-64 space-y-3 rounded-xl p-3">
         <div className="text-sm font-semibold">{name} colour</div>
         <div className="flex flex-wrap gap-2">{CHART_CHOICES.map((c, i) => option(c, `Colour ${i + 1}`))}</div>
-        <div>
-          <div className="mb-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Team colours</div>
-          <div className="flex flex-wrap gap-2">
-            {brand.map((c) => option(c, c === "brand-primary" ? `${abbrev} primary` : `${abbrev} accent`))}
+        {palette.length > 0 && (
+          <div>
+            <div className="mb-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+              Team colours
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {palette.map((hex, i) => option(`brand-${i}` as SideColourChoice, `${abbrev} ${hex.toUpperCase()}`))}
+            </div>
           </div>
-        </div>
+        )}
         <div className="flex items-center justify-between gap-2 border-t pt-3">
           <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
             <input

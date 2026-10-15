@@ -108,12 +108,15 @@ function TeamDetailPage() {
 
   // Check if we're on a child route
   const isOnChildRoute =
+    location.pathname.includes("/games") ||
     location.pathname.includes("/lines") ||
     location.pathname.includes("/chemistry") ||
     location.pathname.includes("/shots") ||
     location.pathname.includes("/special-teams") ||
     location.pathname.includes("/score-state") ||
-    location.pathname.includes("/builder");
+    location.pathname.includes("/builder") ||
+    location.pathname.includes("/tracking") ||
+    location.pathname.includes("/history");
 
   const handleSeasonChange = (value: string) => {
     navigate({
@@ -153,12 +156,16 @@ function TeamDetailPage() {
 
   const tabs = [
     { to: "/teams/$abbrev", label: "Roster" },
+    { to: "/teams/$abbrev/games", label: "Games" },
+    { to: "/teams/$abbrev/home-away", label: "Home and away" },
     { to: "/teams/$abbrev/lines", label: "Lines" },
     { to: "/teams/$abbrev/chemistry", label: "Chemistry" },
     { to: "/teams/$abbrev/shots", label: "Shots" },
     { to: "/teams/$abbrev/special-teams", label: "Special teams" },
     { to: "/teams/$abbrev/score-state", label: "Score state" },
+    { to: "/teams/$abbrev/tracking", label: "Tracking" },
     { to: "/teams/$abbrev/builder", label: "Line builder" },
+    { to: "/teams/$abbrev/history", label: "History" },
   ] as const;
 
   return (

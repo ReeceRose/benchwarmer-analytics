@@ -280,15 +280,10 @@ export const goalieSeasons = pgTable(
   ],
 );
 
-export const teamSeasons = pgTable(
-  "team_seasons",
-  {
-    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-    teamAbbreviation: text("team_abbreviation").notNull().references(() => teams.abbreviation, { onDelete: "cascade" }),
-    season: integer("season").notNull(),
-    situation: text("situation").notNull(),
-    isPlayoffs: boolean("is_playoffs").notNull(),
-    gamesPlayed: integer("games_played").notNull(),
+// Team stat columns shared by team_seasons and team_games (same MoneyPuck
+// fields, season totals vs one game).
+function teamStatColumns() {
+  return {
     iceTime: numeric("ice_time", { mode: "number" }).notNull(),
     xGoalsPercentage: numeric("x_goals_percentage", { mode: "number" }),
     corsiPercentage: numeric("corsi_percentage", { mode: "number" }),
@@ -389,12 +384,48 @@ export const teamSeasons = pgTable(
     totalShotCreditAgainst: numeric("total_shot_credit_against", { mode: "number" }).notNull(),
     scoreAdjustedTotalShotCreditAgainst: numeric("score_adjusted_total_shot_credit_against", { mode: "number" }).notNull(),
     scoreFlurryAdjustedTotalShotCreditAgainst: numeric("score_flurry_adjusted_total_shot_credit_against", { mode: "number" }).notNull(),
+  };
+}
+
+export const teamSeasons = pgTable(
+  "team_seasons",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    teamAbbreviation: text("team_abbreviation").notNull().references(() => teams.abbreviation, { onDelete: "cascade" }),
+    season: integer("season").notNull(),
+    situation: text("situation").notNull(),
+    isPlayoffs: boolean("is_playoffs").notNull(),
+    gamesPlayed: integer("games_played").notNull(),
+    ...teamStatColumns(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index("ix_team_seasons_season").on(t.season),
     uniqueIndex("ix_team_seasons_team_abbreviation_season_situation_is_playoffs").on(t.teamAbbreviation, t.season, t.situation, t.isPlayoffs),
+  ],
+);
+
+export const teamGames = pgTable(
+  "team_games",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    gameId: text("game_id").notNull(),
+    season: integer("season").notNull(),
+    gameDate: date("game_date").notNull(),
+    teamAbbreviation: text("team_abbreviation").notNull().references(() => teams.abbreviation, { onDelete: "cascade" }),
+    opponentAbbreviation: text("opponent_abbreviation").notNull(),
+    isHome: boolean("is_home").notNull(),
+    isPlayoffs: boolean("is_playoffs").notNull(),
+    situation: text("situation").notNull(),
+    ...teamStatColumns(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ix_team_games_game_id_team_abbreviation_situation").on(t.gameId, t.teamAbbreviation, t.situation),
+    index("ix_team_games_team_abbreviation_season_situation").on(t.teamAbbreviation, t.season, t.situation),
+    index("ix_team_games_season").on(t.season),
   ],
 );
 
@@ -611,6 +642,107 @@ export const games = pgTable(
   ],
 );
 
+// One row per skater per final game: Game Score and the stats behind it,
+// computed from NHL play-by-play and shift charts (server/api/game-score.ts).
+// player_id has no FK: call-ups can play before their bio is imported.
+export const skaterGames = pgTable(
+  "skater_games",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    gameId: text("game_id").notNull(),
+    season: integer("season").notNull(),
+    gameDate: date("game_date").notNull(),
+    isPlayoffs: boolean("is_playoffs").notNull(),
+    playerId: integer("player_id").notNull(),
+    name: text("name").notNull(),
+    position: text("position").notNull(),
+    team: text("team").notNull(),
+    opponent: text("opponent").notNull(),
+    isHome: boolean("is_home").notNull(),
+    toiSeconds: integer("toi_seconds").notNull(),
+    goals: integer("goals").notNull(),
+    primaryAssists: integer("primary_assists").notNull(),
+    secondaryAssists: integer("secondary_assists").notNull(),
+    shotsOnGoal: integer("shots_on_goal").notNull(),
+    blocks: integer("blocks").notNull(),
+    penaltiesDrawn: integer("penalties_drawn").notNull(),
+    penaltiesTaken: integer("penalties_taken").notNull(),
+    faceoffWins: integer("faceoff_wins").notNull(),
+    faceoffLosses: integer("faceoff_losses").notNull(),
+    onIceAttemptsFor5v5: integer("on_ice_attempts_for_5v5").notNull(),
+    onIceAttemptsAgainst5v5: integer("on_ice_attempts_against_5v5").notNull(),
+    onIceGoalsFor5v5: integer("on_ice_goals_for_5v5").notNull(),
+    onIceGoalsAgainst5v5: integer("on_ice_goals_against_5v5").notNull(),
+    gameScore: numeric("game_score", { mode: "number" }).notNull(),
+    gameScoreScoring: numeric("game_score_scoring", { mode: "number" }).notNull(),
+    gameScoreOnIce: numeric("game_score_on_ice", { mode: "number" }).notNull(),
+    gameScoreOther: numeric("game_score_other", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ix_skater_games_game_id_player_id").on(t.gameId, t.playerId),
+    index("ix_skater_games_player_id_season").on(t.playerId, t.season),
+    index("ix_skater_games_game_date").on(t.gameDate),
+    index("ix_skater_games_season_is_playoffs_game_score").on(t.season, t.isPlayoffs, t.gameScore),
+  ],
+);
+
+// Daily playoff odds from the season simulation (server/projections), one row
+// per team per run. Earlier runs are kept for day-over-day changes. The rating
+// columns are the team strength the run used (also used for pregame odds).
+export const playoffOdds = pgTable(
+  "playoff_odds",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    season: integer("season").notNull(),
+    runDate: date("run_date").notNull(),
+    team: text("team").notNull(),
+    conference: text("conference").notNull(),
+    division: text("division").notNull(),
+    gamesPlayed: integer("games_played").notNull(),
+    points: integer("points").notNull(),
+    ratingXgd: numeric("rating_xgd", { mode: "number" }).notNull(),
+    ratingGd: numeric("rating_gd", { mode: "number" }).notNull(),
+    pointsAvg: numeric("points_avg", { mode: "number" }).notNull(),
+    pointsP10: integer("points_p10").notNull(),
+    pointsP90: integer("points_p90").notNull(),
+    makePlayoffs: numeric("make_playoffs", { mode: "number" }).notNull(),
+    winRound1: numeric("win_round1", { mode: "number" }).notNull(),
+    winRound2: numeric("win_round2", { mode: "number" }).notNull(),
+    winConference: numeric("win_conference", { mode: "number" }).notNull(),
+    winCup: numeric("win_cup", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ix_playoff_odds_season_run_date_team").on(t.season, t.runDate, t.team),
+    index("ix_playoff_odds_run_date").on(t.runDate),
+  ],
+);
+
+// The run's games for that day: pregame odds and each team's playoff odds if
+// it wins or loses, for "tonight's biggest games".
+export const playoffOddsGames = pgTable(
+  "playoff_odds_games",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    season: integer("season").notNull(),
+    runDate: date("run_date").notNull(),
+    gameId: text("game_id").notNull(),
+    homeTeam: text("home_team").notNull(),
+    awayTeam: text("away_team").notNull(),
+    homeWinProbability: numeric("home_win_probability", { mode: "number" }).notNull(),
+    homeIfWin: numeric("home_if_win", { mode: "number" }).notNull(),
+    homeIfLoss: numeric("home_if_loss", { mode: "number" }).notNull(),
+    awayIfWin: numeric("away_if_win", { mode: "number" }).notNull(),
+    awayIfLoss: numeric("away_if_loss", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("ix_playoff_odds_games_run_date_game_id").on(t.runDate, t.gameId)],
+);
+
 export const gameScoreStateTimes = pgTable(
   "game_score_state_times",
   {
@@ -679,3 +811,277 @@ export const syncRuns = pgTable(
     check("ck_sync_runs_status", sql`${t.status} in ('running', 'succeeded', 'failed')`),
   ],
 );
+
+// --- NHL records (records.nhl.com), refreshed weekly by /api/cron/history ---
+// Seasons are start years (2024 = 2024-25) like everywhere else; NHL franchise
+// and team IDs are the records site's own.
+
+// One row per NHL franchise, active or not.
+export const franchises = pgTable("franchises", {
+  id: integer("id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  // Most recent team code (UTA for Utah; inactive franchises keep their last).
+  teamAbbreviation: text("team_abbreviation"),
+  firstSeason: integer("first_season").notNull(),
+  // Null while active.
+  lastSeason: integer("last_season"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Each franchise's regular season, with how far it went in the playoffs.
+export const franchiseSeasons = pgTable(
+  "franchise_seasons",
+  {
+    franchiseId: integer("franchise_id").notNull().references(() => franchises.id, { onDelete: "cascade" }),
+    season: integer("season").notNull(),
+    teamId: integer("team_id").notNull(),
+    // Team code that season (e.g. ATL for the Thrashers).
+    teamAbbreviation: text("team_abbreviation").notNull(),
+    teamName: text("team_name").notNull(),
+    gamesPlayed: integer("games_played").notNull(),
+    wins: integer("wins").notNull(),
+    losses: integer("losses").notNull(),
+    ties: integer("ties"),
+    overtimeLosses: integer("overtime_losses"),
+    points: integer("points").notNull(),
+    goalsFor: integer("goals_for").notNull(),
+    goalsAgainst: integer("goals_against").notNull(),
+    divisionName: text("division_name"),
+    divisionRank: integer("division_rank"),
+    leagueRank: integer("league_rank"),
+    madePlayoffs: boolean("made_playoffs").notNull(),
+    // Furthest round reached, e.g. "2nd Round", "Stanley Cup Final".
+    playoffResult: text("playoff_result"),
+    playoffRound: integer("playoff_round"),
+    wonCup: boolean("won_cup").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ix_franchise_seasons_franchise_id_season").on(t.franchiseId, t.season),
+    index("ix_franchise_seasons_team_id").on(t.teamId),
+  ],
+);
+
+// All-time record of one franchise against another, from the first one's side.
+export const franchiseHeadToHead = pgTable(
+  "franchise_head_to_head",
+  {
+    franchiseId: integer("franchise_id").notNull().references(() => franchises.id, { onDelete: "cascade" }),
+    opponentFranchiseId: integer("opponent_franchise_id").notNull().references(() => franchises.id, { onDelete: "cascade" }),
+    isPlayoffs: boolean("is_playoffs").notNull(),
+    gamesPlayed: integer("games_played").notNull(),
+    wins: integer("wins").notNull(),
+    losses: integer("losses").notNull(),
+    ties: integer("ties").notNull(),
+    overtimeLosses: integer("overtime_losses").notNull(),
+    goalsFor: integer("goals_for").notNull(),
+    goalsAgainst: integer("goals_against").notNull(),
+    lastMeetingSeason: integer("last_meeting_season"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ix_franchise_head_to_head_franchise_opponent_playoffs").on(t.franchiseId, t.opponentFranchiseId, t.isPlayoffs),
+  ],
+);
+
+// Every NHL entry draft pick (1963 on).
+export const draftPicks = pgTable(
+  "draft_picks",
+  {
+    // The records site's pick ID.
+    id: integer("id").primaryKey(),
+    draftYear: integer("draft_year").notNull(),
+    round: integer("round").notNull(),
+    pickInRound: integer("pick_in_round").notNull(),
+    overallPick: integer("overall_pick").notNull(),
+    teamId: integer("team_id").notNull(),
+    // Team code at the time of the draft.
+    teamAbbreviation: text("team_abbreviation").notNull(),
+    // Resolved through franchise_seasons; null when the team isn't in them.
+    franchiseId: integer("franchise_id"),
+    // NHL player ID; null for picks the NHL never linked to a player.
+    playerId: integer("player_id"),
+    playerName: text("player_name").notNull(),
+    position: text("position"),
+    amateurClub: text("amateur_club"),
+    amateurLeague: text("amateur_league"),
+    countryCode: text("country_code"),
+    birthDate: date("birth_date"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("ix_draft_picks_draft_year_overall_pick").on(t.draftYear, t.overallPick),
+    index("ix_draft_picks_franchise_id_draft_year").on(t.franchiseId, t.draftYear),
+    index("ix_draft_picks_player_id").on(t.playerId),
+  ],
+);
+
+// Regular-season NHL career totals for every player in NHL history.
+export const playerCareers = pgTable("player_careers", {
+  playerId: integer("player_id").primaryKey(),
+  name: text("name").notNull(),
+  position: text("position"),
+  gamesPlayed: integer("games_played").notNull(),
+  // Skaters
+  goals: integer("goals"),
+  assists: integer("assists"),
+  points: integer("points"),
+  // Goalies
+  wins: integer("wins"),
+  // Goalies, playoffs: Game 7s and overtime games.
+  playoffGames: integer("playoff_games"),
+  gameSevenWins: integer("game_seven_wins"),
+  gameSevenLosses: integer("game_seven_losses"),
+  playoffOvertimeWins: integer("playoff_overtime_wins"),
+  playoffOvertimeLosses: integer("playoff_overtime_losses"),
+  playoffOvertimeSavePct: numeric("playoff_overtime_save_pct", { mode: "number" }),
+  firstSeason: integer("first_season"),
+  lastSeason: integer("last_season"),
+  isActive: boolean("is_active").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Every NHL trophy and award (records site IDs).
+export const trophies = pgTable("trophies", {
+  id: integer("id").primaryKey(),
+  name: text("name").notNull(),
+  // URL slug, e.g. "hart-memorial".
+  slug: text("slug").notNull().unique(),
+  // 1 team, 2 player, 3 coach, 4 general manager, 5 other.
+  categoryId: integer("category_id").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Winners, runners-up and finalists of every trophy, every season.
+export const awardWinners = pgTable(
+  "award_winners",
+  {
+    // The records site's award-detail ID.
+    id: integer("id").primaryKey(),
+    trophyId: integer("trophy_id").notNull().references(() => trophies.id, { onDelete: "cascade" }),
+    season: integer("season").notNull(),
+    // WINNER, RUNNER_UP or FINALIST.
+    status: text("status").notNull(),
+    fullName: text("full_name").notNull(),
+    // NHL player ID; null for coaches, teams and others.
+    playerId: integer("player_id"),
+    // The team that season, and its franchise (through franchise_seasons).
+    teamId: integer("team_id"),
+    franchiseId: integer("franchise_id"),
+    isRookie: boolean("is_rookie").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("ix_award_winners_trophy_id_season").on(t.trophyId, t.season),
+    index("ix_award_winners_player_id").on(t.playerId),
+    index("ix_award_winners_franchise_id").on(t.franchiseId),
+  ],
+);
+
+// Captains, head coaches, general managers and retired numbers by franchise,
+// parsed from the records site's franchise detail lists.
+export const franchisePeople = pgTable(
+  "franchise_people",
+  {
+    franchiseId: integer("franchise_id").notNull().references(() => franchises.id, { onDelete: "cascade" }),
+    // captain, coach, gm or retired.
+    role: text("role").notNull(),
+    // Order on the records site (newest first; retired numbers by number).
+    position: integer("position").notNull(),
+    name: text("name").notNull(),
+    // "2016-17 – Present", "Oct. 8, 2015 – Nov. 18, 2018", "1980-87".
+    tenure: text("tenure"),
+    // Retired numbers only.
+    sweaterNumber: integer("sweater_number"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("ix_franchise_people_franchise_id_role_position").on(t.franchiseId, t.role, t.position)],
+);
+
+// Hockey Hall of Fame inductees who played in the NHL.
+export const hallOfFame = pgTable("hall_of_fame", {
+  playerId: integer("player_id").primaryKey(),
+  // Induction year; null when the records site doesn't say.
+  inductedYear: integer("inducted_year"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// The game each 1,000th point, 500th goal, 100th point of a season and 50th
+// goal of a season came in.
+export const milestoneMoments = pgTable(
+  "milestone_moments",
+  {
+    // "<kind>-<gameId>-<playerId>".
+    id: text("id").primaryKey(),
+    // points-1000, goals-500, season-points-100 or season-goals-50.
+    kind: text("kind").notNull(),
+    playerId: integer("player_id").notNull(),
+    name: text("name").notNull(),
+    season: integer("season").notNull(),
+    gameId: text("game_id").notNull(),
+    gameDate: date("game_date").notNull(),
+    teamId: integer("team_id"),
+    teamName: text("team_name"),
+    homeTeam: text("home_team"),
+    awayTeam: text("away_team"),
+    homeScore: integer("home_score"),
+    awayScore: integer("away_score"),
+    ageYears: integer("age_years"),
+    // Career games (career milestones) or season games (season milestones) at the time.
+    gamesPlayed: integer("games_played"),
+    // Season milestones: the season's final total.
+    seasonTotal: integer("season_total"),
+    goalieName: text("goalie_name"),
+    isActive: boolean("is_active").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("ix_milestone_moments_kind_game_date").on(t.kind, t.gameDate),
+    index("ix_milestone_moments_player_id").on(t.playerId),
+  ],
+);
+
+// Every NHL referee and linesperson.
+export const officials = pgTable("officials", {
+  id: integer("id").primaryKey(),
+  name: text("name").notNull(),
+  // Referee or Linesperson.
+  officialType: text("official_type").notNull(),
+  sweaterNumber: integer("sweater_number"),
+  firstRegularGameId: text("first_regular_game_id"),
+  firstPlayoffGameId: text("first_playoff_game_id"),
+  countryCode: text("country_code"),
+  isActive: boolean("is_active").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// NHL head coaches (for Cup counts and Hall of Fame status).
+export const coaches = pgTable("coaches", {
+  id: integer("id").primaryKey(),
+  name: text("name").notNull(),
+  stanleyCups: integer("stanley_cups").notNull(),
+  inHallOfFame: boolean("in_hall_of_fame").notNull(),
+  isActive: boolean("is_active").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// League attendance by season.
+export const leagueAttendance = pgTable("league_attendance", {
+  season: integer("season").primaryKey(),
+  regular: integer("regular"),
+  playoffs: integer("playoffs"),
+  total: integer("total"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Each draft lottery's format and odds, as plain text plus the odds chart.
+export const draftLotteries = pgTable("draft_lotteries", {
+  draftYear: integer("draft_year").primaryKey(),
+  format: text("format"),
+  oddsImageUrl: text("odds_image_url"),
+  notes: text("notes"),
+  results: text("results"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

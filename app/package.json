@@ -55,6 +55,7 @@
     "decimal.js": "10.6.0",
     "drizzle-orm": "0.45.4",
     "fflate": "0.8.3",
+    "html-to-image": "1.11.13",
     "lucide-react": "0.563.0",
     "nitro": "3.0.260903-beta",
     "pg": "8.23.1",

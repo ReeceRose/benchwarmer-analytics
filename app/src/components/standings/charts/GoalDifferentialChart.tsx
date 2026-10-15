@@ -1,217 +1,64 @@
-import { useNavigate } from "@tanstack/react-router";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  ReferenceLine,
-} from "recharts";
+import { Link } from "@tanstack/react-router";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { TeamLogo } from "@/components/shared";
-import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
-import { getTeamLogoUrl } from "@/lib/team-logos";
+import { RankedBars, RankedTeamLabel, niceAxis } from "@/components/charts";
 import type { StandingsWithAnalytics } from "@/types";
 
 interface GoalDifferentialChartProps {
   teams: StandingsWithAnalytics[];
 }
 
-interface ChartDataPoint {
-  abbrev: string;
-  name: string;
-  goalsFor: number;
-  goalsAgainst: number;
-  diff: number;
-}
-
-// Custom tooltip
-function CustomTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: ChartDataPoint }>;
-}) {
-  if (!active || !payload?.length) return null;
-
-  const data = payload[0].payload;
-  const isPositive = data.diff > 0;
-
-  return (
-    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
-      <div className="flex items-center gap-2 mb-2">
-        <TeamLogo abbrev={data.abbrev} size="sm" />
-        <span className="font-semibold">{data.name}</span>
-      </div>
-      <div className="space-y-1 text-xs">
-        <p>
-          <span className="text-muted-foreground">Goals For:</span>{" "}
-          <span className="tabular-nums">{data.goalsFor}</span>
-        </p>
-        <p>
-          <span className="text-muted-foreground">Goals Against:</span>{" "}
-          <span className="tabular-nums">{data.goalsAgainst}</span>
-        </p>
-        <p className={isPositive ? "text-success" : "text-error"}>
-          <span className="text-muted-foreground">Differential:</span>{" "}
-          <span className="tabular-nums font-semibold">
-            {isPositive ? "+" : ""}
-            {data.diff}
-          </span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Custom Y-axis tick with team logo
-function CustomYAxisTick({
-  x,
-  y,
-  payload,
-}: {
-  x?: number;
-  y?: number;
-  payload?: { value: string };
-}) {
-  if (!payload?.value || x === undefined || y === undefined) return null;
-
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <image
-        href={getTeamLogoUrl(payload.value)}
-        x={-32}
-        y={-12}
-        width={24}
-        height={24}
-      />
-    </g>
-  );
-}
-
+/** Goals for minus against, best first: bars grow right from zero for positive, left (muted) for negative. */
 export function GoalDifferentialChart({ teams }: GoalDifferentialChartProps) {
-  const navigate = useNavigate();
+  const rows = [...teams]
+    .sort((a, b) => b.goalDifferential - a.goalDifferential || b.goalsFor - a.goalsFor)
+    .map((t) => ({
+      key: t.abbreviation,
+      abbrev: t.abbreviation,
+      label: <RankedTeamLabel abbrev={t.abbreviation} />,
+      value: t.goalDifferential,
+      display: `${t.goalDifferential > 0 ? "+" : ""}${t.goalDifferential}`,
+      meta: `${t.goalsFor}–${t.goalsAgainst}`,
+      title: t.name,
+    }));
 
-  // Prepare and sort by goal differential
-  const chartData: ChartDataPoint[] = [...teams]
-    .map((team) => ({
-      abbrev: team.abbreviation,
-      name: team.name,
-      goalsFor: team.goalsFor,
-      goalsAgainst: team.goalsAgainst,
-      diff: team.goalDifferential,
-    }))
-    .sort((a, b) => b.diff - a.diff);
-
-  const handleClick = (data: ChartDataPoint) => {
-    navigate({
-      to: "/teams/$abbrev",
-      params: { abbrev: data.abbrev },
-    });
-  };
-
-  if (chartData.length === 0) {
+  if (rows.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Goal differential</CardTitle>
-          <CardDescription>No data for this selection yet</CardDescription>
+          <CardTitle className="text-base">Goal differential</CardTitle>
+          <CardDescription>No standings yet this season.</CardDescription>
         </CardHeader>
       </Card>
     );
   }
 
-  // Calculate symmetric domain around 0
-  const maxAbsDiff = Math.max(...chartData.map((d) => Math.abs(d.diff)));
-  const domain = Math.ceil(maxAbsDiff / 10) * 10 + 10;
+  const extent = Math.max(1, ...rows.map((r) => Math.abs(r.value)));
+  const { domain, ticks } = niceAxis([-extent, extent]);
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Goal differential</CardTitle>
-        <CardDescription>
-          Goals for minus goals against - sorted by differential
-        </CardDescription>
+        <CardDescription>Goals for minus goals against, best first.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={1000}>
-          <BarChart
-            data={chartData}
-            layout="vertical"
-            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-          >
-            <XAxis
-              type="number"
-              domain={[-domain, domain]}
-              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              type="category"
-              dataKey="abbrev"
-              tick={<CustomYAxisTick />}
-              width={45}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              content={<CustomTooltip />}
-              cursor={{ fill: "var(--muted)", fillOpacity: 0.5 }}
-            />
-
-            <ReferenceLine
-              x={0}
-              stroke={CHART_AXIS_COLOURS.reference}
-              strokeWidth={1}
-            />
-
-            <Bar
-              dataKey="diff"
-              cursor="pointer"
-              onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
-              radius={4}
-            >
-              {chartData.map((entry) => (
-                <Cell
-                  key={entry.abbrev}
-                  fill={
-                    entry.diff >= 0 ? "var(--chart-3)" : "var(--chart-2)"
-                  }
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-        <div className="flex justify-center gap-8 mt-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-3)" }}
-            />
-            <span className="text-muted-foreground">
-              Positive (More GF than GA)
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-2)" }}
-            />
-            <span className="text-muted-foreground">
-              Negative (More GA than GF)
-            </span>
-          </div>
-        </div>
+        <RankedBars
+          rows={rows}
+          headers={{ label: "Team", value: "Diff", meta: "GF–GA" }}
+          domain={domain}
+          ticks={ticks}
+          formatTick={(t) => (t > 0 ? `+${t}` : String(t))}
+          baseline={0}
+          renderRow={(row, props) => (
+            <Link key={row.key} to="/teams/$abbrev" params={{ abbrev: row.abbrev }} {...props} />
+          )}
+        />
       </CardContent>
     </Card>
   );

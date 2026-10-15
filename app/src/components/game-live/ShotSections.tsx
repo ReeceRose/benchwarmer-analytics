@@ -9,7 +9,8 @@ import type { LiveGameResponse, LiveShot, ShotResult, StrengthState, TeamSide } 
 
 const RESULT_LABEL: Record<ShotResult, string> = { GOAL: "Goal", SOG: "Shot on goal", MISS: "Missed", BLOCK: "Blocked" };
 
-function PowerPlayBands({ data, x, top, height }: { data: LiveGameResponse; x: (t: number) => number; top: number; height: number }) {
+/** Power plays shaded in the team-with-the-advantage's tint. */
+export function PowerPlayBands({ data, x, top, height }: { data: LiveGameResponse; x: (t: number) => number; top: number; height: number }) {
   return (
     <>
       {data.strengthSegments
@@ -340,8 +341,8 @@ function CountTable({ data, counts }: { data: LiveGameResponse; counts: Record<T
       <thead>
         <tr className="text-xs text-muted-foreground">
           <th className="pb-1.5 text-left font-medium" />
-          <th className="pb-1.5 text-right font-medium"><TeamLabel side="away">{data.away.abbrev}</TeamLabel></th>
-          <th className="pb-1.5 text-right font-medium"><TeamLabel side="home">{data.home.abbrev}</TeamLabel></th>
+          <th className="w-12 pb-1.5 text-right font-medium"><TeamLabel side="away">{data.away.abbrev}</TeamLabel></th>
+          <th className="w-12 pb-1.5 text-right font-medium"><TeamLabel side="home">{data.home.abbrev}</TeamLabel></th>
         </tr>
       </thead>
       <tbody>
@@ -357,7 +358,8 @@ function CountTable({ data, counts }: { data: LiveGameResponse; counts: Record<T
   );
 }
 
-export function ShotProfile({ data }: { data: LiveGameResponse }) {
+/** `wide` lays the three cards out in a row (full-width section); otherwise distance sits above a pair. */
+export function ShotProfile({ data, wide = false }: { data: LiveGameResponse; wide?: boolean }) {
   const bins: [number, number, string][] = [[0, 15, "<15 ft"], [15, 25, "15–25 ft"], [25, 35, "25–35 ft"], [35, 50, "35–50 ft"], [50, 999, "50+ ft"]];
   const count = (side: TeamSide) =>
     bins.map(([lo, hi]) => data.shots.filter((s) => s.team === side && s.result !== "BLOCK" && s.distance != null && s.distance >= lo && s.distance < hi).length);
@@ -369,8 +371,8 @@ export function ShotProfile({ data }: { data: LiveGameResponse }) {
     return list.reduce((sum, s) => sum + s.distance!, 0) / Math.max(list.length, 1);
   };
   return (
-    <div className="space-y-4">
-      <Card title="Shot distance (unblocked)">
+    <div className={wide ? "grid gap-4 lg:grid-cols-3" : "grid gap-4 sm:grid-cols-2"}>
+      <Card title="Shot distance (unblocked)" className={wide ? undefined : "sm:col-span-2"}>
         <div className="space-y-1">
           <div className="flex justify-between pb-0.5 text-xs text-muted-foreground">
             <TeamLabel side="away">{data.away.abbrev}</TeamLabel>

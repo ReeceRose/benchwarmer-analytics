@@ -55,6 +55,7 @@ app/                          # the app (TanStack Start)
 ├── src/server/ingestion/     # MoneyPuck/NHL downloads, CSV specs, importers, steps
 ├── src/server/cron.ts        # cron route auth/wrapper (CRON_SECRET)
 ├── src/server/api/           # API handlers by group, NHL API client, query/error/cache helpers
+├── src/server/projections/   # team ratings, pregame model, season simulation (playoff odds)
 ├── src/server/http.ts        # shared Response helpers
 ├── src/lib/api.ts            # fetch client for same-origin /api (contract the UI depends on)
 ├── src/types/                # response shapes: source of truth for the /api contract

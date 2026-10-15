@@ -1,285 +1,138 @@
-import { useNavigate } from "@tanstack/react-router";
-import {
-  ComposedChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  Scatter,
-} from "recharts";
+import { Link } from "@tanstack/react-router";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { TeamLogo } from "@/components/shared";
-import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
-import { getTeamLogoUrl } from "@/lib/team-logos";
-import type { TeamPowerRanking } from "@/types";
-
-interface PointsExpectedChartProps {
-  teams: TeamPowerRanking[];
-  season?: number;
-}
-
-interface ChartDataPoint {
-  abbrev: string;
+import { ChartLegend } from "@/components/charts/ChartLegend";
+import { cn } from "@/lib/utils";
+/** The fields this chart needs; power rankings and standings rows both fit. */
+export interface PointsExpectedTeam {
+  abbreviation: string;
   name: string;
   points: number;
   expectedPoints: number;
-  diff: number;
-  // For the connecting line
-  lineStart: number;
-  lineEnd: number;
+  pointsDiff: number;
 }
 
-// Custom tooltip
-function CustomTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: ChartDataPoint }>;
-}) {
-  if (!active || !payload?.length) return null;
-
-  const data = payload[0].payload;
-  const isOver = data.diff > 0;
-
-  return (
-    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
-      <div className="flex items-center gap-2 mb-2">
-        <TeamLogo abbrev={data.abbrev} size="sm" />
-        <span className="font-semibold">{data.name}</span>
-      </div>
-      <div className="space-y-1 text-xs">
-        <p>
-          <span className="text-muted-foreground">Actual Points:</span>{" "}
-          <span className="tabular-nums font-semibold">{data.points}</span>
-        </p>
-        <p>
-          <span className="text-muted-foreground">Expected Points:</span>{" "}
-          <span className="tabular-nums">{data.expectedPoints}</span>
-        </p>
-        <p className={isOver ? "text-warning" : "text-success"}>
-          <span className="text-muted-foreground">Difference:</span>{" "}
-          <span className="tabular-nums font-semibold">
-            {isOver ? "+" : ""}
-            {data.diff}
-          </span>
-          <span className="ml-1">
-            ({isOver ? "Overperforming" : "Underperforming"})
-          </span>
-        </p>
-      </div>
-    </div>
-  );
+interface PointsExpectedChartProps {
+  teams: readonly PointsExpectedTeam[];
+  season?: number;
 }
 
-// Custom Y-axis tick with team logo using native SVG image
-function CustomYAxisTick({
-  x,
-  y,
-  payload,
-}: {
-  x?: number;
-  y?: number;
-  payload?: { value: string };
-}) {
-  if (!payload?.value || x === undefined || y === undefined) return null;
+const ACTUAL_COLOUR = "var(--chart-1)";
+const EXPECTED_COLOUR = "var(--muted-foreground)";
+// A gap this size (points) is called out; smaller gaps are noise.
+const NOTABLE_GAP = 5;
+const GRID = "grid grid-cols-[4.5rem_1fr_2.25rem_2.25rem_2.75rem] items-center gap-x-3";
 
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <image
-        href={getTeamLogoUrl(payload.value)}
-        x={-32}
-        y={-14}
-        width={28}
-        height={28}
-      />
-    </g>
-  );
+// Roughly five ticks on a round step that covers the values.
+function axis(values: readonly number[]): { min: number; max: number; ticks: number[] } {
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const step = [1, 2, 5, 10, 20, 25, 50].find((s) => (high - low) / s <= 5) ?? 50;
+  const min = Math.max(0, Math.floor(low / step) * step);
+  const max = Math.max(min + step, Math.ceil(high / step) * step);
+  const ticks: number[] = [];
+  for (let v = min; v <= max; v += step) ticks.push(v);
+  return { min, max, ticks };
 }
 
-// Expected points dot (hollow circle)
-function ExpectedPointsDot(props: { cx?: number; cy?: number }) {
-  const { cx, cy } = props;
-  if (!cx || !cy) return null;
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={5}
-      fill="var(--background)"
-      stroke={CHART_AXIS_COLOURS.tick}
-      strokeWidth={2}
-    />
-  );
-}
-
-// Actual points dot (filled circle with color based on performance)
-function ActualPointsDot(props: {
-  cx?: number;
-  cy?: number;
-  payload?: ChartDataPoint;
-  onClick?: (data: ChartDataPoint) => void;
-}) {
-  const { cx, cy, payload, onClick } = props;
-  if (!cx || !cy || !payload) return null;
-  const isOver = payload.diff > 0;
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={6}
-      fill={isOver ? "var(--chart-4)" : "var(--chart-3)"}
-      stroke="var(--background)"
-      strokeWidth={2}
-      cursor="pointer"
-      onClick={() => onClick?.(payload)}
-    />
-  );
-}
-
-export function PointsExpectedChart({
-  teams,
-  season,
-}: PointsExpectedChartProps) {
-  const navigate = useNavigate();
-
-  // Sort by points differential (biggest overperformers at top)
-  const sortedTeams = [...teams].sort((a, b) => b.pointsDiff - a.pointsDiff);
-
-  const chartData: ChartDataPoint[] = sortedTeams.map((team) => ({
-    abbrev: team.abbreviation,
-    name: team.name,
-    points: team.points,
-    expectedPoints: team.expectedPoints,
-    diff: team.pointsDiff,
-    lineStart: Math.min(team.points, team.expectedPoints),
-    lineEnd: Math.max(team.points, team.expectedPoints),
-  }));
-
-  const handleClick = (data: ChartDataPoint) => {
-    navigate({
-      to: "/teams/$abbrev",
-      params: { abbrev: data.abbrev },
-      search: { season },
-    });
-  };
-
-  if (teams.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Expected vs actual points</CardTitle>
-          <CardDescription>No data for this selection yet</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  // Calculate domain
-  const allPoints = chartData.flatMap((d) => [d.points, d.expectedPoints]);
-  const minPts = Math.floor(Math.min(...allPoints) / 5) * 5 - 5;
-  const maxPts = Math.ceil(Math.max(...allPoints) / 5) * 5 + 5;
+/** Points against expected points (from goals and xG), one row per team, biggest overperformers first. */
+export function PointsExpectedChart({ teams, season }: PointsExpectedChartProps) {
+  const rows = [...teams].sort((a, b) => b.pointsDiff - a.pointsDiff);
+  const { min, max, ticks } = axis(rows.flatMap((t) => [t.points, t.expectedPoints]));
+  const position = (value: number) => `${((value - min) / (max - min)) * 100}%`;
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Expected vs actual points</CardTitle>
+        <CardTitle className="text-base">Points vs expected points</CardTitle>
         <CardDescription>
-          Sorted by differential - overperformers at top, underperformers at
-          bottom
+          Teams at the top have more points than their goals and xG suggest;
+          teams at the bottom, fewer.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={1200}>
-          <ComposedChart
-            data={chartData}
-            layout="vertical"
-            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-          >
-            <XAxis
-              type="number"
-              domain={[minPts, maxPts]}
-              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              type="category"
-              dataKey="abbrev"
-              tick={<CustomYAxisTick />}
-              width={45}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              content={<CustomTooltip />}
-              cursor={{ fill: "var(--muted)", fillOpacity: 0.5 }}
-            />
-
-            <Bar
-              dataKey="lineEnd"
-              stackId="dumbbell"
-              fill="transparent"
-              barSize={4}
-            />
-            {chartData.map((entry) => (
-              <ReferenceLine
-                key={entry.abbrev}
-                segment={[
-                  { x: entry.expectedPoints, y: entry.abbrev },
-                  { x: entry.points, y: entry.abbrev },
-                ]}
-                stroke={
-                  entry.diff > 0 ? "var(--chart-4)" : "var(--chart-3)"
-                }
-                strokeWidth={3}
-                strokeOpacity={0.6}
-              />
-            ))}
-
-            <Scatter dataKey="expectedPoints" shape={<ExpectedPointsDot />} />
-
-            <Scatter
-              dataKey="points"
-              shape={<ActualPointsDot onClick={handleClick} />}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-        <div className="flex justify-center gap-8 mt-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span
-              className="w-3 h-3 rounded-full border-2"
-              style={{ borderColor: CHART_AXIS_COLOURS.tick }}
-            />
-            <span className="text-muted-foreground">Expected points</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "var(--chart-4)" }}
-            />
-            <span className="text-muted-foreground">
-              Actual (Overperforming)
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: "var(--chart-3)" }}
-            />
-            <span className="text-muted-foreground">
-              Actual (Underperforming)
-            </span>
-          </div>
+        <ChartLegend
+          className="mb-3"
+          items={[
+            { label: "Points", colour: ACTUAL_COLOUR },
+            { label: "Expected points", colour: EXPECTED_COLOUR },
+          ]}
+        />
+        <div className={cn(GRID, "text-xs text-muted-foreground")}>
+          <span>Team</span>
+          <span />
+          <span className="text-right">Pts</span>
+          <span className="text-right">xPts</span>
+          <span className="text-right">Diff</span>
         </div>
+        <div className="mt-1 space-y-0.5">
+          {rows.map((team) => {
+            const expected = Math.round(team.expectedPoints);
+            const left = Math.min(team.points, team.expectedPoints);
+            const right = Math.max(team.points, team.expectedPoints);
+            const notable = Math.abs(team.pointsDiff) >= NOTABLE_GAP;
+            return (
+              <Link
+                key={team.abbreviation}
+                to="/teams/$abbrev"
+                params={{ abbrev: team.abbreviation }}
+                search={{ season }}
+                className={cn(GRID, "group -mx-2 rounded-xl px-2 py-1 hover:bg-muted/60")}
+                title={`${team.name}: ${team.points} points, ${expected} expected`}
+              >
+                <span className="flex items-center gap-2 text-sm font-medium group-hover:text-link">
+                  <TeamLogo abbrev={team.abbreviation} size="sm" />
+                  {team.abbreviation}
+                </span>
+                <span className="relative h-5" aria-hidden>
+                  <span
+                    className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-border"
+                    style={{ left: position(left), width: `calc(${position(right)} - ${position(left)})` }}
+                  />
+                  <span
+                    className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card"
+                    style={{ left: position(team.expectedPoints), background: EXPECTED_COLOUR }}
+                  />
+                  <span
+                    className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card"
+                    style={{ left: position(team.points), background: ACTUAL_COLOUR }}
+                  />
+                </span>
+                <span className="text-right text-sm font-semibold tabular-nums">{team.points}</span>
+                <span className="text-right text-sm text-muted-foreground tabular-nums">{expected}</span>
+                <span
+                  className={cn(
+                    "text-right text-sm tabular-nums",
+                    notable ? "font-semibold" : "text-muted-foreground",
+                  )}
+                >
+                  {team.pointsDiff > 0 ? "+" : ""}
+                  {team.pointsDiff}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+        <div className={cn(GRID, "mt-1")}>
+          <span />
+          <span className="relative h-4 text-[11px] text-muted-foreground tabular-nums">
+            {ticks.map((t) => (
+              <span key={t} className="absolute -translate-x-1/2" style={{ left: position(t) }}>
+                {t}
+              </span>
+            ))}
+          </span>
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Gaps of {NOTABLE_GAP} or more points are bold. Big gaps in either
+          direction tend to close as the season goes on.
+        </p>
       </CardContent>
     </Card>
   );

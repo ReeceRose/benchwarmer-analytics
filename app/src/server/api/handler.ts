@@ -31,7 +31,10 @@ export interface ApiContext {
 // copies while it refreshes in the background, so visitors rarely wait on the
 // database. Browsers keep their own copy for up to 5 minutes (live data: not at
 // all) so reloads and back-navigation skip the network.
+// In dev (`npm run dev`) nothing is cached, so a changed response shows on
+// the next request instead of after the browser's copy goes stale.
 function cacheControl(seconds: number): string {
+  if (import.meta.env.DEV) return "no-store";
   const browser = seconds <= CacheTier.live ? 0 : Math.min(seconds, 5 * 60);
   const stale = seconds <= CacheTier.live ? seconds : Math.max(seconds, 24 * 60 * 60);
   return `public, max-age=${browser}, s-maxage=${seconds}, stale-while-revalidate=${stale}`;

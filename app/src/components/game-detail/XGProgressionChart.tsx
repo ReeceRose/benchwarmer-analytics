@@ -77,11 +77,11 @@ function CustomTooltip({
           <p
             className={
               data.event.isGoal
-                ? "text-success font-semibold"
+                ? "font-semibold text-foreground"
                 : "text-muted-foreground"
             }
           >
-            {data.event.isGoal ? "GOAL" : "Shot"}:{" "}
+            {data.event.isGoal ? "Goal" : "Shot"}:{" "}
             {data.event.shooterName ?? "Unknown"}
           </p>
           <p className="text-muted-foreground">

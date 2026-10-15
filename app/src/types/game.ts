@@ -1,3 +1,5 @@
+import type { AllTimeRecord } from "@/types/history";
+
 export interface GamesResponse {
   date: string;
   games: GameSummary[];
@@ -38,6 +40,7 @@ export interface GameTeam {
   record?: string | null;
   // Standings context fields
   streak?: string | null;
+  overallRecord?: string | null;
   homeRecord?: string | null;
   roadRecord?: string | null;
   last10?: string | null;
@@ -62,6 +65,8 @@ export interface GameGoal {
   strength: string | null;
   assists: string[];
   isGameWinningGoal?: boolean;
+  /** NHL.com highlight video, once the NHL posts one. */
+  highlightUrl?: string | null;
 }
 
 export interface GameBoxscoreResponse {
@@ -131,6 +136,8 @@ export interface GamePreviewGame {
 export interface HeadToHead {
   season: SeasonRecord;
   lastFive: PastGame[];
+  /** Franchise records against each other, from the away team's side (NHL records). */
+  allTime: { regular: AllTimeRecord | null; playoffs: AllTimeRecord | null };
 }
 
 export interface SeasonRecord {
@@ -162,6 +169,7 @@ export interface TeamPreviewStats {
   penaltyKillPct: number | null;
   // Team record fields from NHL standings
   streak: string | null;
+  overallRecord: string | null;
   homeRecord: string | null;
   roadRecord: string | null;
   last10: string | null;

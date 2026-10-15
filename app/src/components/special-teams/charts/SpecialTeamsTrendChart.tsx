@@ -11,7 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS, UNIT_COLOURS } from "@/lib/chart-colours";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SpecialTeamsGame } from "@/types";
 import { EmptyState } from "@/components/layout";
@@ -64,7 +64,7 @@ function CustomTooltip({
       </div>
       <div className="space-y-2 text-xs">
         <div>
-          <div className="mb-1 flex items-center gap-1.5 font-medium"><Swatch colour={SEMANTIC_COLOURS.primary} />Power play</div>
+          <div className="mb-1 flex items-center gap-1.5 font-medium"><Swatch colour={UNIT_COLOURS.powerPlay} />Power play</div>
           <p>
             <span className="text-muted-foreground">Cumulative:</span>{" "}
             <span className="tabular-nums">{data.cumulativePpGoals} G / {data.cumulativePpXGoals.toFixed(1)} xG</span>
@@ -77,7 +77,7 @@ function CustomTooltip({
           </p>
         </div>
         <div>
-          <div className="mb-1 flex items-center gap-1.5 font-medium"><Swatch colour="var(--chart-5)" />Penalty kill</div>
+          <div className="mb-1 flex items-center gap-1.5 font-medium"><Swatch colour={UNIT_COLOURS.penaltyKill} />Penalty kill</div>
           <p>
             <span className="text-muted-foreground">Cumulative:</span>{" "}
             <span className="tabular-nums">{data.cumulativePkGoalsAgainst} GA / {data.cumulativePkXGoalsAgainst.toFixed(1)} xGA</span>
@@ -154,10 +154,10 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
       <ChartLegend
         className="mb-2"
         items={[
-          { label: "PP goals", colour: SEMANTIC_COLOURS.primary },
-          { label: "PP xG", colour: SEMANTIC_COLOURS.primary, dashed: true },
-          { label: "PK goals against", colour: "var(--chart-5)" },
-          { label: "PK xGA", colour: "var(--chart-5)", dashed: true },
+          { label: "PP goals", colour: UNIT_COLOURS.powerPlay },
+          { label: "PP xG", colour: UNIT_COLOURS.powerPlay, dashed: true },
+          { label: "PK goals against", colour: UNIT_COLOURS.penaltyKill },
+          { label: "PK xGA", colour: UNIT_COLOURS.penaltyKill, dashed: true },
         ]}
       />
       <ResponsiveContainer width="100%" height={300}>
@@ -193,38 +193,38 @@ export function SpecialTeamsTrendChart({ games, isLoading }: SpecialTeamsTrendCh
           />
           <Tooltip content={<CustomTooltip />} />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="cumulativePpGoals"
             name="PP goals"
-            stroke={SEMANTIC_COLOURS.primary}
+            stroke={UNIT_COLOURS.powerPlay}
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4 }}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="cumulativePpXGoals"
             name="PP xG"
-            stroke={SEMANTIC_COLOURS.primary}
+            stroke={UNIT_COLOURS.powerPlay}
             strokeWidth={2}
             strokeDasharray="5 5"
             dot={false}
             activeDot={{ r: 4 }}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="cumulativePkGoalsAgainst"
             name="PK goals against"
-            stroke="var(--chart-5)"
+            stroke={UNIT_COLOURS.penaltyKill}
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4 }}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="cumulativePkXGoalsAgainst"
             name="PK xGA"
-            stroke="var(--chart-5)"
+            stroke={UNIT_COLOURS.penaltyKill}
             strokeWidth={2}
             strokeDasharray="5 5"
             dot={false}

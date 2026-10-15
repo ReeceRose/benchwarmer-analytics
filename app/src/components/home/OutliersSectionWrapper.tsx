@@ -90,6 +90,7 @@ export function OutliersSectionWrapper({ season, situation }: OutliersSectionWra
               negativeLabel="Letting in more"
               positiveLabel="Stopping more"
               valueLabel="GSAx"
+              goodBad
             />
           )}
         </Panel>

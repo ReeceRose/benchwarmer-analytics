@@ -62,7 +62,7 @@ function formatPeriod(period: number): string {
 }
 
 function getResultLabel(e: TimelineEvent): string {
-  if (e.isGoal) return "GOAL";
+  if (e.isGoal) return "Goal";
   if (e.shotWasOnGoal) return "Save";
   return "Missed";
 }
@@ -101,7 +101,7 @@ function TimelineMarker(props: {
         <polygon
           points={`${cx},${cy - d} ${cx + d},${cy} ${cx},${cy + d} ${cx - d},${cy}`}
           fill={colour}
-          stroke="white"
+          stroke="var(--card)"
           strokeWidth={1}
         />
       </g>
@@ -207,7 +207,7 @@ function CustomTooltip({
 
       <div
         className={`mt-2 pt-2 border-t text-xs font-semibold ${
-          event.isGoal ? "text-success" : "text-muted-foreground"
+          event.isGoal ? "text-foreground" : "text-muted-foreground"
         }`}
       >
         {getResultLabel(event)}
@@ -374,12 +374,9 @@ export function ShotGoalTimelineChart({ shotsData }: ShotGoalTimelineChartProps)
         >
           <TeamLabel side="away">{shotsData.awayTeamCode} shot</TeamLabel>
           <TeamLabel side="home">{shotsData.homeTeamCode} shot</TeamLabel>
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-2 w-2 rotate-45"
-              style={{ backgroundColor: "white", border: "1px solid var(--muted-foreground)" }}
-            />
-            <span>Goal (diamond)</span>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block size-2 rotate-45 bg-foreground" />
+            <span>Goal</span>
           </div>
         </div>
       </CardContent>

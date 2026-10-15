@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { PageHeader, SegmentedControl } from "@/components/layout";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import * as z from "zod/mini";
-import { useAgeCurves, useAgeDistribution, usePageTitle } from "@/hooks";
+import { useAgeCurves, useAgeDistribution, usePageTitle, useSeriesColours } from "@/hooks";
 import {
   Select,
   SelectContent,
@@ -19,7 +19,6 @@ import {
 } from "@/components/age-curves";
 import type { PlayerInfo, ChartDataPoint } from "@/components/age-curves";
 import { buildHistogramBins } from "@/lib/histogram";
-import { CHART_COLOURS } from "@/lib/chart-colours";
 
 const searchSchema = z.object({
   playerIds: z.optional(z.string()),
@@ -144,18 +143,20 @@ function AgeCurvesPage() {
     return sorted;
   }, [data, metric]);
 
+  const colourOf = useSeriesColours(selectedPlayerIds);
+
   // Map player IDs to names and colors
   const playerInfo: PlayerInfo[] = useMemo(() => {
     if (!data?.playerCurves) return [];
     return data.playerCurves
       .filter((curve) => selectedPlayerIds.includes(curve.playerId))
-      .map((curve, index) => ({
+      .map((curve) => ({
         playerId: curve.playerId,
         playerName: curve.playerName,
-        color: CHART_COLOURS[index % CHART_COLOURS.length],
+        color: colourOf(curve.playerId),
         dataKey: `player_${curve.playerId}`,
       }));
-  }, [data, selectedPlayerIds]);
+  }, [data, selectedPlayerIds, colourOf]);
 
   const handleSelectPlayer = useCallback(
     (playerId: number) => {

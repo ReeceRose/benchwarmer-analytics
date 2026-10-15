@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Label,
-  ReferenceArea,
 } from "recharts";
 import {
   Card,
@@ -19,7 +18,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, ExternalLink } from "lucide-react";
+import { X } from "lucide-react";
 import { TeamLogo } from "@/components/shared";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getTeamLogoUrl } from "@/lib/team-logos";
@@ -144,10 +143,10 @@ function SelectionPanel({
             <p className="font-semibold truncate">
               {data.name}
               {isElite && (
-                <span className="ml-2 text-success text-xs">Elite</span>
+                <span className="ml-2 text-xs text-success">Elite</span>
               )}
               {isPoor && (
-                <span className="ml-2 text-error text-xs">Struggling</span>
+                <span className="ml-2 text-xs text-error">Struggling</span>
               )}
             </p>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -166,11 +165,10 @@ function SelectionPanel({
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="default" onClick={onNavigate}>
-            View
-            <ExternalLink className="h-3 w-3 ml-1" />
+          <Button size="sm" variant="outline" onClick={onNavigate}>
+            Team page
           </Button>
-          <Button size="sm" variant="ghost" onClick={onClose}>
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -218,8 +216,8 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>PP% vs PK%</CardTitle>
-          <CardDescription>No data for this selection yet</CardDescription>
+          <CardTitle className="text-base">Power play vs penalty kill</CardTitle>
+          <CardDescription>No teams for this season yet.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -242,9 +240,9 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">PP% vs PK%</CardTitle>
+        <CardTitle className="text-base">Power play vs penalty kill</CardTitle>
         <CardDescription>
-          Teams in upper-right excel at both special teams
+          Teams top right are above average on both units.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -256,38 +254,6 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
 
-            <ReferenceArea
-              x1={xMin}
-              x2={avgPP}
-              y1={avgPK}
-              y2={yMax}
-              fill="var(--chart-1)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={avgPP}
-              x2={xMax}
-              y1={avgPK}
-              y2={yMax}
-              fill="var(--chart-3)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={xMin}
-              x2={avgPP}
-              y1={yMin}
-              y2={avgPK}
-              fill="var(--chart-2)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={avgPP}
-              x2={xMax}
-              y1={yMin}
-              y2={avgPK}
-              fill="var(--chart-4)"
-              fillOpacity={0.08}
-            />
 
             <XAxis
               type="number"
@@ -299,7 +265,7 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Power Play %"
+                value="PP%"
                 position="bottom"
                 offset={15}
                 style={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
@@ -315,7 +281,7 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             >
               <Label
-                value="Penalty Kill %"
+                value="PK%"
                 angle={-90}
                 position="insideLeft"
                 offset={10}
@@ -359,34 +325,26 @@ export function PPvsPKScatter({ teams, season }: PPvsPKScatterProps) {
           />
         )}
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium">Good PK Only</span>
-            <p className="text-muted-foreground">High PK%, Below Avg PP%</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Penalty kill carrying</span>
+            <p className="text-muted-foreground">High PK%, low PP%</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
+          <div className="rounded-xl bg-muted/60 p-2">
             <span className="font-medium text-success">Elite special teams</span>
-            <p className="text-muted-foreground">High PP% & PK%</p>
+            <p className="text-muted-foreground">High PP% and PK%</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
+          <div className="rounded-xl bg-muted/60 p-2">
             <span className="font-medium text-error">Poor special teams</span>
-            <p className="text-muted-foreground">Below Avg PP% & PK%</p>
+            <p className="text-muted-foreground">Low PP% and PK%</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium">Good PP Only</span>
-            <p className="text-muted-foreground">High PP%, Below Avg PK%</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Power play carrying</span>
+            <p className="text-muted-foreground">High PP%, low PK%</p>
           </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
-          Tap a team to see details
+        <p className="mt-3 text-xs text-muted-foreground sm:hidden">
+          Tap a team for details.
         </p>
       </CardContent>
     </Card>

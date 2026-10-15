@@ -10,3 +10,4 @@ export {
   IceTimeDistributionChart,
   PointsContributionChart,
 } from "@/components/team-detail/charts";
+export { TeamGamesDashboard } from "@/components/team-detail/TeamGamesDashboard";

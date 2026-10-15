@@ -96,6 +96,12 @@ export function PuckEventsMap({ data }: { data: LiveGameResponse }) {
   );
 }
 
+/** Lets a cell wrap after `prefix` without splitting the name that follows it. */
+function BreakablePrefix({ text, prefix }: { text: string; prefix: string }) {
+  if (!text.startsWith(prefix)) return <span className="whitespace-nowrap">{text}</span>;
+  return <span>{prefix}<span className="whitespace-nowrap">{text.slice(prefix.length)}</span></span>;
+}
+
 export function PenaltiesSection({ data }: { data: LiveGameResponse }) {
   return (
     <Card>
@@ -107,26 +113,31 @@ export function PenaltiesSection({ data }: { data: LiveGameResponse }) {
               <th className="pb-1.5 text-left font-medium">Player</th>
               <th className="pb-1.5 text-left font-medium">Infraction</th>
               <th className="pb-1.5 text-right font-medium">Min</th>
-              <th className="pb-1.5 pl-3 text-left font-medium">Drawn by</th>
               <th className="pb-1.5 pl-3 text-left font-medium">Power play</th>
             </tr>
           </thead>
           <tbody>
             {data.penalties.length === 0 && (
-              <tr><td colSpan={6} className="py-2 text-muted-foreground">No penalties</td></tr>
+              <tr><td colSpan={5} className="py-2 text-muted-foreground">No penalties</td></tr>
             )}
             {data.penalties.map((p) => (
               <tr key={`${p.t}-${p.player}`} className="border-t">
-                <td className="py-1.5 pr-3 whitespace-nowrap tabular-nums">{periodName(p.period)} {p.timeInPeriod}</td>
-                <td className="py-1.5 pr-3 whitespace-nowrap"><TeamLabel side={p.team}>{p.player}</TeamLabel></td>
+                <td className="py-1.5 pr-2 whitespace-nowrap tabular-nums">{periodName(p.period)} {p.timeInPeriod}</td>
+                <td className="py-1.5 pr-3">
+                  <TeamLabel side={p.team}><BreakablePrefix text={p.player} prefix="Served by " /></TeamLabel>
+                  {p.drawnBy && (
+                    <div className="pl-4 text-xs text-muted-foreground">
+                      drawn by <span className="whitespace-nowrap">{p.drawnBy}</span>
+                    </div>
+                  )}
+                </td>
                 <td className="py-1.5 pr-3">{titleCase(p.infraction)}</td>
                 <td className="py-1.5 text-right tabular-nums">{p.minutes}</td>
-                <td className="py-1.5 pl-3 whitespace-nowrap text-muted-foreground">{p.drawnBy ?? "–"}</td>
-                <td className="py-1.5 pl-3 text-xs whitespace-nowrap">
+                <td className="py-1.5 pl-3 text-xs">
                   {p.type === "MIN" || p.type === "MAJ" || p.type === "BEN"
                     ? p.powerPlayGoal
-                      ? <><b>Goal</b> · {p.powerPlayGoal}</>
-                      : `${p.powerPlayAttempts} att · ${fmt(p.powerPlayXg, 2)} xG`
+                      ? <><b>Goal</b> · <span className="whitespace-nowrap">{p.powerPlayGoal}</span></>
+                      : <span className="whitespace-nowrap">{p.powerPlayAttempts} att · {fmt(p.powerPlayXg, 2)} xG</span>
                     : "–"}
                 </td>
               </tr>

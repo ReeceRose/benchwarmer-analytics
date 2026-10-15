@@ -11,6 +11,8 @@ export interface SkaterSeasonRow {
   shots: number;
   xg: number;
   cf: number | null;
+  /** Season total Game Score; null outside the "all" situation. */
+  gs: number | null;
   playoffGp: number | null;
   playoffG: number | null;
   playoffA: number | null;
@@ -25,6 +27,9 @@ export interface SkaterCareerTotals {
   toi: number;
   shots: number;
   xg: number;
+  /** Game Score and games played over the seasons that have a Game Score. */
+  gs: number;
+  gsGp: number;
   playoffGp: number;
   playoffG: number;
   playoffA: number;
@@ -66,8 +71,9 @@ export function buildSkaterSeasonRows(stats: SkaterStats[], situation: string): 
         xg: acc.xg + (s.expectedGoals ?? 0),
         cfSum: acc.cfSum + (s.corsiForPct ?? 0) * s.iceTimeSeconds,
         cfTime: acc.cfTime + (s.corsiForPct != null ? s.iceTimeSeconds : 0),
+        gs: s.gameScore == null ? acc.gs : (acc.gs ?? 0) + s.gameScore,
       }),
-      { gp: 0, g: 0, a: 0, p: 0, toi: 0, shots: 0, xg: 0, cfSum: 0, cfTime: 0 }
+      { gp: 0, g: 0, a: 0, p: 0, toi: 0, shots: 0, xg: 0, cfSum: 0, cfTime: 0, gs: null as number | null }
     );
 
     const play = data.playoffs.reduce(
@@ -92,6 +98,7 @@ export function buildSkaterSeasonRows(stats: SkaterStats[], situation: string): 
         shots: reg.shots,
         xg: reg.xg,
         cf: reg.cfTime > 0 ? reg.cfSum / reg.cfTime : null,
+        gs: reg.gs,
         playoffGp: play.gp > 0 ? play.gp : null,
         playoffG: play.gp > 0 ? play.g : null,
         playoffA: play.gp > 0 ? play.a : null,
@@ -113,11 +120,13 @@ export function calculateSkaterTotals(rows: SkaterSeasonRow[]): SkaterCareerTota
       toi: acc.toi + row.toi,
       shots: acc.shots + row.shots,
       xg: acc.xg + row.xg,
+      gs: acc.gs + (row.gs ?? 0),
+      gsGp: acc.gsGp + (row.gs != null ? row.gp : 0),
       playoffGp: acc.playoffGp + (row.playoffGp ?? 0),
       playoffG: acc.playoffG + (row.playoffG ?? 0),
       playoffA: acc.playoffA + (row.playoffA ?? 0),
       playoffP: acc.playoffP + (row.playoffP ?? 0),
     }),
-    { gp: 0, g: 0, a: 0, p: 0, toi: 0, shots: 0, xg: 0, playoffGp: 0, playoffG: 0, playoffA: 0, playoffP: 0 }
+    { gp: 0, g: 0, a: 0, p: 0, toi: 0, shots: 0, xg: 0, gs: 0, gsGp: 0, playoffGp: 0, playoffG: 0, playoffA: 0, playoffP: 0 }
   );
 }

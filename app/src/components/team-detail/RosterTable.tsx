@@ -30,7 +30,7 @@ export function RosterTable({ title, players, showStats = false }: RosterTablePr
   return (
     <div>
       <h2 className="text-lg font-semibold mb-3">{title}</h2>
-      <Card className="py-0 gap-0">
+      <Card className="gap-0 overflow-hidden py-0">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
@@ -83,13 +83,13 @@ export function RosterTable({ title, players, showStats = false }: RosterTablePr
                   </TableCell>
                   {showStats ? (
                     <>
-                      <TableCell className="text-right tabular-nums">{player.gamesPlayed ?? "-"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.gamesPlayed ?? "–"}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatToi(player.iceTimeSeconds)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{player.goals ?? "-"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{player.assists ?? "-"}</TableCell>
-                      <TableCell className="text-right tabular-nums font-medium">{player.points ?? "-"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{player.shots ?? "-"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{player.expectedGoals?.toFixed(1) ?? "-"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.goals ?? "–"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.assists ?? "–"}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{player.points ?? "–"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.shots ?? "–"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{player.expectedGoals?.toFixed(1) ?? "–"}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatPercent(player.corsiForPct, true)}</TableCell>
                     </>
                   ) : (

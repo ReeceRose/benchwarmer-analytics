@@ -1,8 +1,12 @@
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { EyeOff } from "lucide-react";
 import { Section } from "@/components/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GameInfoSection, SeasonContextSection } from "@/components/game-live/ContextSections";
+import { GameScoreSection } from "@/components/game-live/GameScoreSection";
+import { GoalReplaySection } from "@/components/game-live/GoalReplaySection";
+import { WinProbabilitySection } from "@/components/game-live/WinProbabilitySection";
 import { AdvancedSkatersTable, GameLeaders, GoaltendingSection } from "@/components/game-live/PlayerSections";
 import { LinesSection, OnIceNow, ShiftChart } from "@/components/game-live/DeploymentSections";
 import { PenaltiesSection, PuckEventsMap } from "@/components/game-live/EventSections";
@@ -109,6 +113,13 @@ export function GameCentre({ data, isLoading, isLive, boxscore, moneyPuckCharts 
 
       {data && block("teamStats", "Team stats", "NHL box-score totals plus attempt-based stats from play-by-play.", <TeamStatsSection data={data} />)}
 
+      {data && data.winProbability?.length > 0 && block(
+        "winProbability",
+        "Win probability",
+        "Each team's chance of winning after every moment of the game, from the score, time left and manpower.",
+        <WinProbabilitySection data={data} />,
+      )}
+
       {data && block("flow", "Game flow", "Cumulative expected goals against actual goals, with power plays shaded; shot attempts in two-minute windows below.", <GameFlowChart data={data} />)}
 
       {show("shotMap") &&
@@ -120,7 +131,7 @@ export function GameCentre({ data, isLoading, isLive, boxscore, moneyPuckCharts 
           >
             <div className="space-y-8">
               {moneyPuckCharts}
-              {data && <ShotProfile data={data} />}
+              {data && <ShotProfile data={data} wide />}
             </div>
           </Section>
         ) : (
@@ -128,12 +139,29 @@ export function GameCentre({ data, isLoading, isLive, boxscore, moneyPuckCharts 
             "shotMap",
             "Shot map",
             "Every attempt, sized by xG. Hover a shot for details.",
-            <div className="grid items-start gap-4 xl:grid-cols-[1.6fr_1fr]">
+            <div className="grid items-start gap-4 xl:grid-cols-[1.35fr_1fr]">
               <LiveShotMap data={data} />
               <ShotProfile data={data} />
             </div>,
           )
         ))}
+
+      {data && data.goals.some((g) => g.hasReplay) && block(
+        "replays",
+        "Goal replays",
+        "Where every player and the puck were in the seconds before each goal, from NHL tracking.",
+        <GoalReplaySection data={data} />,
+      )}
+
+      {data && data.skaters.some((s) => s.gameScore) && block(
+        "gameScore",
+        "Game Score",
+        <>
+          Each skater's night in one number: scoring, plus 5v5 shot attempts and goals while on the ice, plus blocks, penalties and faceoffs.{" "}
+          <Link to="/glossary" hash="GS/GP" className="text-link">How it's calculated</Link>
+        </>,
+        <GameScoreSection data={data} />,
+      )}
 
       {data && block("goalies", "Goaltending", "NHL save splits plus expected goals against from shots faced. GSAx = xG against − goals against.", <GoaltendingSection data={data} />)}
 
@@ -148,19 +176,16 @@ export function GameCentre({ data, isLoading, isLive, boxscore, moneyPuckCharts 
 
       {data && block("skaters", "Advanced skater stats", "Individual shooting, on-ice shot share, ice time by strength and physical play.", <AdvancedSkatersTable data={data} />)}
 
-      {data && (show("leaders") || show("onIce")) && (
-        <div className={show("leaders") && show("onIce") ? "grid gap-8 lg:grid-cols-2" : ""}>
-          {block("leaders", "Game leaders", "Top three in each category so far.", <GameLeaders data={data} />)}
-          {block("onIce", "On ice now", "Who's out there, with ice time tonight.", <OnIceNow data={data} />)}
-        </div>
-      )}
+      {data && block("leaders", "Game leaders", "Top three in each category so far.", <GameLeaders data={data} />)}
+
+      {data && block("onIce", "On ice now", "Who's out there, with ice time tonight.", <OnIceNow data={data} />)}
 
       {data && block("lines", "Lines & pairs", "Most-used 5v5 forward lines and defence pairs from shift data, with on-ice attempts, xG and goals.", <LinesSection data={data} />)}
 
       {data && block("shiftChart", "Shift chart", "Every shift by player.", <ShiftChart data={data} />)}
 
       {data && (show("puckEvents") || show("penalties")) && (
-        <div className={show("puckEvents") && show("penalties") ? "grid items-start gap-8 lg:grid-cols-2" : ""}>
+        <div className={show("puckEvents") && show("penalties") ? "grid grid-cols-1 items-start gap-8 lg:grid-cols-2" : ""}>
           {block("puckEvents", "Hits & puck battles", "Where hits, giveaways, takeaways and faceoff wins happened.", <PuckEventsMap data={data} />)}
           {block("penalties", "Penalties", "Every call, who drew it, and what the power play produced.", <PenaltiesSection data={data} />)}
         </div>

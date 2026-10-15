@@ -1,169 +1,107 @@
 import { useMemo, useState } from "react";
-import { ChartLegend } from "@/components/charts/ChartLegend";
 import {
-  LineChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
+import { ChartLegend, niceAxis } from "@/components/charts";
+import { TooltipTitle } from "@/components/game-live/ChartTooltip";
+import { SegmentedControl } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { formatSeason, formatToi } from "@/lib/formatters";
-import { CHART_COLOURS, CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS, CHART_COLOURS } from "@/lib/chart-colours";
 import { cn } from "@/lib/utils";
 import type { SkaterStats } from "@/types";
 
-interface CareerTotalsChartProps {
-  stats: SkaterStats[];
-  className?: string;
-}
+const MIN_GAMES_FOR_FULL_SEASON = 20;
 
 type ViewMode = "totals" | "perGame" | "toi";
 
 interface SeasonData {
-  season: number;
   seasonLabel: string;
   gamesPlayed: number;
   goals: number;
   assists: number;
   points: number;
-  shots: number;
-  xg: number;
   toiSeconds: number;
   toiPerGame: number;
-  goalsPerGame: number;
-  assistsPerGame: number;
-  pointsPerGame: number;
-  shotsPerGame: number;
 }
 
-const VIEWS: { key: ViewMode; label: string; description: string }[] = [
-  {
-    key: "totals",
-    label: "Season totals",
-    description: "Total goals, assists, and points per season",
-  },
-  {
-    key: "perGame",
-    label: "Per game",
-    description: "Goals, assists, and points per game played",
-  },
-  {
-    key: "toi",
-    label: "Ice time",
-    description: "Average time on ice per game (minutes)",
-  },
+const VIEWS: { value: ViewMode; label: string; description: string }[] = [
+  { value: "totals", label: "Totals", description: "Goals and assists per season, stacked to points" },
+  { value: "perGame", label: "Per game", description: "Goals and assists per game played, stacked to points per game" },
+  { value: "toi", label: "Ice time", description: "Average time on ice per game" },
 ];
 
-export function CareerTotalsChart({ stats, className }: CareerTotalsChartProps) {
+const GOALS_COLOUR = CHART_COLOURS[0];
+// Parts of one total, so one hue: assists are a lighter shade of goals.
+const ASSISTS_COLOUR = `color-mix(in oklab, ${CHART_COLOURS[0]} 40%, var(--card))`;
+
+const isCoarsePointer = () =>
+  typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+
+/** Season-by-season scoring and ice time over a skater's career. */
+export function CareerTotalsChart({ stats, className }: { stats: SkaterStats[]; className?: string }) {
   const [view, setView] = useState<ViewMode>("totals");
 
   const chartData = useMemo(() => {
-    const seasonMap = new Map<
-      number,
-      {
-        gamesPlayed: number;
-        goals: number;
-        assists: number;
-        shots: number;
-        xg: number;
-        toiSeconds: number;
-      }
-    >();
-
-    const regularSeasonStats = stats.filter(
-      (s) => !s.isPlayoffs && s.situation === "all"
-    );
-
-    for (const stat of regularSeasonStats) {
-      const existing = seasonMap.get(stat.season);
-      if (existing) {
-        existing.gamesPlayed += stat.gamesPlayed;
-        existing.goals += stat.goals;
-        existing.assists += stat.assists;
-        existing.shots += stat.shots;
-        existing.xg += stat.expectedGoals ?? 0;
-        existing.toiSeconds += stat.iceTimeSeconds;
-      } else {
-        seasonMap.set(stat.season, {
-          gamesPlayed: stat.gamesPlayed,
-          goals: stat.goals,
-          assists: stat.assists,
-          shots: stat.shots,
-          xg: stat.expectedGoals ?? 0,
-          toiSeconds: stat.iceTimeSeconds,
-        });
-      }
+    const seasonMap = new Map<number, { gamesPlayed: number; goals: number; assists: number; toiSeconds: number }>();
+    for (const stat of stats) {
+      if (stat.isPlayoffs || stat.situation !== "all") continue;
+      const s = seasonMap.get(stat.season) ?? { gamesPlayed: 0, goals: 0, assists: 0, toiSeconds: 0 };
+      s.gamesPlayed += stat.gamesPlayed;
+      s.goals += stat.goals;
+      s.assists += stat.assists;
+      s.toiSeconds += stat.iceTimeSeconds;
+      seasonMap.set(stat.season, s);
     }
 
     const data: SeasonData[] = [];
-    const sortedSeasons = Array.from(seasonMap.keys()).sort((a, b) => a - b);
-
-    for (const season of sortedSeasons) {
+    for (const season of [...seasonMap.keys()].sort((a, b) => a - b)) {
       const s = seasonMap.get(season)!;
-      const gp = s.gamesPlayed;
-
+      // A part season (or the one in progress) would read as a collapse in totals.
+      if (s.gamesPlayed < MIN_GAMES_FOR_FULL_SEASON) continue;
       data.push({
-        season,
         seasonLabel: formatSeason(season),
-        gamesPlayed: gp,
+        gamesPlayed: s.gamesPlayed,
         goals: s.goals,
         assists: s.assists,
         points: s.goals + s.assists,
-        shots: s.shots,
-        xg: s.xg,
         toiSeconds: s.toiSeconds,
-        toiPerGame: gp > 0 ? s.toiSeconds / gp / 60 : 0,
-        goalsPerGame: gp > 0 ? s.goals / gp : 0,
-        assistsPerGame: gp > 0 ? s.assists / gp : 0,
-        pointsPerGame: gp > 0 ? (s.goals + s.assists) / gp : 0,
-        shotsPerGame: gp > 0 ? s.shots / gp : 0,
+        toiPerGame: s.toiSeconds / s.gamesPlayed / 60,
       });
     }
-
     return data;
   }, [stats]);
 
-  const selectedView = VIEWS.find((v) => v.key === view)!;
+  if (chartData.length < 2) return null;
 
-  if (chartData.length < 2) {
-    return null;
-  }
+  const selectedView = VIEWS.find((v) => v.value === view)!;
 
   return (
     <Card className={cn(className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0 pb-2">
         <CardTitle className="text-base font-semibold">Career stats</CardTitle>
-        <Select value={view} onValueChange={(v) => setView(v as ViewMode)}>
-          <SelectTrigger className="w-36 h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {VIEWS.map((v) => (
-              <SelectItem key={v.key} value={v.key}>
-                {v.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SegmentedControl
+          aria-label="Career stats view"
+          value={view}
+          onValueChange={setView}
+          options={VIEWS}
+        />
       </CardHeader>
       <CardContent>
         {view !== "toi" && (
           <ChartLegend
             className="mb-2"
             items={[
-              { label: "Goals", colour: CHART_COLOURS[1] },
-              { label: "Assists", colour: CHART_COLOURS[0] },
-              { label: "Points", colour: CHART_COLOURS[3] },
+              { label: "Goals", colour: GOALS_COLOUR },
+              { label: "Assists", colour: ASSISTS_COLOUR },
             ]}
           />
         )}
@@ -171,272 +109,132 @@ export function CareerTotalsChart({ stats, className }: CareerTotalsChartProps) 
           <ResponsiveContainer width="100%" height="100%">
             {view === "toi" ? (
               <TOIChart data={chartData} />
-            ) : view === "perGame" ? (
-              <PerGameChart data={chartData} />
             ) : (
-              <TotalsChart data={chartData} />
+              <ScoringChart data={chartData} perGame={view === "perGame"} />
             )}
           </ResponsiveContainer>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          {selectedView.description}. Regular season only.
+        <p className="mt-2 text-xs text-muted-foreground">
+          {selectedView.description}. Regular season only; seasons with fewer than {MIN_GAMES_FOR_FULL_SEASON} games are not shown.
         </p>
       </CardContent>
     </Card>
   );
 }
 
-function TotalsChart({ data }: { data: SeasonData[] }) {
-  return (
-    <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-      <CartesianGrid
-        strokeDasharray="3 3"
-        stroke={CHART_AXIS_COLOURS.grid}
-        strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-      />
-      <XAxis
-        dataKey="seasonLabel"
-        tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
-        stroke={CHART_AXIS_COLOURS.grid}
-        strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-      />
-      <YAxis
-        tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
-        width={40}
-        stroke={CHART_AXIS_COLOURS.grid}
-        strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-      />
-      <Tooltip content={<TotalsTooltip />} />
-      <Line
-        type="monotone"
-        dataKey="goals"
-        name="Goals"
-        stroke={CHART_COLOURS[1]}
-        strokeWidth={2}
-        dot={{ fill: CHART_COLOURS[1], r: 3 }}
-        activeDot={{ r: 5 }}
-      />
-      <Line
-        type="monotone"
-        dataKey="assists"
-        name="Assists"
-        stroke={CHART_COLOURS[0]}
-        strokeWidth={2}
-        dot={{ fill: CHART_COLOURS[0], r: 3 }}
-        activeDot={{ r: 5 }}
-      />
-      <Line
-        type="monotone"
-        dataKey="points"
-        name="Points"
-        stroke={CHART_COLOURS[3]}
-        strokeWidth={2}
-        dot={{ fill: CHART_COLOURS[3], r: 3 }}
-        activeDot={{ r: 5 }}
-      />
-    </LineChart>
-  );
-}
+const axisProps = {
+  tick: { fill: CHART_AXIS_COLOURS.tick, fontSize: 12 },
+  stroke: CHART_AXIS_COLOURS.grid,
+  strokeOpacity: CHART_AXIS_COLOURS.gridOpacity,
+};
 
-function PerGameChart({ data }: { data: SeasonData[] }) {
+function ScoringChart({ data, perGame }: { data: SeasonData[]; perGame: boolean }) {
+  const rows = data.map((d) => ({
+    ...d,
+    g: perGame ? d.goals / d.gamesPlayed : d.goals,
+    a: perGame ? d.assists / d.gamesPlayed : d.assists,
+  }));
+  const axis = niceAxis(
+    rows.map((r) => r.g + r.a),
+    { includeZero: true },
+  );
   return (
-    <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-      <CartesianGrid
-        strokeDasharray="3 3"
-        stroke={CHART_AXIS_COLOURS.grid}
-        strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-      />
-      <XAxis
-        dataKey="seasonLabel"
-        tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
-        stroke={CHART_AXIS_COLOURS.grid}
-        strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-      />
+    <BarChart data={rows} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+      <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLOURS.grid} strokeOpacity={CHART_AXIS_COLOURS.gridOpacity} vertical={false} />
+      <XAxis dataKey="seasonLabel" {...axisProps} />
       <YAxis
-        tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
+        {...axisProps}
         width={40}
-        tickFormatter={(v: number) => v.toFixed(1)}
-        stroke={CHART_AXIS_COLOURS.grid}
-        strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
+        domain={axis.domain}
+        ticks={axis.ticks}
+        tickFormatter={(v: number) => (perGame ? v.toFixed(1) : String(v))}
       />
-      <Tooltip content={<PerGameTooltip />} />
-      <Line
-        type="monotone"
-        dataKey="goalsPerGame"
-        name="G/GP"
-        stroke={CHART_COLOURS[1]}
-        strokeWidth={2}
-        dot={{ fill: CHART_COLOURS[1], r: 3 }}
-        activeDot={{ r: 5 }}
+      <Tooltip
+        cursor={{ fill: "var(--muted)", fillOpacity: 0.4 }}
+        content={<ScoringTooltip perGame={perGame} />}
       />
-      <Line
-        type="monotone"
-        dataKey="assistsPerGame"
-        name="A/GP"
-        stroke={CHART_COLOURS[0]}
-        strokeWidth={2}
-        dot={{ fill: CHART_COLOURS[0], r: 3 }}
-        activeDot={{ r: 5 }}
-      />
-      <Line
-        type="monotone"
-        dataKey="pointsPerGame"
-        name="P/GP"
-        stroke={CHART_COLOURS[3]}
-        strokeWidth={2}
-        dot={{ fill: CHART_COLOURS[3], r: 3 }}
-        activeDot={{ r: 5 }}
-      />
-    </LineChart>
+      <Bar dataKey="g" name="Goals" stackId="p" fill={GOALS_COLOUR} maxBarSize={48} />
+      <Bar dataKey="a" name="Assists" stackId="p" fill={ASSISTS_COLOUR} radius={[4, 4, 0, 0]} maxBarSize={48} />
+    </BarChart>
   );
 }
 
 function TOIChart({ data }: { data: SeasonData[] }) {
-  const minTOI = Math.min(...data.map((d) => d.toiPerGame));
-  const maxTOI = Math.max(...data.map((d) => d.toiPerGame));
-  const padding = (maxTOI - minTOI) * 0.15;
-
+  const axis = niceAxis(data.map((d) => d.toiPerGame), { pad: 1 });
   return (
     <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-      <CartesianGrid
-        strokeDasharray="3 3"
-        stroke={CHART_AXIS_COLOURS.grid}
-        strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-      />
-      <XAxis
-        dataKey="seasonLabel"
-        tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
-        stroke={CHART_AXIS_COLOURS.grid}
-        strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-      />
+      <CartesianGrid strokeDasharray="3 3" stroke={CHART_AXIS_COLOURS.grid} strokeOpacity={CHART_AXIS_COLOURS.gridOpacity} vertical={false} />
+      <XAxis dataKey="seasonLabel" {...axisProps} />
       <YAxis
-        domain={[Math.max(0, minTOI - padding), maxTOI + padding]}
-        tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
+        {...axisProps}
         width={40}
+        domain={axis.domain}
+        ticks={axis.ticks}
         tickFormatter={(v: number) => `${Math.round(v)}m`}
-        stroke={CHART_AXIS_COLOURS.grid}
-        strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
       />
-      <Tooltip content={<TOITooltip />} />
+      <Tooltip cursor={{ stroke: CHART_AXIS_COLOURS.grid }} content={<TOITooltip />} />
       <Line
-        type="monotone"
+        type="linear"
         dataKey="toiPerGame"
         name="TOI/GP"
-        stroke={CHART_COLOURS[4]}
+        stroke={CHART_COLOURS[0]}
         strokeWidth={2}
-        dot={{ fill: CHART_COLOURS[4], r: 4 }}
-        activeDot={{ r: 6 }}
+        dot={{ fill: CHART_COLOURS[0], r: 3 }}
+        activeDot={{ r: 5 }}
       />
     </LineChart>
   );
 }
 
-function TotalsTooltip({
+function TooltipRow({ label, value, colour }: { label: string; value: string; colour?: string }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <span className="flex items-center gap-1.5 text-muted-foreground">
+        {colour && <span className="size-2.5 rounded-[3px]" style={{ background: colour }} />}
+        {label}
+      </span>
+      <span className="font-semibold tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function ScoringTooltip({
   active,
   payload,
+  perGame,
 }: {
   active?: boolean;
   payload?: Array<{ payload: SeasonData }>;
+  perGame: boolean;
 }) {
-  if (!active || !payload?.length) return null;
-  const data = payload[0].payload;
+  if (isCoarsePointer() || !active || !payload?.length) return null;
+  const d = payload[0].payload;
+  const fmt = (v: number) => (perGame ? (v / d.gamesPlayed).toFixed(2) : String(v));
   return (
-    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
-      <p className="font-semibold">{data.seasonLabel}</p>
-      <p className="text-muted-foreground">{data.gamesPlayed} GP</p>
-      <div className="mt-2 space-y-1">
-        <p>
-          <span
-            className="inline-block w-3 h-3 rounded-full mr-2"
-            style={{ backgroundColor: CHART_COLOURS[1] }}
-          />
-          Goals: <span className="font-medium">{data.goals}</span>
-        </p>
-        <p>
-          <span
-            className="inline-block w-3 h-3 rounded-full mr-2"
-            style={{ backgroundColor: CHART_COLOURS[0] }}
-          />
-          Assists: <span className="font-medium">{data.assists}</span>
-        </p>
-        <p>
-          <span
-            className="inline-block w-3 h-3 rounded-full mr-2"
-            style={{ backgroundColor: CHART_COLOURS[3] }}
-          />
-          Points: <span className="font-medium">{data.points}</span>
-        </p>
+    <div className="rounded-xl border bg-popover p-3 text-sm text-popover-foreground shadow-lg shadow-black/5">
+      <TooltipTitle>{d.seasonLabel}</TooltipTitle>
+      <p className="mb-2 text-xs text-muted-foreground">{d.gamesPlayed} GP</p>
+      <div className="space-y-1 text-xs">
+        <TooltipRow label={perGame ? "G/GP" : "Goals"} value={fmt(d.goals)} colour={GOALS_COLOUR} />
+        <TooltipRow label={perGame ? "A/GP" : "Assists"} value={fmt(d.assists)} colour={ASSISTS_COLOUR} />
+        <div className="border-t pt-1">
+          <TooltipRow label={perGame ? "P/GP" : "Points"} value={fmt(d.points)} />
+        </div>
       </div>
     </div>
   );
 }
 
-function PerGameTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: SeasonData }>;
-}) {
-  if (!active || !payload?.length) return null;
-  const data = payload[0].payload;
+function TOITooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: SeasonData }> }) {
+  if (isCoarsePointer() || !active || !payload?.length) return null;
+  const d = payload[0].payload;
   return (
-    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
-      <p className="font-semibold">{data.seasonLabel}</p>
-      <p className="text-muted-foreground">{data.gamesPlayed} GP</p>
-      <div className="mt-2 space-y-1">
-        <p>
-          <span
-            className="inline-block w-3 h-3 rounded-full mr-2"
-            style={{ backgroundColor: CHART_COLOURS[1] }}
-          />
-          G/GP: <span className="font-medium">{data.goalsPerGame.toFixed(2)}</span>
-        </p>
-        <p>
-          <span
-            className="inline-block w-3 h-3 rounded-full mr-2"
-            style={{ backgroundColor: CHART_COLOURS[0] }}
-          />
-          A/GP: <span className="font-medium">{data.assistsPerGame.toFixed(2)}</span>
-        </p>
-        <p>
-          <span
-            className="inline-block w-3 h-3 rounded-full mr-2"
-            style={{ backgroundColor: CHART_COLOURS[3] }}
-          />
-          P/GP: <span className="font-medium">{data.pointsPerGame.toFixed(2)}</span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function TOITooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: SeasonData }>;
-}) {
-  if (!active || !payload?.length) return null;
-  const data = payload[0].payload;
-  const avgSecondsPerGame =
-    data.gamesPlayed > 0 ? data.toiSeconds / data.gamesPlayed : 0;
-  return (
-    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
-      <p className="font-semibold">{data.seasonLabel}</p>
-      <p className="text-muted-foreground">{data.gamesPlayed} GP</p>
-      <div className="mt-2">
-        <p>
-          <span
-            className="inline-block w-3 h-3 rounded-full mr-2"
-            style={{ backgroundColor: CHART_COLOURS[4] }}
-          />
-          TOI/GP: <span className="font-medium">{formatToi(avgSecondsPerGame)}</span>
-        </p>
-        <p className="text-muted-foreground text-xs mt-1">
-          Total: {formatToi(data.toiSeconds)}
-        </p>
+    <div className="rounded-xl border bg-popover p-3 text-sm text-popover-foreground shadow-lg shadow-black/5">
+      <TooltipTitle colour={CHART_COLOURS[0]}>{d.seasonLabel}</TooltipTitle>
+      <div className="space-y-1 text-xs">
+        <TooltipRow label="TOI/GP" value={formatToi(d.toiSeconds / d.gamesPlayed)} />
+        <TooltipRow label="Total" value={`${Math.round(d.toiSeconds / 60).toLocaleString()} min`} />
+        <TooltipRow label="GP" value={String(d.gamesPlayed)} />
       </div>
     </div>
   );

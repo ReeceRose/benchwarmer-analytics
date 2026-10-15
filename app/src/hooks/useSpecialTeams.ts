@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import {
+  getPenaltiesByVenue,
   getTeamSpecialTeams,
   getSpecialTeamsPlayers,
   getSpecialTeamsTrend,
@@ -112,5 +113,15 @@ export function usePlayerPenaltyStats(
     queryFn: () => getPlayerPenaltyStats(season, playoffs, options),
     enabled,
     staleTime: 1000 * 60 * 30, // 30 minutes
+  });
+}
+
+/** Every team's home and road penalty totals for every season. */
+export function usePenaltiesByVenue(enabled = true, playoffs = false) {
+  return useQuery({
+    queryKey: ["special-teams", "penalties-by-venue", playoffs],
+    queryFn: () => getPenaltiesByVenue(playoffs),
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    enabled,
   });
 }

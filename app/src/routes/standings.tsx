@@ -18,10 +18,12 @@ import {
 } from "@/components/layout";
 import { StandingsTable } from "@/components/standings";
 import {
-  PointsLuckChart,
   GoalDifferentialChart,
   PDODistributionChart,
+  PointsRaceChart,
+  TravelChart,
 } from "@/components/standings/charts";
+import { PointsExpectedChart } from "@/components/power-rankings/charts";
 import type { StandingsGrouping, StandingsWithAnalytics } from "@/types";
 import * as z from "zod/mini";
 
@@ -102,7 +104,7 @@ function StandingsPage() {
             Top three in the division
           </span>
           <span className="inline-flex items-center gap-2">
-            <span className="rounded-full border border-chart-4/70 bg-chart-4/10 px-1.5 text-[10px] font-semibold text-chart-4">
+            <span className="rounded-full border border-warning/70 bg-warning/10 px-1.5 text-[10px] font-semibold text-warning">
               WC
             </span>
             Wild card (two per conference)
@@ -182,20 +184,36 @@ function ChartsView({
   if (analyticsLoading) {
     return (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Skeleton className="h-96 rounded-2xl" />
-        <Skeleton className="h-96 rounded-2xl" />
+        <Skeleton className="h-256 rounded-2xl" />
+        <Skeleton className="h-256 rounded-2xl" />
       </div>
     );
   }
 
+  const pointsRows = teams.flatMap((t) =>
+    t.analytics
+      ? [
+          {
+            abbreviation: t.abbreviation,
+            name: t.name,
+            points: t.points,
+            expectedPoints: t.analytics.expectedPoints,
+            // Live points against the analytics snapshot's xPts, so the gap matches what's shown.
+            pointsDiff: Math.round(t.points - t.analytics.expectedPoints),
+          },
+        ]
+      : [],
+  );
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PointsLuckChart teams={teams} />
-        <PDODistributionChart teams={teams} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <GoalDifferentialChart teams={teams} />
+        <PointsExpectedChart teams={pointsRows} />
       </div>
-
-      <GoalDifferentialChart teams={teams} />
+      <PointsRaceChart />
+      <PDODistributionChart teams={teams} />
+      <TravelChart />
     </div>
   );
 }

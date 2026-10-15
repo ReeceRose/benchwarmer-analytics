@@ -37,8 +37,8 @@ export function DivisionGroup({
                 <Fragment key={team.abbreviation}>
                   {index === playoffCutoffIndex && (
                     <TableRow className="h-0 hover:bg-transparent">
-                      <td colSpan={100} className="p-0">
-                        <div className="border-t-2 border-dashed border-primary/40" />
+                      <td colSpan={100} className="border-b-0! p-0">
+                        <div className="relative z-20 -mt-px border-t-2 border-dashed border-primary/40 bg-card" />
                       </td>
                     </TableRow>
                   )}

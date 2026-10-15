@@ -1,6 +1,6 @@
 import Decimal from "decimal.js";
-import { and, asc, desc, eq } from "drizzle-orm";
-import type { Database } from "@/server/db/client";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { queryRows, type Database } from "@/server/db/client";
 import { teamSeasons, teams } from "@/server/db/schema";
 import type { ApiContext } from "@/server/api/handler";
 import { round } from "@/server/api/format";
@@ -162,14 +162,104 @@ function percentagesByTeam(rows: { ts: TeamSeasonRow }[], pct: (ts: TeamSeasonRo
   return new Map(rows.map(({ ts }) => [ts.teamAbbreviation, pct(ts)]));
 }
 
+export const RECENT_GAMES = 10;
+
+export interface TeamGameShares {
+  // 5-on-5 xG share (0-1) over the regular season so far.
+  fiveOnFiveXGoalsPct: number | null;
+  // The same over the team's last RECENT_GAMES games.
+  recentXGoalsPct: number | null;
+  // Average 5-on-5 xG share of opponents played, and of opponents left on
+  // the regular-season schedule (null when there are none).
+  scheduleStrength: number | null;
+  remainingScheduleStrength: number | null;
+}
+
+const share = (forValue: string | null, againstValue: string | null) => {
+  const f = Number(forValue ?? 0);
+  const total = f + Number(againstValue ?? 0);
+  return total > 0 ? f / total : null;
+};
+
+const numberOrNull = (value: string | null) => (value === null ? null : Number(value));
+
+// Form and schedule strength from team_games (5 on 5, regular season), with
+// the remaining schedule from games.
+export async function teamGameShares(db: Database, season: number): Promise<Map<string, TeamGameShares>> {
+  const rows = await queryRows<{
+    team: string;
+    xgf: string;
+    xga: string;
+    recent_xgf: string | null;
+    recent_xga: string | null;
+    played_sos: string | null;
+    remaining_sos: string | null;
+  }>(db, sql`
+    with games_5v5 as (
+      select team_abbreviation, opponent_abbreviation, x_goals_for, x_goals_against,
+        row_number() over (partition by team_abbreviation order by game_date desc, game_id desc) as n
+      from team_games
+      where season = ${season} and situation = '5on5' and not is_playoffs
+    ),
+    shares as (
+      select team_abbreviation as team, sum(x_goals_for) as xgf, sum(x_goals_against) as xga,
+        sum(x_goals_for) filter (where n <= ${RECENT_GAMES}) as recent_xgf,
+        sum(x_goals_against) filter (where n <= ${RECENT_GAMES}) as recent_xga,
+        sum(x_goals_for) / nullif(sum(x_goals_for) + sum(x_goals_against), 0) as xg_share
+      from games_5v5
+      group by team_abbreviation
+    ),
+    played as (
+      select g.team_abbreviation as team, avg(s.xg_share) as sos
+      from games_5v5 g join shares s on s.team = g.opponent_abbreviation
+      group by g.team_abbreviation
+    ),
+    remaining_games as (
+      select home_team_code as team, away_team_code as opponent from games
+      where season = ${season} and game_type = 2 and game_state not in ('OFF', 'FINAL')
+      union all
+      select away_team_code, home_team_code from games
+      where season = ${season} and game_type = 2 and game_state not in ('OFF', 'FINAL')
+    ),
+    remaining as (
+      select r.team, avg(s.xg_share) as sos
+      from remaining_games r join shares s on s.team = r.opponent
+      group by r.team
+    )
+    select s.team, s.xgf, s.xga, s.recent_xgf, s.recent_xga, p.sos as played_sos, r.sos as remaining_sos
+    from shares s
+    left join played p on p.team = s.team
+    left join remaining r on r.team = s.team
+  `);
+  return new Map(
+    rows.map((r) => [
+      r.team,
+      {
+        fiveOnFiveXGoalsPct: share(r.xgf, r.xga),
+        recentXGoalsPct: share(r.recent_xgf, r.recent_xga),
+        scheduleStrength: numberOrNull(r.played_sos),
+        remainingScheduleStrength: numberOrNull(r.remaining_sos),
+      },
+    ]),
+  );
+}
+
+const NO_SHARES: TeamGameShares = {
+  fiveOnFiveXGoalsPct: null,
+  recentXGoalsPct: null,
+  scheduleStrength: null,
+  remainingScheduleStrength: null,
+};
+
 export async function getPowerRankings({ db, query }: ApiContext) {
   const season = query.int("season") ?? (await latestTeamSeason(db));
   if (season === 0) return { season, teams: [], insights: { likelyToImprove: [], likelyToRegress: [] } };
 
-  const [all, pp, pk] = await Promise.all([
+  const [all, pp, pk, recent] = await Promise.all([
     teamSeasonsWithTeam(db, season, "all"),
     teamSeasonsWithTeam(db, season, "5on4"),
     teamSeasonsWithTeam(db, season, "4on5"),
+    teamGameShares(db, season),
   ]);
   const ppByTeam = percentagesByTeam(pp, ppPercentage);
   const pkByTeam = percentagesByTeam(pk, pkPercentage);
@@ -181,7 +271,7 @@ export async function getPowerRankings({ db, query }: ApiContext) {
   );
   return {
     season,
-    teams: ranked,
+    teams: ranked.map((r) => ({ ...r, ...(recent.get(r.abbreviation) ?? NO_SHARES) })),
     insights: { likelyToImprove: likelyToImprove(ranked), likelyToRegress: likelyToRegress(ranked) },
   };
 }

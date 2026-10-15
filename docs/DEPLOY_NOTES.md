@@ -46,7 +46,7 @@ production database (every step is idempotent).
 | Limit | Hobby | Effect here |
 |---|---|---|
 | Cron frequency | once a day per job | All jobs are daily or weekly |
-| Cron precision | anywhere within the scheduled hour | The 09:00-09:45 stagger isn't guaranteed; steps tolerate any order |
+| Cron precision | anywhere within the scheduled hour | Jobs are an hour apart (11:00-16:00 UTC daily, 17:00 and 18:00 UTC Sundays) to keep their order; steps tolerate any order |
 | Function duration | 300 s | Slowest step is a full-season `shots` run (~85 s); nightly runs take seconds |
 | Usage | non-commercial only | Move to Pro if the site becomes commercial |
 

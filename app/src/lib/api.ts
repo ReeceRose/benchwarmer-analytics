@@ -14,6 +14,7 @@ import type {
   GoalieStatsResponse,
   PlayerComparisonResponse,
   PlayerRollingStatsResponse,
+  PlayerGameLogResponse,
   GoalieWorkloadResponse,
   SeasonListResponse,
   OutliersResponse,
@@ -53,6 +54,35 @@ import type {
   SkaterLeagueBaselinesResponse,
   DeserveToWinResponse,
   ScoreStateStatsResponse,
+  TeamGameLogResponse,
+  NightlyGameScoresResponse,
+  SingleGameRecordsResponse,
+  PlayoffOddsResponse,
+  GameProjectionsResponse,
+  PlayerTrackingResponse,
+  TeamTrackingResponse,
+  MilestonesResponse,
+  DraftResponse,
+  FranchiseHistoryResponse,
+  GoalReplayResponse,
+  TrackingLeadersResponse,
+  TrackingLeaderPosition,
+  ShotTypesResponse,
+  TeamSituationsResponse,
+  HomeAwayResponse,
+  HomeAwayHistoryResponse,
+  PenaltiesByVenueResponse,
+  GoalieRestResponse,
+  StandingsRaceResponse,
+  TravelResponse,
+  PlayoffBracketResponse,
+  TrophiesResponse,
+  TrophyResponse,
+  MilestoneClubResponse,
+  MilestoneKind,
+  OfficialsResponse,
+  AttendanceResponse,
+  StreaksResponse,
 } from "@/types";
 
 type QueryValue = string | number | boolean | null | undefined;
@@ -319,6 +349,18 @@ export async function getDeserveToWin(gameId: string): Promise<DeserveToWinRespo
 
 // Rolling Stats
 
+export async function getPlayerGameLog(
+  playerId: number,
+  season: number,
+  playoffs: boolean
+): Promise<PlayerGameLogResponse> {
+  const { data } = await api.get<PlayerGameLogResponse>(
+    `/players/${playerId}/game-log`,
+    { params: { season, playoffs: playoffs || undefined } }
+  );
+  return data;
+}
+
 export async function getPlayerRollingStats(
   playerId: number,
   season?: number,
@@ -504,6 +546,13 @@ export async function getSpecialTeamsTrend(
 
 // League-wide Special Teams Stats
 
+export async function getPenaltiesByVenue(playoffs?: boolean): Promise<PenaltiesByVenueResponse> {
+  const { data } = await api.get<PenaltiesByVenueResponse>("/special-teams/penalties-by-venue", {
+    params: { playoffs: playoffs || undefined },
+  });
+  return data;
+}
+
 export async function getSpecialTeamsTeamRankings(
   season?: number,
   playoffs?: boolean
@@ -630,5 +679,175 @@ export async function getScoreStateStats(
     `/teams/${abbrev}/score-state-stats`,
     { params: Object.keys(params).length > 0 ? params : undefined }
   );
+  return data;
+}
+
+// Team game log
+
+export async function getTeamGameLog(
+  abbrev: string,
+  season?: number,
+  playoffs?: boolean
+): Promise<TeamGameLogResponse> {
+  const { data } = await api.get<TeamGameLogResponse>(`/teams/${abbrev}/games`, {
+    params: { season, playoffs },
+  });
+  return data;
+}
+
+// Game Scores (per game)
+
+export async function getNightlyGameScores(date?: string): Promise<NightlyGameScoresResponse> {
+  const { data } = await api.get<NightlyGameScoresResponse>("/stats/game-scores/nightly", { params: { date } });
+  return data;
+}
+
+export async function getSingleGameRecords(
+  season?: number,
+  position?: "F" | "D",
+  playoffs?: boolean,
+): Promise<SingleGameRecordsResponse> {
+  const { data } = await api.get<SingleGameRecordsResponse>("/stats/game-scores/single-games", {
+    params: { season, position, playoffs },
+  });
+  return data;
+}
+
+// Projections
+
+export async function getPlayoffOdds(season?: number): Promise<PlayoffOddsResponse> {
+  const { data } = await api.get<PlayoffOddsResponse>("/projections/playoff-odds", { params: { season } });
+  return data;
+}
+
+export async function getGameProjections(date: string): Promise<GameProjectionsResponse> {
+  const { data } = await api.get<GameProjectionsResponse>("/projections/games", { params: { date } });
+  return data;
+}
+
+// NHL EDGE tracking
+
+export async function getPlayerTracking(id: number, season?: number): Promise<PlayerTrackingResponse> {
+  const { data } = await api.get<PlayerTrackingResponse>(`/players/${id}/tracking`, { params: { season } });
+  return data;
+}
+
+export async function getTeamTracking(abbrev: string, season?: number): Promise<TeamTrackingResponse> {
+  const { data } = await api.get<TeamTrackingResponse>(`/teams/${abbrev}/tracking`, { params: { season } });
+  return data;
+}
+
+// NHL records
+
+export async function getMilestones(): Promise<MilestonesResponse> {
+  const { data } = await api.get<MilestonesResponse>("/milestones");
+  return data;
+}
+
+export async function getDraft(year?: number, team?: string): Promise<DraftResponse> {
+  const { data } = await api.get<DraftResponse>("/draft", { params: { year, team } });
+  return data;
+}
+
+export async function getFranchiseHistory(abbrev: string): Promise<FranchiseHistoryResponse> {
+  const { data } = await api.get<FranchiseHistoryResponse>(`/teams/${abbrev}/history`);
+  return data;
+}
+
+export async function getGoalReplay(gameId: string, eventId: number): Promise<GoalReplayResponse> {
+  const { data } = await api.get<GoalReplayResponse>(`/games/${gameId}/goals/${eventId}/replay`);
+  return data;
+}
+
+export async function getTrackingLeaders(season?: number, position?: TrackingLeaderPosition): Promise<TrackingLeadersResponse> {
+  const { data } = await api.get<TrackingLeadersResponse>("/tracking/leaders", { params: { season, position } });
+  return data;
+}
+
+// Shot types, situations, rest, race, travel, playoffs
+
+export async function getPlayerShotTypes(id: number): Promise<ShotTypesResponse> {
+  const { data } = await api.get<ShotTypesResponse>(`/players/${id}/shot-types`);
+  return data;
+}
+
+export async function getTeamShotTypes(abbrev: string): Promise<ShotTypesResponse> {
+  const { data } = await api.get<ShotTypesResponse>(`/teams/${abbrev}/shot-types`);
+  return data;
+}
+
+export async function getTeamSituations(abbrev: string, season?: number): Promise<TeamSituationsResponse> {
+  const { data } = await api.get<TeamSituationsResponse>(`/teams/${abbrev}/situations`, { params: { season } });
+  return data;
+}
+
+export async function getTeamHomeAway(abbrev: string, season?: number, playoffs?: boolean): Promise<HomeAwayResponse> {
+  const { data } = await api.get<HomeAwayResponse>(`/teams/${abbrev}/home-away`, { params: { season, playoffs: playoffs || undefined } });
+  return data;
+}
+
+export async function getTeamHomeAwayHistory(abbrev: string, playoffs?: boolean): Promise<HomeAwayHistoryResponse> {
+  const { data } = await api.get<HomeAwayHistoryResponse>(`/teams/${abbrev}/home-away-history`, {
+    params: { playoffs: playoffs || undefined },
+  });
+  return data;
+}
+
+export async function getLeagueHomeAwayHistory(playoffs?: boolean): Promise<HomeAwayHistoryResponse> {
+  const { data } = await api.get<HomeAwayHistoryResponse>("/stats/home-away", { params: { playoffs: playoffs || undefined } });
+  return data;
+}
+
+export async function getGoalieRest(id: number): Promise<GoalieRestResponse> {
+  const { data } = await api.get<GoalieRestResponse>(`/players/${id}/rest`);
+  return data;
+}
+
+export async function getStandingsRace(season?: number): Promise<StandingsRaceResponse> {
+  const { data } = await api.get<StandingsRaceResponse>("/standings/race", { params: { season } });
+  return data;
+}
+
+export async function getTravel(season?: number): Promise<TravelResponse> {
+  const { data } = await api.get<TravelResponse>("/standings/travel", { params: { season } });
+  return data;
+}
+
+export async function getPlayoffBracket(season?: number): Promise<PlayoffBracketResponse> {
+  const { data } = await api.get<PlayoffBracketResponse>("/playoffs/bracket", { params: { season } });
+  return data;
+}
+
+// Trophies
+
+export async function getTrophies(): Promise<TrophiesResponse> {
+  const { data } = await api.get<TrophiesResponse>("/trophies");
+  return data;
+}
+
+export async function getTrophy(slug: string): Promise<TrophyResponse> {
+  const { data } = await api.get<TrophyResponse>(`/trophies/${encodeURIComponent(slug)}`);
+  return data;
+}
+
+// Records: milestone clubs, officials, attendance, streaks
+
+export async function getMilestoneClub(kind: MilestoneKind): Promise<MilestoneClubResponse> {
+  const { data } = await api.get<MilestoneClubResponse>("/records/milestones", { params: { kind } });
+  return data;
+}
+
+export async function getOfficials(): Promise<OfficialsResponse> {
+  const { data } = await api.get<OfficialsResponse>("/records/officials");
+  return data;
+}
+
+export async function getAttendance(): Promise<AttendanceResponse> {
+  const { data } = await api.get<AttendanceResponse>("/records/attendance");
+  return data;
+}
+
+export async function getStreaks(playerId?: number): Promise<StreaksResponse> {
+  const { data } = await api.get<StreaksResponse>("/stats/streaks", { params: { playerId } });
   return data;
 }

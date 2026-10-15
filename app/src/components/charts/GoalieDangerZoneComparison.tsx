@@ -6,6 +6,7 @@ import type { GoalieStats } from "@/types";
 interface GoalieData {
   name: string;
   stats: GoalieStats | null | undefined;
+  color?: string;
 }
 
 interface GoalieDangerZoneComparisonProps {
@@ -80,7 +81,7 @@ export function GoalieDangerZoneComparison({
       </CardHeader>
       <CardContent>
         <ComparisonBars
-          series={valid.map((p) => ({ name: p.name }))}
+          series={valid.map((p) => ({ name: p.name, colour: p.color }))}
           rows={[
             zone("Low danger", "lowSvPct", baselines.lowDanger),
             zone("Medium danger", "medSvPct", baselines.mediumDanger),

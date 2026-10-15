@@ -34,7 +34,7 @@ export const NhlConstants = {
 export const LeaderboardCategories = {
   skater: [
     "points", "goals", "assists", "shots", "expectedgoals", "xgper60", "corsipct", "fenwickpct",
-    "oishpct", "oisvpct", "icetime", "gamesplayed", "faceoffpct",
+    "oishpct", "oisvpct", "icetime", "gamesplayed", "faceoffpct", "gamescore",
   ],
   goalie: ["savepct", "gaa", "gsax", "shotsagainst", "goalietime", "goalsagainst", "xga", "reboundcontrol"],
 } as const;

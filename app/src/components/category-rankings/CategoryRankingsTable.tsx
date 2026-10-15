@@ -218,7 +218,7 @@ export function CategoryRankingsTable({ teams, isLoading, isError, season }: Cat
   }
 
   return (
-    <Card className="py-0">
+    <Card className="gap-0 overflow-hidden py-0">
       <CardContent className="overflow-x-auto p-0">
         <Table>
           <TableHeader>

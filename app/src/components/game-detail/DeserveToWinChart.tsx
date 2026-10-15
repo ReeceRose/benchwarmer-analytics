@@ -135,8 +135,8 @@ function CustomTooltip({
       </div>
       {data.wasGoal && (
         <div className="mt-2 pt-2 border-t text-xs">
-          <p className="text-success font-semibold">
-            GOAL ({data.isHomeShot ? data.homeTeamCode : data.awayTeamCode})
+          <p className="font-semibold text-foreground">
+            Goal ({data.isHomeShot ? data.homeTeamCode : data.awayTeamCode})
           </p>
           <p className="text-muted-foreground">
             Shot xG: {(data.shotXG * 100).toFixed(1)}%

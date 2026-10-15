@@ -3,9 +3,19 @@ import { importPlayerBios } from "@/server/ingestion/importers/bios";
 import { importGoalies } from "@/server/ingestion/importers/goalies";
 import { importLines } from "@/server/ingestion/importers/lines";
 import { importShots, incrementalGameFilter } from "@/server/ingestion/importers/shots";
+import { importSkaterGames } from "@/server/ingestion/importers/skater-games";
+import { runProjections } from "@/server/projections/run";
 import { importSkaters } from "@/server/ingestion/importers/skaters";
+import { importTeamGames, loadGameAwayTeams } from "@/server/ingestion/importers/team-games";
 import { importTeams } from "@/server/ingestion/importers/teams";
-import { downloadPlayerBios, downloadSeasonSummary, streamShotsCsv, type SeasonDataset } from "@/server/ingestion/moneypuck";
+import {
+  downloadPlayerBios,
+  downloadSeasonSummary,
+  streamShotsCsv,
+  streamTeamGamesCsv,
+  type SeasonDataset,
+} from "@/server/ingestion/moneypuck";
+import { importNhlRecords } from "@/server/ingestion/nhl-records";
 import { addDays, fetchGames, seasonDateRange, todayEastern, upsertGames } from "@/server/ingestion/nhl";
 import { calculateScoreStates } from "@/server/ingestion/score-state";
 import { consoleLogger, runStep, type Logger, type StepResult } from "@/server/ingestion/sync-runs";
@@ -47,8 +57,30 @@ export function syncSeasonDataset(db: Queryable, dataset: SeasonDataset, season:
   }, logger);
 }
 
+// Team game-by-game rows. The file covers every season, so null imports all
+// of them in one pass (backfill) and a season filters to that season (cron).
+// Runs after teams (foreign key) and games (opponent repairs).
+export function syncTeamGames(db: Queryable, season: number | null, logger = consoleLogger) {
+  return runStep(db, "team_games", season, async () => {
+    const awayTeams = await loadGameAwayTeams(db, season);
+    const imported = await importTeamGames(db, await streamTeamGamesCsv(), season, awayTeams);
+    if (imported.skipped > 0) logger.warn(`team_games ${season ?? "all"}: skipped ${imported.skipped} rows with no opponent`);
+    return { rowsWritten: imported.written };
+  }, logger);
+}
+
 export function syncBios(db: Queryable, logger = consoleLogger) {
   return runStep(db, "bios", null, async () => ({ rowsWritten: await importPlayerBios(db, await downloadPlayerBios()) }), logger);
+}
+
+// NHL records: franchises and their seasons, all-time head-to-head records,
+// draft picks and career totals (one request per list, ~45k rows in all).
+export function syncNhlRecords(db: Queryable, logger = consoleLogger) {
+  return runStep(db, "nhl_records", null, async () => {
+    const result = await importNhlRecords(db);
+    logger.info(`nhl_records: ${JSON.stringify(result)}`);
+    return { rowsWritten: Object.values(result).reduce((a, b) => a + b, 0) };
+  }, logger);
 }
 
 export interface ShotSyncOptions {
@@ -94,6 +126,26 @@ export function syncSeasonGames(db: Queryable, season: number, logger = consoleL
 export function syncRecentGames(db: Queryable, logger = consoleLogger) {
   const today = todayEastern();
   return syncGames(db, addDays(today, -1), addDays(today, 7), null, logger);
+}
+
+// Per-game Game Score for final games that don't have it yet, oldest first.
+// `limit` keeps a run inside the cron's time budget (three NHL requests per
+// game); a backlog clears over successive runs.
+export function syncSkaterGames(db: Queryable, season: number, limit = 45, logger = consoleLogger) {
+  return runStep(db, "skater_games", season, async () => {
+    const result = await importSkaterGames(db, season, limit, logger);
+    return { rowsWritten: result.written };
+  }, logger);
+}
+
+// Playoff odds and team ratings for today (ET), from NHL standings and a
+// season simulation. Same day, same inputs, same seed: re-runs write nothing.
+export function syncProjections(db: Queryable, season: number, logger = consoleLogger) {
+  return runStep(db, "projections", season, async () => {
+    const result = await runProjections(db, season);
+    logger.info(`projections ${season}: ${result.remaining} games left, ${result.tonight} today`);
+    return { rowsWritten: result.written };
+  }, logger);
 }
 
 export function syncScoreStates(db: Queryable, season: number, gameIds?: string[], logger = consoleLogger) {

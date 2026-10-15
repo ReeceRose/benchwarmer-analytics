@@ -56,7 +56,7 @@ export function LineTable({
   const sortDesc = sortDir === "desc";
 
   return (
-    <Card className="py-0 gap-0">
+    <Card className="gap-0 overflow-hidden py-0">
       <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader>

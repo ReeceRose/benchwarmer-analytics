@@ -1,242 +1,82 @@
-import { useNavigate } from "@tanstack/react-router";
-import {
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  Label,
-} from "recharts";
+import { Link } from "@tanstack/react-router";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { TeamLogo } from "@/components/shared";
-import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
-import { getTeamLogoUrl } from "@/lib/team-logos";
+import { RankedBars, RankedTeamLabel, niceAxis } from "@/components/charts";
 import type { StandingsWithAnalytics } from "@/types";
 
 interface PDODistributionChartProps {
   teams: StandingsWithAnalytics[];
 }
 
-interface ChartDataPoint {
-  abbrev: string;
-  name: string;
-  pdo: number;
-  shootingPct: number;
-  savePct: number;
-  yPos: number; // For vertical spread
-}
+// PDO this far from 100 rarely lasts.
+const UNSUSTAINABLE = 3;
 
-// Custom tooltip
-function CustomTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: ChartDataPoint }>;
-}) {
-  if (!active || !payload?.length) return null;
-
-  const data = payload[0].payload;
-  const isLucky = data.pdo > 100;
-  const deviation = Math.abs(data.pdo - 100);
-  const isExtreme = deviation > 3;
-
-  return (
-    <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
-      <div className="flex items-center gap-2 mb-2">
-        <TeamLogo abbrev={data.abbrev} size="sm" />
-        <span className="font-semibold">{data.name}</span>
-      </div>
-      <div className="space-y-1 text-xs">
-        <p className={isLucky ? "text-warning" : "text-success"}>
-          <span className="text-muted-foreground">PDO:</span>{" "}
-          <span className="tabular-nums font-semibold">{data.pdo.toFixed(1)}</span>
-          <span className="ml-1">
-            ({isLucky ? "Lucky" : "Unlucky"}
-            {isExtreme ? " - Extreme" : ""})
-          </span>
-        </p>
-        <p>
-          <span className="text-muted-foreground">Shooting %:</span>{" "}
-          <span className="tabular-nums">{data.shootingPct.toFixed(1)}%</span>
-        </p>
-        <p>
-          <span className="text-muted-foreground">Save %:</span>{" "}
-          <span className="tabular-nums">{data.savePct.toFixed(1)}%</span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Custom dot showing team logo
-function CustomDot(props: {
-  cx?: number;
-  cy?: number;
-  payload?: ChartDataPoint;
-}) {
-  const { cx, cy, payload } = props;
-  if (!cx || !cy || !payload) return null;
-
-  return (
-    <g>
-      <image
-        href={getTeamLogoUrl(payload.abbrev)}
-        x={cx - 14}
-        y={cy - 14}
-        width={28}
-        height={28}
-      />
-    </g>
-  );
-}
-
+/** PDO (Sh% + Sv%) per team, growing out from 100: right is running hot, left running cold. */
 export function PDODistributionChart({ teams }: PDODistributionChartProps) {
-  const navigate = useNavigate();
-
-  // Filter to teams with PDO data and sort by PDO
-  const teamsWithPDO = teams
+  const rows = teams
     .filter((t) => t.analytics?.pdo != null)
-    .sort((a, b) => (b.analytics?.pdo ?? 0) - (a.analytics?.pdo ?? 0));
+    .map((t) => {
+      const a = t.analytics!;
+      const pdo = a.pdo!;
+      return {
+        key: t.abbreviation,
+        abbrev: t.abbreviation,
+        label: <RankedTeamLabel abbrev={t.abbreviation} />,
+        value: pdo,
+        display: pdo.toFixed(1),
+        meta:
+          a.shootingPct != null && a.savePct != null
+            ? `${a.shootingPct.toFixed(1)} / ${a.savePct.toFixed(1)}`
+            : "–",
+        title: `${t.name}: PDO ${pdo.toFixed(1)}`,
+      };
+    })
+    .sort((a, b) => b.value - a.value);
 
-  // Create chart data with vertical spread
-  const chartData: ChartDataPoint[] = teamsWithPDO.map((team, index) => ({
-    abbrev: team.abbreviation,
-    name: team.name,
-    pdo: team.analytics!.pdo!,
-    shootingPct: team.analytics!.shootingPct ?? 0,
-    savePct: team.analytics!.savePct ?? 0,
-    yPos: index,
-  }));
-
-  const handleClick = (data: ChartDataPoint) => {
-    navigate({
-      to: "/teams/$abbrev",
-      params: { abbrev: data.abbrev },
-    });
-  };
-
-  if (chartData.length === 0) {
+  if (rows.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>PDO distribution</CardTitle>
-          <CardDescription>No PDO data available</CardDescription>
+          <CardTitle className="text-base">PDO</CardTitle>
+          <CardDescription>No shooting and save numbers yet this season.</CardDescription>
         </CardHeader>
       </Card>
     );
   }
 
-  // Calculate domain
-  const pdoValues = chartData.map((d) => d.pdo);
-  const minPDO = Math.floor(Math.min(...pdoValues) * 10) / 10 - 1;
-  const maxPDO = Math.ceil(Math.max(...pdoValues) * 10) / 10 + 1;
+  const extent = Math.max(UNSUSTAINABLE + 1, ...rows.map((r) => Math.abs(r.value - 100)));
+  const { domain, ticks } = niceAxis([100 - extent, 100 + extent]);
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">
-          PDO distribution (luck indicator)
-        </CardTitle>
+        <CardTitle className="text-base">PDO</CardTitle>
         <CardDescription>
-          PDO = Sh% + Sv% — values near 100 are sustainable, extremes regress to
-          mean
+          Shooting % plus save %. Teams far above 100 are running hot; far
+          below, cold. Both tend to drift back.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={500}>
-          <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 30 }}>
-            <XAxis
-              type="number"
-              dataKey="pdo"
-              domain={[minPDO, maxPDO]}
-              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 11 }}
-              stroke={CHART_AXIS_COLOURS.grid}
-              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-            >
-              <Label
-                value="PDO (Shooting % + Save %)"
-                position="bottom"
-                offset={15}
-                style={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
-              />
-            </XAxis>
-            <YAxis
-              type="number"
-              dataKey="yPos"
-              domain={[-1, chartData.length]}
-              hide
-            />
-
-            <ReferenceLine
-              x={100}
-              stroke={CHART_AXIS_COLOURS.reference}
-              strokeDasharray="5 5"
-              strokeWidth={2}
-              label={{
-                value: "League Avg (100)",
-                position: "top",
-                fill: CHART_AXIS_COLOURS.tick,
-                fontSize: 11,
-              }}
-            />
-
-            <ReferenceLine
-              x={97}
-              stroke="var(--chart-3)"
-              strokeDasharray="3 3"
-              strokeWidth={1}
-              strokeOpacity={0.5}
-            />
-            <ReferenceLine
-              x={103}
-              stroke="var(--chart-4)"
-              strokeDasharray="3 3"
-              strokeWidth={1}
-              strokeOpacity={0.5}
-            />
-
-            <Tooltip content={<CustomTooltip />} />
-            <Scatter
-              data={chartData}
-              shape={<CustomDot />}
-              cursor="pointer"
-              onClick={(data) => handleClick(data as unknown as ChartDataPoint)}
-            />
-          </ScatterChart>
-        </ResponsiveContainer>
-        <div className="flex justify-center gap-6 mt-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-3)" }}
-            />
-            <span className="text-muted-foreground">
-              {"< 97: Unlucky (likely to improve)"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 rounded-[3px] bg-muted-foreground" />
-            <span className="text-muted-foreground">97-103: Sustainable</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2.5 rounded-[3px]"
-              style={{ backgroundColor: "var(--chart-4)" }}
-            />
-            <span className="text-muted-foreground">
-              {"> 103: Lucky (likely to regress)"}
-            </span>
-          </div>
-        </div>
+        <RankedBars
+          rows={rows}
+          headers={{ label: "Team", value: "PDO", meta: "Sh / Sv%" }}
+          domain={domain}
+          ticks={ticks}
+          formatTick={(t) => String(t)}
+          baseline={100}
+          renderRow={(row, props) => (
+            <Link key={row.key} to="/teams/$abbrev" params={{ abbrev: row.abbrev }} {...props} />
+          )}
+        />
+        <p className="mt-3 text-xs text-muted-foreground">
+          Bars grow from 100. Beyond {100 - UNSUSTAINABLE} or {100 + UNSUSTAINABLE} is
+          rarely sustainable over a season.
+        </p>
       </CardContent>
     </Card>
   );

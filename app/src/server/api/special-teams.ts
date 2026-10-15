@@ -36,6 +36,7 @@ export function teamSpecialTeamsRanking(
   team: { abbreviation: string; name: string },
   pp: TeamSeasonRow | undefined,
   pk: TeamSeasonRow | undefined,
+  all: TeamSeasonRow | undefined,
   ppRank: number,
   pkRank: number,
   overallRank: number,
@@ -57,6 +58,15 @@ export function teamSpecialTeamsRanking(
   const pkSvPct =
     pk && pk.shotsOnGoalAgainst > 0 ? ((pk.shotsOnGoalAgainst - pk.goalsAgainst) / pk.shotsOnGoalAgainst) * 100 : 0;
 
+  // Penalties come from the all-situations row. MoneyPuck's "against" is the
+  // opponent's penalties, so it's what the team drew.
+  const gamesPlayed = all?.gamesPlayed ?? 0;
+  const allMinutes = all ? all.iceTime / 60 : 0;
+  const drawn = all?.penaltiesAgainst ?? 0;
+  const taken = all?.penaltiesFor ?? 0;
+  const per60 = (n: number, minutes: number) => round(minutes > 0 ? (n / minutes) * 60 : 0, 2);
+  const perGame = (minutes: number) => round(gamesPlayed > 0 ? minutes / gamesPlayed : 0, 2);
+
   return {
     teamAbbreviation: team.abbreviation,
     teamName: team.name,
@@ -74,6 +84,19 @@ export function teamSpecialTeamsRanking(
     pkSvPct: round(pkSvPct, 1),
     specialTeamsPct: round(ppPct + pkPct, 1),
     overallRank,
+    gamesPlayed,
+    penaltiesDrawn: drawn,
+    penaltiesTaken: taken,
+    netPenalties: drawn - taken,
+    penaltiesDrawnPer60: per60(drawn, allMinutes),
+    penaltiesTakenPer60: per60(taken, allMinutes),
+    netPenaltiesPer60: per60(drawn - taken, allMinutes),
+    pimDrawn: all?.penaltyMinutesAgainst ?? 0,
+    pimTaken: all?.penaltyMinutesFor ?? 0,
+    ppMinutesPerGame: perGame(ppMinutes),
+    pkMinutesPerGame: perGame(pkMinutes),
+    ppGoalsPer60: per60(ppGoals, ppMinutes),
+    pkGoalsAgainstPer60: per60(pkGoalsAgainst, pkMinutes),
   };
 }
 
@@ -81,7 +104,7 @@ export async function getTeamRankings({ db, query }: ApiContext) {
   const season = query.int("season") ?? currentSeason();
   const playoffs = query.bool("playoffs") ?? false;
 
-  const [allTeams, ppRows, pkRows] = await Promise.all([
+  const [allTeams, ppRows, pkRows, allRows] = await Promise.all([
     db
       .select({ abbreviation: teams.abbreviation, name: teams.name })
       .from(teams)
@@ -89,9 +112,11 @@ export async function getTeamRankings({ db, query }: ApiContext) {
       .orderBy(asc(teams.name)),
     getTeamSeasonsForSeason(db, season, "5on4", playoffs),
     getTeamSeasonsForSeason(db, season, "4on5", playoffs),
+    getTeamSeasonsForSeason(db, season, "all", playoffs),
   ]);
   const ppByTeam = new Map(ppRows.map((r) => [r.teamAbbreviation, r]));
   const pkByTeam = new Map(pkRows.map((r) => [r.teamAbbreviation, r]));
+  const allByTeam = new Map(allRows.map((r) => [r.teamAbbreviation, r]));
 
   const stats = allTeams.map((team) => {
     const pp = ppByTeam.get(team.abbreviation);
@@ -110,6 +135,7 @@ export async function getTeamRankings({ db, query }: ApiContext) {
       s.team,
       s.pp,
       s.pk,
+      allByTeam.get(key(s)),
       ppRanks.get(key(s)) ?? 0,
       pkRanks.get(key(s)) ?? 0,
       overallRanks.get(key(s)) ?? 0,

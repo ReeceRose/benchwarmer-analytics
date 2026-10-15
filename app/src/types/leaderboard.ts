@@ -13,6 +13,7 @@ export type LeaderboardCategory =
   | "iceTime"
   | "gamesPlayed"
   | "faceoffPct"
+  | "gameScore"
   // Goalie categories
   | "savePct"
   | "gaa"
@@ -42,6 +43,7 @@ export interface LeaderboardEntry {
   onIceShootingPct?: number;
   onIceSavePct?: number;
   iceTimeSeconds?: number;
+  gameScorePerGame?: number | null;
   // Goalie stats
   savePercentage?: number;
   goalsAgainstAverage?: number;

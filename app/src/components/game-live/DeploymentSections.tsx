@@ -152,7 +152,7 @@ export function OnIceNow({ data }: { data: LiveGameResponse }) {
   const { situation, meta } = data;
   return (
     <Card>
-      <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
         {SIDES.map((side) => (
           <div key={side}>
             <div className="mb-2 text-sm">
@@ -179,7 +179,7 @@ export function OnIceNow({ data }: { data: LiveGameResponse }) {
             </div>
           </div>
         ))}
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground lg:col-span-2">
           {meta.inIntermission ? "Intermission" : `${meta.clockRunning ? "Clock running" : "Clock stopped"} · ${periodName(meta.period)}, ${meta.timeRemaining ?? "–"} left`}
           {situation?.descriptions.length ? ` · ${situation.descriptions.join(", ")}${situation.timeRemaining ? ` (${situation.timeRemaining})` : ""}` : ""}
         </p>

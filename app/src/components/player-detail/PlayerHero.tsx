@@ -2,12 +2,17 @@ import { Link } from "@tanstack/react-router";
 import { EntityHero, HeroBadge, HeroStat } from "@/components/layout";
 import {
   formatHeight,
+  formatOrdinal,
   formatPosition,
   formatSavePct,
   formatSeason,
   formatPercent,
 } from "@/lib/formatters";
 import { getTeamName } from "@/lib/team-names";
+import { shortTrophyName } from "@/lib/trophies";
+
+// Most-won trophies shown on the hero; the career tab lists them all.
+const MAX_AWARD_BADGES = 3;
 import type { GoalieStats, PlayerDetail, SkaterStats } from "@/types";
 
 interface PlayerHeroProps {
@@ -65,7 +70,21 @@ export function PlayerHero({ player, season }: PlayerHeroProps) {
         />
       }
       badges={
-        player.position && <HeroBadge>{formatPosition(player.position)}</HeroBadge>
+        <>
+          {player.position && <HeroBadge>{formatPosition(player.position)}</HeroBadge>}
+          {player.hallOfFame && (
+            <HeroBadge>Hall of Fame{player.hallOfFame.inductedYear ? ` ${player.hallOfFame.inductedYear}` : ""}</HeroBadge>
+          )}
+          {(player.awards ?? [])
+            .filter((a) => a.wins.length > 0)
+            .slice(0, MAX_AWARD_BADGES)
+            .map((a) => (
+              <HeroBadge key={a.slug}>
+                {a.wins.length > 1 ? `${a.wins.length}× ` : ""}
+                {shortTrophyName(a.slug, a.trophy)}
+              </HeroBadge>
+            ))}
+        </>
       }
       title={player.name}
       meta={
@@ -81,6 +100,11 @@ export function PlayerHero({ player, season }: PlayerHeroProps) {
             <span>
               {isGoalie ? "Catches" : "Shoots"}{" "}
               {player.shoots === "L" ? "left" : "right"}
+            </span>
+          )}
+          {player.draft && (
+            <span>
+              Drafted {player.draft.year}, {formatOrdinal(player.draft.overallPick)} overall ({player.draft.team})
             </span>
           )}
         </>

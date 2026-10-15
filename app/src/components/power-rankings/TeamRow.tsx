@@ -16,6 +16,7 @@ import {
   getFenwickColour,
   getXgDiffColour,
 } from "@/lib/stat-colours";
+import { cn } from "@/lib/utils";
 import type { TeamPowerRanking } from "@/types";
 
 interface TeamRowProps {
@@ -39,6 +40,7 @@ export function TeamRow({ team, rank, season }: TeamRowProps) {
   const pdoColor = getPdoColour(team.pdo);
   const pointsDiffColor = getPointsDiffColour(team.pointsDiff);
   const xgPctColor = getXgPctColour(team.xGoalsPct != null ? team.xGoalsPct * 100 : null);
+  const recentXgPctColor = getXgPctColour(team.recentXGoalsPct != null ? team.recentXGoalsPct * 100 : null);
   const corsiColor = getCorsiColour(team.corsiPct != null ? team.corsiPct * 100 : null);
   const fenwickColor = getFenwickColour(team.fenwickPct != null ? team.fenwickPct * 100 : null);
   const shootingPctColor = getShootingPctColour(team.shootingPct);
@@ -66,49 +68,58 @@ export function TeamRow({ team, rank, season }: TeamRowProps) {
       <TableCell className="text-right">{team.losses}</TableCell>
       <TableCell className="text-right">{team.otLosses}</TableCell>
       <TableCell className="text-right font-semibold">{team.points}</TableCell>
-      <TableCell className={`text-right ${pointsPctColor}`}>
+      <TableCell className={cn("text-right", pointsPctColor)}>
         {(pointsPct * 100).toFixed(1)}%
       </TableCell>
       <TableCell className="text-right">{team.goalsFor}</TableCell>
       <TableCell className="text-right">{team.goalsAgainst}</TableCell>
-      <TableCell className={`text-right font-medium ${goalDiffColor}`}>
+      <TableCell className={cn("text-right font-medium", goalDiffColor)}>
         {goalDiff > 0 ? "+" : ""}{goalDiff}
       </TableCell>
       <TableCell className="text-right">{gfPerGame.toFixed(2)}</TableCell>
       <TableCell className="text-right">{gaPerGame.toFixed(2)}</TableCell>
       <TableCell className="text-right">{team.xGoalsFor.toFixed(1)}</TableCell>
       <TableCell className="text-right">{team.xGoalsAgainst.toFixed(1)}</TableCell>
-      <TableCell className={`text-right font-medium ${xGoalDiffColor}`}>
+      <TableCell className={cn("text-right font-medium", xGoalDiffColor)}>
         {xGoalDiff > 0 ? "+" : ""}{xGoalDiff.toFixed(1)}
       </TableCell>
       <TableCell className="text-right">{team.expectedPoints.toFixed(0)}</TableCell>
-      <TableCell className={`text-right ${ppPctColor}`}>
-        {team.ppPct != null ? `${team.ppPct.toFixed(1)}%` : "-"}
+      <TableCell className={cn("text-right", ppPctColor)}>
+        {team.ppPct != null ? `${team.ppPct.toFixed(1)}%` : "–"}
       </TableCell>
-      <TableCell className={`text-right ${pkPctColor}`}>
-        {team.pkPct != null ? `${team.pkPct.toFixed(1)}%` : "-"}
+      <TableCell className={cn("text-right", pkPctColor)}>
+        {team.pkPct != null ? `${team.pkPct.toFixed(1)}%` : "–"}
       </TableCell>
-      <TableCell className={`text-right ${xgPctColor}`}>
-        {team.xGoalsPct != null ? formatPercent(team.xGoalsPct) : "-"}
+      <TableCell className={cn("text-right", xgPctColor)}>
+        {team.xGoalsPct != null ? formatPercent(team.xGoalsPct) : "–"}
       </TableCell>
-      <TableCell className={`text-right ${corsiColor}`}>
-        {team.corsiPct != null ? formatPercent(team.corsiPct) : "-"}
+      <TableCell className={cn("text-right", recentXgPctColor)}>
+        {team.recentXGoalsPct != null ? formatPercent(team.recentXGoalsPct) : "–"}
       </TableCell>
-      <TableCell className={`text-right ${fenwickColor}`}>
-        {team.fenwickPct != null ? formatPercent(team.fenwickPct) : "-"}
+      <TableCell className={cn("text-right", corsiColor)}>
+        {team.corsiPct != null ? formatPercent(team.corsiPct) : "–"}
       </TableCell>
-      <TableCell className={`text-right ${shootingPctColor}`}>
-        {team.shootingPct != null ? `${team.shootingPct.toFixed(1)}%` : "-"}
+      <TableCell className={cn("text-right", fenwickColor)}>
+        {team.fenwickPct != null ? formatPercent(team.fenwickPct) : "–"}
       </TableCell>
-      <TableCell className={`text-right ${savePctColor}`}>
+      <TableCell className={cn("text-right", shootingPctColor)}>
+        {team.shootingPct != null ? `${team.shootingPct.toFixed(1)}%` : "–"}
+      </TableCell>
+      <TableCell className={cn("text-right", savePctColor)}>
         {formatSavePct(team.savePct != null ? team.savePct / 100 : null)}
       </TableCell>
-      <TableCell className={`text-right font-medium ${pdoColor}`}>
-        {team.pdo != null ? team.pdo.toFixed(1) : "-"}
+      <TableCell className={cn("text-right font-medium", pdoColor)}>
+        {team.pdo != null ? team.pdo.toFixed(1) : "–"}
       </TableCell>
-      <TableCell className={`text-right font-medium ${pointsDiffColor}`}>
+      <TableCell className={cn("text-right font-medium", pointsDiffColor)}>
         {team.pointsDiff > 0 ? "+" : ""}
         {team.pointsDiff}
+      </TableCell>
+      <TableCell className="text-right">
+        {team.scheduleStrength != null ? formatPercent(team.scheduleStrength) : "–"}
+      </TableCell>
+      <TableCell className="text-right">
+        {team.remainingScheduleStrength != null ? formatPercent(team.remainingScheduleStrength) : "–"}
       </TableCell>
     </TableRow>
   );

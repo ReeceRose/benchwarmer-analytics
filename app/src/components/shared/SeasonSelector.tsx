@@ -42,7 +42,7 @@ export function SeasonSelector({
       onValueChange={(v) => onValueChange(Number(v))}
       disabled={disabled}
     >
-      <SelectTrigger className="w-35">
+      <SelectTrigger className="w-35" aria-label="Season">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

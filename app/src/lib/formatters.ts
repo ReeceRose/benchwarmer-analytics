@@ -3,7 +3,7 @@
  * @example formatToi(754) => "12:34"
  */
 export function formatToi(seconds: number | null | undefined): string {
-  if (seconds == null) return "-";
+  if (seconds == null) return "–";
   const totalSeconds = Math.round(seconds);
   const mins = Math.floor(totalSeconds / 60);
   const secs = totalSeconds % 60;
@@ -28,7 +28,7 @@ export function formatPercent(
   value: number | null | undefined,
   isDecimal = true
 ): string {
-  if (value == null) return "-";
+  if (value == null) return "–";
   const pct = isDecimal ? value * 100 : value;
   return `${pct.toFixed(1)}%`;
 }
@@ -38,7 +38,7 @@ export function formatPercent(
  * @example formatHeight(74) => "6'2\""
  */
 export function formatHeight(inches: number | null | undefined): string {
-  if (inches == null) return "-";
+  if (inches == null) return "–";
   const feet = Math.floor(inches / 12);
   const remainingInches = inches % 12;
   return `${feet}'${remainingInches}"`;
@@ -49,7 +49,7 @@ export function formatHeight(inches: number | null | undefined): string {
  * @example formatWeight(205) => "205 lbs"
  */
 export function formatWeight(lbs: number | null | undefined): string {
-  if (lbs == null) return "-";
+  if (lbs == null) return "–";
   return `${lbs} lbs`;
 }
 
@@ -58,7 +58,7 @@ export function formatWeight(lbs: number | null | undefined): string {
  * @example formatPosition("C") => "Center"
  */
 export function formatPosition(position: string | null | undefined): string {
-  if (!position) return "-";
+  if (!position) return "–";
   const positions: Record<string, string> = {
     C: "Center",
     L: "Left Wing",
@@ -80,7 +80,7 @@ export function formatPer60(
   stat: number | null | undefined,
   iceTimeSeconds: number | null | undefined
 ): string {
-  if (stat == null || iceTimeSeconds == null || iceTimeSeconds === 0) return "-";
+  if (stat == null || iceTimeSeconds == null || iceTimeSeconds === 0) return "–";
   const per60 = (stat / iceTimeSeconds) * 3600;
   return per60.toFixed(2);
 }
@@ -92,7 +92,7 @@ export function formatPer60(
  * @example formatSavePct(1.0) => "1.000"
  */
 export function formatSavePct(value: number | null | undefined): string {
-  if (value == null) return "-";
+  if (value == null) return "–";
   if (value >= 1) return value.toFixed(3);
   return `.${(value * 1000).toFixed(0).padStart(3, "0")}`;
 }
@@ -103,7 +103,7 @@ export function formatSavePct(value: number | null | undefined): string {
  * @example formatIceTimeLong(1800) => "30m"
  */
 export function formatIceTimeLong(seconds: number | null | undefined): string {
-  if (seconds == null) return "-";
+  if (seconds == null) return "–";
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   if (hours > 0) {

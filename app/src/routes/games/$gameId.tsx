@@ -32,7 +32,7 @@ import {
 } from "@/hooks";
 import { getSeasonFromDate } from "@/lib/date-utils";
 import { EmptyState } from "@/components/layout";
-import { GameCentre } from "@/components/game-live";
+import { GameCentre, ShareGameButton } from "@/components/game-live";
 
 export const Route = createFileRoute("/games/$gameId")({
   component: GameDetailPage,
@@ -122,7 +122,11 @@ function GameDetailPage() {
       {gameLoading && !game ? (
         <GameDetailHeaderSkeleton />
       ) : game || previewData ? (
-        <GameDetailHeader game={game} preview={previewData} />
+        <GameDetailHeader
+          game={game}
+          preview={previewData}
+          action={liveData && <ShareGameButton data={liveData} />}
+        />
       ) : null}
 
       <div className="container space-y-8 py-8">

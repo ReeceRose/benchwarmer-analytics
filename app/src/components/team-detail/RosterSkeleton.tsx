@@ -6,7 +6,7 @@ export function RosterSkeleton() {
     <div className="space-y-6">
       <div>
         <Skeleton className="h-5 w-24 mb-3" />
-        <Card className="py-0 gap-0">
+        <Card className="gap-0 overflow-hidden py-0">
           <CardContent className="p-0">
             <div className="p-3 border-b">
               <div className="flex gap-4">
@@ -33,7 +33,7 @@ export function RosterSkeleton() {
       </div>
       <div>
         <Skeleton className="h-5 w-28 mb-3" />
-        <Card className="py-0 gap-0">
+        <Card className="gap-0 overflow-hidden py-0">
           <CardContent className="p-0">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="p-3 border-b last:border-0">
@@ -51,7 +51,7 @@ export function RosterSkeleton() {
       </div>
       <div>
         <Skeleton className="h-5 w-20 mb-3" />
-        <Card className="py-0 gap-0">
+        <Card className="gap-0 overflow-hidden py-0">
           <CardContent className="p-0">
             {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="p-3 border-b last:border-0">

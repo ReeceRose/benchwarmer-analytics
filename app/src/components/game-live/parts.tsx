@@ -32,7 +32,7 @@ export function MirroredBar({
   homeText,
   lowerIsBetter = false,
 }: {
-  label: string;
+  label: ReactNode;
   away: number;
   home: number;
   awayText: string;

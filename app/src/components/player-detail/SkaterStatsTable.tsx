@@ -47,7 +47,7 @@ function getPercentileColor(pctl: number): string {
 
 // Helper to render luck indicator cell
 function LuckCell({ goals, xg }: { goals: number; xg: number }) {
-  if (xg === 0) return <span className="text-muted-foreground">-</span>;
+  if (xg === 0) return <span className="text-muted-foreground">–</span>;
 
   const diff = goals - xg;
   const isLucky = diff > 1;
@@ -58,8 +58,7 @@ function LuckCell({ goals, xg }: { goals: number; xg: number }) {
       <TooltipTrigger asChild>
         <span className={cn(
           "inline-flex items-center gap-0.5 cursor-help",
-          isLucky && "text-success",
-          isUnlucky && "text-error",
+          // Finishing above or below xG isn't good or bad, so no green/red.
           !isLucky && !isUnlucky && "text-muted-foreground"
         )}>
           {isLucky && <TrendingUp className="h-3 w-3" />}
@@ -159,7 +158,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
   }
 
   return (
-    <Card className="py-0 gap-0">
+    <Card className="gap-0 overflow-hidden py-0">
       <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader>
@@ -171,6 +170,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
               <HeaderWithTooltip label="A" tooltip="Assists" className="text-right" />
               <HeaderWithTooltip label="P" tooltip="Points (Goals + Assists)" className="text-right" />
               <HeaderWithTooltip label="Pctl" tooltip="Points per game percentile vs league" className="text-right hidden sm:table-cell" />
+              <HeaderWithTooltip label="GS/GP" tooltip="Game Score per game (all situations)" className="text-right hidden sm:table-cell" />
               <HeaderWithTooltip label="TOI" tooltip="Total time on ice" className="text-right hidden md:table-cell" />
               <HeaderWithTooltip label="TOI/GP" tooltip="Average time on ice per game" className="text-right hidden md:table-cell" />
               <HeaderWithTooltip label="S" tooltip="Shots on goal" className="text-right hidden md:table-cell" />
@@ -192,7 +192,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
             {hasPlayoffData && (
               <TableRow className="hover:bg-transparent">
                 <TableHead colSpan={6} className="text-xs text-muted-foreground py-1">Regular season</TableHead>
-                <TableHead className="py-1 hidden sm:table-cell" />
+                <TableHead colSpan={2} className="py-1 hidden sm:table-cell" />
                 <TableHead colSpan={3} className="py-1 hidden md:table-cell" />
                 <TableHead colSpan={3} className="py-1 hidden lg:table-cell" />
                 {rows.length >= 2 && (
@@ -224,15 +224,18 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
                     );
                   })()}
                 </TableCell>
+                <TableCell className="text-right tabular-nums hidden sm:table-cell">
+                  {row.gs != null && row.gp > 0 ? (row.gs / row.gp).toFixed(2) : "–"}
+                </TableCell>
                 <TableCell className="text-right tabular-nums hidden md:table-cell">{formatToi(row.toi)}</TableCell>
-                <TableCell className="text-right tabular-nums hidden md:table-cell">{row.gp > 0 ? formatToi(row.toi / row.gp) : "-"}</TableCell>
+                <TableCell className="text-right tabular-nums hidden md:table-cell">{row.gp > 0 ? formatToi(row.toi / row.gp) : "–"}</TableCell>
                 <TableCell className="text-right tabular-nums hidden md:table-cell">{row.shots}</TableCell>
                 <TableCell className="text-right tabular-nums hidden lg:table-cell">{row.xg.toFixed(1)}</TableCell>
                 <TableCell className="text-right hidden lg:table-cell">
                   <LuckCell goals={row.g} xg={row.xg} />
                 </TableCell>
                 <TableCell className="text-right tabular-nums hidden lg:table-cell">
-                  {row.cf != null ? formatPercent(row.cf, true) : "-"}
+                  {row.cf != null ? formatPercent(row.cf, true) : "–"}
                 </TableCell>
                 {rows.length >= 2 && (
                   <TableCell className="hidden xl:table-cell" />
@@ -247,7 +250,7 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
                 )}
               </TableRow>
             ))}
-            <TableRow className="border-t font-semibold hover:bg-transparent">
+            <TableRow className="font-semibold hover:bg-transparent">
               <TableCell>Totals</TableCell>
               <TableCell></TableCell>
               <TableCell className="text-right tabular-nums">{totals.gp}</TableCell>
@@ -255,8 +258,11 @@ export function SkaterStatsTable({ rows, totals }: SkaterStatsTableProps) {
               <TableCell className="text-right tabular-nums">{totals.a}</TableCell>
               <TableCell className="text-right tabular-nums">{totals.p}</TableCell>
               <TableCell className="text-right tabular-nums hidden sm:table-cell">-</TableCell>
+              <TableCell className="text-right tabular-nums hidden sm:table-cell">
+                {totals.gsGp > 0 ? (totals.gs / totals.gsGp).toFixed(2) : "–"}
+              </TableCell>
               <TableCell className="text-right tabular-nums hidden md:table-cell">{formatToi(totals.toi)}</TableCell>
-              <TableCell className="text-right tabular-nums hidden md:table-cell">{totals.gp > 0 ? formatToi(totals.toi / totals.gp) : "-"}</TableCell>
+              <TableCell className="text-right tabular-nums hidden md:table-cell">{totals.gp > 0 ? formatToi(totals.toi / totals.gp) : "–"}</TableCell>
               <TableCell className="text-right tabular-nums hidden md:table-cell">{totals.shots}</TableCell>
               <TableCell className="text-right tabular-nums hidden lg:table-cell">{totals.xg.toFixed(1)}</TableCell>
               <TableCell className="text-right hidden lg:table-cell">

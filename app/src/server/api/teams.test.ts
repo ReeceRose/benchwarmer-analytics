@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { round, seasonLabel } from "@/server/api/format";
 import {
+  buildTeamGameLog,
+  gameResult,
   pairPercentage,
   parsePagination,
   parseSortDir,
   penaltyKillSummary,
+  penaltySummary,
   powerPlaySummary,
   rankBy,
   scoreStateBreakdown,
@@ -147,5 +150,67 @@ describe("validation", () => {
     expect(() => parsePagination(1, undefined)).toThrow(HttpError);
     expect(() => parsePagination(0, 10)).toThrow(HttpError);
     expect(() => parsePagination(1, 101)).toThrow(HttpError);
+  });
+});
+
+describe("gameResult", () => {
+  it("counts overtime and shootout losses as OTL", () => {
+    expect(gameResult(4, 3, "SO")).toBe("W");
+    expect(gameResult(3, 4, "OT")).toBe("OTL");
+    expect(gameResult(3, 4, "SO")).toBe("OTL");
+    expect(gameResult(1, 4, "REG")).toBe("L");
+  });
+});
+
+describe("buildTeamGameLog", () => {
+  const split = { goalsFor: 2, goalsAgainst: 1, xGoalsFor: 1.234, xGoalsAgainst: 0.5, shotAttemptsFor: 30, shotAttemptsAgainst: 25 };
+  const base = { gameDate: "2025-10-08", opponent: "MTL", isHome: true, homeScore: 3, awayScore: 4, periodType: "SO", gameState: "OFF" };
+
+  it("merges situations per game and takes the result from the final score", () => {
+    const log = buildTeamGameLog([
+      { ...base, ...split, gameId: "1", situation: "all" },
+      { ...base, ...split, gameId: "1", situation: "5on5", goalsFor: 1 },
+      { ...base, ...split, gameId: "2", situation: "all", isHome: false, homeScore: null, awayScore: null, periodType: null, gameState: "FUT" },
+    ]);
+    expect(log).toHaveLength(2);
+    expect(log[0]).toMatchObject({ teamScore: 3, opponentScore: 4, result: "OTL", periodType: "SO" });
+    expect(log[0].all.xGoalsFor).toBe(1.23);
+    expect(log[0].fiveOnFive?.goalsFor).toBe(1);
+    expect(log[1]).toMatchObject({ teamScore: null, result: null, fiveOnFive: null });
+  });
+});
+
+describe("penaltySummary", () => {
+  const row = (team: string, drawn: number, taken: number) =>
+    ({
+      teamAbbreviation: team,
+      iceTime: 3600 * 100,
+      penaltiesAgainst: drawn,
+      penaltiesFor: taken,
+      penaltyMinutesAgainst: drawn * 2,
+      penaltyMinutesFor: taken * 2,
+    }) as TeamSeasonRow;
+  const league = [row("AAA", 400, 300), row("BOS", 350, 380), row("CCC", 300, 320)];
+
+  it("rates per 60 of all-situations time, ranked with 1 = best", () => {
+    expect(penaltySummary(league, "BOS")).toEqual({
+      drawn: 350,
+      taken: 380,
+      net: -30,
+      drawnPer60: 3.5,
+      takenPer60: 3.8,
+      netPer60: -0.3,
+      pimDrawn: 700,
+      pimTaken: 760,
+      drawnRank: 2,
+      takenRank: 3,
+      netRank: 3,
+      leagueDrawnPer60: 3.5,
+      leagueTakenPer60: 3.33,
+    });
+  });
+
+  it("is null for a team without a row", () => {
+    expect(penaltySummary(league, "XXX")).toBeNull();
   });
 });

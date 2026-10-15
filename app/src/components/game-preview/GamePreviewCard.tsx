@@ -4,6 +4,7 @@ import { HeadToHeadSection } from "@/components/game-preview/HeadToHeadSection";
 import { TeamComparisonSection } from "@/components/game-preview/TeamComparisonSection";
 import { HotPlayersSection } from "@/components/game-preview/HotPlayersSection";
 import { GoalieMatchupSection } from "@/components/game-preview/GoalieMatchupSection";
+import { WinChanceSection } from "@/components/game-preview/WinChanceSection";
 import type { GamePreview, GoalieRecentFormResponse } from "@/types";
 
 interface GamePreviewSectionsProps {
@@ -25,6 +26,8 @@ export function GamePreviewSections({
 
   return (
     <div className="space-y-8">
+      <WinChanceSection game={game} />
+
       <div className="grid gap-8 lg:grid-cols-2">
         <Section
           title="Team comparison"
@@ -58,9 +61,9 @@ export function GamePreviewSections({
           </Panel>
         </Section>
 
-        <Section title="Season series">
+        <Section title="Head to head" description="All-time franchise records and this season's meetings">
           <Panel>
-            <HeadToHeadSection data={headToHead} />
+            <HeadToHeadSection data={headToHead} awayTeam={game.awayTeam} homeTeam={game.homeTeam} />
           </Panel>
         </Section>
       </div>

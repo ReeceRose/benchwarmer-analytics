@@ -44,7 +44,7 @@ function CategoryRankingsPage() {
     <div className="container space-y-6 py-8">
       <PageHeader
         title="Category rankings"
-        description="Where every team ranks, 1 to 32, in each category. Top 10 are green, bottom 10 red."
+        description="Where every team ranks, 1 to 32, in each category. The top 10 are shaded, darkest for 1st; the bottom 10 are faded."
         actions={
           <>
             <Select

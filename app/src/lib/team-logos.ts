@@ -60,6 +60,18 @@ export function getTeamLogoUrl(
     document.documentElement.classList.contains("dark")
       ? "dark"
       : "light");
-  const mapped = TEAM_LOGO_MAP[abbrev] ?? abbrev;
-  return `https://assets.nhle.com/logos/nhl/svg/${mapped}_${resolved}.svg`;
+  return `https://assets.nhle.com/logos/nhl/svg/${getTeamLogoFile(abbrev, resolved)}`;
+}
+
+/** The logo's file name, e.g. "EDM_dark.svg". */
+export function getTeamLogoFile(abbrev: string, variant: "light" | "dark"): string {
+  return `${TEAM_LOGO_MAP[abbrev] ?? abbrev}_${variant}.svg`;
+}
+
+/**
+ * The same logo served from our origin (`/api/logos`), for markup that gets
+ * drawn to a canvas: the NHL's asset host doesn't send CORS headers.
+ */
+export function getSameOriginTeamLogoUrl(abbrev: string, variant: "light" | "dark"): string {
+  return `/api/logos/${getTeamLogoFile(abbrev, variant)}`;
 }

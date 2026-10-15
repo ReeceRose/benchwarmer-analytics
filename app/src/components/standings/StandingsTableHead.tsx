@@ -35,7 +35,7 @@ export function StandingsTableHead() {
         ))}
       </colgroup>
       <TableHeader>
-        <TableRow className="border-b-0 hover:bg-transparent">
+        <TableRow className="hover:bg-transparent [&>th]:border-b-0">
           <TableHead colSpan={2} className="sticky left-0 z-10 bg-card" />
           <GroupHead span={6}>Record</GroupHead>
           <GroupHead span={3}>Goals</GroupHead>

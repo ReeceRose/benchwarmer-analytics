@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   advancedRates,
   backToBackSplits,
+  buildPlayerGameLog,
   estimateGameDate,
   goaliePerGameStats,
   latestSkaterStat,
@@ -162,5 +163,24 @@ describe("latestSkaterStat", () => {
   it("falls back to the first row", () => {
     const rows = [row(2024, true, 1)];
     expect(latestSkaterStat(rows)).toBe(rows[0]);
+  });
+});
+
+describe("buildPlayerGameLog", () => {
+  const log = [
+    { gameId: 2026020060, gameDate: "2026-10-12", teamAbbrev: "TOR", opponentAbbrev: "MTL", homeRoadFlag: "R", toi: "18:30", goals: 1, assists: 1, points: 2, shots: 4 },
+    { gameId: 2026020040, gameDate: "2026-10-10", teamAbbrev: "TOR", opponentAbbrev: "BOS", homeRoadFlag: "H", toi: "20:05", shots: 2 },
+  ];
+  const scores = new Map([
+    ["2026020060", { homeTeamCode: "MTL", homeScore: 3, awayScore: 2, periodType: "OT", gameState: "OFF" }],
+    ["2026020040", { homeTeamCode: "TOR", homeScore: 4, awayScore: 1, periodType: "REG", gameState: "OFF" }],
+  ]);
+  const gameScores = new Map([["2026020060", { gameId: "2026020060", gameScore: 2.1, scoring: 1.6, onIce: 0.3, other: 0.2 }]]);
+
+  it("orders oldest first and merges results, xG and Game Score", () => {
+    const games = buildPlayerGameLog(log, scores, new Map([["2026020060", 0.84]]), false, gameScores);
+    expect(games.map((g) => g.gameId)).toEqual(["2026020040", "2026020060"]);
+    expect(games[0]).toMatchObject({ result: "W", teamScore: 4, opponentScore: 1, toiSeconds: 1205, xGoals: null, gameScore: null });
+    expect(games[1]).toMatchObject({ result: "OTL", teamScore: 2, opponentScore: 3, periodType: "OT", xGoals: 0.84, gameScore: 2.1, gameScoreScoring: 1.6 });
   });
 });

@@ -6,7 +6,7 @@ import {
   lastName,
   pairKey,
 } from "@/components/chemistry/chemistry-utils";
-import { SEMANTIC_COLOURS } from "@/lib/chart-colours";
+import { STATUS_COLOURS } from "@/lib/chart-colours";
 import { formatIceTimeLong } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { ChemistryPair } from "@/types";
@@ -77,7 +77,7 @@ function PairRow({
           style={{
             width,
             background:
-              offset >= 0 ? SEMANTIC_COLOURS.success : SEMANTIC_COLOURS.danger,
+              offset >= 0 ? STATUS_COLOURS.good : STATUS_COLOURS.bad,
           }}
         />
       </button>

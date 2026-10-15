@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TeamLogo } from "@/components/team-detail/TeamLogo";
@@ -16,6 +17,8 @@ import type { GameSummary, GamePreview } from "@/types";
 interface GameDetailHeaderProps {
   game?: GameSummary;
   preview?: GamePreview;
+  /** Shown after the date and series line, e.g. the share button. */
+  action?: ReactNode;
 }
 
 function seriesSummary(
@@ -42,7 +45,7 @@ function seriesSummary(
  * Split scoreboard: the away team's colours on the left, the home team's on
  * the right, the score in the middle.
  */
-export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
+export function GameDetailHeader({ game, preview, action }: GameDetailHeaderProps) {
   const gameState = game?.gameState ?? (preview ? "FUT" : null);
   const isFuture = gameState === "FUT" || gameState === "PRE";
   const isLive = gameState === "LIVE" || gameState === "CRIT";
@@ -85,6 +88,7 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
   const awaySide = {
     code: awayCode,
     lost: isCompleted && !awayWins,
+    overallRecord: game?.away.overallRecord ?? preview?.teamComparison.away.overallRecord,
     record: game?.away.roadRecord ?? preview?.teamComparison.away.roadRecord,
     recordLabel: "away",
     streak: game?.away.streak ?? preview?.teamComparison.away.streak,
@@ -92,6 +96,7 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
   const homeSide = {
     code: homeCode,
     lost: isCompleted && !homeWins,
+    overallRecord: game?.home.overallRecord ?? preview?.teamComparison.home.overallRecord,
     record: game?.home.homeRecord ?? preview?.teamComparison.home.homeRecord,
     recordLabel: "home",
     streak: game?.home.streak ?? preview?.teamComparison.home.streak,
@@ -108,6 +113,7 @@ export function GameDetailHeader({ game, preview }: GameDetailHeaderProps) {
             {gameDate ? formatGameDateLong(gameDate) : "Games"}
           </Link>
           {series && <span>{series}</span>}
+          {action}
         </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-8">
           <TeamSide side={awaySide} season={season} align="end" />
@@ -151,6 +157,7 @@ function TeamSide({
   side: {
     code: string;
     lost: boolean;
+    overallRecord?: string | null;
     record?: string | null;
     recordLabel: string;
     streak?: string | null;
@@ -179,8 +186,13 @@ function TeamSide({
           <span className="hidden sm:inline">{getTeamName(side.code)}</span>
           <span className="sm:hidden">{side.code}</span>
         </div>
+        {side.overallRecord && (
+          <div className="mt-1 text-sm font-semibold tabular-nums sm:text-base">
+            {side.overallRecord}
+          </div>
+        )}
         {(side.record || side.streak) && (
-          <div className="mt-1 hidden text-sm text-white/80 sm:block">
+          <div className="hidden text-sm text-white/80 tabular-nums sm:block">
             {[side.record && `${side.record} ${side.recordLabel}`, side.streak && `streak ${side.streak}`]
               .filter(Boolean)
               .join(", ")}
@@ -258,7 +270,7 @@ export function GameScoringSummary({ game }: { game: GameSummary }) {
             </tbody>
           </table>
         {goals.length > 0 && (
-          <div className="space-y-4 text-sm lg:border-l lg:pl-6">
+          <div className="grid content-start gap-x-8 gap-y-4 text-sm sm:grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] lg:border-l lg:pl-6">
             {periodNumbers
               .filter((p) => goals.some((g) => g.period === p))
               .map((p) => (
@@ -292,6 +304,17 @@ export function GameScoringSummary({ game }: { game: GameSummary }) {
                               <span className="ml-1.5 rounded-full bg-highlight/20 px-1.5 py-0.5 text-[11px] font-semibold">
                                 GWG
                               </span>
+                            )}
+                            {goal.highlightUrl && (
+                              <a
+                                href={goal.highlightUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="ml-2 text-xs text-link hover:underline"
+                                aria-label={`Watch ${goal.scorerName}'s goal on NHL.com`}
+                              >
+                                Watch
+                              </a>
                             )}
                             {goal.assists.length > 0 && (
                               <span className="block text-xs text-muted-foreground">

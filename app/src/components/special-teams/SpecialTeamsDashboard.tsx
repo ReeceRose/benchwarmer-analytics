@@ -3,6 +3,7 @@ import {
   useTeamSpecialTeams,
   useTeamSeasons,
   useSpecialTeamsTrend,
+  useTeamHomeAway,
 } from "@/hooks";
 import {
   Select,
@@ -16,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared";
 import { PowerPlayCard } from "@/components/special-teams/PowerPlayCard";
 import { PenaltyKillCard } from "@/components/special-teams/PenaltyKillCard";
+import { PenaltiesCard } from "@/components/special-teams/PenaltiesCard";
 import { SpecialTeamsPlayerTable } from "@/components/special-teams/SpecialTeamsPlayerTable";
 import {
   GoalsVsXGChart,
@@ -59,6 +61,8 @@ export function SpecialTeamsDashboard({
     error,
     refetch,
   } = useTeamSpecialTeams(abbrev, effectiveSeason, false);
+
+  const { data: homeAway } = useTeamHomeAway(abbrev.toUpperCase(), effectiveSeason);
 
   const { data: trendData, isLoading: trendLoading } = useSpecialTeamsTrend(
     abbrev,
@@ -121,6 +125,8 @@ export function SpecialTeamsDashboard({
             <PowerPlayCard stats={specialTeams.powerPlay} />
             <PenaltyKillCard stats={specialTeams.penaltyKill} />
           </div>
+
+          {specialTeams.penalties && <PenaltiesCard stats={specialTeams.penalties} homeAway={homeAway} abbrev={abbrev} />}
 
           <Card>
             <CardHeader>

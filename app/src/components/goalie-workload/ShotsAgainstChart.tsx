@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { CHART_AXIS_COLOURS, CHART_GRADIENT_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { GoalieGameTooltip } from "@/components/goalie-workload/GoalieGameTooltip";
 
 interface ChartDataPoint {
@@ -27,27 +27,13 @@ interface ShotsAgainstChartProps {
 export function ShotsAgainstChart({ data }: ShotsAgainstChartProps) {
   return (
     <div>
-      <h4 className="text-sm font-medium mb-2">Shots against trend</h4>
+      <h4 className="mb-2 text-sm font-medium">Shots against</h4>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
           >
-            <defs>
-              <linearGradient id="saGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor={CHART_GRADIENT_COLOURS.danger}
-                  stopOpacity={0.3}
-                />
-                <stop
-                  offset="95%"
-                  stopColor={CHART_GRADIENT_COLOURS.danger}
-                  stopOpacity={0}
-                />
-              </linearGradient>
-            </defs>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={CHART_AXIS_COLOURS.grid}
@@ -62,7 +48,7 @@ export function ShotsAgainstChart({ data }: ShotsAgainstChartProps) {
             />
             <YAxis
               tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
-              width={30}
+              width={44}
               stroke={CHART_AXIS_COLOURS.grid}
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
@@ -77,21 +63,22 @@ export function ShotsAgainstChart({ data }: ShotsAgainstChartProps) {
             />
             <ReferenceLine
               y={30}
-              stroke={CHART_GRADIENT_COLOURS.danger}
+              stroke={CHART_AXIS_COLOURS.reference}
               strokeDasharray="5 5"
               label={{
-                value: "High (30)",
-                position: "right",
-                fontSize: 9,
-                fill: CHART_GRADIENT_COLOURS.danger,
+                value: "30+ is a heavy night",
+                position: "insideTopLeft",
+                fontSize: 10,
+                fill: CHART_AXIS_COLOURS.tick,
               }}
             />
             <Area
-              type="monotone"
+              type="linear"
               dataKey="shotsAgainst"
-              stroke={CHART_GRADIENT_COLOURS.danger}
+              stroke="var(--chart-1)"
               strokeWidth={2}
-              fill="url(#saGradient)"
+              fill="var(--chart-1)"
+              fillOpacity={0.08}
             />
           </AreaChart>
         </ResponsiveContainer>

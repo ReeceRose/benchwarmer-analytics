@@ -73,7 +73,7 @@ export function StandingsRow({
           {playoffStatus === "wildcard" && (
             <Badge
               variant="outline"
-              className="h-4 px-1.5 text-[9px] font-semibold tracking-wide rounded-full border-chart-4/70 text-chart-4 bg-chart-4/10"
+              className="h-4 px-1.5 text-[9px] font-semibold tracking-wide rounded-full border-warning/70 text-warning bg-warning/10"
             >
               WC{team.wildcardRank}
             </Badge>
@@ -153,7 +153,7 @@ export function StandingsRow({
           </TableCell>
           <TableCell className={`text-right tabular-nums font-medium ${xGoalDiffColor}`}>
             {xGoalDiff != null && xGoalDiff > 0 ? "+" : ""}
-            {xGoalDiff?.toFixed(1) ?? "-"}
+            {xGoalDiff?.toFixed(1) ?? "–"}
           </TableCell>
           <TableCell className="text-right tabular-nums">
             {analytics.expectedPoints.toFixed(0)}
@@ -161,28 +161,28 @@ export function StandingsRow({
           <TableCell className={`text-right tabular-nums ${xgPctColor}`}>
             {analytics.xGoalsPct != null
               ? formatPercent(analytics.xGoalsPct, true)
-              : "-"}
+              : "–"}
           </TableCell>
           <TableCell className={`text-right tabular-nums ${corsiColor}`}>
             {analytics.corsiPct != null
               ? formatPercent(analytics.corsiPct, true)
-              : "-"}
+              : "–"}
           </TableCell>
           <TableCell className={`text-right tabular-nums ${fenwickColor}`}>
             {analytics.fenwickPct != null
               ? formatPercent(analytics.fenwickPct, true)
-              : "-"}
+              : "–"}
           </TableCell>
           <TableCell className={`text-right tabular-nums ${shootingPctColor}`}>
             {analytics.shootingPct != null
               ? `${analytics.shootingPct.toFixed(1)}%`
-              : "-"}
+              : "–"}
           </TableCell>
           <TableCell className={`text-right tabular-nums ${savePctColor}`}>
             {formatSavePct(analytics.savePct != null ? analytics.savePct / 100 : null)}
           </TableCell>
           <TableCell className={`text-right tabular-nums font-medium ${pdoColor}`}>
-            {analytics.pdo != null ? analytics.pdo.toFixed(1) : "-"}
+            {analytics.pdo != null ? analytics.pdo.toFixed(1) : "–"}
           </TableCell>
           <TableCell
             className={`text-right tabular-nums font-medium ${pointsDiffColor}`}

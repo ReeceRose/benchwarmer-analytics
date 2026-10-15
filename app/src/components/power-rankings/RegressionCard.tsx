@@ -1,72 +1,49 @@
 import { Link } from "@tanstack/react-router";
-import { TrendingUp, TrendingDown } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Panel } from "@/components/layout";
 import { TeamLogo } from "@/components/team-detail/TeamLogo";
 import { getTeamName } from "@/lib/team-names";
 import type { RegressionCandidate } from "@/types";
 
 interface RegressionCardProps {
   title: string;
-  icon: "up" | "down";
+  description: string;
   candidates: RegressionCandidate[];
   season?: number;
 }
 
+/** Teams whose record and underlying numbers disagree, with the ranks that say so. */
 export function RegressionCard({
   title,
-  icon,
+  description,
   candidates,
   season,
 }: RegressionCardProps) {
   if (candidates.length === 0) return null;
 
-  const Icon = icon === "up" ? TrendingUp : TrendingDown;
-  const iconColor = icon === "up" ? "text-success" : "text-error";
-
   return (
-    <Card className="py-4">
-      <CardContent>
-        <div className="mb-3 flex items-center gap-2 font-display font-semibold">
-          <Icon className={`size-4 ${iconColor}`} />
-          {title}
-        </div>
-        <ul className="space-y-3">
-          {candidates.map((candidate) => (
-            <RegressionItem
-              key={candidate.abbreviation}
-              candidate={candidate}
-              season={season}
-            />
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
-
-function RegressionItem({
-  candidate,
-  season,
-}: {
-  candidate: RegressionCandidate;
-  season?: number;
-}) {
-  return (
-    <li>
-      <Link
-        to="/teams/$abbrev"
-        params={{ abbrev: candidate.abbreviation }}
-        search={{ season }}
-        className="group flex items-start gap-3 text-sm"
-      >
-        <TeamLogo abbrev={candidate.abbreviation} size="md" className="mt-0.5" />
-        <span>
-          <span className="block font-medium group-hover:text-link">
-            {getTeamName(candidate.abbreviation)}
-          </span>
-          <span className="text-muted-foreground">{candidate.reason}</span>
-        </span>
-      </Link>
-    </li>
+    <Panel>
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+      <ul className="mt-3 space-y-1">
+        {candidates.map((candidate) => (
+          <li key={candidate.abbreviation}>
+            <Link
+              to="/teams/$abbrev"
+              params={{ abbrev: candidate.abbreviation }}
+              search={{ season }}
+              className="group -mx-2 flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-muted/60"
+            >
+              <TeamLogo abbrev={candidate.abbreviation} size="md" />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium group-hover:text-link">
+                  {getTeamName(candidate.abbreviation)}
+                </span>
+                <span className="block text-xs text-muted-foreground">{candidate.reason}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }

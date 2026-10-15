@@ -10,14 +10,19 @@ import { config } from 'dotenv'
 // .env.local written by `neon link`. Vercel provides env vars directly.
 config({ path: ['.env.local', '../.env.local'], quiet: true })
 
-// Ingestion cron jobs (UTC). Staggered so each step sees the previous one's
-// data; each is idempotent, so a late or skipped run self-corrects next time.
+// Ingestion cron jobs (UTC). Vercel Hobby fires anywhere within the scheduled
+// hour, so each job gets its own hour to keep the order. Season stats start at
+// 12:00 because MoneyPuck publishes last night's data around 10:30 UTC. Each
+// job is idempotent, so a late or skipped run self-corrects next time.
 const crons = [
-  { path: '/api/cron/schedule', schedule: '0 9 * * *' },
-  { path: '/api/cron/season-stats', schedule: '15 9 * * *' },
-  { path: '/api/cron/shots', schedule: '30 9 * * *' },
-  { path: '/api/cron/derived', schedule: '45 9 * * *' },
-  { path: '/api/cron/bios', schedule: '0 10 * * 0' },
+  { path: '/api/cron/schedule', schedule: '0 11 * * *' },
+  { path: '/api/cron/season-stats', schedule: '0 12 * * *' },
+  { path: '/api/cron/shots', schedule: '0 13 * * *' },
+  { path: '/api/cron/derived', schedule: '0 14 * * *' },
+  { path: '/api/cron/game-scores', schedule: '0 15 * * *' },
+  { path: '/api/cron/projections', schedule: '0 16 * * *' },
+  { path: '/api/cron/bios', schedule: '0 17 * * 0' },
+  { path: '/api/cron/history', schedule: '0 18 * * 0' },
 ]
 
 // https://tanstack.com/start/latest/docs/framework/react/guide/hosting

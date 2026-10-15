@@ -610,19 +610,54 @@ export function percentileThresholds(sorted: readonly number[]): number[] {
   return thresholdsList;
 }
 
+// Game Score per game thresholds. Not in the season_percentiles view (changing
+// it needs a migration); it's one small query over the season's skaters.
+async function gameScorePercentiles(db: Database, season: number, minGames: number): Promise<number[]> {
+  const rows = await db
+    .select({ value: sql<number>`${skaterSeasonAdvanced.gameScore} / ${skaterSeasons.gamesPlayed}`.mapWith(Number) })
+    .from(skaterSeasons)
+    .innerJoin(
+      skaterSeasonAdvanced,
+      and(
+        eq(skaterSeasonAdvanced.playerId, skaterSeasons.playerId),
+        eq(skaterSeasonAdvanced.season, skaterSeasons.season),
+        eq(skaterSeasonAdvanced.team, skaterSeasons.team),
+        eq(skaterSeasonAdvanced.situation, skaterSeasons.situation),
+        eq(skaterSeasonAdvanced.isPlayoffs, skaterSeasons.isPlayoffs),
+      ),
+    )
+    .where(
+      and(
+        eq(skaterSeasons.season, season),
+        eq(skaterSeasons.situation, "all"),
+        eq(skaterSeasons.isPlayoffs, false),
+        gte(skaterSeasons.gamesPlayed, Math.max(minGames, 1)),
+        sql`${skaterSeasons.iceTimeSeconds} > 0`,
+        isNotNull(skaterSeasonAdvanced.gameScore),
+      ),
+    );
+  if (rows.length === 0) return [];
+  return percentileThresholds(rows.map((r) => r.value).sort((a, b) => a - b));
+}
+
 export async function getSeasonPercentiles({ db, params, query }: ApiContext) {
   const season = intRouteParam(params.season);
   if (season === undefined) throw new HttpError(404, { error: "Not found", code: "NOT_FOUND" });
   const minGames = query.int("minGames") ?? 20;
-  const empty = { season, minGames, playerCount: 0, pointsPerGame: [], goalsPerGame: [], pointsPer60: [], goalsPer60: [] };
+  const empty = {
+    season, minGames, playerCount: 0, pointsPerGame: [], goalsPerGame: [], pointsPer60: [], goalsPer60: [], gameScorePerGame: [],
+  };
 
   // minGames = 20 is precomputed in the season_percentiles materialized view.
   if (minGames === 20) {
-    const rows = await db
-      .select()
-      .from(seasonPercentiles)
-      .where(eq(seasonPercentiles.season, season))
-      .orderBy(asc(seasonPercentiles.percentile));
+    const [rows, gameScorePerGame] = await Promise.all([
+      db
+        .select()
+        .from(seasonPercentiles)
+        .where(eq(seasonPercentiles.season, season))
+        .orderBy(asc(seasonPercentiles.percentile)),
+      gameScorePercentiles(db, season, minGames),
+    ]);
     if (rows.length === 0) return empty;
     return {
       season,
@@ -632,26 +667,30 @@ export async function getSeasonPercentiles({ db, params, query }: ApiContext) {
       goalsPerGame: rows.map((r) => r.goalsPerGame),
       pointsPer60: rows.map((r) => r.pointsPer60),
       goalsPer60: rows.map((r) => r.goalsPer60),
+      gameScorePerGame,
     };
   }
 
-  const rows = await db
-    .select({
-      gamesPlayed: skaterSeasons.gamesPlayed,
-      goals: skaterSeasons.goals,
-      assists: skaterSeasons.assists,
-      iceTimeSeconds: skaterSeasons.iceTimeSeconds,
-    })
-    .from(skaterSeasons)
-    .where(
-      and(
-        eq(skaterSeasons.season, season),
-        eq(skaterSeasons.situation, "all"),
-        eq(skaterSeasons.isPlayoffs, false),
-        gte(skaterSeasons.gamesPlayed, minGames),
-        sql`${skaterSeasons.iceTimeSeconds} > 0`,
+  const [rows, gameScorePerGame] = await Promise.all([
+    db
+      .select({
+        gamesPlayed: skaterSeasons.gamesPlayed,
+        goals: skaterSeasons.goals,
+        assists: skaterSeasons.assists,
+        iceTimeSeconds: skaterSeasons.iceTimeSeconds,
+      })
+      .from(skaterSeasons)
+      .where(
+        and(
+          eq(skaterSeasons.season, season),
+          eq(skaterSeasons.situation, "all"),
+          eq(skaterSeasons.isPlayoffs, false),
+          gte(skaterSeasons.gamesPlayed, minGames),
+          sql`${skaterSeasons.iceTimeSeconds} > 0`,
+        ),
       ),
-    );
+    gameScorePercentiles(db, season, minGames),
+  ]);
   const statsList = rows
     .filter((r) => r.gamesPlayed > 0 && r.iceTimeSeconds > 0)
     .map((r) => {
@@ -675,15 +714,16 @@ export async function getSeasonPercentiles({ db, params, query }: ApiContext) {
     goalsPerGame: percentileThresholds(sortedBy("goalsPerGame")),
     pointsPer60: percentileThresholds(sortedBy("pointsPer60")),
     goalsPer60: percentileThresholds(sortedBy("goalsPer60")),
+    gameScorePerGame,
   };
 }
 
 const CATEGORY_HELP =
-  "Valid categories: points, goals, assists, expectedGoals, corsiPct, iceTime, gamesPlayed, savePct, gaa, gsax, shotsAgainst";
+  "Valid categories: points, goals, assists, expectedGoals, corsiPct, iceTime, gamesPlayed, gameScore, savePct, gaa, gsax, shotsAgainst";
 
 const NO_SKATER_FIELDS = {
   goals: null, assists: null, shots: null, expectedGoals: null, expectedGoalsPer60: null, corsiForPct: null,
-  fenwickForPct: null, onIceShootingPct: null, onIceSavePct: null, iceTimeSeconds: null,
+  fenwickForPct: null, onIceShootingPct: null, onIceSavePct: null, iceTimeSeconds: null, gameScorePerGame: null,
 };
 
 const NO_GOALIE_FIELDS = {
@@ -695,16 +735,21 @@ const NO_GOALIE_FIELDS = {
 
 async function skaterLeaderboard(db: Database, category: string, season: number, situation: string, limit: number, ascending: boolean) {
   const adv = skaterSeasonAdvanced;
+  // Game Score comes from the "all" row whatever the situation: MoneyPuck's
+  // per-situation values aren't meaningful (see docs/INGESTION_NOTES.md).
+  const advAll = alias(skaterSeasonAdvanced, "adv_all");
   const faceoffPct = sql<number | null>`case when ${adv.faceoffsWon} is not null and ${adv.faceoffsLost} is not null
     and ${adv.faceoffsWon} + ${adv.faceoffsLost} > 0
     then ${adv.faceoffsWon} / (${adv.faceoffsWon} + ${adv.faceoffsLost}) * 100 end`.mapWith(Number);
+  const gameScorePerGame = sql<number | null>`${advAll.gameScore} / nullif(${skaterSeasons.gamesPlayed}, 0)`.mapWith(Number);
 
   const filters: (SQL | undefined)[] = [
     eq(skaterSeasons.season, season),
     eq(skaterSeasons.situation, situation),
     eq(skaterSeasons.isPlayoffs, false),
   ];
-  if (category === "corsipct") {
+  // Rate stats need a minimum of ice time.
+  if (category === "corsipct" || category === "gamescore") {
     const { minIceTime } = await seasonThresholds(db, season, situation);
     filters.push(gte(skaterSeasons.iceTimeSeconds, minIceTime));
   }
@@ -727,6 +772,7 @@ async function skaterLeaderboard(db: Database, category: string, season: number,
     icetime: sql`${skaterSeasons.iceTimeSeconds}`,
     gamesplayed: sql`${skaterSeasons.gamesPlayed}`,
     faceoffpct: sql`${faceoffPct}`,
+    gamescore: sql`${gameScorePerGame}`,
   };
 
   // Advanced stats are matched by player/season/situation (not team).
@@ -736,12 +782,19 @@ async function skaterLeaderboard(db: Database, category: string, season: number,
     eq(adv.situation, skaterSeasons.situation),
     eq(adv.isPlayoffs, skaterSeasons.isPlayoffs),
   );
+  const joinAdvancedAll = and(
+    eq(advAll.playerId, skaterSeasons.playerId),
+    eq(advAll.season, skaterSeasons.season),
+    eq(advAll.situation, "all"),
+    eq(advAll.isPlayoffs, skaterSeasons.isPlayoffs),
+  );
   const [rows, [{ total }]] = await Promise.all([
     db
-      .select({ s: skaterSeasons, name: players.name, position: players.position, faceoffPct })
+      .select({ s: skaterSeasons, name: players.name, position: players.position, faceoffPct, gameScorePerGame })
       .from(skaterSeasons)
       .innerJoin(players, eq(players.id, skaterSeasons.playerId))
       .leftJoin(adv, joinAdvanced)
+      .leftJoin(advAll, joinAdvancedAll)
       .where(where)
       .orderBy(orderBy(orderColumns[category] ?? points, ascending), asc(skaterSeasons.id))
       .limit(limit),
@@ -753,7 +806,7 @@ async function skaterLeaderboard(db: Database, category: string, season: number,
       .where(where),
   ]);
 
-  const entries = rows.map(({ s, name, position, faceoffPct: fo }, i) => {
+  const entries = rows.map(({ s, name, position, faceoffPct: fo, gameScorePerGame: gs }, i) => {
     const xg = s.expectedGoals ?? 0;
     const corsi = s.corsiForPct ?? 0;
     const primary: Record<string, number> = {
@@ -770,6 +823,7 @@ async function skaterLeaderboard(db: Database, category: string, season: number,
       icetime: s.iceTimeSeconds,
       gamesplayed: s.gamesPlayed,
       faceoffpct: fo ?? 0,
+      gamescore: gs == null ? 0 : round(gs, 2),
     };
     return {
       rank: i + 1,
@@ -790,6 +844,7 @@ async function skaterLeaderboard(db: Database, category: string, season: number,
       onIceSavePct: s.onIceSavePct,
       iceTimeSeconds: s.iceTimeSeconds,
       faceoffPct: fo == null ? undefined : round(fo, 1),
+      gameScorePerGame: gs == null ? null : round(gs, 2),
       ...NO_GOALIE_FIELDS,
     };
   });

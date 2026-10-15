@@ -69,6 +69,63 @@ export function getTeamColours(abbrev: string | null | undefined): TeamColours {
   return TEAM_COLOURS[ALIASES[abbrev] ?? abbrev] ?? DEFAULT_TEAM_COLOURS;
 }
 
+/**
+ * Official brand colours, most prominent first, for data marks (the game
+ * centre's side colours). Unlike `primary`/`accent` these aren't adjusted for
+ * white text, so Bruins gold is gold, not black. Draw them through
+ * `teamMarkColour()` so they stay visible on the page surface.
+ */
+const BRAND_PALETTES: Record<string, string[]> = {
+  ANA: ["#fc4c02", "#b9975b", "#000000"],
+  ARI: ["#8c2633", "#e2d6b5"],
+  ATL: ["#041e42", "#5c88da"],
+  BOS: ["#ffb81c", "#000000"],
+  BUF: ["#003087", "#ffb81c", "#a2aaad"],
+  CAR: ["#ce1126", "#000000", "#a2aaad"],
+  CBJ: ["#002654", "#ce1126", "#a4a9ad"],
+  CGY: ["#c8102e", "#f1be48", "#111111"],
+  CHI: ["#cf0a2c", "#000000"],
+  COL: ["#6f263d", "#236192", "#a2aaad"],
+  DAL: ["#006847", "#8f8f8c", "#111111"],
+  DET: ["#ce1126", "#ffffff"],
+  EDM: ["#ff4c00", "#041e42"],
+  FLA: ["#c8102e", "#041e42", "#b9975b"],
+  LAK: ["#111111", "#a2aaad"],
+  MIN: ["#154734", "#a6192e", "#eaaa00"],
+  MTL: ["#af1e2d", "#192168"],
+  NJD: ["#ce1126", "#000000"],
+  NSH: ["#ffb81c", "#041e42"],
+  NYI: ["#00539b", "#f47d30"],
+  NYR: ["#0038a8", "#ce1126"],
+  OTT: ["#c52032", "#c2912c", "#000000"],
+  PHI: ["#f74902", "#000000"],
+  PIT: ["#fcb514", "#000000"],
+  SEA: ["#001628", "#99d9d9", "#e9072b"],
+  SJS: ["#006d75", "#ea7200", "#000000"],
+  STL: ["#002f87", "#fcb514"],
+  TBL: ["#002868", "#ffffff"],
+  TOR: ["#00205b", "#ffffff"],
+  UTA: ["#6cace4", "#000000"],
+  VAN: ["#00205b", "#00843d"],
+  VGK: ["#b4975a", "#333f42", "#c8102e"],
+  WPG: ["#041e42", "#004c97", "#ac162c"],
+  WSH: ["#c8102e", "#041e42"],
+};
+
+export function getBrandPalette(abbrev: string | null | undefined): string[] {
+  if (!abbrev) return [];
+  return BRAND_PALETTES[ALIASES[abbrev] ?? abbrev] ?? [];
+}
+
+/**
+ * A team colour for marks on the page surface. Keeps hue and chroma but clamps
+ * OKLCH lightness to `--team-l-min`/`--team-l-max`, so navy brightens in dark
+ * mode and white greys in light mode without washing out like a white mix.
+ */
+export function teamMarkColour(hex: string): string {
+  return `oklch(from ${hex} clamp(var(--team-l-min), l, var(--team-l-max)) c h)`;
+}
+
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];

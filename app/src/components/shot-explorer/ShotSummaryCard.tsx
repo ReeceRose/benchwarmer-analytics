@@ -36,14 +36,8 @@ export function ShotSummaryCard({ summary, className }: ShotSummaryCardProps) {
         <StatTile
           label="Goals vs xG"
           value={
-            <span
-              className={cn(
-                gax > 0.5 && "text-success",
-                gax < -0.5 && "text-error",
-              )}
-            >
-              {formatSigned(gax)}
-            </span>
+            // Above or below xG isn't good or bad on its own, so no green/red.
+            <span>{formatSigned(gax)}</span>
           }
           note={gax >= 0 ? "Finishing above expected" : "Finishing below expected"}
         />

@@ -1,4 +1,4 @@
-export { useTeams, useTeam, useTeamRoster, useScoreStateStats } from "@/hooks/useTeams";
+export { useTeams, useTeam, useTeamRoster, useScoreStateStats, useTeamGameLog } from "@/hooks/useTeams";
 export {
   usePlayer,
   usePlayers,
@@ -6,6 +6,7 @@ export {
   usePlayerSearch,
   usePlayerComparison,
   usePlayerRollingStats,
+  usePlayerGameLog,
   useGoalieWorkload,
   useGoalieLeagueBaselines,
   useSkaterLeagueBaselines,
@@ -38,6 +39,7 @@ export {
   useSpecialTeamsTeamRankings,
   useSpecialTeamsPlayerLeaders,
   usePlayerPenaltyStats,
+  usePenaltiesByVenue,
 } from "@/hooks/useSpecialTeams";
 export { useLeaderboard } from "@/hooks/useLeaderboard";
 export { useSortableTable } from "@/hooks/useSortableTable";
@@ -45,3 +47,30 @@ export { useRookies } from "@/hooks/useRookies";
 export { useChartSelection } from "@/hooks/useChartSelection";
 export { usePageTitle } from "@/hooks/usePageTitle";
 export { useMediaQuery } from "@/hooks/useMediaQuery";
+export { useSeriesColours } from "@/hooks/useSeriesColours";
+export { useNightlyGameScores, useSingleGameRecords } from "@/hooks/useGameScores";
+export { usePlayoffOdds, useGameProjections } from "@/hooks/useProjections";
+export {
+  usePlayerTracking,
+  useTeamTracking,
+  useMilestones,
+  useDraft,
+  useFranchiseHistory,
+  useGoalReplay,
+  useTrackingLeaders,
+  useShotTypes,
+  useTeamSituations,
+  useTeamHomeAway,
+  useTeamHomeAwayHistory,
+  useLeagueHomeAwayHistory,
+  useGoalieRest,
+  useStandingsRace,
+  useTravel,
+  usePlayoffBracket,
+  useTrophies,
+  useTrophy,
+  useMilestoneClub,
+  useOfficials,
+  useAttendance,
+  useStreaks,
+} from "@/hooks/useHistory";

@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 // -42.5 to 42.5. SVG y runs downward, so callers plot -y to keep the NHL's
 // orientation.
 const LINE = "var(--border)";
-const RED = "color-mix(in srgb, var(--chart-2) 45%, transparent)";
-const BLUE = "color-mix(in srgb, var(--chart-1) 45%, transparent)";
+const RED = "color-mix(in srgb, var(--rink-red) 45%, transparent)";
+const BLUE = "color-mix(in srgb, var(--rink-blue) 45%, transparent)";
 
 /** A full rink with a band below it for direction labels. */
 export function Rink({ children, labels }: { children?: ReactNode; labels?: [string, string] }) {
@@ -21,7 +21,7 @@ export function Rink({ children, labels }: { children?: ReactNode; labels?: [str
           <line x1={x} x2={x} y1={-37} y2={37} stroke={RED} strokeWidth={0.4} />
           <path
             d={`M${x},-4 A6,6 0 0,${x > 0 ? 0 : 1} ${x},4`}
-            fill="color-mix(in srgb, var(--chart-1) 10%, transparent)"
+            fill="color-mix(in srgb, var(--rink-blue) 10%, transparent)"
             stroke={RED}
             strokeWidth={0.3}
           />

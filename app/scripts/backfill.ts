@@ -17,7 +17,7 @@ const { failStaleRuns, hasSucceeded } = await import("@/server/ingestion/sync-ru
 const steps = await import("@/server/ingestion/steps");
 
 const SEASON_STEPS = [...steps.SEASON_DATASETS, "shots", "games", "score_state"] as const;
-const ALL_STEPS = ["bios", ...SEASON_STEPS, "views"] as const;
+const ALL_STEPS = ["bios", "nhl_records", ...SEASON_STEPS, "team_games", "views"] as const;
 type Step = (typeof ALL_STEPS)[number];
 
 const { values } = parseArgs({
@@ -75,11 +75,21 @@ async function run(step: Step, season: number | null, fn: () => Promise<unknown>
 try {
   await failStaleRuns(db, 60);
   await run("bios", null, () => steps.syncBios(db));
+  await run("nhl_records", null, () => steps.syncNhlRecords(db));
   for (let season = fromSeason; season <= toSeason; season++) {
     for (const dataset of steps.SEASON_DATASETS) await run(dataset, season, () => steps.syncSeasonDataset(db, dataset, season));
     await run("shots", season, () => steps.syncShots(db, season, { incremental: false }));
     await run("games", season, () => steps.syncSeasonGames(db, season));
     await run("score_state", season, () => steps.syncScoreStates(db, season));
+  }
+  // One file holds every season: a single pass after teams and games exist.
+  // A full-range run imports all seasons; a narrower one, each season in turn.
+  if (fromSeason === steps.FIRST_SEASON && toSeason === currentSeason()) {
+    await run("team_games", null, () => steps.syncTeamGames(db, null));
+  } else {
+    for (let season = fromSeason; season <= toSeason; season++) {
+      await run("team_games", season, () => steps.syncTeamGames(db, season));
+    }
   }
   // Views always refresh at the end (cheap, and data may have changed).
   if (selected.has("views")) {

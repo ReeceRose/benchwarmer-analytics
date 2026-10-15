@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   usePlayer,
   usePlayerStats,
@@ -8,6 +8,10 @@ import {
   useSkaterLeagueBaselines,
 } from "@/hooks";
 import { ErrorState } from "@/components/shared";
+import { PlayerTrackingSection } from "@/components/tracking";
+import { PlayerAwards } from "@/components/player-detail/PlayerAwards";
+import { PlayerStreakLine } from "@/components/game-scores/Streaks";
+import { GoaliePlayoffPressure, PlayerMilestones } from "@/components/player-detail/PlayerMilestones";
 import {
   EntityHeroSkeleton,
   PageTabs,
@@ -23,7 +27,6 @@ import {
   PlayerShotMap,
   CareerTrajectory,
   CareerTotalsChart,
-  RollingPerformance,
   SkaterPercentilePanel,
   SeasonComparisonChart,
   SituationBreakdownChart,
@@ -33,6 +36,7 @@ import {
   ShiftQualityDashboard,
   FaceoffStatsCard,
   GiveawayTakeawayCard,
+  PlayerGameLog,
   UsageCardSkeleton,
   buildSkaterSeasonRows,
   calculateSkaterTotals,
@@ -48,27 +52,32 @@ import {
 } from "@/components/ui/select";
 import type { SkaterStats, GoalieStats } from "@/types";
 
-const TABS = ["overview", "career", "shots", "form"] as const;
+const TABS = ["overview", "career", "log", "shots"] as const;
 type PlayerTab = (typeof TABS)[number];
 
 const TAB_LABELS: Record<PlayerTab, string> = {
   overview: "Overview",
   career: "Career stats",
+  log: "Games",
   shots: "Shot map",
-  form: "Recent form",
 };
 
 export const Route = createFileRoute("/players/$id")({
   component: PlayerDetailPage,
-  // `season` is accepted (box score links send it) but the page always opens
-  // on the player's latest season.
+  // `season` and `playoffs` pick the game log's season. Box score links send
+  // `season` too, but the other tabs always show the latest season.
   validateSearch: (
     search: Record<string, unknown>,
-  ): { tab?: PlayerTab; season?: number } => ({
-    tab: TABS.includes(search.tab as PlayerTab)
-      ? (search.tab as PlayerTab)
-      : undefined,
+  ): { tab?: PlayerTab; season?: number; playoffs?: boolean } => ({
+    // "form" was the old rolling-form tab; the Games tab replaced it.
+    tab:
+      search.tab === "form"
+        ? "log"
+        : TABS.includes(search.tab as PlayerTab)
+          ? (search.tab as PlayerTab)
+          : undefined,
     season: typeof search.season === "number" ? search.season : undefined,
+    playoffs: search.playoffs === true ? true : undefined,
   }),
 });
 
@@ -89,7 +98,8 @@ const SITUATIONS = [
 
 function PlayerDetailPage() {
   const { id } = Route.useParams();
-  const { tab = "overview" } = Route.useSearch();
+  const { tab = "overview", season: logSeason, playoffs = false } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   const playerId = parseInt(id, 10);
   const [situation, setSituation] = useState("all");
 
@@ -191,8 +201,8 @@ function PlayerDetailPage() {
     return regular.sort((a, b) => b.season - a.season)[0];
   }, [allStats]);
 
-  // Goalies have no shot map or rolling form views.
-  const tabs: readonly PlayerTab[] = isGoalie ? ["overview", "career"] : TABS;
+  // Goalies have no shot map.
+  const tabs: readonly PlayerTab[] = isGoalie ? ["overview", "career", "log"] : TABS;
   const activeTab: PlayerTab = tabs.includes(tab) ? tab : "overview";
 
   if (error) {
@@ -264,6 +274,26 @@ function PlayerDetailPage() {
           <p className="py-12 text-center text-muted-foreground">
             No NHL stats recorded for this player yet.
           </p>
+        ) : activeTab === "log" && currentSeason ? (
+          <>
+          {!isGoalie && <PlayerStreakLine playerId={playerId} />}
+          <PlayerGameLog
+            playerId={playerId}
+            seasons={availableSeasons}
+            season={logSeason !== undefined && availableSeasons.includes(logSeason) ? logSeason : currentSeason}
+            playoffs={playoffs}
+            onChange={(next) =>
+              navigate({
+                search: (prev) => ({
+                  ...prev,
+                  season: next.season ?? prev.season,
+                  playoffs: next.playoffs === undefined ? prev.playoffs : next.playoffs || undefined,
+                }),
+                resetScroll: false,
+              })
+            }
+          />
+          </>
         ) : isGoalie ? (
           <>
             {activeTab === "overview" && (
@@ -277,6 +307,7 @@ function PlayerDetailPage() {
                     />
                   </Section>
                 )}
+                <PlayerTrackingSection playerId={playerId} />
                 {filteredGoalieStats.length > 0 && (
                   <Section
                     title="Goaltending profile"
@@ -298,9 +329,13 @@ function PlayerDetailPage() {
               </>
             )}
             {activeTab === "career" && (
-              <Section title="Career statistics" action={situationFilter}>
-                <GoalieStatsTable rows={goalieSeasonRows} totals={goalieTotals} />
-              </Section>
+              <>
+                <Section title="Career statistics" action={situationFilter}>
+                  <GoalieStatsTable rows={goalieSeasonRows} totals={goalieTotals} />
+                </Section>
+                {player?.goaliePlayoffs && <GoaliePlayoffPressure record={player.goaliePlayoffs} />}
+                <PlayerAwards awards={player?.awards ?? []} />
+              </>
             )}
           </>
         ) : (
@@ -322,6 +357,7 @@ function PlayerDetailPage() {
                     />
                   </div>
                 </Section>
+                <PlayerTrackingSection playerId={playerId} />
                 {shiftQualityStats && (
                   <Section title="Usage and puck play">
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -334,12 +370,10 @@ function PlayerDetailPage() {
                     </div>
                   </Section>
                 )}
-                <Section title="By situation">
-                  <SituationBreakdownChart
-                    stats={allStats as SkaterStats[]}
-                    season={currentSeason}
-                  />
-                </Section>
+                <SituationBreakdownChart
+                  stats={allStats as SkaterStats[]}
+                  season={currentSeason}
+                />
               </>
             )}
             {activeTab === "career" && (
@@ -347,6 +381,8 @@ function PlayerDetailPage() {
                 <Section title="Career statistics" action={situationFilter}>
                   <SkaterStatsTable rows={skaterSeasonRows} totals={skaterTotals} />
                 </Section>
+                <PlayerAwards awards={player?.awards ?? []} />
+                <PlayerMilestones milestones={player?.milestones ?? []} />
                 <Section title="Career trends">
                   <CareerTrajectory
                     stats={allStats as SkaterStats[]}
@@ -364,13 +400,6 @@ function PlayerDetailPage() {
                 playerId={playerId}
                 availableSeasons={availableSeasons}
                 playerTeamAbbreviation={player?.currentTeamAbbreviation}
-                className="mt-0"
-              />
-            )}
-            {activeTab === "form" && currentSeason && (
-              <RollingPerformance
-                playerId={playerId}
-                season={currentSeason}
                 className="mt-0"
               />
             )}

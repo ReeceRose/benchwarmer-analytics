@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Swatch } from "@/components/game-live/parts";
-import { CHART_AXIS_COLOURS, AGE_PHASE_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 
 export interface PlayerInfo {
   playerId: number;
@@ -158,7 +158,7 @@ export function AgeCurvesChart({
                             <span className="font-medium">
                               {typeof p.value === "number"
                                 ? p.value.toFixed(2)
-                                : "-"}
+                                : "–"}
                             </span>
                           </div>
                         ),
@@ -178,8 +178,7 @@ export function AgeCurvesChart({
                 x1={18}
                 x2={24}
                 yAxisId="left"
-                fill={AGE_PHASE_COLOURS.development}
-                fillOpacity={0.04}
+                fill="transparent"
                 label={{
                   value: "Development",
                   position: "insideTopLeft",
@@ -192,8 +191,8 @@ export function AgeCurvesChart({
                 x1={24}
                 x2={30}
                 yAxisId="left"
-                fill={AGE_PHASE_COLOURS.prime}
-                fillOpacity={0.04}
+                fill="var(--muted-foreground)"
+                fillOpacity={0.06}
                 label={{
                   value: "Prime",
                   position: "insideTopLeft",
@@ -206,8 +205,7 @@ export function AgeCurvesChart({
                 x1={30}
                 x2={45}
                 yAxisId="left"
-                fill={AGE_PHASE_COLOURS.decline}
-                fillOpacity={0.04}
+                fill="transparent"
                 label={{
                   value: "Decline",
                   position: "insideTopLeft",
@@ -218,7 +216,7 @@ export function AgeCurvesChart({
               />
               <Area
                 yAxisId="left"
-                type="monotone"
+                type="linear"
                 dataKey="leagueBandBase"
                 stackId="leagueBand"
                 stroke="none"
@@ -228,7 +226,7 @@ export function AgeCurvesChart({
               />
               <Area
                 yAxisId="left"
-                type="monotone"
+                type="linear"
                 dataKey="leagueBandRange"
                 stackId="leagueBand"
                 stroke="none"
@@ -239,7 +237,7 @@ export function AgeCurvesChart({
               />
               <Line
                 yAxisId="left"
-                type="monotone"
+                type="linear"
                 dataKey="league"
                 name={useMedian ? "League median" : "League average"}
                 stroke={CHART_AXIS_COLOURS.reference}
@@ -251,7 +249,7 @@ export function AgeCurvesChart({
                 <Line
                   yAxisId="left"
                   key={player.playerId}
-                  type="monotone"
+                  type="linear"
                   dataKey={player.dataKey}
                   name={player.playerName}
                   stroke={player.color}

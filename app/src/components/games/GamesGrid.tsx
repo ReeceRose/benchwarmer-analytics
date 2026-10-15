@@ -7,9 +7,11 @@ interface GamesGridProps {
   games: GameSummary[];
   isLoading: boolean;
   emptyMessage: string;
+  /** Pregame home win chance by game ID, for upcoming games. */
+  pregame?: Map<string, number>;
 }
 
-export function GamesGrid({ games, isLoading, emptyMessage }: GamesGridProps) {
+export function GamesGrid({ games, isLoading, emptyMessage, pregame }: GamesGridProps) {
   if (isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -29,7 +31,7 @@ export function GamesGrid({ games, isLoading, emptyMessage }: GamesGridProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {games.map((game) => (
-        <GameCard key={game.gameId} game={game} />
+        <GameCard key={game.gameId} game={game} homeWinProbability={pregame?.get(game.gameId)} />
       ))}
     </div>
   );

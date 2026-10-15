@@ -9,7 +9,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { ChartLegend } from "@/components/charts/ChartLegend";
-import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS, CHART_COLOURS, REFERENCE_COLOUR } from "@/lib/chart-colours";
 import type { PowerPlaySummary, PenaltyKillSummary } from "@/types";
 
 interface GoalsVsXGChartProps {
@@ -104,8 +104,8 @@ export function GoalsVsXGChart({ powerPlay, penaltyKill }: GoalsVsXGChartProps) 
       <ChartLegend
         className="mb-2"
         items={[
-          { label: "Actual goals", colour: SEMANTIC_COLOURS.primary },
-          { label: "Expected (xG)", colour: SEMANTIC_COLOURS.muted },
+          { label: "Actual goals", colour: CHART_COLOURS[0] },
+          { label: "Expected (xG)", colour: REFERENCE_COLOUR },
         ]}
       />
       <ResponsiveContainer width="100%" height={200}>
@@ -142,14 +142,14 @@ export function GoalsVsXGChart({ powerPlay, penaltyKill }: GoalsVsXGChartProps) 
           <Bar
             dataKey="goals"
             name="Actual goals"
-            fill={SEMANTIC_COLOURS.primary}
+            fill={CHART_COLOURS[0]}
             radius={[6, 6, 0, 0]}
             fillOpacity={0.85}
           />
           <Bar
             dataKey="xGoals"
             name="Expected (xG)"
-            fill={SEMANTIC_COLOURS.muted}
+            fill={REFERENCE_COLOUR}
             radius={[6, 6, 0, 0]}
             fillOpacity={0.45}
           />

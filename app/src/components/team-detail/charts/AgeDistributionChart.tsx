@@ -167,7 +167,7 @@ export function AgeDistributionChart({
   const avgAge =
     playersWithAge.length > 0
       ? (totalAge / playersWithAge.length).toFixed(1)
-      : "N/A";
+      : "–";
 
   // Find largest bin for analysis
   const largestBin = chartData.reduce((a, b) => (a.count > b.count ? a : b));
@@ -190,8 +190,7 @@ export function AgeDistributionChart({
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Age distribution</CardTitle>
         <CardDescription>
-          Average age: {avgAge} years | Most players in {largestBin.range} phase
-          ({largestBin.label})
+          Average age {avgAge}. The biggest group is {largestBin.range.toLowerCase()} ({largestBin.label}).
         </CardDescription>
       </CardHeader>
       <CardContent>

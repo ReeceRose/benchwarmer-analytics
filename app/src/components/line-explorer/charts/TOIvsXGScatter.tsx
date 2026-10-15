@@ -11,12 +11,19 @@ import {
   ZAxis,
   Cell,
 } from "recharts";
-import { CHART_AXIS_COLOURS, SEMANTIC_COLOURS } from "@/lib/chart-colours";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { formatToi } from "@/lib/formatters";
 import { getLineLabel } from "@/components/line-explorer/charts/line-chart-utils";
 import { LineTooltipWrapper } from "@/components/line-explorer/charts/LineTooltipWrapper";
 import type { LineCombination } from "@/types";
-import { EmptyState } from "@/components/layout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ChartLegend } from "@/components/charts/ChartLegend";
 
 interface TOIvsXGScatterProps {
   lines: LineCombination[];
@@ -61,7 +68,12 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
 
   if (chartData.length === 0) {
     return (
-      <EmptyState className="py-8" title="No line data for this selection yet" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Ice time vs xG share</CardTitle>
+          <CardDescription>No lines with expected goals yet.</CardDescription>
+        </CardHeader>
+      </Card>
     );
   }
 
@@ -77,10 +89,14 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
   const domainMaxXg = Math.min(70, Math.ceil(maxXg + xgPadding));
 
   return (
-    <div>
-      <h3 className="text-sm font-semibold mb-3">
-        TOI vs xG% — are the best lines getting the most ice time?
-      </h3>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Ice time vs xG share</CardTitle>
+        <CardDescription>
+          Are the {isForwardLine ? "lines" : "pairs"} that win the chances getting the most minutes?
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
       <ResponsiveContainer width="100%" height={300}>
         <ScatterChart margin={{ top: 10, right: 15, bottom: 25, left: 5 }}>
           <CartesianGrid
@@ -97,7 +113,7 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
             stroke={CHART_AXIS_COLOURS.grid}
             strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             label={{
-              value: "TOI (min)",
+              value: "Minutes together",
               position: "bottom",
               offset: 0,
               fill: CHART_AXIS_COLOURS.tick,
@@ -138,7 +154,7 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
                       <p>
                         <span className="text-muted-foreground">xG%:</span>{" "}
                         <span
-                          className={`tabular-nums font-semibold ${d.isGood ? "text-success" : "text-error"}`}
+                          className="tabular-nums font-semibold"
                         >
                           {d.xgPct.toFixed(1)}%
                         </span>
@@ -171,16 +187,24 @@ export function TOIvsXGScatter({ lines, isForwardLine }: TOIvsXGScatterProps) {
             {chartData.map((entry, index) => (
               <Cell
                 key={index}
-                fill={entry.isGood ? SEMANTIC_COLOURS.success : SEMANTIC_COLOURS.danger}
-                fillOpacity={0.7}
+                fill={entry.isGood ? "var(--chart-1)" : "var(--muted-foreground)"}
+                fillOpacity={0.8}
               />
             ))}
           </Scatter>
         </ScatterChart>
       </ResponsiveContainer>
-      <p className="text-xs text-muted-foreground text-center mt-2">
-        Ideal: High xG% lines in the upper-right (most ice time). Dot size = games played.
+      <ChartLegend
+        className="mt-3"
+        items={[
+          { label: "Above 50% xG", colour: "var(--chart-1)" },
+          { label: "Below 50% xG", colour: "var(--muted-foreground)" },
+        ]}
+      />
+      <p className="mt-2 text-xs text-muted-foreground">
+        The best {isForwardLine ? "lines" : "pairs"} sit top right. Dot size is games played.
       </p>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

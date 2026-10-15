@@ -170,7 +170,7 @@ function ShotDetail({
           <span
             className={cn(
               "ml-2 font-semibold",
-              shot.isGoal ? "text-success" : "text-muted-foreground",
+              shot.isGoal ? "text-foreground" : "text-muted-foreground",
             )}
           >
             {resultLabel(shot)}

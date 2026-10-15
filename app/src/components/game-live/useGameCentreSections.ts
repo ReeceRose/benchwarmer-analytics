@@ -3,8 +3,11 @@ import { useCallback, useState } from "react";
 export const GAME_CENTRE_SECTIONS = [
   { id: "summary", label: "Summary tiles", group: "Overview" },
   { id: "teamStats", label: "Team stats", group: "Overview" },
+  { id: "winProbability", label: "Win probability", group: "Overview" },
   { id: "flow", label: "Game flow", group: "Shots" },
   { id: "shotMap", label: "Shot map & profile", group: "Shots" },
+  { id: "replays", label: "Goal replays", group: "Shots" },
+  { id: "gameScore", label: "Game Score", group: "Players" },
   { id: "goalies", label: "Goaltending", group: "Players" },
   { id: "boxscore", label: "Box score", group: "Players" },
   { id: "skaters", label: "Advanced skater stats", group: "Players" },
@@ -21,7 +24,7 @@ export const GAME_CENTRE_SECTIONS = [
 export type GameCentreSectionId = (typeof GAME_CENTRE_SECTIONS)[number]["id"];
 
 export const ESSENTIAL_SECTIONS: readonly GameCentreSectionId[] = [
-  "summary", "teamStats", "flow", "shotMap", "goalies", "boxscore", "penalties",
+  "summary", "teamStats", "winProbability", "flow", "shotMap", "gameScore", "goalies", "boxscore", "penalties",
 ];
 
 const STORAGE_KEY = "benchwarmer:game-centre:hidden";

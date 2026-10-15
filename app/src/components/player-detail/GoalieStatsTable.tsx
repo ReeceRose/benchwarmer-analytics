@@ -32,7 +32,7 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
   }
 
   return (
-    <Card className="py-0 gap-0">
+    <Card className="gap-0 overflow-hidden py-0">
       <CardContent className="p-0 overflow-x-auto">
         <Table>
           <TableHeader>
@@ -87,7 +87,7 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
               )}
             </TableRow>
           ))}
-          <TableRow className="border-t font-semibold hover:bg-transparent">
+          <TableRow className="font-semibold hover:bg-transparent">
             <TableCell>Totals</TableCell>
             <TableCell></TableCell>
             <TableCell className="text-right tabular-nums">{totals.gp}</TableCell>

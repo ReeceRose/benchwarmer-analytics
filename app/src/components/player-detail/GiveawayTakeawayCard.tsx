@@ -1,6 +1,7 @@
 import { SplitBar, UsageCard, UsageNumber } from "@/components/player-detail/UsageCard";
 import { cn } from "@/lib/utils";
 import type { SkaterStats } from "@/types";
+import { ZONE_COLOURS } from "@/lib/chart-colours";
 
 // Takeaway/giveaway ratio tiers. League-wide the ratio sits around 0.3-0.4.
 const RATIO_EXCEPTIONAL = 1.0; // More takeaways than giveaways: very rare
@@ -55,8 +56,8 @@ export function GiveawayTakeawayCard({ stats, className }: GiveawayTakeawayCardP
         <SplitBar
           label="Giveaways by zone"
           parts={[
-            { label: "D-zone", value: Math.round(dZoneGiveaways), colour: "var(--chart-5)" },
-            { label: "O/N-zone", value: Math.round(giveaways - dZoneGiveaways), colour: "color-mix(in oklab, var(--muted-foreground) 40%, transparent)" },
+            { label: "D-zone", value: Math.round(dZoneGiveaways), colour: ZONE_COLOURS.defensive },
+            { label: "O/N-zone", value: Math.round(giveaways - dZoneGiveaways), colour: ZONE_COLOURS.neutral },
           ]}
         />
       ) : (

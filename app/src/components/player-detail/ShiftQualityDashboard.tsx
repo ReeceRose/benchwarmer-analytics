@@ -1,5 +1,6 @@
 import { SplitBar, UsageCard, UsageNumber } from "@/components/player-detail/UsageCard";
 import type { SkaterStats } from "@/types";
+import { ZONE_COLOURS } from "@/lib/chart-colours";
 
 interface ShiftQualityDashboardProps {
   stats: SkaterStats;
@@ -45,9 +46,9 @@ export function ShiftQualityDashboard({ stats, className }: ShiftQualityDashboar
       <SplitBar
         label="Starts by zone"
         parts={[
-          { label: "O-zone", value: Math.round(oZoneShiftStarts), colour: "var(--chart-1)" },
-          { label: "Neutral", value: Math.round(nZoneShiftStarts), colour: "color-mix(in oklab, var(--muted-foreground) 40%, transparent)" },
-          { label: "D-zone", value: Math.round(dZoneShiftStarts), colour: "var(--chart-5)" },
+          { label: "O-zone", value: Math.round(oZoneShiftStarts), colour: ZONE_COLOURS.offensive },
+          { label: "Neutral", value: Math.round(nZoneShiftStarts), colour: ZONE_COLOURS.neutral },
+          { label: "D-zone", value: Math.round(dZoneShiftStarts), colour: ZONE_COLOURS.defensive },
         ]}
       />
       <p className="text-sm text-muted-foreground">{summary}</p>

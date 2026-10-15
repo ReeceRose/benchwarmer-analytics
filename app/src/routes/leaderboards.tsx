@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { seasonsQueryOptions } from "@/hooks/useSeasons";
 import * as z from "zod/mini";
 import { useLeaderboard, useSeasons, usePageTitle } from "@/hooks";
@@ -11,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -18,8 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ErrorState, SortableTableHeader, TableSkeleton } from "@/components/shared";
-import { PageHeader, SegmentedControl, ViewToggle } from "@/components/layout";
+import { ErrorState, SeasonSelector, SortableTableHeader, TableSkeleton } from "@/components/shared";
+import { EmptyState, PageHeader, SegmentedControl, ViewToggle } from "@/components/layout";
 import { LeaderboardRow } from "@/components/leaderboard";
 import {
   SkaterLuckChart,
@@ -27,9 +29,13 @@ import {
   Top10LeadersChart,
 } from "@/components/leaderboard/charts";
 import {
+  GOALIE_CATEGORIES,
+  LEADERBOARD_CATEGORY_LABELS,
+  SKATER_CATEGORIES,
   isGoalieCategory,
   getDefaultSortDir,
 } from "@/lib/leaderboard-categories";
+import { cn } from "@/lib/utils";
 import type { LeaderboardCategory, LeaderboardEntry } from "@/types";
 
 const categorySchema = z.enum([
@@ -47,6 +53,7 @@ const categorySchema = z.enum([
   "iceTime",
   "gamesPlayed",
   "faceoffPct",
+  "gameScore",
   // Goalie categories
   "savePct",
   "gaa",
@@ -163,6 +170,20 @@ function LeaderboardsPage() {
       <PageHeader
         title="Leaderboards"
         description="The league's best by any stat. Sort by any column."
+        actions={
+          <>
+            <SeasonSelector
+              value={effectiveSeason}
+              onValueChange={(v) => v != null && updateSearch({ season: v })}
+            />
+            <Button variant="outline" asChild>
+              <Link to="/single-games">Single-game records</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/tracking-leaders">Tracking leaders</Link>
+            </Button>
+          </>
+        }
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -176,26 +197,38 @@ function LeaderboardsPage() {
               { value: "goalies", label: "Goalies" },
             ]}
           />
-          <Select
-            value={String(effectiveSeason ?? "")}
-            onValueChange={(v) => updateSearch({ season: parseInt(v) })}
-          >
-            <SelectTrigger className="w-32" aria-label="Season">
-              <SelectValue placeholder="Season" />
-            </SelectTrigger>
-            <SelectContent>
-              {seasonsData?.seasons?.map((s) => (
-                <SelectItem key={s.year} value={String(s.year)}>
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {!isGoalieView && currentView === "table" && (
+          {currentView === "charts" && (
+            <Select
+              value={category}
+              onValueChange={(v) =>
+                updateSearch({ category: v as LeaderboardCategory, sortDir: undefined })
+              }
+            >
+              <SelectTrigger className="w-44" aria-label="Stat">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(isGoalieView ? GOALIE_CATEGORIES : SKATER_CATEGORIES)
+                  .filter((c) => c !== "gameScore" || effectiveSituation === "all")
+                  .map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {LEADERBOARD_CATEGORY_LABELS[c]}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          )}
+          {!isGoalieView && (
             <SegmentedControl
               aria-label="Game situation"
               value={effectiveSituation}
-              onValueChange={(situation) => updateSearch({ situation })}
+              onValueChange={(situation) =>
+                updateSearch(
+                  category === "gameScore" && situation !== "all"
+                    ? { situation, category: "points", sortDir: undefined }
+                    : { situation },
+                )
+              }
               options={[
                 { value: "all", label: "All" },
                 { value: "5on5", label: "5v5" },
@@ -225,7 +258,14 @@ function LeaderboardsPage() {
       )}
 
       {isLoading ? (
-        <TableSkeleton rows={12} columns={12} />
+        currentView === "charts" ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Skeleton className="h-112 rounded-2xl" />
+            <Skeleton className="h-112 rounded-2xl" />
+          </div>
+        ) : (
+          <TableSkeleton rows={12} columns={12} />
+        )
       ) : sortedEntries.length > 0 ? (
         currentView === "charts" ? (
           <ChartsView
@@ -240,14 +280,18 @@ function LeaderboardsPage() {
             sortDesc={sortDesc}
             onSort={handleSort}
             isGoalie={isGoalieView}
+            showGameScore={effectiveSituation === "all"}
             season={effectiveSeason}
             isPlaceholderData={isPlaceholderData}
           />
         )
       ) : (
-        <p className="py-12 text-center text-muted-foreground">
-          No qualified players for this season and situation. Try another.
-        </p>
+        !error && (
+          <EmptyState
+            title="No qualified players"
+            hint="Try another season or situation."
+          />
+        )
       )}
     </div>
   );
@@ -263,23 +307,10 @@ function ChartsView({
   isGoalie: boolean;
   category: LeaderboardCategory;
 }) {
-  if (isGoalie) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Top10LeadersChart entries={entries} category={category} />
-          <GoalieQuadrantChart entries={entries} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Top10LeadersChart entries={entries} category={category} />
-        <SkaterLuckChart entries={entries} />
-      </div>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <Top10LeadersChart entries={entries} category={category} />
+      {isGoalie ? <GoalieQuadrantChart entries={entries} /> : <SkaterLuckChart entries={entries} />}
     </div>
   );
 }
@@ -291,6 +322,7 @@ function TableView({
   sortDesc,
   onSort,
   isGoalie,
+  showGameScore,
   season,
   isPlaceholderData,
 }: {
@@ -299,11 +331,12 @@ function TableView({
   sortDesc: boolean;
   onSort: (key: string) => void;
   isGoalie: boolean;
+  showGameScore: boolean;
   season: number;
   isPlaceholderData?: boolean;
 }) {
   return (
-    <Card className={`py-0 gap-0 ${isPlaceholderData ? "opacity-60" : ""}`}>
+    <Card className={cn("gap-0 overflow-hidden py-0", isPlaceholderData && "opacity-60")}>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <Table className="table-fixed min-w-175">
@@ -336,6 +369,19 @@ function TableView({
                       isHighlighted={sortKey === "points"}
                       className="w-14"
                     />
+                    {showGameScore && (
+                      <SortableTableHeader
+                        label="GS/GP"
+                        tooltip="Game Score per game (all situations)"
+                        metric="GS/GP"
+                        sortKey="gameScore"
+                        currentSort={sortKey}
+                        sortDesc={sortDesc}
+                        onSort={onSort}
+                        isHighlighted={sortKey === "gameScore"}
+                        className="w-18"
+                      />
+                    )}
                     <SortableTableHeader
                       label="G"
                       tooltip="Goals scored"
@@ -566,6 +612,7 @@ function TableView({
                   rank={entry.rank}
                   season={season}
                   isGoalie={isGoalie}
+                  showGameScore={showGameScore}
                   highlightedColumn={sortKey}
                 />
               ))}

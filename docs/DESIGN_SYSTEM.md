@@ -42,20 +42,42 @@ They are the most current examples.
 
 ### Data colours
 
-| Token | Meaning |
-| --- | --- |
-| `chart-1` … `chart-5` | Categorical series: blue, red, green, amber, violet. Use in that order |
-| `success` / `error` | **Good / bad only**: above or below average, better or worse side, positive or negative GSAx |
-| `warning` | Caution: "below average", "moderate" |
-| `hot` / `cold` | Form trends (flame / snowflake) |
-| `live` | Live-game dot |
-| `highlight` | Rare emphasis chips (e.g. GWG) |
+Every chart colour does one job, and each job has one name. Pick colours
+through the roles in `lib/chart-colours.ts`, never a raw slot: the
+`colours/chart-colour-roles` lint rule rejects `var(--chart-2…5)`,
+`*-chart-2…5` classes and `CHART_COLOURS[n]` for n > 0 outside that file.
+
+| Role | Colour | Use |
+| --- | --- | --- |
+| `CHART_COLOURS` | `chart-1` … `chart-5`: blue, orange, aqua, yellow, violet | **Identity** (which player, season, series). One series is `chart-1`. Several take slots in order; never cycle past five |
+| `STATUS_COLOURS` (`success` / `error` / `warning`) | green / red / amber | **Good / bad / caution only**: above or below average, better or worse side, positive or negative GSAx |
+| `ZONE_COLOURS` | O-zone `chart-1`, neutral muted, D-zone `chart-2` | Zone starts, zone time, giveaways by zone |
+| `UNIT_COLOURS` | `chart-1` / `chart-2` | PP vs PK, forwards vs defence (first-named first) |
+| `REFERENCE_COLOUR` | `muted-foreground` | Expected or baseline series beside an actual one (dashed for lines) |
+| `teamColour(side)` | away `chart-2`, home `chart-1` by default; readers can change it | Two-team views |
+| `SHOT_DANGER_COLOURS` | `shot-goal/high/medium/low` | Shot maps only (see Charts) |
+| `hot` / `cold` | | Form trends (flame / snowflake) |
+| `live` | | Live-game dot |
+| `highlight` | | Rare emphasis chips (e.g. GWG) |
+
+The series palette was picked with the `dataviz` skill's validator against
+our card surfaces in both themes: neighbouring slots stay distinct under
+colour-blindness, and the first three stay distinct pairwise, so scatter
+charts can use up to three series. Blue/orange is the safest pair, which is
+why every two-way split (sides, zones, units) uses slots 1 and 2. Yellow and
+aqua are under 3:1 on white, so slots 3–5 need a legend with values or a
+table view.
 
 Rules:
 
-- **Green/red means good/bad and nothing else.** Categories (PP vs PK, O-zone
-  vs D-zone, actual vs expected, leading vs trailing) use `chart-*` colours or
-  neutrals. "Offensive deployment" isn't good, so it isn't green.
+- **Green/red means good/bad and nothing else.** That's why the series
+  palette has neither. A goal isn't good or bad in a neutral game view, so
+  goal labels are bold ink, not green.
+- **A colour follows its entity.** On pages where readers pick players
+  (Compare, Age curves), `useSeriesColours(ids)` keeps each player's colour
+  while they stay selected, so removing one doesn't repaint the rest.
+- **Parts of one total share a hue**: the main part `chart-1`, the other
+  `color-mix(in oklab, var(--chart-1) 40%, var(--card))`.
 - **Blue in the chrome means a link.** Don't colour status pills, icons or
   badges blue.
 - **Never use `text-primary` for links or emphasis.** It's ink. Use `text-link`
@@ -77,13 +99,17 @@ Rules:
 - Where two team colours sit side by side (the `GameDetailHeader` split),
   check `coloursAreSimilar(a, b)` and mark the seam with a thin dark line
   when they'd blur together (OTT/NJD reds, navy vs navy).
-- For small marks on the page surface (game card stripes, dots), mix it with
-  `--team-mix` so it softens in dark mode:
-  `color-mix(in oklab, ${primary} var(--team-mix), white)`.
+- For small marks on the page surface (game card stripes, dots), draw it
+  through `teamMarkColour(hex)`, which keeps hue and chroma but clamps OKLCH
+  lightness to `--team-l-min`/`--team-l-max` (navy brightens in dark mode,
+  white greys in light mode). Don't mix with white: it washes colours out.
+- `getBrandPalette(abbrev)` returns the team's official colours unadjusted
+  (Bruins gold, not the black header primary), most prominent first. The game
+  centre picker offers these as `brand-0`…`brand-2`.
 - In two-team comparisons on the neutral surface, don't use team brand colours
   (two red teams would clash). Use the side colours from
-  `components/game-live/live-utils.ts`: `teamColour("away")` = `chart-2`,
-  `teamColour("home")` = `chart-1`, labelled with `TeamLabel`/`Swatch`.
+  `components/game-live/live-utils.ts`: `teamColour("away")` = `chart-2`
+  (orange), `teamColour("home")` = `chart-1` (blue), labelled with `TeamLabel`/`Swatch`.
   Every place a team code names a side (chart axis labels, legends, column
   headers) gets the swatch next to it, so the colour key is never more than a
   glance away. In SVG, draw the swatch as an 8px `rect` with `rx={2}`.
@@ -225,6 +251,11 @@ render (see CLAUDE.md).
 - Headers are quiet: `text-xs font-medium text-muted-foreground`. Raw `<th>`s
   pick this up from the base layer. No grey header band (`bg-muted/50` rows).
 - Sticky first columns use `sticky left-0 z-10 bg-card`.
+- `Table` draws each row's line on its cells (`border-separate`), so a
+  sticky column keeps its row lines. To change a row's border, target the
+  cells (`[&>td]:border-b-0`), not the `<tr>`. A `Card` that wraps a
+  scrolling table gets `overflow-hidden` so the sticky column can't poke
+  past the rounded corner.
 - Use `SortableTableHeader` for sortable columns and `HeaderWithTooltip` for
   abbreviations that need a definition.
 - Teams in dense tables: `TeamTag` (logo + code, links to the team).
@@ -239,6 +270,17 @@ the hero and scoreboard.
   label, in the side colours, with the better value bold. Pass `lowerIsBetter`
   for things like xGA or GAA. Finish with a legend row:
   `TeamLabel side="away"` · "Bold = better side" · `TeamLabel side="home"`.
+- One team's road vs home games (team "Home and away" tab,
+  `team-detail/TeamHomeAway.tsx`) uses the same layout: road on the left in
+  the away colour, home on the right. Each `MirroredBar` label carries the
+  league's road · home figure as a muted second line, so the reader can tell
+  a real home edge from the normal one. Over seasons
+  (`team-detail/HomeAwayHistory.tsx`), one stat at a time: away and home
+  lines in the side colours, then a "home edge" bar per season (home colour
+  above zero, `muted-foreground` below, signed so positive is always better
+  at home) with the league's edge as a dashed `REFERENCE_COLOUR` line. A
+  season still in progress stays in the table ("so far") but out of the
+  charts.
 - `StackedBar`: proportional parts with 2px gaps (e.g. shot outcomes). For a
   stacked bar with a counted legend (zone starts, faceoffs won/lost), use
   `SplitBar` from `player-detail/UsageCard.tsx`.
@@ -247,6 +289,57 @@ the hero and scoreboard.
   context, not performance (GP, TOI), get no emphasis.
 - `TeamHeading` (`game-preview/TeamHeading.tsx`): logo + code above each
   team's column.
+- All-time records (game preview "Head to head",
+  `game-preview/HeadToHeadSection.tsx`): one `StackedBar` per record (away
+  wins, ties in `muted-foreground`, home wins), games and goals as a muted
+  line above, and `TeamLabel`s with win counts below, the side with more
+  wins bold.
+- `GameScorecard` (`game-live/GameScorecard.tsx`): one game at a glance
+  (score, goals and shots by period, five `StackedBar` share rows with the
+  better side bold, last goal). It's the share card: the Share button on the
+  game hero (`ShareGameButton`) opens it in a dialog that copies, downloads
+  or natively shares it as a PNG. Anything drawn into that image must load
+  from our origin (logos via `getSameOriginTeamLogoUrl`), or the export fails.
+
+### Ranked values that can be negative
+
+- `DivergingBar` (`game-live/GameScoreSection.tsx`): a bar from a centre
+  zero line, right in the side colour for positive values and left in
+  `muted-foreground` for negative ones, all scaled to the largest absolute
+  value in view so both teams share a scale. Used for Game Score, one card
+  per team (away left), best first, with the parts that make up the value
+  as muted columns from `sm` up and TOI muted after the name. Long lists
+  show the top 6 and bottom 3 with an "N more" row, and one ghost
+  "Show all" button below expands both teams together.
+
+### League percentiles and ranks
+
+- Small comparison tables inside a `UsageCard` or `Panel` (shot types,
+  goalie rest, team situation records): quiet headers, numbers right-aligned
+  with `pl-3` between columns, the subject's value **bold** where it beats
+  the league's figure in the next column (muted), rank muted. Rows with no
+  games are muted. A share column is a `rounded-full bg-muted` track with a
+  `chart-1` bar and the percentage beside it.
+- League top 10s (tracking leaders page): a grid of `Panel`s, one per stat,
+  each an `ol` of player rows (rank, NHL headshot, name, team · position ·
+  date or context, value).
+
+- `TrackingRow` (`components/tracking/`): label and value, the percentile
+  (players) or rank (teams) as a display-font ordinal on the right, a
+  `rounded-full bg-muted` bar to it with a tick at the league median, and a
+  muted line under the bar for context on the left (when a peak happened,
+  goals from that area) and "League avg …" on the right. Ranks map onto the
+  same 0-100 scale for the bar.
+- Colour the ordinal and bar with `getPercentileColour` /
+  `getPercentileBarClass` (`lib/stat-colours.ts`, top quarter `success`,
+  second quarter `warning`, bottom quarter `error`), the same thresholds as
+  the player page's league percentiles. Only use them where the source
+  orients the percentile so higher is better (NHL EDGE does). Percentiles
+  read 1st to 99th, never 100th.
+- Group rows in `UsageCard`s with the source and how to read the bar in the
+  caption. Shares of a whole (zone time) are a `StackedBar` with a swatch
+  legend of value and league average, in the zone colours the usage cards
+  use (`ZONE_COLOURS`).
 
 ### Lists of players
 
@@ -258,6 +351,94 @@ the hero and scoreboard.
 - Separate stacked rows with spacing (`space-y-1`) rather than boxing each
   one. Avoid `divide-y` on rows that have rounded hover backgrounds, because
   the dividers pick up the curve.
+
+- Ranked single-game performances (homepage "Last night's best and worst games",
+  `/single-games`): `GameScoreList` (`components/game-scores/`). Same row
+  pattern; the row links to the game, the meta line is team · stat line ·
+  TOI (· date for season records), and the right column is the value over a
+  muted "vs OTT · W 4–1". `GameScoreListSkeleton` matches it.
+- Milestones (homepage "Milestone watch", `home/MilestoneSection.tsx`):
+  the same row; meta is team · current total, the right column is "2 to
+  700 games" over a muted "About 5 games away". Two columns of `ol`s from
+  `lg` up, closest first down each column.
+- Draft picks (`components/draft/`): `DraftPickRows` uses the row pattern
+  without avatars (old picks have no headshots): pick number (and year) in a
+  muted left column, the name links only when we have a player page, and the
+  right column is the NHL career ("746 GP, 828 P", muted "No NHL games")
+  over its span. `DraftTable` is the full class: sticky player column, the
+  team as a `TeamTag` unless the franchise has moved since (then the code at
+  the time, muted, with today's team on hover), points or wins bold.
+- One player's games (`player-detail/PlayerGameLog.tsx`, the player page's
+  "Game log" tab): three `StatTile`s, a per-game strip and a table, newest
+  first, with a sticky date column linking to the game. The strip is one bar
+  per game from a zero line, ink above and `muted-foreground` below (the
+  `DivergingBar` rule), at most `max-w-6` wide, with a dashed line at the
+  average and a dot on the zero line for games with no value. Bars link to
+  the game and turn `link` blue on hover.
+
+### Teams by season
+
+- Season-by-season heatmap (`special-teams-stats/charts/PenaltySeasonHeatmap.tsx`):
+  teams down the side (sticky, logo + code linking to the team), seasons
+  across, a value in each cell. Shade one hue, `chart-1` mixed into `card`
+  (8–60%), by the team's place *within that season*, not the raw value, so
+  league-wide drift across eras doesn't swamp it. Ring each season's leader
+  (`ring-2 ring-foreground`) and repeat it as a logo row under the season
+  headers. Season headers sort the rows; "Avg rank" sorts by the average
+  rank across the range (seasons in progress excluded, drawn at 60%).
+  Filters (stat, fewest/most first, season range) go in the URL.
+- Its "Team charts" layout is small multiples: one bordered panel per team
+  (rank, logo, code, latest value; avg rank under it), a `chart-1` line over
+  a dashed `muted-foreground` league average, every panel on one shared y
+  scale (stated in the caption) so heights compare. Plain SVG with
+  `vector-effect: non-scaling-stroke`, not 30 Recharts instances.
+- Its "All teams" layout puts every team on one Recharts line chart: thin
+  `muted-foreground` lines at low opacity. Any number of teams can be picked
+  (chips under the chart, with All / Clear, kept in the URL): the first five
+  take series colours (`useSeriesColours`, which takes string ids too), the
+  rest are ink, since the palette never cycles. Picked lines are labelled at
+  their last point, and labels that end close together are pushed apart
+  (12px minimum), which needs a fixed y domain. Hover traces any line. A Value/Rank switch turns it into a bump chart
+  (rank within each season, 1st at the top).
+
+### Probabilities and projections
+
+- Format probabilities with `formatOdds` (`lib/odds.ts`): whole percents,
+  "<1%" and ">99%" at the ends rather than 0% or 100%.
+- Projection tables (`projections/PlayoffOddsTable.tsx`): no heat colours;
+  the headline probability column is bold. A projected range is a muted
+  band (middle 80%) on a `bg-muted` track with an ink tick at the average,
+  the number beside it. A dashed row border marks a cut line (playoff
+  spots). Day-over-day change uses ▲/▼ and is `success`/`error` only past
+  `NOTABLE_CHANGE`, stated in the caption.
+- Pregame win chance: on a game card, a footer like the xG share (two
+  percentages over a split bar in team mark colours, favourite bold); in the
+  game preview, a `Section` with `TeamLabel`s, display-font percentages and
+  a `StackedBar` in the side colours.
+
+### Trophies
+
+- Trophy photos (`trophies/TrophyImage.tsx`) are the NHL's, shot on black,
+  so they sit in a `rounded-xl bg-black` portrait frame (2:3): small on the
+  trophies index cards, larger beside the page title on a trophy page.
+- A player's trophies show as up to three `HeroBadge`s on the hero ("6× Art
+  Ross"), using `shortTrophyName` (`lib/trophies.ts`); the career tab lists
+  them all. Franchise trophy counts are outline pills that link to the
+  trophy.
+- A trophy's "race" names the stat it's ranked by and says in the
+  description when the award is voted on, so it never reads as a forecast.
+
+### Records
+
+- Franchise people (team History): retired numbers as a display-font
+  number column beside the name; captains, coaches and GMs as stacked rows
+  (name, then the tenure in muted `text-xs`), newest first, eight shown with
+  a ghost "Show all". Coach Cups and HHOF are quiet chips.
+- Milestone moments read as a sentence: what, then the date (linked to the
+  game from 2008-09 on) and score, then muted context (age, games, goalie).
+- A goalie's Game 7 and overtime record are three `StatTile`s.
+- Streaks that run back to a game we have no data for show "4+ games", and
+  the caption says why.
 
 ### Chips and badges
 
@@ -272,7 +453,7 @@ the hero and scoreboard.
 ### Charts (Recharts)
 
 - Read the `dataviz` skill before building a new chart.
-- Series colours: `CHART_COLOURS` (`lib/chart-colours.ts`), in order. Axes and
+- Colours: by role (see Data colours). Axes and
   grid: `CHART_AXIS_COLOURS` (border-coloured lines, muted ticks). The base
   stylesheet already sets chart fonts and quiet axis lines.
 - Tooltips: `rounded-xl border bg-popover text-popover-foreground p-3 text-sm
@@ -290,13 +471,121 @@ the hero and scoreboard.
 - **Colour by series, never by rank or position.** A single-measure bar chart
   is one colour (`chart-1`); fade bars below a reference instead of
   colouring rank buckets. No pies: a ranked list with share bars reads better.
+- **Don't chart a total next to its parts.** Points = goals + assists, so
+  stack goals and assists and let the stack's height be points (career
+  stats, `player-detail/CareerTotalsChart.tsx`), in one hue (see Data
+  colours).
+- A few numbers per category (scoring rates by situation) are a small table,
+  not a grouped bar chart: see "League percentiles and ranks" and
+  `player-detail/SituationBreakdownChart.tsx` (all situations on top as the
+  total, ice time beside each rate, rates from small samples muted, a share
+  bar column from `sm` up).
 - Comparing a few players or seasons on several stats: `ComparisonBars`
   (`components/charts`), a row per stat and a bar or dot per series, best in
   bold. Not radar charts.
+- Rolling form over a season (team "Games" tab): one hue for the team, a
+  solid line for the actual share and a dashed one for the expected share,
+  a dashed 50% reference, game number on the x-axis with ticks at 1 and every
+  10th game, and y-ticks in steps of 10. Hide the first few games, where a
+  window of one or two games is noise, and say so in the caption.
+- Rolling form for a player (player "Games" tab, `player-detail/PlayerForm`):
+  one `chart-1` line for the rolling average against a dashed season
+  average, a metric toggle on the legend row inside the panel (not in the
+  section header, where it overflows on phones), and `niceAxis` ticks.
+  Skaters use a 10-game window; goalies use 5 because they play fewer games.
+  Ratios (Sv%, GAA) are pooled over the window, not averaged per game. The
+  "Stretches" table under it (last 5/10/20 vs the season) bolds values that
+  beat the season and never bolds context columns (TOI, +/-, shots against).
+- Before/after for every team (power rankings form chart): a ranked list
+  of rows, not a Recharts chart. Each row has the team, a track with a muted
+  dot for the baseline and a `chart-1` dot for the new value joined by a
+  `bg-border` line, a dashed 50% mark, then the value and the change as
+  text. Sort by the change. Colour the change `success`/`error` only past a
+  stated threshold, and say in the caption why smaller moves are noise.
+  Points against expected points uses the same rows (muted dot = expected,
+  `chart-1` dot = actual, sorted by the gap, notable gaps bold, not coloured).
+- One measure ranked across teams or players (points %, PP%, PK%, top 10
+  leaders): `RankedBars` (`components/charts`), with `RankedTeamLabel` or
+  `RankedPlayerLabel` and `niceAxis` for round ticks. Each row is a link:
+  rank, label, a `rounded-full bg-muted` track with a `chart-1` bar, the
+  value, and an optional muted meta column (record, team) from `sm` up.
+  Bars start at zero; mark a reference with `reference` (dashed, e.g. .500)
+  and `fadeBelowReference`. Stats that can't start at zero either grow from
+  a meaningful middle (`baseline` = league average; below it grows left in
+  muted ink) or use `marker="dot"` on a fitted range (save %, CF%). Never a
+  tall Recharts bar chart whose axis is only logos or headshots.
+  Rows with no page to link to (line combinations) pass `linked={false}`;
+  bars that split by category (forwards vs defence) set a `colour` per row
+  and get a `ChartLegend`.
+- Goals against expected goals for a set of skaters: `GoalsVsXgScatter`
+  (`components/charts`), headshot dots, a dashed goals = xG line, axes from
+  zero. `highlight` picks which side of the line is the story (`chart-1`);
+  the other side is muted. Above or below xG is never green or red.
+- Rank tables (category rankings): one-hue heat map. `chart-1` tint
+  strongest at 1st and gone by 11th, bottom 10 in muted text, never a
+  green/red split.
+- Line charts over games or seasons use `type="linear"`, not
+  `"monotone"`: smoothing invents values between points. Leave part
+  seasons (under 20 GP) out of season-by-season totals, and say so in the
+  caption.
+- Scatter charts with quadrants: dashed reference lines only, no tinted
+  quadrant fills (that's colour by position). The domain always includes
+  the reference lines and never goes below zero for counts. Quadrant
+  labels are neutral unless the quadrant is plainly good or bad (elite,
+  struggling); "lucky" and "unlucky" are neither. The detail panel's button
+  is an `outline` "Team page"/"Player page", not a solid ink button.
+- Time series with a season in progress (league trends): solid line for
+  full seasons, a dashed segment to a hollow dot for the partial season,
+  "so far" in the legend, tooltip, tiles and table.
+- Win probability (`game-live/WinProbabilitySection.tsx`): one line with
+  the midline at 50%, coloured and tinted in the home side colour above it
+  and the away side colour below (clip paths, not two series), y ticks
+  reading 100-50-100, a swatch + code at each end of the axis, goals as
+  hollow rings in the scorer's side colour, and power plays shaded as in
+  Game flow. `StatTile`s underneath for pregame, biggest swing and the
+  trailing team's best chance.
+- Franchise history (`team-history/FranchiseHistory.tsx`): points % by
+  season as one `chart-1` line on a fitted range in steps of .100 with a
+  dashed .500, ticks every 30 seasons, and Stanley Cup seasons as
+  `foreground` dots ringed in `card` (said in the caption, no legend). The
+  season table underneath is its table view.
+- Goal replays (`game-live/GoalReplaySection.tsx`): the full `Rink` with
+  players as side-colour circles carrying white sweater numbers, the scorer
+  ringed in `foreground`, and the puck as a small `foreground` dot with a
+  faint two-second trail. Positions are interpolated between the 10 fps
+  frames. Controls under the rink: an `outline` Play/Pause/Replay button, a
+  range scrubber and a `SegmentedControl` for speed. It plays on its own
+  unless the reader prefers reduced motion. The goals sit beside it (below
+  `xl`) as buttons in the list-row style, the selected one `bg-muted`.
+- Rink areas (`tracking/RinkAreaMap.tsx`): the NHL's 17 EDGE areas as
+  rectangles on `HalfRink` (underlay), one `chart-1` hue, the value printed
+  in each, hover text with the percentile or rank. Shade counts by share
+  (`shade="share"`: where shots come from) and rates by league standing
+  (`shade="standing"`: save %), never counts by percentile (most players
+  never shoot from far areas, so 0 ranks high). Areas off the drawing are a
+  line underneath. Captions say "bluer", not "darker", because the hue gets
+  brighter in dark mode. At most `max-w-md`.
+- Standings race (`standings/charts/PointsRaceChart.tsx`): more lines than
+  the palette has colours, so one team is `chart-1` and the rest
+  `muted-foreground` at low opacity, a division at a time. Pick the
+  highlighted team from a row of pill buttons under the chart (logo, code,
+  points, ordered by points) or by hovering its line; the tooltip lists
+  every team on that date.
+- Playoff bracket (`routes/playoffs.tsx`): seven columns (first round to
+  final and back out), series as two-row `rounded-xl border` cards with logo,
+  code, muted seed and wins, the winner bold and the loser muted. The grid
+  keeps a minimum width and scrolls sideways on phones.
+- Hand-drawn SVG charts that must stay legible on phones measure their box
+  with `useElementWidth` and draw in real pixels (text keeps its size, the
+  height steps down below 640px) rather than scaling a fixed viewBox.
 - Put a one-line caption under a chart when the scale needs explaining
   ("Values normalised per metric (0–100)").
 - Shot maps: `SHOT_DANGER_COLOURS` (goal green, high red, medium amber, low
-  blue) on the `Rink` component (full rink, game centre) or `HalfRink`
+  blue). This is the one place red and green aren't good/bad: it's the
+  convention readers know from other shot maps, so it has its own tokens
+  (`--shot-*`) and never borrows chart slots. Rink markings use `--rink-red`
+  and `--rink-blue` for the same reason. Draw them on the `Rink` component
+  (full rink, game centre) or `HalfRink`
   (`shot-explorer/`, one offensive zone; place shots with `toHalfRink`, which
   works out which net a shot was aimed at). Size is xG with an
   area-proportional radius; shape is the result (filled = on goal, ring =
@@ -305,8 +594,8 @@ the hero and scoreboard.
 - Heat maps: one hue (`chart-1`) from clear to full strength, drawn under
   the rink markings (`HalfRink underlay`). Leave out cells too small to mean
   anything and say so in the caption.
-- Pair matrices (chemistry): one triangle only, a diverging red–grey–green
-  scale around 50%, small samples faded, hover for numbers, click to pin.
+- Pair matrices (chemistry): one triangle only, a diverging `error`–grey–`success`
+  scale around 50% (above 50% xG is good), small samples faded, hover for numbers, click to pin.
 - Quadrant legends under scatter charts: neutral `rounded-xl bg-muted/60 p-2`
   tiles, with the label coloured only when it means good or bad.
 - Chart selection detail panels (click a dot): `rounded-xl border bg-card p-3`
@@ -343,6 +632,10 @@ the hero and scoreboard.
 
 - Design for 390px first, then check at 1440px.
 - Grids collapse to one column below `lg` (`grid gap-8 lg:grid-cols-2`).
+- Balance card grids by height, not by count: measure the columns at 1440px
+  and move cards (or give a wide card its own row) until no column ends far
+  above its neighbour. Short cards can sit three across at `xl` and share a row
+  at `lg` (see `TeamStatsSection`, `ShotProfile`).
 - Heroes shorten team names to codes below `sm`.
 - Wide tables scroll horizontally inside their surface. Pin the first column.
 - Fixed-width centre columns (e.g. `MirroredBar`'s label column) squeeze bars

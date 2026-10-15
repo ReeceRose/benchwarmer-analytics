@@ -70,6 +70,7 @@ export interface SeasonPercentilesResponse {
   goalsPerGame: number[];
   pointsPer60: number[];
   goalsPer60: number[];
+  gameScorePerGame: number[];
 }
 
 export interface Rookie {

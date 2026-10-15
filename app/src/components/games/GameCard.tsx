@@ -2,16 +2,18 @@ import { Link } from "@tanstack/react-router";
 import { LiveIndicator } from "@/components/shared";
 import { TeamLogo } from "@/components/team-detail/TeamLogo";
 import { formatGameTimeShort, formatPeriod } from "@/lib/game-formatters";
-import { getTeamColours } from "@/lib/team-colours";
+import { getTeamColours, teamMarkColour } from "@/lib/team-colours";
 import { getTeamName } from "@/lib/team-names";
 import { cn } from "@/lib/utils";
 import type { GameSummary, GameTeam } from "@/types";
 
 interface GameCardProps {
   game: GameSummary;
+  /** Pregame chance the home team wins (from the playoff odds model). */
+  homeWinProbability?: number;
 }
 
-export function GameCard({ game }: GameCardProps) {
+export function GameCard({ game, homeWinProbability }: GameCardProps) {
   const isCompleted = game.gameState === "OFF";
   const isLive = game.gameState === "LIVE" || game.gameState === "CRIT";
   const homeWins = isCompleted && (game.home.goals ?? 0) > (game.away.goals ?? 0);
@@ -73,11 +75,18 @@ export function GameCard({ game }: GameCardProps) {
         <XgShare away={game.away} home={game.home} />
       )}
 
-      {!isCompleted && !isLive && (game.away.streak || game.home.streak) && (
+      {!isCompleted && !isLive && (homeWinProbability !== undefined || game.away.streak || game.home.streak) && (
         <CardFooter className="text-xs text-muted-foreground">
+          {homeWinProbability !== undefined && (
+            <WinChance away={game.away} home={game.home} homeWinProbability={homeWinProbability} />
+          )}
           {game.seasonSeries && <div className="mb-0.5">{game.seasonSeries}</div>}
-          Streaks: {game.away.teamCode} {game.away.streak || "–"}, {game.home.teamCode}{" "}
-          {game.home.streak || "–"}
+          {(game.away.streak || game.home.streak) && (
+            <>
+              Streaks: {game.away.teamCode} {game.away.streak || "–"}, {game.home.teamCode}{" "}
+              {game.home.streak || "–"}
+            </>
+          )}
         </CardFooter>
       )}
     </Link>
@@ -134,10 +143,27 @@ function TeamLine({
   );
 }
 
-// Team colour for small marks on the page surface; --team-mix lightens it in
-// dark mode so navy teams stay visible.
-const teamFill = (abbrev: string) =>
-  `color-mix(in oklab, ${getTeamColours(abbrev).primary} var(--team-mix), white)`;
+// Team colour for small marks on the page surface; lightened in dark mode so
+// navy teams stay visible.
+const teamFill = (abbrev: string) => teamMarkColour(getTeamColours(abbrev).primary);
+
+/** Pregame win chances, as a bar split in the two teams' colours. */
+function WinChance({ away, home, homeWinProbability }: { away: GameTeam; home: GameTeam; homeWinProbability: number }) {
+  const awayPct = Math.round((1 - homeWinProbability) * 100);
+  return (
+    <div className="mb-3">
+      <div className="mb-1.5 flex justify-between tabular-nums">
+        <span className={cn(awayPct > 50 && "font-semibold text-foreground")}>{awayPct}%</span>
+        <span>Win chance</span>
+        <span className={cn(awayPct < 50 && "font-semibold text-foreground")}>{100 - awayPct}%</span>
+      </div>
+      <div className="flex h-1.5 overflow-hidden rounded-full bg-muted">
+        <div style={{ width: `${awayPct}%`, backgroundColor: teamFill(away.teamCode) }} />
+        <div className="flex-1 border-l-2 border-card" style={{ backgroundColor: teamFill(home.teamCode) }} />
+      </div>
+    </div>
+  );
+}
 
 /** Share of expected goals, as a bar split in the two teams' colours. */
 function XgShare({ away, home }: { away: GameTeam; home: GameTeam }) {

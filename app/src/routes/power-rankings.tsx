@@ -3,13 +3,7 @@ import { seasonsQueryOptions } from "@/hooks/useSeasons";
 import { usePowerRankings, useSeasons, usePageTitle } from "@/hooks";
 import { getCurrentSeason } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -17,10 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ErrorState, SortableTableHeader, TableSkeleton } from "@/components/shared";
-import { MetricGuide, PageHeader, ViewToggle } from "@/components/layout";
+import { ErrorState, SeasonSelector, SortableTableHeader, TableSkeleton } from "@/components/shared";
+import { ChartLegend } from "@/components/charts/ChartLegend";
+import { EmptyState, MetricGuide, PageHeader, ViewToggle } from "@/components/layout";
 import { TeamRow, RegressionCard } from "@/components/power-rankings";
 import {
+  FormShiftChart,
   TeamRankingBars,
   LuckQuadrantChart,
   PointsExpectedChart,
@@ -48,12 +44,15 @@ const sortKeySchema = z.enum([
   "ppPct",
   "pkPct",
   "xGoalsPct",
+  "recentXGoalsPct",
   "corsiPct",
   "fenwickPct",
   "shootingPct",
   "savePct",
   "pdo",
   "pointsDiff",
+  "scheduleStrength",
+  "remainingScheduleStrength",
 ]);
 
 type SortKey = z.infer<typeof sortKeySchema>;
@@ -161,21 +160,10 @@ function PowerRankingsPage() {
         description="Standings and underlying numbers side by side, to show which teams are better or worse than their record."
         actions={
           <>
-            <Select
-              value={String(effectiveSeason ?? "")}
-              onValueChange={(v) => updateSearch({ season: parseInt(v) })}
-            >
-              <SelectTrigger className="w-32" aria-label="Season">
-                <SelectValue placeholder="Season" />
-              </SelectTrigger>
-              <SelectContent>
-                {seasonsData?.seasons?.map((s) => (
-                  <SelectItem key={s.year} value={String(s.year)}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SeasonSelector
+              value={effectiveSeason}
+              onValueChange={(v) => v != null && updateSearch({ season: v })}
+            />
             <ViewToggle
               value={currentView}
               onValueChange={(view) => updateSearch({ view })}
@@ -185,7 +173,7 @@ function PowerRankingsPage() {
       />
 
       <MetricGuide
-        metrics={["Pts%", "xG±", "xPts", "xG%", "CF%", "FF%", "Sh%", "Sv%", "PDO", "Pts±", "PP%", "PK%"]}
+        metrics={["Pts%", "xG±", "xPts", "xG%", "L10 xG%", "CF%", "FF%", "Sh%", "Sv%", "PDO", "Pts±", "SOS", "Rem. SOS", "PP%", "PK%"]}
       />
 
       {isCurrentSeason &&
@@ -195,13 +183,13 @@ function PowerRankingsPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <RegressionCard
               title="Likely to improve"
-              icon="up"
+              description="Underlying numbers better than the record."
               candidates={data.insights.likelyToImprove}
               season={effectiveSeason}
             />
             <RegressionCard
               title="Likely to regress"
-              icon="down"
+              description="Record better than the underlying numbers."
               candidates={data.insights.likelyToRegress}
               season={effectiveSeason}
             />
@@ -217,7 +205,11 @@ function PowerRankingsPage() {
       )}
 
       {isLoading ? (
-        <TableSkeleton rows={10} columns={12} />
+        currentView === "charts" ? (
+          <ChartsSkeleton />
+        ) : (
+          <TableSkeleton rows={10} columns={12} />
+        )
       ) : data?.teams && data.teams.length > 0 ? (
         currentView === "charts" ? (
           <ChartsView teams={data.teams} season={effectiveSeason} />
@@ -231,16 +223,18 @@ function PowerRankingsPage() {
           />
         )
       ) : (
-        <p className="py-12 text-center text-muted-foreground">
-          No rankings for this season yet. Try another season.
-        </p>
+        !error && (
+          <EmptyState
+            title="No rankings for this season yet"
+            hint="Pick another season from the menu above."
+          />
+        )
       )}
     </div>
   );
 }
 
-// Charts View Component
-
+// Record first, then whether it's deserved, then recent form, then the why.
 function ChartsView({
   teams,
   season,
@@ -250,14 +244,32 @@ function ChartsView({
 }) {
   return (
     <div className="space-y-6">
-      <TeamRankingBars teams={teams} season={season} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LuckQuadrantChart teams={teams} season={season} />
-        <QualityVsQuantityChart teams={teams} season={season} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <TeamRankingBars teams={teams} season={season} />
+        <PointsExpectedChart teams={teams} season={season} />
       </div>
 
-      <PointsExpectedChart teams={teams} season={season} />
+      <FormShiftChart teams={teams} season={season} />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <QualityVsQuantityChart teams={teams} season={season} />
+        <LuckQuadrantChart teams={teams} season={season} />
+      </div>
+    </div>
+  );
+}
+
+function ChartsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Skeleton className="h-256 rounded-2xl" />
+        <Skeleton className="h-256 rounded-2xl" />
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Skeleton className="h-136 rounded-2xl" />
+        <Skeleton className="h-136 rounded-2xl" />
+      </div>
     </div>
   );
 }
@@ -278,10 +290,10 @@ function TableView({
 }) {
   return (
     <>
-      <Card className="py-0 gap-0">
+      <Card className="gap-0 overflow-hidden py-0">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table className="table-fixed min-w-400">
+            <Table className="table-fixed min-w-460">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">#</TableHead>
@@ -475,6 +487,16 @@ function TableView({
                     className="w-14"
                   />
                   <SortableTableHeader
+                    label="L10 xG%"
+                    metric="L10 xG%"
+                    sortKey="recentXGoalsPct"
+                    currentSort={sortKey}
+                    sortDesc={sortDesc}
+                    onSort={onSort}
+                    isHighlighted={sortKey === "recentXGoalsPct"}
+                    className="w-20"
+                  />
+                  <SortableTableHeader
                     label="CF%"
                     tooltip="Corsi percentage (shot attempt share)"
                     metric="CF%"
@@ -540,6 +562,26 @@ function TableView({
                     isHighlighted={sortKey === "pointsDiff"}
                     className="w-14"
                   />
+                  <SortableTableHeader
+                    label="SOS"
+                    metric="SOS"
+                    sortKey="scheduleStrength"
+                    currentSort={sortKey}
+                    sortDesc={sortDesc}
+                    onSort={onSort}
+                    isHighlighted={sortKey === "scheduleStrength"}
+                    className="w-16"
+                  />
+                  <SortableTableHeader
+                    label="Rem. SOS"
+                    metric="Rem. SOS"
+                    sortKey="remainingScheduleStrength"
+                    currentSort={sortKey}
+                    sortDesc={sortDesc}
+                    onSort={onSort}
+                    isHighlighted={sortKey === "remainingScheduleStrength"}
+                    className="w-20"
+                  />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -556,24 +598,14 @@ function TableView({
           </div>
         </CardContent>
       </Card>
-      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-[3px] bg-success" />
-          <span className="text-muted-foreground">
-            Strong, or underperforming (room to improve)
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-[3px] bg-muted-foreground" />
-          <span className="text-muted-foreground">Average, or sustainable</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-[3px] bg-error" />
-          <span className="text-muted-foreground">
-            Weak, or overperforming (likely to regress)
-          </span>
-        </div>
-      </div>
+      <ChartLegend
+        className="mt-3"
+        items={[
+          { label: "Strong, or below expected (room to improve)", colour: "var(--success)" },
+          { label: "Average, or sustainable", colour: "var(--muted-foreground)" },
+          { label: "Weak, or above expected (likely to regress)", colour: "var(--error)" },
+        ]}
+      />
     </>
   );
 }

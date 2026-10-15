@@ -8,7 +8,9 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { CHART_AXIS_COLOURS, CHART_GRADIENT_COLOURS } from "@/lib/chart-colours";
+import { niceAxis } from "@/components/charts/nice-axis";
+import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
+import { formatSavePct } from "@/lib/formatters";
 import { GoalieGameTooltip } from "@/components/goalie-workload/GoalieGameTooltip";
 
 interface ChartDataPoint {
@@ -25,29 +27,17 @@ interface SavePercentageChartProps {
 }
 
 export function SavePercentageChart({ data }: SavePercentageChartProps) {
+  // Round ticks that always take in .900 and 1.000, however bad a night got.
+  const { domain, ticks } = niceAxis([0.9, 1, ...data.map((d) => d.savePercentage)]);
   return (
     <div>
-      <h4 className="text-sm font-medium mb-2">Save percentage trend</h4>
+      <h4 className="mb-2 text-sm font-medium">Save %</h4>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={data}
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
           >
-            <defs>
-              <linearGradient id="svPctGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor={CHART_GRADIENT_COLOURS.primary}
-                  stopOpacity={0.3}
-                />
-                <stop
-                  offset="95%"
-                  stopColor={CHART_GRADIENT_COLOURS.primary}
-                  stopOpacity={0}
-                />
-              </linearGradient>
-            </defs>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={CHART_AXIS_COLOURS.grid}
@@ -62,9 +52,10 @@ export function SavePercentageChart({ data }: SavePercentageChartProps) {
             />
             <YAxis
               tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 10 }}
-              width={45}
-              domain={[0.85, 1.0]}
-              tickFormatter={(v) => v.toFixed(3)}
+              width={44}
+              domain={domain}
+              ticks={ticks}
+              tickFormatter={(v: number) => formatSavePct(v)}
               stroke={CHART_AXIS_COLOURS.grid}
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
             />
@@ -82,19 +73,19 @@ export function SavePercentageChart({ data }: SavePercentageChartProps) {
               stroke={CHART_AXIS_COLOURS.tick}
               strokeDasharray="5 5"
               label={{
-                value: "Avg (.910)",
-                position: "right",
-                fontSize: 9,
+                value: "League average .910",
+                position: "insideBottomRight",
+                fontSize: 10,
                 fill: CHART_AXIS_COLOURS.tick,
               }}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="savePercentage"
-              stroke={CHART_GRADIENT_COLOURS.primary}
+              stroke="var(--chart-1)"
               strokeWidth={2}
               dot={{
-                fill: CHART_GRADIENT_COLOURS.primary,
+                fill: "var(--chart-1)",
                 strokeWidth: 0,
                 r: 3,
               }}

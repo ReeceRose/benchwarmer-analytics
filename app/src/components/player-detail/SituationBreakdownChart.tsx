@@ -1,31 +1,33 @@
 import { useMemo } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHART_AXIS_COLOURS, CHART_COLOURS } from "@/lib/chart-colours";
+import { Panel, Section } from "@/components/layout";
+import { cn } from "@/lib/utils";
 import type { SkaterStats } from "@/types";
 
+/** Below this much ice time a rate is too noisy to read much into. */
+const MIN_TOI_MINUTES = 20;
+
+const SITUATIONS = [
+  { key: "all", label: "All situations" },
+  { key: "5on5", label: "5v5" },
+  { key: "5on4", label: "Power play" },
+  { key: "4on5", label: "Shorthanded" },
+] as const;
+
 type Row = {
+  key: string;
   label: string;
-  key: "5on5" | "5on4" | "4on5";
-  pointsPer60: number;
-  goalsPer60: number;
-  assistsPer60: number;
   toiMinutes: number;
+  goals: number;
+  assists: number;
+  points: number;
 };
 
-function per60(value: number, iceTimeSeconds: number): number {
-  if (iceTimeSeconds <= 0) return 0;
-  return value / (iceTimeSeconds / 3600);
-}
+const per60 = (value: number, minutes: number) => (minutes > 0 ? (value / minutes) * 60 : 0);
 
+/**
+ * Scoring rates by situation for one regular season, with ice time and each
+ * situation's share of the player's points.
+ */
 export function SituationBreakdownChart({
   stats,
   season,
@@ -33,151 +35,83 @@ export function SituationBreakdownChart({
   stats: SkaterStats[];
   season: number;
 }) {
-  const data = useMemo(() => {
+  const rows = useMemo<Row[]>(() => {
     const seasonStats = stats.filter((s) => !s.isPlayoffs && s.season === season);
-
-    const bySituation = new Map<string, { points: number; goals: number; assists: number; toi: number }>();
-    for (const s of seasonStats) {
-      if (s.situation !== "5on5" && s.situation !== "5on4" && s.situation !== "4on5") continue;
-      const key = s.situation;
-      const existing = bySituation.get(key) ?? { points: 0, goals: 0, assists: 0, toi: 0 };
-      existing.points += s.points;
-      existing.goals += s.goals;
-      existing.assists += s.assists;
-      existing.toi += s.iceTimeSeconds;
-      bySituation.set(key, existing);
-    }
-
-    const rows: Row[] = [
-      { key: "5on5", label: "5v5", pointsPer60: 0, goalsPer60: 0, assistsPer60: 0, toiMinutes: 0 },
-      { key: "5on4", label: "PP", pointsPer60: 0, goalsPer60: 0, assistsPer60: 0, toiMinutes: 0 },
-      { key: "4on5", label: "SH", pointsPer60: 0, goalsPer60: 0, assistsPer60: 0, toiMinutes: 0 },
-    ];
-
-    for (const row of rows) {
-      const agg = bySituation.get(row.key);
-      if (!agg) continue;
-      row.pointsPer60 = Number(per60(agg.points, agg.toi).toFixed(2));
-      row.goalsPer60 = Number(per60(agg.goals, agg.toi).toFixed(2));
-      row.assistsPer60 = Number(per60(agg.assists, agg.toi).toFixed(2));
-      row.toiMinutes = Math.round(agg.toi / 60);
-    }
-
-    return rows;
+    return SITUATIONS.map(({ key, label }) => {
+      const row: Row = { key, label, toiMinutes: 0, goals: 0, assists: 0, points: 0 };
+      for (const s of seasonStats) {
+        if (s.situation !== key) continue;
+        row.toiMinutes += s.iceTimeSeconds / 60;
+        row.goals += s.goals;
+        row.assists += s.assists;
+        row.points += s.points;
+      }
+      return row;
+    });
   }, [stats, season]);
 
-  const totalToi = data.reduce((sum, d) => sum + d.toiMinutes, 0);
-  if (totalToi === 0) return null;
+  const total = rows[0];
+  if (total.toiMinutes === 0) return null;
 
   return (
-    <Card className="mt-6">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Situation breakdown</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={CHART_AXIS_COLOURS.grid}
-              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-            />
-            <XAxis
-              dataKey="label"
-              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
-              stroke={CHART_AXIS_COLOURS.grid}
-              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-            />
-            <YAxis
-              tick={{ fill: CHART_AXIS_COLOURS.tick, fontSize: 12 }}
-              width={45}
-              tickFormatter={(v: number) => v.toFixed(1)}
-              stroke={CHART_AXIS_COLOURS.grid}
-              strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-            />
-            <Tooltip
-              cursor={{ fill: "var(--muted)", fillOpacity: 0.25 }}
-              content={({ active, payload, label }) => {
-                const row = payload?.[0]?.payload as Row | undefined;
-                if (!active || !row) return null;
-                return (
-                  <div className="rounded-xl border bg-popover text-popover-foreground shadow-lg shadow-black/5 p-3 text-sm">
-                    <p className="font-semibold mb-2">{label}</p>
-                    <div className="space-y-1 text-xs">
-                      <div className="flex justify-between gap-4">
-                        <span className="text-muted-foreground">Goals/60</span>
-                        <span className="tabular-nums font-semibold">{row.goalsPer60.toFixed(2)}</span>
+    <Section
+      title="By situation"
+      description={`Scoring rates per 60 minutes this regular season. Rates from under ${MIN_TOI_MINUTES} minutes are muted.`}
+    >
+      <Panel className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-xs">
+              <th className="pb-2 text-left font-medium">Situation</th>
+              <th className="pb-2 pl-3 text-right font-medium">TOI</th>
+              <th className="pb-2 pl-3 text-right font-medium">G/60</th>
+              <th className="pb-2 pl-3 text-right font-medium">A/60</th>
+              <th className="pb-2 pl-3 text-right font-medium">P/60</th>
+              <th className="hidden pb-2 pl-6 text-left font-medium sm:table-cell">Share of points</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const none = r.toiMinutes === 0;
+              const small = r.toiMinutes < MIN_TOI_MINUTES;
+              const share = i > 0 && total.points > 0 ? r.points / total.points : null;
+              const rate = (v: number) => (none ? "–" : per60(v, r.toiMinutes).toFixed(2));
+              return (
+                <tr
+                  key={r.key}
+                  className={cn(
+                    none && "text-muted-foreground",
+                    i === 0 && "[&>td]:border-b [&>td]:pb-2",
+                    i === 1 && "[&>td]:pt-2",
+                  )}
+                >
+                  <td className={cn("py-1.5 pr-3 whitespace-nowrap", i === 0 && "font-medium")}>{r.label}</td>
+                  <td className="py-1.5 pl-3 text-right text-muted-foreground">
+                    {none ? "–" : `${Math.round(r.toiMinutes).toLocaleString()} min`}
+                  </td>
+                  <td className={cn("py-1.5 pl-3 text-right", small && "text-muted-foreground")}>{rate(r.goals)}</td>
+                  <td className={cn("py-1.5 pl-3 text-right", small && "text-muted-foreground")}>{rate(r.assists)}</td>
+                  <td className={cn("py-1.5 pl-3 text-right font-semibold", small && "font-normal text-muted-foreground")}>
+                    {rate(r.points)}
+                  </td>
+                  <td className="hidden py-1.5 pl-6 sm:table-cell">
+                    {share != null && (
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-full max-w-48 overflow-hidden rounded-full bg-muted">
+                          <div className="h-full rounded-full bg-chart-1" style={{ width: `${share * 100}%` }} />
+                        </div>
+                        <span className="w-20 text-xs text-muted-foreground tabular-nums">
+                          {Math.round(share * 100)}% · {r.points} P
+                        </span>
                       </div>
-                      <div className="flex justify-between gap-4">
-                        <span className="text-muted-foreground">Assists/60</span>
-                        <span className="tabular-nums font-semibold">{row.assistsPer60.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <span className="text-muted-foreground">Points/60</span>
-                        <span className="tabular-nums font-semibold">{row.pointsPer60.toFixed(2)}</span>
-                      </div>  
-                      <div className="flex justify-between gap-4 pt-2 border-t">
-                        <span className="text-muted-foreground">TOI</span>
-                        <span className="font-medium tabular-nums">{row.toiMinutes}m</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }}
-            />
-            <Bar
-              dataKey="goalsPer60"
-              name="Goals/60"
-              fill={CHART_COLOURS[2]}
-              radius={[6, 6, 0, 0]}
-            />
-            <Bar
-              dataKey="assistsPer60"
-              name="Assists/60"
-              fill={CHART_COLOURS[3]}
-              radius={[6, 6, 0, 0]}
-            />
-            <Bar
-              dataKey="pointsPer60"
-              name="Points/60"
-              fill={CHART_COLOURS[0]}
-              radius={[6, 6, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-
-        <div
-          className="mt-2 flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground"
-          aria-label="Chart legend"
-        >
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-2 w-2 rounded-sm"
-              style={{ backgroundColor: CHART_COLOURS[2] }}
-            />
-            <span>Goals/60</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-2 w-2 rounded-sm"
-              style={{ backgroundColor: CHART_COLOURS[3] }}
-            />
-            <span>Assists/60</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-2 w-2 rounded-sm"
-              style={{ backgroundColor: CHART_COLOURS[0] }}
-            />
-            <span>Points/60</span>
-          </div>
-        </div>
-
-        <p className="text-xs text-muted-foreground mt-2">
-          Rate stats by situation for the selected season. Tooltip includes TOI for context.
-        </p>
-      </CardContent>
-    </Card>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Panel>
+    </Section>
   );
 }
-

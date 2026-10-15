@@ -267,7 +267,7 @@ export function CareerTrajectory({ stats, className }: CareerTrajectoryProps) {
                 }}
               />
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="value"
                 stroke={CHART_COLOURS[0]}
                 strokeWidth={2}

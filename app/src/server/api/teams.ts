@@ -8,6 +8,7 @@ import {
   lineCombinations,
   players,
   skaterSeasons,
+  teamGames,
   teamSeasons,
   teams,
 } from "@/server/db/schema";
@@ -15,7 +16,7 @@ import type { ApiContext } from "@/server/api/handler";
 import { ApiError, badRequest, notFound } from "@/server/api/errors";
 import { groupBy, headshotUrl, round, seasonLabel, sum, todayUtc } from "@/server/api/format";
 import { currentSeason } from "@/server/ingestion/normalize";
-import { GameState, VALID_SITUATIONS } from "@/server/api/constants";
+import { GameState, isFinalState, VALID_SITUATIONS } from "@/server/api/constants";
 import { alias } from "drizzle-orm/pg-core";
 
 type TeamRow = typeof teams.$inferSelect;
@@ -509,6 +510,45 @@ export function penaltyKillSummary(stats: TeamSeasonRow | undefined, rank: numbe
   };
 }
 
+// Penalties drawn and taken (all situations) per 60, ranked in the league.
+// MoneyPuck's penaltiesAgainst = penalties the opponent took (drawn).
+export function penaltySummary(allTeams: readonly TeamSeasonRow[], abbrev: string) {
+  const rates = allTeams
+    .filter((t) => t.iceTime > 0)
+    .map((t) => {
+      const per60 = (n: number) => (n / t.iceTime) * 3600;
+      return {
+        team: t.teamAbbreviation,
+        row: t,
+        drawnPer60: per60(t.penaltiesAgainst),
+        takenPer60: per60(t.penaltiesFor),
+        netPer60: per60(t.penaltiesAgainst - t.penaltiesFor),
+      };
+    });
+  const own = rates.find((r) => r.team === abbrev);
+  if (!own) return null;
+  const key = (r: (typeof rates)[number]) => r.team;
+  const average = (value: (r: (typeof rates)[number]) => number) =>
+    round(rates.reduce((total, r) => total + value(r), 0) / rates.length, 2);
+  const { row } = own;
+  return {
+    drawn: row.penaltiesAgainst,
+    taken: row.penaltiesFor,
+    net: row.penaltiesAgainst - row.penaltiesFor,
+    drawnPer60: round(own.drawnPer60, 2),
+    takenPer60: round(own.takenPer60, 2),
+    netPer60: round(own.netPer60, 2),
+    pimDrawn: row.penaltyMinutesAgainst,
+    pimTaken: row.penaltyMinutesFor,
+    // 1 = draws the most, takes the fewest, best differential.
+    drawnRank: rankBy(rates, (r) => r.drawnPer60, key).get(abbrev) ?? 0,
+    takenRank: rankBy(rates, (r) => -r.takenPer60, key).get(abbrev) ?? 0,
+    netRank: rankBy(rates, (r) => r.netPer60, key).get(abbrev) ?? 0,
+    leagueDrawnPer60: average((r) => r.drawnPer60),
+    leagueTakenPer60: average((r) => r.takenPer60),
+  };
+}
+
 // Every team's season row, ordered by xG% (NULLs first, as Postgres sorts
 // DESC), which is the tiebreak for the stable re-sorts below.
 export function getTeamSeasonsForSeason(db: Database, season: number, situation: string, playoffs: boolean) {
@@ -531,9 +571,10 @@ export async function getSpecialTeams({ db, params, query }: ApiContext) {
   const playoffs = query.bool("playoffs") ?? false;
   await requireTeam(db, abbrev);
 
-  const [allPp, allPk] = await Promise.all([
+  const [allPp, allPk, allSituations] = await Promise.all([
     getTeamSeasonsForSeason(db, season, "5on4", playoffs),
     getTeamSeasonsForSeason(db, season, "4on5", playoffs),
+    getTeamSeasonsForSeason(db, season, "all", playoffs),
   ]);
   const ppStats = allPp.find((t) => t.teamAbbreviation === abbrev);
   const pkStats = allPk.find((t) => t.teamAbbreviation === abbrev);
@@ -546,6 +587,7 @@ export async function getSpecialTeams({ db, params, query }: ApiContext) {
     // A team with no row for the situation gets rank 0.
     powerPlay: powerPlaySummary(ppStats, ppRanks.get(abbrev) ?? 0),
     penaltyKill: penaltyKillSummary(pkStats, pkRanks.get(abbrev) ?? 0),
+    penalties: penaltySummary(allSituations, abbrev),
   };
 }
 
@@ -800,4 +842,113 @@ export async function getScoreStateStats({ db, params, query }: ApiContext) {
     tied: scoreStateBreakdown("tied", aggregations, hasTime ? time.tied : null),
     total: scoreStateBreakdown(null, aggregations, totalTime > 0 ? totalTime : null),
   };
+}
+
+// One situation of a team's game: MoneyPuck counts (goals exclude shootouts).
+export interface TeamGameSplit {
+  goalsFor: number;
+  goalsAgainst: number;
+  xGoalsFor: number;
+  xGoalsAgainst: number;
+  shotAttemptsFor: number;
+  shotAttemptsAgainst: number;
+}
+
+type TeamGameLogRow = {
+  gameId: string;
+  gameDate: string;
+  opponent: string;
+  isHome: boolean;
+  situation: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  periodType: string | null;
+  gameState: string | null;
+} & TeamGameSplit;
+
+function toSplit(r: TeamGameSplit): TeamGameSplit {
+  return {
+    goalsFor: r.goalsFor,
+    goalsAgainst: r.goalsAgainst,
+    xGoalsFor: round(r.xGoalsFor, 2),
+    xGoalsAgainst: round(r.xGoalsAgainst, 2),
+    shotAttemptsFor: r.shotAttemptsFor,
+    shotAttemptsAgainst: r.shotAttemptsAgainst,
+  };
+}
+
+// "W", "L" or "OTL" from the final score (shootouts included); null until final.
+export function gameResult(teamScore: number, opponentScore: number, periodType: string | null): "W" | "L" | "OTL" {
+  if (teamScore > opponentScore) return "W";
+  return periodType === "OT" || periodType === "SO" ? "OTL" : "L";
+}
+
+// Rows ordered by date, two per game ("all" and "5on5") → one entry per game.
+export function buildTeamGameLog(rows: readonly TeamGameLogRow[]) {
+  const games = new Map<string, TeamGameLogRow[]>();
+  for (const row of rows) {
+    const list = games.get(row.gameId);
+    if (list) list.push(row);
+    else games.set(row.gameId, [row]);
+  }
+  return [...games.values()].flatMap((parts) => {
+    const all = parts.find((p) => p.situation === "all");
+    if (!all) return [];
+    const fiveOnFive = parts.find((p) => p.situation === "5on5");
+    const final = isFinalState(all.gameState) && all.homeScore !== null && all.awayScore !== null;
+    const teamScore = final ? (all.isHome ? all.homeScore! : all.awayScore!) : null;
+    const opponentScore = final ? (all.isHome ? all.awayScore! : all.homeScore!) : null;
+    return [{
+      gameId: all.gameId,
+      gameDate: all.gameDate,
+      opponent: all.opponent,
+      isHome: all.isHome,
+      teamScore,
+      opponentScore,
+      periodType: final ? all.periodType : null,
+      result: teamScore !== null && opponentScore !== null ? gameResult(teamScore, opponentScore, all.periodType) : null,
+      all: toSplit(all),
+      fiveOnFive: fiveOnFive ? toSplit(fiveOnFive) : null,
+    }];
+  });
+}
+
+export async function getTeamGameLog({ db, params, query }: ApiContext) {
+  const abbrev = params.abbrev;
+  if (!abbrev.trim() || abbrev.length > 3) badRequest("Invalid team abbreviation");
+  await requireTeam(db, abbrev);
+  const season = query.int("season") ?? currentSeason();
+  const playoffs = query.bool("playoffs") ?? false;
+
+  const rows = await db
+    .select({
+      gameId: teamGames.gameId,
+      gameDate: teamGames.gameDate,
+      opponent: teamGames.opponentAbbreviation,
+      isHome: teamGames.isHome,
+      situation: teamGames.situation,
+      goalsFor: teamGames.goalsFor,
+      goalsAgainst: teamGames.goalsAgainst,
+      xGoalsFor: teamGames.xGoalsFor,
+      xGoalsAgainst: teamGames.xGoalsAgainst,
+      shotAttemptsFor: teamGames.shotAttemptsFor,
+      shotAttemptsAgainst: teamGames.shotAttemptsAgainst,
+      homeScore: games.homeScore,
+      awayScore: games.awayScore,
+      periodType: games.periodType,
+      gameState: games.gameState,
+    })
+    .from(teamGames)
+    .leftJoin(games, eq(games.gameId, teamGames.gameId))
+    .where(
+      and(
+        eq(teamGames.teamAbbreviation, abbrev),
+        eq(teamGames.season, season),
+        eq(teamGames.isPlayoffs, playoffs),
+        inArray(teamGames.situation, ["all", "5on5"]),
+      ),
+    )
+    .orderBy(asc(teamGames.gameDate), asc(teamGames.gameId));
+
+  return { teamAbbreviation: abbrev, season, isPlayoffs: playoffs, games: buildTeamGameLog(rows) };
 }

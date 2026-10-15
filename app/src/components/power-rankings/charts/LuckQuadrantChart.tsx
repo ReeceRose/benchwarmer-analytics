@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Label,
-  ReferenceArea,
 } from "recharts";
 import {
   Card,
@@ -19,7 +18,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, ExternalLink } from "lucide-react";
+import { X } from "lucide-react";
 import { TeamLogo } from "@/components/shared";
 import { CHART_AXIS_COLOURS } from "@/lib/chart-colours";
 import { getTeamLogoUrl } from "@/lib/team-logos";
@@ -76,10 +75,10 @@ function CustomTooltip({
           <span className="text-muted-foreground">Save %:</span>{" "}
           <span className="tabular-nums">{data.savePct.toFixed(1)}%</span>
         </p>
-        <p className={isLucky ? "text-warning" : "text-success"}>
+        <p>
           <span className="text-muted-foreground">PDO:</span>{" "}
           <span className="tabular-nums font-semibold">{data.pdo.toFixed(1)}</span>
-          <span className="ml-1">({isLucky ? "Lucky" : "Unlucky"})</span>
+          <span className="ml-1 text-muted-foreground">({isLucky ? "running hot" : "running cold"})</span>
         </p>
       </div>
     </div>
@@ -145,10 +144,8 @@ function SelectionPanel({
           <div className="min-w-0">
             <p className="font-semibold truncate">
               {data.name}
-              <span
-                className={`ml-2 text-xs ${isLucky ? "text-warning" : "text-success"}`}
-              >
-                {isLucky ? "Lucky" : "Unlucky"}
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {isLucky ? "Running hot" : "Running cold"}
               </span>
             </p>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -167,11 +164,10 @@ function SelectionPanel({
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button size="sm" variant="default" onClick={onNavigate}>
-            View
-            <ExternalLink className="h-3 w-3 ml-1" />
+          <Button size="sm" variant="outline" onClick={onNavigate}>
+            Team page
           </Button>
-          <Button size="sm" variant="ghost" onClick={onClose}>
+          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -232,18 +228,18 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
   // Calculate domain with padding
   const shPcts = chartData.map((d) => d.shootingPct);
   const svPcts = chartData.map((d) => d.savePct);
-  const xMin = Math.floor(Math.min(...shPcts) - 1);
-  const xMax = Math.ceil(Math.max(...shPcts) + 1);
-  const yMin = Math.floor((Math.min(...svPcts) - 0.5) * 10) / 10;
-  const yMax = Math.ceil((Math.max(...svPcts) + 0.5) * 10) / 10;
+  const xMin = Math.floor(Math.min(AVG_SHOOTING_PCT, ...shPcts) - 1);
+  const xMax = Math.ceil(Math.max(AVG_SHOOTING_PCT, ...shPcts) + 1);
+  const yMin = Math.floor((Math.min(AVG_SAVE_PCT, ...svPcts) - 0.5) * 10) / 10;
+  const yMax = Math.ceil((Math.max(AVG_SAVE_PCT, ...svPcts) + 0.5) * 10) / 10;
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Luck quadrant (Sh% vs Sv%)</CardTitle>
+        <CardTitle className="text-base">Shooting vs save percentage</CardTitle>
         <CardDescription>
-          PDO components - teams in upper-right are "lucky", lower-left are
-          "unlucky"
+          The two halves of PDO. Teams top right are running hot and tend to
+          cool off; teams bottom left are running cold.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -253,39 +249,6 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
               strokeDasharray="3 3"
               stroke={CHART_AXIS_COLOURS.grid}
               strokeOpacity={CHART_AXIS_COLOURS.gridOpacity}
-            />
-
-            <ReferenceArea
-              x1={xMin}
-              x2={AVG_SHOOTING_PCT}
-              y1={AVG_SAVE_PCT}
-              y2={yMax}
-              fill="var(--chart-1)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={AVG_SHOOTING_PCT}
-              x2={xMax}
-              y1={AVG_SAVE_PCT}
-              y2={yMax}
-              fill="var(--chart-4)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={xMin}
-              x2={AVG_SHOOTING_PCT}
-              y1={yMin}
-              y2={AVG_SAVE_PCT}
-              fill="var(--chart-3)"
-              fillOpacity={0.08}
-            />
-            <ReferenceArea
-              x1={AVG_SHOOTING_PCT}
-              x2={xMax}
-              y1={yMin}
-              y2={AVG_SAVE_PCT}
-              fill="var(--chart-2)"
-              fillOpacity={0.08}
             />
 
             <XAxis
@@ -359,34 +322,27 @@ export function LuckQuadrantChart({ teams, season }: LuckQuadrantChartProps) {
         )}
 
         <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-center">
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium">Good defense</span>
-            <p className="text-muted-foreground">High Sv%, Low Sh%</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Goaltending carrying</span>
+            <p className="text-muted-foreground">High Sv%, low Sh%</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium text-warning">Lucky</span>
-            <p className="text-muted-foreground">High Sv%, High Sh%</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Running hot</span>
+            <p className="text-muted-foreground">High Sv%, high Sh%</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium text-success">Unlucky</span>
-            <p className="text-muted-foreground">Low Sv%, Low Sh%</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Running cold</span>
+            <p className="text-muted-foreground">Low Sv%, low Sh%</p>
           </div>
-          <div
-            className="rounded-xl bg-muted/60 p-2"
-          >
-            <span className="font-medium">Good offense</span>
-            <p className="text-muted-foreground">Low Sv%, High Sh%</p>
+          <div className="rounded-xl bg-muted/60 p-2">
+            <span className="font-medium">Shooters carrying</span>
+            <p className="text-muted-foreground">Low Sv%, high Sh%</p>
           </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-3 sm:hidden">
-          Tap a team to see details
+        <p className="mt-3 text-xs text-muted-foreground">
+          Dashed lines are league average ({AVG_SHOOTING_PCT.toFixed(1)}% Sh, {AVG_SAVE_PCT.toFixed(1)}% Sv).
+          <span className="sm:hidden"> Tap a team for details.</span>
         </p>
       </CardContent>
     </Card>

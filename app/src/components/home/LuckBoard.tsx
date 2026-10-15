@@ -14,20 +14,23 @@ export interface LuckRow {
 }
 
 /**
- * Diverging bar list: players doing better than expected extend right in
- * green, worse than expected extend left in red. Names sit on the side
- * opposite their bar so both halves stay readable.
+ * Diverging bar list: positive values extend right, negative left. Names sit
+ * on the side opposite their bar so both halves stay readable. With `goodBad`
+ * (GSAx) the sides are success/error; otherwise (goals vs xG, which is
+ * neither good nor bad) right is `chart-1` and left muted ink.
  */
 export function LuckBoard({
   rows,
   negativeLabel,
   positiveLabel,
   valueLabel,
+  goodBad = false,
 }: {
   rows: LuckRow[];
   negativeLabel: string;
   positiveLabel: string;
   valueLabel: string;
+  goodBad?: boolean;
 }) {
   if (rows.length === 0) {
     return (
@@ -54,7 +57,9 @@ export function LuckBoard({
           <div
             className={cn(
               "h-2.5 rounded-full",
-              positive ? "bg-chart-3" : "bg-chart-2",
+              goodBad
+                ? positive ? "bg-success" : "bg-error"
+                : positive ? "bg-chart-1" : "bg-muted-foreground",
             )}
             style={{ width }}
           />
@@ -79,7 +84,7 @@ export function LuckBoard({
             <span
               className={cn(
                 "text-center font-semibold tabular-nums",
-                positive ? "text-success" : "text-error",
+                goodBad && (positive ? "text-success" : "text-error"),
               )}
             >
               {positive ? "+" : "−"}

@@ -157,17 +157,23 @@ export function getXgDiffColour(diff: number | null | undefined): string {
   return "text-foreground";
 }
 
-const NHL_TEAM_COUNT = 32;
-const TOP_TIER_THRESHOLD = 10;
-const BOTTOM_TIER_THRESHOLD = NHL_TEAM_COUNT - TOP_TIER_THRESHOLD + 1; // 23
-
 /**
- * Rank colour - top 10 is good (green), bottom 10 is bad (red).
- * For league rankings where 1 is best and 32 is worst.
+ * League percentile (0-100, higher is better): top quarter success, bottom
+ * quarter error, the second quarter a warning.
  */
-export function getRankColour(rank: number | null | undefined): string {
-  if (rank == null) return "text-muted-foreground";
-  if (rank <= TOP_TIER_THRESHOLD) return "text-success";
-  if (rank >= BOTTOM_TIER_THRESHOLD) return "text-error";
-  return "text-foreground";
+export function getPercentileColour(pctl: number | null | undefined): string {
+  if (pctl == null) return "text-muted-foreground";
+  if (pctl >= 75) return "text-success";
+  if (pctl >= 50) return "text-foreground";
+  if (pctl >= 25) return "text-warning";
+  return "text-error";
+}
+
+/** Bar fill for a percentile bar, on the same thresholds as getPercentileColour. */
+export function getPercentileBarClass(pctl: number | null | undefined): string {
+  if (pctl == null) return "bg-muted";
+  if (pctl >= 75) return "bg-success/70";
+  if (pctl >= 50) return "bg-muted-foreground/50";
+  if (pctl >= 25) return "bg-warning/70";
+  return "bg-error/70";
 }

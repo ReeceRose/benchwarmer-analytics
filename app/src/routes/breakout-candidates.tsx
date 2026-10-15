@@ -157,7 +157,7 @@ function BreakoutCandidatesPage() {
         currentView === "charts" ? (
           <ChartsView candidates={data.candidates} />
         ) : (
-          <Card className="py-0 gap-0">
+          <Card className="gap-0 overflow-hidden py-0">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>

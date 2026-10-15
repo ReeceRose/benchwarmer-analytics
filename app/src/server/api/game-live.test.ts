@@ -7,6 +7,7 @@ import {
   applyReferenceXg,
   parseSituation,
   strengthFor,
+  winProbabilitySeries,
   type LiveGameInputs,
 } from "@/server/api/game-live";
 import type { NhlPlay } from "@/server/api/nhl-client";
@@ -187,7 +188,11 @@ describe("buildLiveGame", () => {
     const result = buildLiveGame(inputs(
       [
         play(1, "10:05", "shot-on-goal", { eventOwnerTeamId: AWAY_ID, shootingPlayerId: 1, xCoord: -60, yCoord: 0 }, "1541"),
-        play(1, "11:00", "goal", { eventOwnerTeamId: AWAY_ID, scoringPlayerId: 2, goalieInNetId: 16, xCoord: -85, yCoord: 2, shotType: "wrist" }, "1541"),
+        {
+          ...play(1, "11:00", "goal", { eventOwnerTeamId: AWAY_ID, scoringPlayerId: 2, goalieInNetId: 16, xCoord: -85, yCoord: 2, shotType: "wrist" }, "1541"),
+          eventId: 284,
+          pptReplayUrl: "https://wsr.nhle.com/sprites/20262027/2026020072/ev284.json",
+        },
       ],
       {
         landing: {
@@ -201,7 +206,7 @@ describe("buildLiveGame", () => {
         },
       },
     ));
-    expect(result.goals[0]).toMatchObject({ team: "away", strength: "PP", goalie: "X. HomeG", distance: 4.5 });
+    expect(result.goals[0]).toMatchObject({ team: "away", strength: "PP", goalie: "X. HomeG", distance: 4.5, eventId: 284, hasReplay: true });
     expect(result.penalties[0]).toMatchObject({ team: "home", player: "Y. HomeD1", infraction: "high sticking", powerPlayGoal: "X. AwayL", powerPlayAttempts: 2 });
   });
 
@@ -238,5 +243,73 @@ describe("MoneyPuck xG matching", () => {
     expect(model.shots[1].xg).toBeGreaterThan(0);
     expect(result.shots.map((s) => s.xg)).toEqual([0.42, 0, null]);
     expect(result.stats.away.all.xg).toBe(0.42);
+  });
+});
+
+describe("Game Score", () => {
+  it("splits assists from the play-by-play and counts on-ice play at 5v5 only", () => {
+    const shift = (playerId: number) => ({ playerId, period: 1, startTime: "00:00", endTime: "02:00", typeCode: 517 });
+    const skater = (playerId: number, extra: object = {}) => ({ playerId, sweaterNumber: playerId, name: { default: `P${playerId}` }, position: "C", ...extra });
+    const result = buildLiveGame(inputs(
+      [
+        play(1, "00:10", "faceoff", { eventOwnerTeamId: AWAY_ID, winningPlayerId: 1, losingPlayerId: 11, zoneCode: "N" }),
+        play(1, "00:30", "shot-on-goal", { eventOwnerTeamId: AWAY_ID, shootingPlayerId: 1, xCoord: -80, yCoord: 0 }),
+        play(1, "01:00", "goal", { eventOwnerTeamId: AWAY_ID, scoringPlayerId: 2, assist1PlayerId: 1, assist2PlayerId: 4, xCoord: -85, yCoord: 0 }),
+        play(1, "01:20", "penalty", { eventOwnerTeamId: HOME_ID, committedByPlayerId: 11, drawnByPlayerId: 1, duration: 2 }, "1541"),
+        // Power play: on ice, but not 5v5.
+        play(1, "01:30", "shot-on-goal", { eventOwnerTeamId: AWAY_ID, shootingPlayerId: 3, xCoord: -80, yCoord: 0 }, "1541"),
+      ],
+      {
+        shifts: [1, 2, 3, 4, 5, 11, 12, 13, 14, 15].map(shift),
+        boxscore: {
+          playerByGameStats: {
+            awayTeam: {
+              forwards: [skater(1, { assists: 1, sog: 1 }), skater(2, { goals: 1, sog: 1 }), skater(3, { sog: 1 })],
+              defense: [skater(4, { assists: 1 }), skater(5)],
+            },
+            homeTeam: { forwards: [skater(11)], defense: [] },
+          },
+        },
+      },
+    ));
+    const byId = new Map(result.skaters.map((s) => [s.playerId, s]));
+    const p1 = byId.get(1)!;
+    expect(p1).toMatchObject({ primaryAssists: 1, secondaryAssists: 0, onIceAttemptsFor5v5: 2, onIceGoalsFor5v5: 1, onIceAttemptsFor: 3 });
+    // 0.7 A1 + 0.075 SOG | 0.05 × 2 CF + 0.15 GF | 0.15 drawn + 0.01 FOW
+    expect(p1.gameScore.scoring).toBe(0.77);
+    expect(p1.gameScore.onIce).toBeCloseTo(0.25, 2);
+    expect(p1.gameScore.other).toBeCloseTo(0.16, 2);
+    expect(byId.get(4)!).toMatchObject({ primaryAssists: 0, secondaryAssists: 1 });
+    expect(byId.get(4)!.gameScore.total).toBeCloseTo(0.8, 2);
+    // −0.15 taken − 0.01 FOL − 0.05 × 2 CA − 0.15 GA
+    expect(byId.get(11)!.gameScore.total).toBeCloseTo(-0.41, 2);
+  });
+});
+
+describe("winProbabilitySeries", () => {
+  const situationAt = new Array(3601).fill("1551");
+
+  it("starts near the home-ice rate and steps at goals", () => {
+    const series = winProbabilitySeries({ elapsed: 1800, situationAt, goals: [{ t: 600, team: "away" }], final: null });
+    expect(series[0]).toMatchObject({ t: 0 });
+    expect(series[0].home).toBeGreaterThan(0.5);
+    expect(series[0].home).toBeLessThan(0.6);
+    const atGoal = series.filter((p) => p.t === 600);
+    expect(atGoal).toHaveLength(2);
+    expect(atGoal[1].home).toBeLessThan(atGoal[0].home - 0.1);
+    expect(series.at(-1)!.t).toBe(1800);
+  });
+
+  it("grows with a lead as time runs out", () => {
+    const series = winProbabilitySeries({ elapsed: 3500, situationAt, goals: [{ t: 100, team: "home" }], final: null });
+    const at = (t: number) => series.find((p) => p.t === t)!.home;
+    expect(at(1200)).toBeLessThan(at(2400));
+    expect(at(2400)).toBeLessThan(at(3500));
+    expect(at(3500)).toBeGreaterThan(0.9);
+  });
+
+  it("ends at the result when final, including shootouts", () => {
+    const series = winProbabilitySeries({ elapsed: 3900, situationAt, goals: [], final: { homeScore: 2, awayScore: 3 } });
+    expect(series.at(-1)).toEqual({ t: 3900, home: 0 });
   });
 });

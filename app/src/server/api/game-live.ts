@@ -13,6 +13,8 @@ import { HttpError } from "@/server/api/errors";
 import { CacheTier, json, type ApiContext } from "@/server/api/handler";
 import { isFinalState } from "@/server/api/constants";
 import { round } from "@/server/api/format";
+import { gameScore } from "@/server/api/game-score";
+import { homeWinProbability } from "@/server/api/win-probability";
 import {
   getBoxscore,
   getClubStats,
@@ -82,6 +84,53 @@ export function parseSituation(code: string | null | undefined): Situation | nul
   if (!code || !/^\d{4}$/.test(code)) return null;
   const [awayGoalie, awaySkaters, homeSkaters, homeGoalie] = code.split("").map(Number);
   return { awayGoalie, awaySkaters, homeSkaters, homeGoalie };
+}
+
+const WIN_PROBABILITY_STEP = 20;
+
+/**
+ * The home team's win probability through the game: every 20 seconds, plus a
+ * point either side of each goal so goals show as steps. A final game ends at
+ * 1 or 0.
+ */
+export function winProbabilitySeries(input: {
+  elapsed: number;
+  situationAt: readonly (string | null)[];
+  goals: readonly { t: number; team: TeamSide }[];
+  final: { homeScore: number; awayScore: number } | null;
+}): { t: number; home: number }[] {
+  const { elapsed, situationAt, goals, final } = input;
+  const at = (t: number, countGoalsAt: boolean) => {
+    let homeGoals = 0;
+    let awayGoals = 0;
+    for (const g of goals) {
+      if (g.t < t || (countGoalsAt && g.t === t)) {
+        if (g.team === "home") homeGoals++;
+        else awayGoals++;
+      }
+    }
+    const s = parseSituation(situationAt[Math.min(t, situationAt.length - 1)] ?? null);
+    const adj = (skaters: number, goalie: number) => skaters - (goalie === 0 ? 1 : 0);
+    const pp = s ? Math.sign(adj(s.homeSkaters, s.homeGoalie) - adj(s.awaySkaters, s.awayGoalie)) : 0;
+    const en = s ? (s.homeGoalie === 0 ? 1 : 0) - (s.awayGoalie === 0 ? 1 : 0) : 0;
+    return round(homeWinProbability({ t, homeGoals, awayGoals, pp, en }), 3);
+  };
+  const points: { t: number; home: number }[] = [];
+  const goalTimes = new Set(goals.map((g) => g.t));
+  for (let t = 0; t <= elapsed; t += WIN_PROBABILITY_STEP) {
+    if (!goalTimes.has(t)) points.push({ t, home: at(t, true) });
+  }
+  for (const t of goalTimes) {
+    if (t > elapsed) continue;
+    points.push({ t, home: at(t, false) }, { t, home: at(t, true) });
+  }
+  points.sort((a, b) => a.t - b.t);
+  if (final) {
+    // Shootouts and late goals: the result decides the last point.
+    const end = Math.max(elapsed, points.at(-1)?.t ?? 0);
+    points.push({ t: end, home: final.homeScore > final.awayScore ? 1 : 0 });
+  }
+  return points;
 }
 
 /** Label ("5v4", "6v5 EN") and state from `side`'s point of view. */
@@ -535,6 +584,7 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
   interface Acc {
     attempts: number; unblocked: number; ixg: number; highDanger: number;
     cf: number; ca: number; xgf: number; xga: number; gf: number; ga: number; evcf: number; evca: number;
+    cf5: number; ca5: number; gf5: number; ga5: number; a1: number; a2: number;
     hits: number; hitsTaken: number; fow: number; fol: number; drawn: number; taken: number;
     toi: Record<StrengthState, number>;
   }
@@ -544,6 +594,7 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
     if (!a) {
       a = {
         attempts: 0, unblocked: 0, ixg: 0, highDanger: 0, cf: 0, ca: 0, xgf: 0, xga: 0, gf: 0, ga: 0, evcf: 0, evca: 0,
+        cf5: 0, ca5: 0, gf5: 0, ga5: 0, a1: 0, a2: 0,
         hits: 0, hitsTaken: 0, fow: 0, fol: 0, drawn: 0, taken: 0, toi: { EV: 0, PP: 0, SH: 0, EN: 0 },
       };
       acc.set(id, a);
@@ -552,6 +603,8 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
   };
   for (const s of shots) {
     const xg = s.result !== "BLOCK" ? (s.xg ?? 0) : 0;
+    // The label is "5v5" only with five skaters and a goalie a side.
+    const fiveOnFive = s.strength === "5v5";
     if (s.shooterId != null && roster.has(s.shooterId)) {
       const a = accFor(s.shooterId);
       a.attempts++;
@@ -564,12 +617,14 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
       a.cf++; a.xgf += xg;
       if (s.result === "GOAL") a.gf++;
       if (s.state === "EV") a.evcf++;
+      if (fiveOnFive) { a.cf5++; if (s.result === "GOAL") a.gf5++; }
     }
     for (const id of s.onIceAgainst) {
       const a = accFor(id);
       a.ca++; a.xga += xg;
       if (s.result === "GOAL") a.ga++;
       if (s.state === "EV") a.evca++;
+      if (fiveOnFive) { a.ca5++; if (s.result === "GOAL") a.ga5++; }
     }
   }
   for (const e of events) {
@@ -578,6 +633,12 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
     if (e.type === "hit") { if (actor) actor.hits++; if (other) other.hitsTaken++; }
     if (e.type === "faceoff") { if (actor) actor.fow++; if (other) other.fol++; }
     if (e.type === "penalty") { if (actor) actor.taken++; if (other) other.drawn++; }
+  }
+  for (const p of plays) {
+    if (p.typeDescKey !== "goal") continue;
+    const { assist1PlayerId: a1, assist2PlayerId: a2 } = p.details ?? {};
+    if (a1 != null && roster.has(a1)) accFor(a1).a1++;
+    if (a2 != null && roster.has(a2)) accFor(a2).a2++;
   }
   for (let t = 0; t < onIce.length; t++) {
     const ice = onIce[t];
@@ -595,21 +656,28 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
     for (const r of [...(team?.forwards ?? []), ...(team?.defense ?? [])]) {
       if (r.playerId == null) continue;
       const a = accFor(r.playerId);
+      const goals = r.goals ?? 0;
+      const assists = r.assists ?? 0;
+      const shotsOnGoal = r.sog ?? 0;
+      const blocks = r.blockedShots ?? 0;
+      // Assists the play-by-play doesn't attribute count as secondary.
+      const primaryAssists = Math.min(a.a1, assists);
+      const secondaryAssists = assists - primaryAssists;
       skaters.push({
         playerId: r.playerId,
         team: side,
         number: r.sweaterNumber ?? 0,
         name: text(r.name),
         position: r.position ?? "",
-        goals: r.goals ?? 0,
-        assists: r.assists ?? 0,
+        goals,
+        assists,
         points: r.points ?? 0,
         plusMinus: r.plusMinus ?? 0,
         pim: r.pim ?? 0,
-        shotsOnGoal: r.sog ?? 0,
+        shotsOnGoal,
         hits: r.hits ?? 0,
         hitsTaken: a.hitsTaken,
-        blocks: r.blockedShots ?? 0,
+        blocks,
         giveaways: r.giveaways ?? 0,
         takeaways: r.takeaways ?? 0,
         faceoffWins: a.fow,
@@ -634,6 +702,27 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
         evAttemptsAgainst: a.evca,
         penaltiesDrawn: a.drawn,
         penaltiesTaken: a.taken,
+        primaryAssists,
+        secondaryAssists,
+        onIceAttemptsFor5v5: a.cf5,
+        onIceAttemptsAgainst5v5: a.ca5,
+        onIceGoalsFor5v5: a.gf5,
+        onIceGoalsAgainst5v5: a.ga5,
+        gameScore: gameScore({
+          goals,
+          primaryAssists,
+          secondaryAssists,
+          shotsOnGoal,
+          blocks,
+          penaltiesDrawn: a.drawn,
+          penaltiesTaken: a.taken,
+          faceoffWins: a.fow,
+          faceoffLosses: a.fol,
+          onIceAttemptsFor5v5: a.cf5,
+          onIceAttemptsAgainst5v5: a.ca5,
+          onIceGoalsFor5v5: a.gf5,
+          onIceGoalsAgainst5v5: a.ga5,
+        }),
       });
     }
     const seasonGoalies = new Map((input.clubStats[side]?.goalies ?? []).map((g) => [g.playerId, g]));
@@ -711,6 +800,9 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
 
   // --- goals (landing summary, joined to play-by-play shots) ---
   const goalShots = shots.filter((s) => s.result === "GOAL");
+  // Goal events by game second, for the event ID (goal replays) and whether
+  // the NHL has tracking for it.
+  const goalPlays = plays.filter((p) => p.typeDescKey === "goal" && p.eventId != null);
   const goals: LiveGoal[] = [];
   for (const period of landing?.summary?.scoring ?? []) {
     const n = period.periodDescriptor?.number ?? 1;
@@ -719,6 +811,11 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
       const t = gameSeconds(n, g.timeInPeriod);
       const shot = goalShots.find((s) => s.t === t && (g.playerId == null || s.shooterId === g.playerId));
       const team: TeamSide = text(g.teamAbbrev) === abbrev.home ? "home" : "away";
+      const play = goalPlays.find(
+        (p) =>
+          gameSeconds(p.periodDescriptor?.number ?? 1, p.timeInPeriod) === t &&
+          (g.playerId == null || p.details?.scoringPlayerId === g.playerId),
+      );
       goals.push({
         t,
         period: n,
@@ -737,6 +834,8 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
         homeScore: g.homeScore ?? 0,
         headshot: g.headshot ?? null,
         highlightUrl: g.highlightClipSharingUrl ?? shot?.highlightUrl ?? null,
+        eventId: play?.eventId ?? null,
+        hasReplay: Boolean(play?.pptReplayUrl),
       });
     }
   }
@@ -823,13 +922,23 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
     };
   };
 
+  const gameState = landing?.gameState ?? pbp.gameState ?? "";
+  const winProbability = winProbabilitySeries({
+    elapsed,
+    situationAt,
+    goals: shots.filter((s) => s.result === "GOAL").map((s) => ({ t: s.t, team: s.team })),
+    final: isFinalState(gameState)
+      ? { homeScore: landing?.homeTeam?.score ?? 0, awayScore: landing?.awayTeam?.score ?? 0 }
+      : null,
+  });
+
   const reportLabel = (key: string) =>
     key.replace(/([A-Z])/g, " $1").toLowerCase().replace(/^toi/, "TOI").replace(/^./, (c) => c.toUpperCase());
 
   return {
     meta: {
       gameId: input.gameId,
-      gameState: landing?.gameState ?? pbp.gameState ?? "",
+      gameState,
       period: landing?.periodDescriptor?.number ?? 1,
       periodType: landing?.periodDescriptor?.periodType ?? null,
       timeRemaining: landing?.clock?.timeRemaining ?? null,
@@ -863,6 +972,7 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
     ) as Record<TeamSide, LiveTeamStats>,
     timeBySkaters,
     strengthSegments,
+    winProbability,
     goals,
     shots,
     events,
