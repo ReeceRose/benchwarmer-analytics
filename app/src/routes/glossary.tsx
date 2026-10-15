@@ -219,7 +219,8 @@ function GlossaryPage() {
                   type, whether it's a rebound or rush, shooter and goalie
                   information, and game context to produce probability estimates
                   for each shot. Live games, tracking, the draft, trophies and
-                  career records come from the NHL's own APIs.
+                  career records come from the NHL's own APIs. Injuries and
+                  transactions come from ESPN.
                 </p>
               </div>
             </section>

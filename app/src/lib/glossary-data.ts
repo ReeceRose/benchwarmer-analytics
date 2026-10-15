@@ -811,6 +811,15 @@ export const metrics: MetricDefinition[] = [
     interpretation:
       "Removes the bias caused by game state. Especially important for players on teams that are often ahead or behind.",
   },
+  {
+    name: "Injury status",
+    aliases: ["IR", "Injured reserve", "LTIR", "Out", "DTD", "Day-to-day", "Susp", "Suspended", "Injuries", "Scratches"],
+    category: "context",
+    description:
+      "Whether a player is on the injury list, from ESPN, updated twice a day. IR is injured reserve (long-term IR included), Out means they'll miss the next game, DTD (day-to-day) means they might play, and Susp is a suspension. The return date is ESPN's estimate.",
+    interpretation:
+      "IR, Out and Susp show in red because the player won't play; DTD shows in amber. Milestone watch leaves out players who won't play, and game previews list injured goalies last. Injuries are today's, so past seasons and past games don't show them.",
+  },
 
   // Player tracking (NHL EDGE)
   {

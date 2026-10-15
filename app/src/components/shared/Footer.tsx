@@ -16,8 +16,8 @@ export function Footer() {
               className="underline underline-offset-2 hover:text-foreground"
             >
               MoneyPuck
-            </a>{" "}
-            and{" "}
+            </a>
+            ,{" "}
             <a
               href="https://nhl.com"
               target="_blank"
@@ -25,6 +25,15 @@ export function Footer() {
               className="underline underline-offset-2 hover:text-foreground"
             >
               NHL.com
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://www.espn.com/nhl/injuries"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              ESPN
             </a>
             . Not affiliated with the NHL.
           </p>

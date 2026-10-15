@@ -92,6 +92,23 @@ function AboutPage() {
                 and roster information.
               </p>
             </div>
+            <div>
+              <h3 className="mb-1 font-semibold">ESPN</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Injury reports and league transactions (IR moves, call-ups,
+                trades and signings) come from{" "}
+                <a
+                  href="https://www.espn.com/nhl/injuries"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 underline hover:text-foreground transition-colors"
+                >
+                  ESPN
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                , updated twice a day.
+              </p>
+            </div>
             <p className="text-sm text-muted-foreground pt-2">
               This project would not be possible without these excellent data sources
               making hockey analytics accessible to everyone.
@@ -121,7 +138,7 @@ function AboutPage() {
           <h2 className="text-xl font-semibold">Disclaimer</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
               This is an unofficial, fan-made project and is not affiliated with
-              the NHL, NHLPA, any NHL team, or MoneyPuck. All team names, logos, and
+              the NHL, NHLPA, any NHL team, MoneyPuck, or ESPN. All team names, logos, and
               related marks are trademarks of their respective owners. NHL and the NHL
               Shield are registered trademarks of the National Hockey League. This
               project is for educational and research purposes only.
