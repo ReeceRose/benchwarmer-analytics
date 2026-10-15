@@ -32,7 +32,7 @@ export function toPlayerInjury(row: InjuryRow): PlayerInjury {
     detail: row.detail,
     side: row.side,
     comment: row.comment,
-    expectedReturn: row.expectedReturn,
+    earliestReturn: row.expectedReturn,
     // The first run that saw them, or ESPN's last update if that's earlier
     // (players already listed when tracking began). ET, like game dates.
     since: todayEastern(row.reportedAt && row.reportedAt < row.firstSeenAt ? row.reportedAt : row.firstSeenAt),

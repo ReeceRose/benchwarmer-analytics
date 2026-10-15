@@ -54,7 +54,7 @@ describe("withoutInjured", () => {
     playerId, name: `P${playerId}`, team: null, position: "skater", milestone: "Points", target: 500, current: 499, remaining: 1, gamesAway: 1,
   });
   const injury = (status: PlayerInjury["status"]): PlayerInjury => ({
-    status, label: status, injuryType: null, detail: null, side: null, comment: null, expectedReturn: null, since: "2026-10-01", updatedAt: null,
+    status, label: status, injuryType: null, detail: null, side: null, comment: null, earliestReturn: null, since: "2026-10-01", updatedAt: null,
   });
 
   it("drops players who won't play and flags day-to-day ones", () => {

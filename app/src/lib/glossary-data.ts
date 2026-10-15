@@ -816,7 +816,7 @@ export const metrics: MetricDefinition[] = [
     aliases: ["IR", "Injured reserve", "LTIR", "Out", "DTD", "Day-to-day", "Susp", "Suspended", "Injuries", "Scratches"],
     category: "context",
     description:
-      "Whether a player is on the injury list, from ESPN, updated twice a day. IR is injured reserve (long-term IR included), Out means they'll miss the next game, DTD (day-to-day) means they might play, and Susp is a suspension. The return date is ESPN's estimate.",
+      "Whether a player is on the injury list, from ESPN, updated twice a day. IR is injured reserve (long-term IR included), Out means they'll miss the next game, DTD (day-to-day) means they might play, and Susp is a suspension. The date shown is the earliest the player can return (when an IR stint can end, or the next game for day-to-day), not a prediction of when they will.",
     interpretation:
       "IR, Out and Susp show in red because the player won't play; DTD shows in amber. Milestone watch leaves out players who won't play, and game previews list injured goalies last. Injuries are today's, so past seasons and past games don't show them.",
   },

@@ -3,7 +3,7 @@ import { InjuryBadge } from "@/components/shared";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPositionShort } from "@/lib/formatters";
-import { expectedBack, injuryReason, shortDate } from "@/lib/injuries";
+import { earliestReturn, injuryReason, shortDate } from "@/lib/injuries";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import type { InjuredPlayer } from "@/types";
 
@@ -11,6 +11,7 @@ const rowClass = "-mx-2 flex items-center gap-3 rounded-xl px-2 py-1.5";
 
 function InjuryRow({ player, team }: { player: InjuredPlayer; team: string }) {
   const { injury } = player;
+  const earliest = earliestReturn(injury);
   const content = (
     <>
       <Avatar className="size-8 shrink-0">
@@ -27,7 +28,7 @@ function InjuryRow({ player, team }: { player: InjuredPlayer; team: string }) {
       <div className="shrink-0 text-right">
         <InjuryBadge injury={injury} />
         <div className="mt-1 text-xs text-muted-foreground tabular-nums">
-          {expectedBack(injury)?.replace("Expected back", "Back") ?? `Since ${shortDate(injury.since)}`}
+          {earliest ? `Earliest ${earliest}` : `Since ${shortDate(injury.since)}`}
         </div>
       </div>
     </>
@@ -47,7 +48,7 @@ function InjuryRow({ player, team }: { player: InjuredPlayer; team: string }) {
 
 /**
  * Injured players as list rows: headshot, name, position and reason, the
- * status chip, and the expected return (or when they went on the list).
+ * status chip, and the earliest they can return (or when they went on the list).
  * Players with no NHL games yet have no page, so their rows don't link.
  */
 export function InjuryList({ players, team, empty = "No injuries reported." }: { players: InjuredPlayer[]; team: string; empty?: string }) {

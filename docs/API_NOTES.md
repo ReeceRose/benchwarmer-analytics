@@ -187,7 +187,9 @@ and the cache tag `api` (`Vercel-Cache-Tag`):
   games today or later add `injuries.{home,away}` and `injury` on goalies and
   hot players; the game centre's scratches carry `injury` for today's games;
   `/api/milestones` drops players who won't play (IR, out, suspended) and
-  flags day-to-day ones. An injury's `since` is the ET date we first saw it,
+  flags day-to-day ones. An injury's `earliestReturn` is ESPN's `returnDate`: the earliest the
+  player can return (when an IR stint can end, the next game for
+  day-to-day), not a forecast; stored as `expected_return`. Its `since` is the ET date we first saw it,
   or ESPN's last update if earlier (players already listed when tracking
   began). `game_odds` has no route on purpose.
 

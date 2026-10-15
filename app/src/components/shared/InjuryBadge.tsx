@@ -4,8 +4,8 @@ import type { PlayerInjury } from "@/types";
 
 /**
  * A player's injury status as a small chip: red when they won't play (IR,
- * out, suspended), amber when day-to-day. Hover text says why and when
- * they're expected back.
+ * out, suspended), amber when day-to-day. Hover text says why, and the
+ * earliest they can return.
  */
 export function InjuryBadge({ injury, className }: { injury: PlayerInjury | null | undefined; className?: string }) {
   if (!injury) return null;

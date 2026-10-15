@@ -35,15 +35,20 @@ export function shortDate(date: string): string {
   return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-/** "Expected back Oct 16", or null when ESPN gives no date or it has passed. */
-export function expectedBack(injury: PlayerInjury, today = new Date().toISOString().slice(0, 10)): string | null {
-  if (!injury.expectedReturn || injury.expectedReturn < today) return null;
-  return `Expected back ${shortDate(injury.expectedReturn)}`;
+/**
+ * "Oct 16": the earliest date ESPN says the player can return (end of an IR
+ * stint, next game for day-to-day), not when they will. Null when ESPN gives
+ * no date or it has passed.
+ */
+export function earliestReturn(injury: PlayerInjury, today = new Date().toISOString().slice(0, 10)): string | null {
+  if (!injury.earliestReturn || injury.earliestReturn < today) return null;
+  return shortDate(injury.earliestReturn);
 }
 
-/** One line for hover text and lists: "IR · Left knee (surgery) · Expected back Oct 16". */
+/** One line for hover text and lists: "IR · Left knee (surgery) · Earliest return Oct 16". */
 export function describeInjury(injury: PlayerInjury): string {
-  return [injury.label, injuryReason(injury), expectedBack(injury)].filter(Boolean).join(" · ");
+  const earliest = earliestReturn(injury);
+  return [injury.label, injuryReason(injury), earliest && `Earliest return ${earliest}`].filter(Boolean).join(" · ");
 }
 
 export const TRANSACTION_LABELS: Record<TransactionKind, string> = {

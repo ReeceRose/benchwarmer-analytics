@@ -13,8 +13,8 @@ export interface PlayerInjury {
   side: string | null;
   /** ESPN's latest one-line update. */
   comment: string | null;
-  /** ESPN's expected return date (YYYY-MM-DD), a rough guide. */
-  expectedReturn: string | null;
+  /** The earliest date ESPN says the player can return (YYYY-MM-DD), not a forecast. */
+  earliestReturn: string | null;
   /** First day we saw the player on the list (YYYY-MM-DD). */
   since: string;
   /** When ESPN last updated the entry (ISO). */

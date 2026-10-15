@@ -363,8 +363,9 @@ the hero and scoreboard.
   `lg` up, closest first down each column.
 - Injuries (`components/injuries/InjuryList.tsx`, team page and game
   preview): the same row; meta is position · reason, the right column is the
-  `InjuryBadge` over a muted "Back Oct 24" (or "Since Oct 3" with no return
-  date). Players with no NHL games have no page, so their rows don't link.
+  `InjuryBadge` over a muted "Earliest Oct 24" (or "Since Oct 3" with no
+  date). ESPN's date is the earliest the player can return, never phrase it
+  as when they will. Players with no NHL games have no page, so their rows don't link.
   In a game preview, two columns under `TeamHeading`s, away on the left, and
   the section only appears when someone is listed. Goalies who won't play
   sort last in the goalie matchup at 60% opacity.
@@ -464,7 +465,7 @@ the hero and scoreboard.
   the player's name: `bg-error/15 text-error` when they won't play (IR, Out,
   Susp), `bg-warning/15 text-warning` for day-to-day. This is the
   good/bad/caution rule, not decoration. Hover text says why and when
-  they're expected back. Use it wherever a current player is named (roster
+  the earliest they can return. Use it wherever a current player is named (roster
   tables, preview goalies and hot players, milestone rows). On a hero, use a
   plain `HeroBadge` ("IR · Lower body") instead. Injury text is sentence case
   (`injuryReason` in `lib/injuries.ts` lowercases ESPN's "Lower Body").

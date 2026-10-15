@@ -1128,6 +1128,8 @@ export const playerInjuries = pgTable(
     comment: text("comment"),
     // ESPN's last update to the entry.
     reportedAt: timestamp("reported_at", { withTimezone: true }),
+    // ESPN's returnDate: the earliest the player can return (end of an IR
+    // stint, next game for day-to-day), not a forecast.
     expectedReturn: date("expected_return"),
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
