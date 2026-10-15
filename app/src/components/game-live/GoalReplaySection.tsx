@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { TooltipTitle } from "@/components/game-live/ChartTooltip";
 import { Rink } from "@/components/game-live/Rink";
@@ -108,6 +108,26 @@ function PlayerTooltip({ data, goal, playerId, side }: { data: LiveGameResponse;
   );
 }
 
+// The rink's viewBox, for placing HTML over a point on it.
+const VIEW = { x: -101, y: -43.5, width: 202, height: 94 };
+
+// A player card anchored beside a point on the rink, flipped away from the
+// nearest edges so it stays inside.
+function PinnedCard({ x, y, children }: { x: number; y: number; children: ReactNode }) {
+  const left = ((x - VIEW.x) / VIEW.width) * 100;
+  const top = ((y - VIEW.y) / VIEW.height) * 100;
+  const dx = left > 60 ? "calc(-100% - 1.25rem)" : "1.25rem";
+  const dy = top > 50 ? "calc(-100% - 0.5rem)" : "0.5rem";
+  return (
+    <div
+      className="pointer-events-none absolute z-10 w-max max-w-72 rounded-xl border bg-popover p-3 text-sm leading-relaxed text-popover-foreground shadow-lg shadow-black/5"
+      style={{ left: `${left}%`, top: `${top}%`, transform: `translate(${dx}, ${dy})` }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function ReplayPlayer({ data, goal }: { data: LiveGameResponse; goal: LiveGoal }) {
   const { data: replay, isLoading, error } = useGoalReplay(String(data.meta.gameId), goal.eventId);
   const frames = useMemo(() => replay?.frames ?? [], [replay]);
@@ -116,7 +136,9 @@ function ReplayPlayer({ data, goal }: { data: LiveGameResponse; goal: LiveGoal }
   const [t, setTState] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>("1");
-  const { bind, tooltip } = useChartTooltip();
+  const { bind, hide, tooltip } = useChartTooltip();
+  // A clicked player keeps their card open, and it follows them.
+  const [pinned, setPinned] = useState<number | null>(null);
   // The animation loop reads and advances time through a ref.
   const time = useRef(0);
   const setT = (value: number) => {
@@ -129,7 +151,15 @@ function ReplayPlayer({ data, goal }: { data: LiveGameResponse; goal: LiveGoal }
     time.current = 0;
     setTState(0);
     setPlaying(!prefersReducedMotion());
+    setPinned(null);
   }, [goal.eventId, frames]);
+
+  useEffect(() => {
+    if (pinned == null) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setPinned(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pinned]);
 
   useEffect(() => {
     if (!playing || frames.length === 0) return;
@@ -170,41 +200,59 @@ function ReplayPlayer({ data, goal }: { data: LiveGameResponse; goal: LiveGoal }
   if (isLoading || frames.length === 0) return <Skeleton className="aspect-[202/94] w-full rounded-xl" />;
 
   const done = t >= end;
+  const pinnedPlayer = players.find((p) => p.playerId != null && p.playerId === pinned);
   return (
     <div className="space-y-3">
-      <Rink>
-        {trail.length > 1 && (
-          <polyline
-            points={trail.map((p) => `${p.x},${p.y}`).join(" ")}
-            fill="none"
-            stroke="var(--foreground)"
-            strokeOpacity={0.35}
-            strokeWidth={0.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-        {players.map((p) => (
-          <g
-            key={p.key}
-            transform={`translate(${p.x} ${p.y})`}
-            {...(p.playerId != null ? bind(<PlayerTooltip data={data} goal={goal} playerId={p.playerId} side={p.side} />) : {})}
-          >
-            <circle
-              r={2.2}
-              fill={p.side ? teamColour(p.side) : "var(--muted-foreground)"}
-              stroke={p.isScorer ? "var(--foreground)" : "var(--card)"}
-              strokeWidth={p.isScorer ? 0.6 : 0.4}
+      <div className="relative" onClick={() => setPinned(null)}>
+        <Rink>
+          {trail.length > 1 && (
+            <polyline
+              points={trail.map((p) => `${p.x},${p.y}`).join(" ")}
+              fill="none"
+              stroke="var(--foreground)"
+              strokeOpacity={0.35}
+              strokeWidth={0.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-            {p.number != null && (
-              <text pointerEvents="none" textAnchor="middle" dominantBaseline="central" fontSize={1.9} fontWeight={700} fill="white">
-                {p.number}
-              </text>
-            )}
-          </g>
-        ))}
-        {puck && <circle cx={puck.x} cy={puck.y} r={0.9} fill="var(--foreground)" stroke="var(--card)" strokeWidth={0.3} />}
-      </Rink>
+          )}
+          {players.map((p) => (
+            <g
+              key={p.key}
+              transform={`translate(${p.x} ${p.y})`}
+              className={p.playerId != null ? "cursor-pointer" : undefined}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (p.playerId == null) return;
+                hide();
+                setPinned((id) => (id === p.playerId ? null : p.playerId));
+              }}
+              {...(p.playerId != null && p.playerId !== pinned
+                ? bind(<PlayerTooltip data={data} goal={goal} playerId={p.playerId} side={p.side} />)
+                : {})}
+            >
+              {p === pinnedPlayer && <circle r={3.3} fill="none" stroke="var(--foreground)" strokeWidth={0.5} />}
+              <circle
+                r={2.2}
+                fill={p.side ? teamColour(p.side) : "var(--muted-foreground)"}
+                stroke={p.isScorer ? "var(--foreground)" : "var(--card)"}
+                strokeWidth={p.isScorer ? 0.6 : 0.4}
+              />
+              {p.number != null && (
+                <text pointerEvents="none" textAnchor="middle" dominantBaseline="central" fontSize={1.9} fontWeight={700} fill="white">
+                  {p.number}
+                </text>
+              )}
+            </g>
+          ))}
+          {puck && <circle cx={puck.x} cy={puck.y} r={0.9} fill="var(--foreground)" stroke="var(--card)" strokeWidth={0.3} />}
+        </Rink>
+        {pinnedPlayer && pinnedPlayer.playerId != null && (
+          <PinnedCard x={pinnedPlayer.x} y={pinnedPlayer.y}>
+            <PlayerTooltip data={data} goal={goal} playerId={pinnedPlayer.playerId} side={pinnedPlayer.side} />
+          </PinnedCard>
+        )}
+      </div>
       {tooltip}
 
       <div className="flex flex-wrap items-center gap-3">
