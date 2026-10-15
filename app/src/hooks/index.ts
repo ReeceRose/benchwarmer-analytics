@@ -1,4 +1,4 @@
-export { useTeams, useTeam, useTeamRoster, useScoreStateStats, useTeamGameLog } from "@/hooks/useTeams";
+export { useTeams, useTeam, useTeamRoster, useScoreStateStats, useTeamGameLog, useTeamInjuries, useTeamTransactions } from "@/hooks/useTeams";
 export {
   usePlayer,
   usePlayers,

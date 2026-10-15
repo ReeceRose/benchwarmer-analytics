@@ -1,16 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { cronHandler } from "@/server/cron";
-import { syncProjections } from "@/server/ingestion/steps";
+import { DAILY_JOBS } from "@/server/cron-jobs";
 import { methodNotAllowed } from "@/server/http";
 
-// Daily playoff odds, after the schedule cron has stored last night's results.
+// See DAILY_JOBS.projections for what this job does.
 export const Route = createFileRoute("/api/cron/projections")({
   server: {
     handlers: {
-      GET: cronHandler(async (db, season) => {
-        const projections = await syncProjections(db, season);
-        return { season, rowsWritten: { projections: projections.rowsWritten } };
-      }),
+      GET: cronHandler(DAILY_JOBS.projections.run),
       ANY: methodNotAllowed,
     },
   },

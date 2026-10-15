@@ -176,6 +176,21 @@ and the cache tag `api` (`Vercel-Cache-Tag`):
   `headToHead.allTime.{regular,playoffs}` from the away team's side; player
   detail adds `draft` (latest selection, null if undrafted). `ingested` tier.
 
+- Injuries and transactions (ESPN, refreshed by the `espn-*` crons, `ingested`
+  tier): `/api/teams/{abbrev}/injuries` (current injuries, most serious
+  first: IR, out, suspended, day-to-day) and
+  `/api/teams/{abbrev}/transactions?limit=` (newest first, default 25, max
+  100). Every endpoint that shows availability reads the same open stints
+  through `injuriesByPlayer` (`src/server/api/injuries.ts`): player detail
+  adds `injury` and `transactions`; current-season rosters add `injury` per
+  player (older seasons don't, since injuries are today's); game previews of
+  games today or later add `injuries.{home,away}` and `injury` on goalies and
+  hot players; the game centre's scratches carry `injury` for today's games;
+  `/api/milestones` drops players who won't play (IR, out, suspended) and
+  flags day-to-day ones. An injury's `since` is the ET date we first saw it,
+  or ESPN's last update if earlier (players already listed when tracking
+  began). `game_odds` has no route on purpose.
+
 - `shotId` in shot responses is `{gameId}-{eventId}`. MoneyPuck's `shotID`
   isn't unique (see `SCHEMA_NOTES.md`), and the UI uses it as a React key.
 - Team/player shots: `goalsOnly` is applied before `limit`.

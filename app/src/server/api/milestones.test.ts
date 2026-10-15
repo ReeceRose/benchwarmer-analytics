@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { rankMilestones, toMilestone, withCurrentTotals } from "@/server/api/milestones";
-import type { Milestone } from "@/types";
+import { rankMilestones, toMilestone, withCurrentTotals, withoutInjured } from "@/server/api/milestones";
+import type { Milestone, PlayerInjury } from "@/types";
 
 const skater = { playerId: 1, playerFullName: "A Player", teamAbbrev: "TOR", gameTypeId: 2, gamesPlayed: 800 };
 
@@ -46,6 +46,20 @@ describe("rankMilestones", () => {
 
   it("caps the list", () => {
     expect(rankMilestones(Array.from({ length: 20 }, (_, i) => m(i, i)), 5)).toHaveLength(5);
+  });
+});
+
+describe("withoutInjured", () => {
+  const m = (playerId: number): Milestone => ({
+    playerId, name: `P${playerId}`, team: null, position: "skater", milestone: "Points", target: 500, current: 499, remaining: 1, gamesAway: 1,
+  });
+  const injury = (status: PlayerInjury["status"]): PlayerInjury => ({
+    status, label: status, injuryType: null, detail: null, side: null, comment: null, expectedReturn: null, since: "2026-10-01", updatedAt: null,
+  });
+
+  it("drops players who won't play and flags day-to-day ones", () => {
+    const rows = withoutInjured([m(1), m(2), m(3), m(4)], new Map([[1, injury("ir")], [2, injury("out")], [3, injury("day_to_day")]]));
+    expect(rows.map((r) => [r.playerId, r.injury?.status ?? null])).toEqual([[3, "day_to_day"], [4, null]]);
   });
 });
 

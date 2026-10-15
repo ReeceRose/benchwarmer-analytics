@@ -1,4 +1,5 @@
 import type { AllTimeRecord } from "@/types/history";
+import type { InjuredPlayer, PlayerInjury } from "@/types/injuries";
 
 export interface GamesResponse {
   date: string;
@@ -121,6 +122,8 @@ export interface GamePreview {
   teamComparison: TeamComparison;
   hotPlayers: HotPlayers;
   goalieMatchup: GoalieMatchup;
+  /** Each team's injured players, most serious first; empty for past games. */
+  injuries: { home: InjuredPlayer[]; away: InjuredPlayer[] };
 }
 
 export interface GamePreviewGame {
@@ -189,6 +192,7 @@ export interface HotPlayer {
   expectedGoals: number;
   differential: number;
   trend: "hot" | "cold";
+  injury: PlayerInjury | null;
 }
 
 export interface GoalieMatchup {
@@ -203,6 +207,7 @@ export interface GoaliePreview {
   savePct: number | null;
   goalsAgainstAvg: number | null;
   goalsSavedAboveExpected: number | null;
+  injury: PlayerInjury | null;
 }
 
 // Separate type for goalie recent form (fetched on-demand)

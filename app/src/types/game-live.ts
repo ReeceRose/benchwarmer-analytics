@@ -1,3 +1,5 @@
+import type { PlayerInjury } from "@/types/injuries";
+
 // Response shape for /api/games/{gameId}/live: the game centre model built
 // from the NHL API's live feeds (gamecenter landing, boxscore, play-by-play,
 // right-rail and shift charts). Attempt, xG and on-ice numbers are derived
@@ -48,7 +50,14 @@ export interface LiveTeamInfo {
   score: number;
   shotsOnGoal: number;
   headCoach: string | null;
-  scratches: string[];
+  scratches: LiveScratch[];
+}
+
+/** A player scratched from the lineup, with their injury when they're on the injury list. */
+export interface LiveScratch {
+  playerId: number | null;
+  name: string;
+  injury: PlayerInjury | null;
 }
 
 /** Counters for one team over some slice of the game (all, a period or a strength). */

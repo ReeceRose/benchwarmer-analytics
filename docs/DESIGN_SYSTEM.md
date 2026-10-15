@@ -361,6 +361,20 @@ the hero and scoreboard.
   the same row; meta is team · current total, the right column is "2 to
   700 games" over a muted "About 5 games away". Two columns of `ol`s from
   `lg` up, closest first down each column.
+- Injuries (`components/injuries/InjuryList.tsx`, team page and game
+  preview): the same row; meta is position · reason, the right column is the
+  `InjuryBadge` over a muted "Back Oct 24" (or "Since Oct 3" with no return
+  date). Players with no NHL games have no page, so their rows don't link.
+  In a game preview, two columns under `TeamHeading`s, away on the left, and
+  the section only appears when someone is listed. Goalies who won't play
+  sort last in the goalie matchup at 60% opacity.
+- Transactions (`components/injuries/TransactionList.tsx`, team page and the
+  player career tab): no avatars; a muted date column, then the kind
+  ("To IR", "Recalled") as a muted label over ESPN's text. Rows link to the
+  player the move is about when we have them. Eight shown (five on a player
+  page) with a ghost "Show all".
+- Current-day data (injuries, transactions) shows only for the current
+  season and for games today or later, never on past seasons or games.
 - Draft picks (`components/draft/`): `DraftPickRows` uses the row pattern
   without avatars (old picks have no headshots): pick number (and year) in a
   muted left column, the name links only when we have a player page, and the
@@ -446,6 +460,14 @@ the hero and scoreboard.
   uppercase` for short codes (PP, OT, SO). This is the one place uppercase is
   fine, because the content is an abbreviation.
 - On a hero: `HeroBadge` (`bg-white/15`).
+- Injury status: `InjuryBadge` (`components/shared`), a status chip next to
+  the player's name: `bg-error/15 text-error` when they won't play (IR, Out,
+  Susp), `bg-warning/15 text-warning` for day-to-day. This is the
+  good/bad/caution rule, not decoration. Hover text says why and when
+  they're expected back. Use it wherever a current player is named (roster
+  tables, preview goalies and hot players, milestone rows). On a hero, use a
+  plain `HeroBadge` ("IR · Lower body") instead. Injury text is sentence case
+  (`injuryReason` in `lib/injuries.ts` lowercases ESPN's "Lower Body").
 - `Badge variant="outline"` for neutral tags such as positions. Avoid
   `variant="default"` (a solid ink blob) for data. To show a winner, use bold
   text and a logo.

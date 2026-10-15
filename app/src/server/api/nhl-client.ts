@@ -300,8 +300,8 @@ export interface NhlRightRail {
   gameInfo?: {
     referees?: { default?: string; fullName?: Localized; sweaterNumber?: number }[];
     linesmen?: { default?: string; fullName?: Localized; sweaterNumber?: number }[];
-    awayTeam?: { headCoach?: Localized | null; scratches?: { firstName?: Localized; lastName?: Localized }[] } | null;
-    homeTeam?: { headCoach?: Localized | null; scratches?: { firstName?: Localized; lastName?: Localized }[] } | null;
+    awayTeam?: { headCoach?: Localized | null; scratches?: { id?: number; firstName?: Localized; lastName?: Localized }[] } | null;
+    homeTeam?: { headCoach?: Localized | null; scratches?: { id?: number; firstName?: Localized; lastName?: Localized }[] } | null;
   } | null;
   teamGameStats?: { category?: string; awayValue?: string | number; homeValue?: string | number }[];
   gameReports?: Record<string, string> | null;

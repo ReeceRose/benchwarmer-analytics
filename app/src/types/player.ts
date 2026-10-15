@@ -1,4 +1,5 @@
 import type { GoaliePlayoffRecord, MilestoneMoment, PlayerAward } from "@/types/history";
+import type { PlayerInjury, Transaction } from "@/types/injuries";
 
 /** Basic player info used in lists and search results */
 export interface Player {
@@ -31,6 +32,10 @@ export interface PlayerDetail {
   hallOfFame?: { inductedYear: number | null } | null;
   /** Goalies: Game 7 and playoff overtime record. Detail endpoint only. */
   goaliePlayoffs?: GoaliePlayoffRecord | null;
+  /** Current injury from ESPN's list; null when healthy. Detail endpoint and current rosters only. */
+  injury?: PlayerInjury | null;
+  /** Recent transactions (IR moves, recalls, trades), newest first. Detail endpoint only. */
+  transactions?: Transaction[];
 }
 
 export interface PlayerDraft {

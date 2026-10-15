@@ -1085,3 +1085,106 @@ export const draftLotteries = pgTable("draft_lotteries", {
   results: text("results"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// --- ESPN (site.api.espn.com, unofficial), refreshed by /api/cron/espn-* ---
+
+// ESPN athletes we've seen, matched to our player IDs (NHL IDs). A null
+// player_id means no match yet (often a prospect with no NHL games); the
+// match is retried on later runs.
+export const espnPlayers = pgTable(
+  "espn_players",
+  {
+    espnId: text("espn_id").primaryKey(),
+    playerId: integer("player_id"),
+    name: text("name").notNull(),
+    position: text("position"),
+    birthDate: date("birth_date"),
+    // name_dob, name_team, name, manual or none.
+    matchMethod: text("match_method").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("ix_espn_players_player_id").on(t.playerId)],
+);
+
+// Injury stints: one row from the day a player appears on ESPN's injury list
+// until the run where they're gone (resolved_at). At most one open stint per
+// athlete. ESPN's injury IDs aren't unique, so stints key on the athlete.
+export const playerInjuries = pgTable(
+  "player_injuries",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    espnAthleteId: text("espn_athlete_id").notNull(),
+    playerId: integer("player_id"),
+    playerName: text("player_name").notNull(),
+    team: text("team").notNull(),
+    position: text("position"),
+    // ir, out, day_to_day, suspended or other; status_text is ESPN's label.
+    status: text("status").notNull(),
+    statusText: text("status_text").notNull(),
+    // Body area or reason ("Upper Body", "Knee", "Illness").
+    injuryType: text("injury_type"),
+    detail: text("detail"),
+    side: text("side"),
+    comment: text("comment"),
+    // ESPN's last update to the entry.
+    reportedAt: timestamp("reported_at", { withTimezone: true }),
+    expectedReturn: date("expected_return"),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ix_player_injuries_open_athlete").on(t.espnAthleteId).where(sql`resolved_at IS NULL`),
+    index("ix_player_injuries_player_id").on(t.playerId),
+    index("ix_player_injuries_team_open").on(t.team).where(sql`resolved_at IS NULL`),
+    check("ck_player_injuries_status", sql`${t.status} in ('ir', 'out', 'day_to_day', 'suspended', 'other')`),
+  ],
+);
+
+// League transactions (IR moves, recalls, waivers, signings, trades). ESPN
+// gives no IDs, so a transaction is its date, team and text. Kind and player
+// are parsed from the text on a best-effort basis.
+export const transactions = pgTable(
+  "transactions",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    transactionDate: date("transaction_date").notNull(),
+    team: text("team").notNull(),
+    description: text("description").notNull(),
+    // ir_place, ir_activate, recall, assign, waivers, sign, trade, other.
+    kind: text("kind").notNull(),
+    playerId: integer("player_id"),
+    playerName: text("player_name"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ix_transactions_date_team_description").on(t.transactionDate, t.team, t.description),
+    index("ix_transactions_team_date").on(t.team, t.transactionDate.desc()),
+    index("ix_transactions_player_id").on(t.playerId),
+  ],
+);
+
+// Moneylines per game and sportsbook, for model benchmarking only: no API
+// route reads this table. American odds; the probabilities have the
+// bookmaker's margin removed. Open is the first line, close the last before
+// puck drop (null until the game starts).
+export const gameOdds = pgTable(
+  "game_odds",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    gameId: text("game_id").notNull(),
+    espnEventId: text("espn_event_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    provider: text("provider").notNull(),
+    homeMoneylineOpen: integer("home_moneyline_open"),
+    awayMoneylineOpen: integer("away_moneyline_open"),
+    homeMoneylineClose: integer("home_moneyline_close"),
+    awayMoneylineClose: integer("away_moneyline_close"),
+    homeProbabilityOpen: numeric("home_probability_open", { mode: "number" }),
+    homeProbabilityClose: numeric("home_probability_close", { mode: "number" }),
+    totalClose: numeric("total_close", { mode: "number" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("ix_game_odds_game_provider").on(t.gameId, t.providerId)],
+);

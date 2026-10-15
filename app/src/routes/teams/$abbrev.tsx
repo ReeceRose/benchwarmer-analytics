@@ -41,6 +41,7 @@ import {
   IceTimeDistributionChart,
   PointsContributionChart,
 } from "@/components/team-detail";
+import { TeamAvailability } from "@/components/injuries";
 
 const searchSchema = z.object({
   season: z.optional(z.number()),
@@ -84,6 +85,9 @@ function TeamDetailPage() {
     refetch,
   } = useTeam(abbrev);
   usePageTitle(getTeamName(abbrev));
+
+  // Injuries and transactions are today's, so only the current season shows them.
+  const isCurrentSeason = selectedSeason !== undefined && selectedSeason === latestSeason;
 
   // Official standings are only available for the current season.
   const { data: standingsData } = useOfficialStandings();
@@ -274,6 +278,12 @@ function TeamDetailPage() {
                 {goalies.length > 0 && (
                   <GoalieRosterTable title="Goalies" players={goalies} showStats />
                 )}
+              </div>
+            )}
+
+            {isCurrentSeason && (
+              <div className="pt-2">
+                <TeamAvailability abbrev={abbrev} />
               </div>
             )}
           </div>

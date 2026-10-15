@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Flame, Snowflake } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TeamHeading } from "@/components/game-preview/TeamHeading";
+import { InjuryBadge } from "@/components/shared";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import { cn } from "@/lib/utils";
 import type { HotPlayers, HotPlayer } from "@/types";
@@ -31,6 +32,7 @@ function PlayerRow({ player, team }: { player: HotPlayer; team: string }) {
           {player.position && (
             <span className="ml-1 text-xs font-normal text-muted-foreground">{player.position}</span>
           )}
+          <InjuryBadge injury={player.injury} className="ml-1.5 align-[1px]" />
         </div>
         <div className="text-xs text-muted-foreground tabular-nums">
           {player.goals} G · {player.expectedGoals.toFixed(1)} xG

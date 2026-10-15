@@ -19,3 +19,4 @@ export { TeamLogo } from "@/components/team-detail/TeamLogo";
 export { ScoresStrip } from "@/components/shared/ScoresStrip";
 export { GlobalSearch } from "@/components/shared/GlobalSearch";
 export { TeamTag } from "@/components/shared/TeamTag";
+export { InjuryBadge } from "@/components/shared/InjuryBadge";

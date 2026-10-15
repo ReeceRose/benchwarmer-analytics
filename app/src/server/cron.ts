@@ -39,6 +39,37 @@ async function invalidateApiCache(): Promise<void> {
   }
 }
 
+// Some of a job's independent steps failed. The others' writes stand, so the
+// cache is still invalidated, but the route answers 500 so the run shows as
+// failed in Vercel.
+export class PartialFailure extends Error {
+  readonly result: Record<string, unknown>;
+  readonly failures: string[];
+
+  constructor(result: Record<string, unknown>, failures: string[]) {
+    super(failures.join("; "));
+    this.result = result;
+    this.failures = failures;
+  }
+}
+
+// Runs steps that don't depend on each other, in order, each whether or not
+// an earlier one failed. Throws PartialFailure (with the successful results)
+// if any failed.
+export async function runIndependently(steps: Record<string, () => Promise<unknown>>): Promise<Record<string, unknown>> {
+  const result: Record<string, unknown> = {};
+  const failures: string[] = [];
+  for (const [name, step] of Object.entries(steps)) {
+    try {
+      result[name] = await step();
+    } catch (error) {
+      failures.push(`${name}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  if (failures.length > 0) throw new PartialFailure(result, failures);
+  return result;
+}
+
 // Wraps a cron job: auth, ?season parsing, stale-run cleanup, JSON result, no
 // caching. On success, invalidates the CDN cache.
 export function cronHandler(job: (db: Queryable, season: number) => Promise<Record<string, unknown>>) {
@@ -56,8 +87,14 @@ export function cronHandler(job: (db: Queryable, season: number) => Promise<Reco
       return Response.json({ ok: true, ms: Date.now() - started, ...result }, { headers: { "Cache-Control": "no-store" } });
     } catch (error) {
       console.error("cron job failed", error);
+      if (error instanceof PartialFailure) await invalidateApiCache();
       return Response.json(
-        { ok: false, ms: Date.now() - started, error: error instanceof Error ? error.message : String(error) },
+        {
+          ok: false,
+          ms: Date.now() - started,
+          ...(error instanceof PartialFailure ? { rowsWritten: error.result } : {}),
+          error: error instanceof Error ? error.message : String(error),
+        },
         { status: 500, headers: { "Cache-Control": "no-store" } },
       );
     }

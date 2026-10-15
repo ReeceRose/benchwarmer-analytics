@@ -1,0 +1,636 @@
+{
+ "timestamp": "2026-10-15T01:50:57Z",
+ "status": "success",
+ "season": {
+  "year": 2027,
+  "type": 2,
+  "name": "Regular Season",
+  "displayName": "2026-27"
+ },
+ "injuries": [
+  {
+   "id": "25",
+   "displayName": "Anaheim Ducks",
+   "injuries": [
+    {
+     "id": "595865",
+     "longComment": "day-to-day",
+     "shortComment": "day-to-day",
+     "status": "Day-To-Day",
+     "date": "2026-10-14T13:14Z",
+     "type": {
+      "id": "6",
+      "name": "INJURY_STATUS_DAYTODAY",
+      "description": "day-to-day",
+      "abbreviation": "DD"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "Day-To-Day",
+       "abbreviation": "Day-To-Day"
+      },
+      "type": "Upper Body",
+      "returnDate": "2026-10-16"
+     },
+     "athlete": {
+      "firstName": "Cutter",
+      "lastName": "Gauthier",
+      "displayName": "Cutter Gauthier",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/5080145",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "LW"
+      },
+      "team": {
+       "abbreviation": "ANA"
+      }
+     }
+    },
+    {
+     "id": "595699",
+     "longComment": "Poehling was placed on injured reserve Tuesday morning, and the specifics of his injury have revealed that he's set to likely be sidelined into late November. In his absence, Roger McQueen, the 10th overall pick from the 2025 NHL Entry Draft, is expected to play in the team's middle six up the center of the ice. The 27-year-old Poehling was off to a solid start to the 2026-27 campaign prior to going down, posting a pair of points and solid category-coverage numbers across five games.",
+     "shortComment": "Poehling (knee) is expected to miss 6-8 weeks with an MCL sprain.",
+     "status": "Injured Reserve",
+     "date": "2026-10-13T17:19Z",
+     "type": {
+      "id": "5",
+      "name": "INJURY_STATUS_IR",
+      "description": "Injured Reserve",
+      "abbreviation": "IR"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "IR",
+       "abbreviation": "IR"
+      },
+      "type": "Lower Body",
+      "returnDate": "2026-11-25"
+     },
+     "athlete": {
+      "firstName": "Ryan",
+      "lastName": "Poehling",
+      "displayName": "Ryan Poehling",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/4233668",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "C"
+      },
+      "team": {
+       "abbreviation": "ANA"
+      }
+     }
+    },
+    {
+     "id": "594251",
+     "longComment": "Terry isn't expected to be back until mid-November at the earliest, so this transfer doesn't impact his timetable. He had 19 goals and 57 points in 61 regular-season appearances in 2025-26. Terry should occupy a top-six role and play on the first power-play unit once he's healthy.",
+     "shortComment": "Terry (hip) was moved from the non-roster list to long-term injured reserve Wednesday, Zach Cavanagh of The Sporting Tribune reports.",
+     "status": "Injured Reserve",
+     "date": "2026-09-30T14:53Z",
+     "type": {
+      "id": "5",
+      "name": "INJURY_STATUS_IR",
+      "description": "Injured Reserve",
+      "abbreviation": "IR"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "IR-LT",
+       "abbreviation": "IR-LT"
+      },
+      "type": "Hip",
+      "detail": "Surgery",
+      "returnDate": "2026-11-21"
+     },
+     "athlete": {
+      "firstName": "Troy",
+      "lastName": "Terry",
+      "displayName": "Troy Terry",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/3942905",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "RW"
+      },
+      "team": {
+       "abbreviation": "ANA"
+      }
+     }
+    },
+    {
+     "id": "594155",
+     "longComment": "ir",
+     "shortComment": "ir",
+     "status": "Injured Reserve",
+     "date": "2026-09-29T00:06Z",
+     "type": {
+      "id": "5",
+      "name": "INJURY_STATUS_IR",
+      "description": "Injured Reserve",
+      "abbreviation": "IR"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "IR",
+       "abbreviation": "IR"
+      },
+      "type": "Lower Body",
+      "detail": "Not Specified",
+      "side": "Not Specified",
+      "returnDate": "2026-10-16"
+     },
+     "athlete": {
+      "firstName": "Ian",
+      "lastName": "Moore",
+      "displayName": "Ian Moore",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/5188523",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "D"
+      },
+      "team": {
+       "abbreviation": "ANA"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "2",
+   "displayName": "Buffalo Sabres",
+   "injuries": [
+    {
+     "id": "595858",
+     "longComment": "day-to-day",
+     "shortComment": "day-to-day",
+     "status": "Day-To-Day",
+     "date": "2026-10-14T13:14Z",
+     "type": {
+      "id": "6",
+      "name": "INJURY_STATUS_DAYTODAY",
+      "description": "day-to-day",
+      "abbreviation": "DD"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "Day-To-Day",
+       "abbreviation": "Day-To-Day"
+      },
+      "type": "Upper Body",
+      "detail": "Not Specified",
+      "side": "Not Specified",
+      "returnDate": "2026-10-15"
+     },
+     "athlete": {
+      "firstName": "Rasmus",
+      "lastName": "Dahlin",
+      "displayName": "Rasmus Dahlin",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/4294163",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "D"
+      },
+      "team": {
+       "abbreviation": "BUF"
+      }
+     }
+    },
+    {
+     "id": "595732",
+     "longComment": "Buffalo placed Grzelcyk on injured reserve Tuesday. He hasn't played since Opening Night against Columbus on Oct. 1. With Rasmus Dahlin (upper body) and Grzelcyk unavailable, the Sabres recalled Dennis Gilbert from AHL Rochester to play against Montreal on Tuesday.",
+     "shortComment": "Grzelcyk (lower body) suffered a \"flare-up\" and could be out for at least \"a few days,\" head coach Lindy Ruff told Rachel Lenzi of The Buffalo News on Tuesday.",
+     "status": "Injured Reserve",
+     "date": "2026-10-13T20:51Z",
+     "type": {
+      "id": "5",
+      "name": "INJURY_STATUS_IR",
+      "description": "Injured Reserve",
+      "abbreviation": "IR"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "IR",
+       "abbreviation": "IR"
+      },
+      "type": "Lower Body",
+      "returnDate": "2026-10-21"
+     },
+     "athlete": {
+      "firstName": "Matt",
+      "lastName": "Grzelcyk",
+      "displayName": "Matt Grzelcyk",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/3069448",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "D"
+      },
+      "team": {
+       "abbreviation": "BUF"
+      }
+     }
+    },
+    {
+     "id": "594873",
+     "longComment": "Zucker has spent the start of the regular season recovering from offseason sports hernia surgery, and while he appears to be trending in the right direction in his rehab process, head coach Lindy Ruff said Tuesday that the 34-year-old will still require \"a couple of weeks\" before he's cleared for game action. Zucker made 62 regular-season appearances for Buffalo last year and recorded 24 goals, 21 assists, 57 hits, 23 PIM and 21 blocked shots while averaging 15:37 of ice time.",
+     "shortComment": "Zucker (abdomen) participated in Tuesday's morning skate but is still a few weeks away from returning to game action, Matthew Fairburn of The Athletic reports.",
+     "status": "Injured Reserve",
+     "date": "2026-10-06T15:10Z",
+     "type": {
+      "id": "5",
+      "name": "INJURY_STATUS_IR",
+      "description": "Injured Reserve",
+      "abbreviation": "IR"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "IR",
+       "abbreviation": "IR"
+      },
+      "type": "Abdomen",
+      "detail": "Surgery",
+      "side": "Not Specified",
+      "returnDate": "2026-10-15"
+     },
+     "athlete": {
+      "firstName": "Jason",
+      "lastName": "Zucker",
+      "displayName": "Jason Zucker",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/2593315",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "LW"
+      },
+      "team": {
+       "abbreviation": "BUF"
+      }
+     }
+    },
+    {
+     "id": "594872",
+     "longComment": "According to head coach Lindy Ruff, Lyon is still without a timetable for return from the injury he suffered late in the preseason. However, his presence at Tuesday's optional morning skate is a sign that he could be somewhat near returning. The 33-year-old netminder had a strong 2025-26 regular season, where he posted a 20-10-4 record, a 2.77 GAA and a .906 save percentage across 36 appearances. In his absence, Ukko-Pekka Luukkonen should continue to serve as the lead option between the pipes and Colten Ellis should see an increased role as well.",
+     "shortComment": "Lyon (upper body) was spotted practicing at Tuesday's optional morning skate, per Matthew Fairburn of The Athletic.",
+     "status": "Injured Reserve",
+     "date": "2026-10-06T15:07Z",
+     "type": {
+      "id": "5",
+      "name": "INJURY_STATUS_IR",
+      "description": "Injured Reserve",
+      "abbreviation": "IR"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "IR",
+       "abbreviation": "IR"
+      },
+      "type": "Upper Body",
+      "returnDate": "2026-10-24"
+     },
+     "athlete": {
+      "firstName": "Alex",
+      "lastName": "Lyon",
+      "displayName": "Alex Lyon",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/3654006",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "G"
+      },
+      "team": {
+       "abbreviation": "BUF"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "3",
+   "displayName": "Calgary Flames",
+   "injuries": [
+    {
+     "id": "595598",
+     "longComment": "Honzek missed Saturday's game against the Ducks due to a previously unspecified injury, but it's now been revealed that he's dealing with a lower-body issue. After being further evaluated, the 21-year-old appears to be facing a multi-game absence. Maxim Tsyplakov will likely continue to see an uptick in playing time while Honzek is sidelined.",
+     "shortComment": "The Flames announced Monday that Honzek is considered week-to-week due to a lower-body injury.",
+     "status": "Out",
+     "date": "2026-10-12T16:39Z",
+     "type": {
+      "id": "4",
+      "name": "INJURY_STATUS_OUT",
+      "description": "out",
+      "abbreviation": "O"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "OUT",
+       "abbreviation": "OUT"
+      },
+      "type": "Lower Body",
+      "returnDate": "2026-10-22"
+     },
+     "athlete": {
+      "firstName": "Samuel",
+      "lastName": "Honzek",
+      "displayName": "Samuel Honzek",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/5149191",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "LW"
+      },
+      "team": {
+       "abbreviation": "CGY"
+      }
+     }
+    },
+    {
+     "id": "594122",
+     "longComment": "Huberdeau missed the final 26 games of the 2025-26 regular season. He won't be available at the beginning of the 2026-27 campaign, and it's unclear when he will be available to return.",
+     "shortComment": "Huberdeau (hip) was placed on injured reserve Monday, per Pat Steinberg of QR Calgary 770 AM.",
+     "status": "Injured Reserve",
+     "date": "2026-09-28T21:15Z",
+     "type": {
+      "id": "5",
+      "name": "INJURY_STATUS_IR",
+      "description": "Injured Reserve",
+      "abbreviation": "IR"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "IR",
+       "abbreviation": "IR"
+      },
+      "type": "Hip",
+      "detail": "Surgery",
+      "returnDate": "2026-11-02"
+     },
+     "athlete": {
+      "firstName": "Jonathan",
+      "lastName": "Huberdeau",
+      "displayName": "Jonathan Huberdeau",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/2562606",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "LW"
+      },
+      "team": {
+       "abbreviation": "CGY"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "7",
+   "displayName": "Carolina Hurricanes",
+   "injuries": [
+    {
+     "id": "595901",
+     "longComment": "Nikishin hasn't signed a new contract as a restricted free agent and has officially requested a trade, though nothing has materialized as of yet. Even if the young defenseman were on the roster, he may not be playing on a nightly basis, with Mike Reilly potentially ahead of him on the depth chart.",
+     "shortComment": "Nikishin (contract dispute) is on the Hurricanes' injured, non-roster list, per the NHL media site Wednesday.",
+     "status": "Injured Reserve",
+     "date": "2026-10-14T15:18Z",
+     "type": {
+      "id": "5",
+      "name": "INJURY_STATUS_IR",
+      "description": "Injured Reserve",
+      "abbreviation": "IR"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "IR-NR",
+       "abbreviation": "IR-NR"
+      },
+      "type": "Contract Dispute",
+      "detail": "Not Specified",
+      "side": "Not Specified",
+      "returnDate": "2026-11-01"
+     },
+     "athlete": {
+      "firstName": "Alexander",
+      "lastName": "Nikishin",
+      "displayName": "Alexander Nikishin",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/4915850",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "D"
+      },
+      "team": {
+       "abbreviation": "CAR"
+      }
+     }
+    },
+    {
+     "id": "595749",
+     "longComment": "out",
+     "shortComment": "out",
+     "status": "Out",
+     "date": "2026-10-14T01:55Z",
+     "type": {
+      "id": "4",
+      "name": "INJURY_STATUS_OUT",
+      "description": "out",
+      "abbreviation": "O"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "OUT",
+       "abbreviation": "OUT"
+      },
+      "type": "Upper Body",
+      "returnDate": "2026-10-20"
+     },
+     "athlete": {
+      "firstName": "Taylor",
+      "lastName": "Hall",
+      "displayName": "Taylor Hall",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/5428",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "LW"
+      },
+      "team": {
+       "abbreviation": "CAR"
+      }
+     }
+    },
+    {
+     "id": "595678",
+     "longComment": "out",
+     "shortComment": "out",
+     "status": "Out",
+     "date": "2026-10-13T15:20Z",
+     "type": {
+      "id": "4",
+      "name": "INJURY_STATUS_OUT",
+      "description": "out",
+      "abbreviation": "O"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "OUT",
+       "abbreviation": "OUT"
+      },
+      "type": "Calf",
+      "returnDate": "2026-12-03"
+     },
+     "athlete": {
+      "firstName": "Jordan",
+      "lastName": "Staal",
+      "displayName": "Jordan Staal",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/3541",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "C"
+      },
+      "team": {
+       "abbreviation": "CAR"
+      }
+     }
+    },
+    {
+     "id": "594004",
+     "longComment": "Jarvis was initially pegged to miss about 4-6 months after having shoulder surgery in June. However, he believes he could return ahead of schedule after taking to the ice during training camp. Jarvis amassed 32 goals, 66 points, 224 shots on net and 81 hits in 71 games for the Hurricanes during the 2025-26 regular season.",
+     "shortComment": "Jarvis (shoulder) was placed on the injured non-roster list Sunday.",
+     "status": "Injured Reserve",
+     "date": "2026-09-27T18:00Z",
+     "type": {
+      "id": "5",
+      "name": "INJURY_STATUS_IR",
+      "description": "Injured Reserve",
+      "abbreviation": "IR"
+     },
+     "details": {
+      "fantasyStatus": {
+       "description": "IR-NR",
+       "abbreviation": "IR-NR"
+      },
+      "type": "Shoulder",
+      "detail": "Surgery",
+      "side": "Not Specified",
+      "returnDate": "2026-10-24"
+     },
+     "athlete": {
+      "firstName": "Seth",
+      "lastName": "Jarvis",
+      "displayName": "Seth Jarvis",
+      "links": [
+       {
+        "href": "https://www.espn.com/nhl/player/_/id/4697396",
+        "rel": [
+         "playercard",
+         "desktop",
+         "athlete"
+        ]
+       }
+      ],
+      "position": {
+       "abbreviation": "C"
+      },
+      "team": {
+       "abbreviation": "CAR"
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

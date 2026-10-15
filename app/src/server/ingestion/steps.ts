@@ -17,6 +17,9 @@ import {
 } from "@/server/ingestion/moneypuck";
 import { importNhlRecords } from "@/server/ingestion/nhl-records";
 import { addDays, fetchGames, seasonDateRange, todayEastern, upsertGames } from "@/server/ingestion/nhl";
+import { importInjuries } from "@/server/ingestion/espn/injuries";
+import { importOdds } from "@/server/ingestion/espn/odds";
+import { importTransactions } from "@/server/ingestion/espn/transactions";
 import { calculateScoreStates } from "@/server/ingestion/score-state";
 import { consoleLogger, runStep, type Logger, type StepResult } from "@/server/ingestion/sync-runs";
 
@@ -163,5 +166,31 @@ export function refreshViews(db: Queryable, logger = consoleLogger) {
     await db.query("REFRESH MATERIALIZED VIEW CONCURRENTLY season_percentiles");
     await db.query("ANALYZE");
     return { rowsWritten: 0 };
+  }, logger);
+}
+
+// ESPN's injury list → injury stints (snapshot reconcile, see espn/injuries.ts).
+export function syncInjuries(db: Queryable, logger = consoleLogger) {
+  return runStep(db, "espn_injuries", null, async () => {
+    const result = await importInjuries(db, logger);
+    return { rowsWritten: result.inserted + result.updated + result.resolved + result.athletesWritten };
+  }, logger);
+}
+
+// ESPN transactions for the last `days` days (ET): ESPN sometimes adds or
+// edits entries a day or two late.
+export function syncTransactions(db: Queryable, days = 3, logger = consoleLogger) {
+  return runStep(db, "espn_transactions", null, async () => {
+    const today = todayEastern();
+    return { rowsWritten: (await importTransactions(db, addDays(today, -days), today, logger)).written };
+  }, logger);
+}
+
+// Sportsbook lines for yesterday's games (closing lines, now final) and
+// today's (opening lines so far).
+export function syncOdds(db: Queryable, logger = consoleLogger) {
+  return runStep(db, "espn_odds", null, async () => {
+    const today = todayEastern();
+    return { rowsWritten: (await importOdds(db, [addDays(today, -1), today], logger)).written };
   }, logger);
 }

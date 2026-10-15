@@ -9,6 +9,7 @@ import {
 } from "@/hooks";
 import { ErrorState } from "@/components/shared";
 import { PlayerTrackingSection } from "@/components/tracking";
+import { PlayerTransactions } from "@/components/injuries";
 import { PlayerAwards } from "@/components/player-detail/PlayerAwards";
 import { PlayerStreakLine } from "@/components/game-scores/Streaks";
 import { GoaliePlayoffPressure, PlayerMilestones } from "@/components/player-detail/PlayerMilestones";
@@ -335,6 +336,7 @@ function PlayerDetailPage() {
                 </Section>
                 {player?.goaliePlayoffs && <GoaliePlayoffPressure record={player.goaliePlayoffs} />}
                 <PlayerAwards awards={player?.awards ?? []} />
+                <PlayerTransactions transactions={player?.transactions ?? []} />
               </>
             )}
           </>
@@ -383,6 +385,7 @@ function PlayerDetailPage() {
                 </Section>
                 <PlayerAwards awards={player?.awards ?? []} />
                 <PlayerMilestones milestones={player?.milestones ?? []} />
+                <PlayerTransactions transactions={player?.transactions ?? []} />
                 <Section title="Career trends">
                   <CareerTrajectory
                     stats={allStats as SkaterStats[]}

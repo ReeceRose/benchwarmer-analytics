@@ -5,7 +5,10 @@
 
 import { HttpError } from "@/server/api/errors";
 import { getCareerTotals, getMilestones as fetchMilestones, type NhlCareerTotals, type NhlMilestone } from "@/server/api/nhl-client";
-import type { Milestone, MilestonesResponse } from "@/types";
+import type { ApiContext } from "@/server/api/handler";
+import { injuriesByPlayer } from "@/server/api/injuries";
+import { isOut } from "@/lib/injuries";
+import type { Milestone, MilestonesResponse, PlayerInjury } from "@/types";
 
 // The NHL's milestone names, and the career total each counts.
 const SKATER_TOTALS: Record<string, (m: NhlMilestone) => number | undefined> = {
@@ -98,12 +101,24 @@ async function current(kind: "skater" | "goalie", rows: NhlMilestone[] | null): 
     .filter((m): m is Milestone => m !== null);
 }
 
-export async function getMilestones(): Promise<MilestonesResponse> {
+/**
+ * Drops players who won't play soon (IR, out, suspended): "about 5 games
+ * away" means nothing for them. Day-to-day players stay, with their injury.
+ */
+export function withoutInjured(rows: Milestone[], injuries: ReadonlyMap<number, PlayerInjury>): Milestone[] {
+  return rows
+    .filter((m) => !isOut(injuries.get(m.playerId)))
+    .map((m) => ({ ...m, injury: injuries.get(m.playerId) ?? null }));
+}
+
+export async function getMilestones({ db }: ApiContext): Promise<MilestonesResponse> {
   const [skaters, goalies] = await Promise.all([fetchMilestones("skaters"), fetchMilestones("goalies")]);
   // Don't cache an empty list when the NHL is down.
   if (skaters === null && goalies === null) {
     throw new HttpError(502, { error: "NHL milestones are unavailable", code: "UPSTREAM_UNAVAILABLE" });
   }
   const [s, g] = await Promise.all([current("skater", skaters), current("goalie", goalies)]);
-  return { milestones: rankMilestones([...s, ...g]) };
+  const all = [...s, ...g];
+  const injuries = await injuriesByPlayer(db, all.map((m) => m.playerId));
+  return { milestones: rankMilestones(withoutInjured(all, injuries)) };
 }

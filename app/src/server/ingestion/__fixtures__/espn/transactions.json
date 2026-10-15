@@ -1,0 +1,278 @@
+{
+ "count": 38,
+ "pageIndex": 1,
+ "pageSize": 1000,
+ "pageCount": 1,
+ "transactions": [
+  {
+   "date": "2026-10-14T07:00Z",
+   "description": "Assigned D Ville Heinola to Henderson (AHL).",
+   "team": {
+    "id": "37",
+    "abbreviation": "VGK",
+    "displayName": "Vegas Golden Knights"
+   }
+  },
+  {
+   "date": "2026-10-14T07:00Z",
+   "description": "Placed C Aatu Raty on waivers.",
+   "team": {
+    "id": "22",
+    "abbreviation": "VAN",
+    "displayName": "Vancouver Canucks"
+   }
+  },
+  {
+   "date": "2026-10-14T07:00Z",
+   "description": "Assigned G Mads Sogaard to Syracuse (AHL).",
+   "team": {
+    "id": "20",
+    "abbreviation": "TB",
+    "displayName": "Tampa Bay Lightning"
+   }
+  },
+  {
+   "date": "2026-10-14T07:00Z",
+   "description": "Reinstated C Alex Barre-Boulet from injured reserve. Placed Barre-Boulet on waivers.",
+   "team": {
+    "id": "18",
+    "abbreviation": "SJ",
+    "displayName": "San Jose Sharks"
+   }
+  },
+  {
+   "date": "2026-10-14T07:00Z",
+   "description": "Assigned C Cole Beaudoin to Hartford (AHL). Recalled C Justin Dowling from Hartford.",
+   "team": {
+    "id": "13",
+    "abbreviation": "NYR",
+    "displayName": "New York Rangers"
+   }
+  },
+  {
+   "date": "2026-10-14T07:00Z",
+   "description": "Recalled D David Reinbacher from Laval (AHL).",
+   "team": {
+    "id": "10",
+    "abbreviation": "MTL",
+    "displayName": "Montreal Canadiens"
+   }
+  },
+  {
+   "date": "2026-10-14T07:00Z",
+   "description": "Placed D Alexander Nikishin on the injured/non-roster list.",
+   "team": {
+    "id": "7",
+    "abbreviation": "CAR",
+    "displayName": "Carolina Hurricanes"
+   }
+  },
+  {
+   "date": "2026-10-14T07:00Z",
+   "description": "Placed D Simon Edvinsson on the injured/non-roster list.",
+   "team": {
+    "id": "5",
+    "abbreviation": "DET",
+    "displayName": "Detroit Red Wings"
+   }
+  },
+  {
+   "date": "2026-10-13T07:00Z",
+   "description": "Recalled F Justin Kirkland from Iowa (AHL). Placed F Nico Sturm on injured reserve.",
+   "team": {
+    "id": "30",
+    "abbreviation": "MIN",
+    "displayName": "Minnesota Wild"
+   }
+  },
+  {
+   "date": "2026-10-13T07:00Z",
+   "description": "Recalled G Cooper Black from Charlotte (AHL).",
+   "team": {
+    "id": "26",
+    "abbreviation": "FLA",
+    "displayName": "Florida Panthers"
+   }
+  },
+  {
+   "date": "2026-10-13T07:00Z",
+   "description": "Recalled F Roger McQueen from San Diego (AHL). Activated D Drew Helleson from injured reserve. Placed F Ryan Poehling on injured reserve.",
+   "team": {
+    "id": "25",
+    "abbreviation": "ANA",
+    "displayName": "Anaheim Ducks"
+   }
+  },
+  {
+   "date": "2026-10-13T07:00Z",
+   "description": "Recalled G Mads Sogaard from Syracuse (AHL).",
+   "team": {
+    "id": "20",
+    "abbreviation": "TB",
+    "displayName": "Tampa Bay Lightning"
+   }
+  },
+  {
+   "date": "2026-10-13T07:00Z",
+   "description": "Assigned D Colin Ralph to Springfield (AHL).",
+   "team": {
+    "id": "19",
+    "abbreviation": "STL",
+    "displayName": "St. Louis Blues"
+   }
+  },
+  {
+   "date": "2026-10-13T07:00Z",
+   "description": "Placed F Harrison Scott on waivers.",
+   "team": {
+    "id": "9",
+    "abbreviation": "DAL",
+    "displayName": "Dallas Stars"
+   }
+  },
+  {
+   "date": "2026-10-13T07:00Z",
+   "description": "Assigned F Nick Lardis to Rockford (AHL).",
+   "team": {
+    "id": "4",
+    "abbreviation": "CHI",
+    "displayName": "Chicago Blackhawks"
+   }
+  },
+  {
+   "date": "2026-10-13T07:00Z",
+   "description": "Recalled D Dennis Gilbert from Rochester (AHL). Placed D Matt Grzelcyk on injured reserve.",
+   "team": {
+    "id": "2",
+    "abbreviation": "BUF",
+    "displayName": "Buffalo Sabres"
+   }
+  },
+  {
+   "date": "2026-10-12T07:00Z",
+   "description": "Assigned F Ben Hemmerling to Henderson (AHL).",
+   "team": {
+    "id": "37",
+    "abbreviation": "VGK",
+    "displayName": "Vegas Golden Knights"
+   }
+  },
+  {
+   "date": "2026-10-12T07:00Z",
+   "description": "Recalled F Tyler Pitlick from Iowa (AHL). Placed F Marcus Folingo on injured reserve.",
+   "team": {
+    "id": "30",
+    "abbreviation": "MIN",
+    "displayName": "Minnesota Wild"
+   }
+  },
+  {
+   "date": "2026-10-12T07:00Z",
+   "description": "Reinstated RW Riley Bezeau from non-roster injured reserve. Assigned Bezeau to Cleveland (AHL).",
+   "team": {
+    "id": "29",
+    "abbreviation": "CBJ",
+    "displayName": "Columbus Blue Jackets"
+   }
+  },
+  {
+   "date": "2026-10-12T07:00Z",
+   "description": "Placed D Rasmus Sandin on long-term injured reserve and D Matt Roy on injured reserve. Recalled D Justin Holl from Hershey (AHL).",
+   "team": {
+    "id": "23",
+    "abbreviation": "WSH",
+    "displayName": "Washington Capitals"
+   }
+  },
+  {
+   "date": "2026-10-12T07:00Z",
+   "description": "Recalled D Colin Ralph from Springfield (AHL).",
+   "team": {
+    "id": "19",
+    "abbreviation": "STL",
+    "displayName": "St. Louis Blues"
+   }
+  },
+  {
+   "date": "2026-10-12T07:00Z",
+   "description": "Placed D Trevor van Riemsdyk on injured reserve.",
+   "team": {
+    "id": "16",
+    "abbreviation": "PIT",
+    "displayName": "Pittsburgh Penguins"
+   }
+  },
+  {
+   "date": "2026-10-12T07:00Z",
+   "description": "Placed D Helge Grans on waivers. Assigned RW Carl Grundstrom to Lehigh Valley (AHL).",
+   "team": {
+    "id": "15",
+    "abbreviation": "PHI",
+    "displayName": "Philadelphia Flyers"
+   }
+  },
+  {
+   "date": "2026-10-12T07:00Z",
+   "description": "Placed RW Connor Brown on injured reserve, retroactive to Sept. 28. Recalled RW Stefan Noesen from Utica (AHL).",
+   "team": {
+    "id": "11",
+    "abbreviation": "NJ",
+    "displayName": "New Jersey Devils"
+   }
+  },
+  {
+   "date": "2026-10-11T07:00Z",
+   "description": "Placed LW Victor Olofsson on injured reserve. Recalled D Ville Heinola from Henderson (AHL).",
+   "team": {
+    "id": "37",
+    "abbreviation": "VGK",
+    "displayName": "Vegas Golden Knights"
+   }
+  },
+  {
+   "date": "2026-10-11T07:00Z",
+   "description": "Placed RD Christopher Tanev on injured reserve. Recalled LD Marshall Rifai from Toronto (AHL).",
+   "team": {
+    "id": "21",
+    "abbreviation": "TOR",
+    "displayName": "Toronto Maple Leafs"
+   }
+  },
+  {
+   "date": "2026-10-11T07:00Z",
+   "description": "Placed RW Travis Konecny on injured reserve. Recalled D Oliver Bonk from Lehigh Valley (AHL).",
+   "team": {
+    "id": "15",
+    "abbreviation": "PHI",
+    "displayName": "Philadelphia Flyers"
+   }
+  },
+  {
+   "date": "2026-10-11T07:00Z",
+   "description": "Recalled D Jorian Donovan from Belleville (AHL). Placed RD Cameron Crotty on injured reserve.",
+   "team": {
+    "id": "14",
+    "abbreviation": "OTT",
+    "displayName": "Ottawa Senators"
+   }
+  },
+  {
+   "date": "2026-10-11T07:00Z",
+   "description": "Placed G Igor Shesterkin on long-term injured reserve. Recalled C Gabriel Beaudoin from Hartford (AHL).",
+   "team": {
+    "id": "13",
+    "abbreviation": "NYR",
+    "displayName": "New York Rangers"
+   }
+  },
+  {
+   "date": "2026-10-11T07:00Z",
+   "description": "Reinstated D Charlie McAvoy from suspension.",
+   "team": {
+    "id": "1",
+    "abbreviation": "BOS",
+    "displayName": "Boston Bruins"
+   }
+  }
+ ]
+}

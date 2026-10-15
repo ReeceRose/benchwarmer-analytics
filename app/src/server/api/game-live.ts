@@ -40,6 +40,7 @@ import type {
   LiveGoalie,
   LiveOnIcePlayer,
   LivePenalty,
+  LiveScratch,
   LivePuckEvent,
   LiveSeasonContext,
   LiveShot,
@@ -53,6 +54,9 @@ import type {
   StrengthState,
   TeamSide,
 } from "@/types/game-live";
+import type { PlayerInjury } from "@/types/injuries";
+import { injuriesByPlayer } from "@/server/api/injuries";
+import { todayEastern } from "@/server/ingestion/nhl";
 
 const SIDES: readonly TeamSide[] = ["away", "home"];
 const opposite = (side: TeamSide): TeamSide => (side === "away" ? "home" : "away");
@@ -194,6 +198,8 @@ export interface LiveGameInputs {
   clubStats: Partial<Record<TeamSide, NhlClubStats | null>>;
   /** MoneyPuck shots for a final game; when present, their xG replaces the model's. */
   referenceXg?: ReferenceShot[];
+  /** Current injuries of the scratched players, to say why they're out. */
+  injuries?: ReadonlyMap<number, PlayerInjury>;
   now?: Date;
 }
 
@@ -875,8 +881,12 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
   const gameInfo = rightRail?.gameInfo;
   const official = (o: { default?: string; fullName?: Localized; sweaterNumber?: number }) =>
     `${o.fullName ? text(o.fullName) : (o.default ?? "")}${o.sweaterNumber != null ? ` #${o.sweaterNumber}` : ""}`;
-  const scratches = (side: TeamSide) =>
-    (gameInfo?.[teamKey(side)]?.scratches ?? []).map((s) => `${text(s.firstName)} ${text(s.lastName)}`);
+  const scratches = (side: TeamSide): LiveScratch[] =>
+    (gameInfo?.[teamKey(side)]?.scratches ?? []).map((s) => ({
+      playerId: s.id ?? null,
+      name: `${text(s.firstName)} ${text(s.lastName)}`,
+      injury: (s.id != null ? input.injuries?.get(s.id) : undefined) ?? null,
+    }));
 
   const onIceNow = (players: NhlIceSurfacePlayer[] | undefined): LiveOnIcePlayer[] =>
     (players ?? []).map((p) => ({
@@ -1040,8 +1050,18 @@ export async function getGameLive({ db, params }: ApiContext) {
     playByPlay.homeTeam?.abbrev ? getClubStats(playByPlay.homeTeam.abbrev) : null,
   ]);
   const isFinal = isFinalState(landing?.gameState ?? playByPlay.gameState);
-  const referenceXg = isFinal ? await moneyPuckShots(db, gameId) : [];
-  const body = buildLiveGame({ gameId, landing, boxscore, playByPlay, rightRail, shifts, standings, clubStats: { away, home }, referenceXg });
+  // Injuries are today's, so they only explain scratches in today's games.
+  const scratchedIds = [rightRail?.gameInfo?.awayTeam, rightRail?.gameInfo?.homeTeam]
+    .flatMap((t) => t?.scratches ?? [])
+    .flatMap((s) => (s.id != null ? [s.id] : []));
+  const isToday = !landing?.gameDate || landing.gameDate >= todayEastern();
+  const [referenceXg, injuries] = await Promise.all([
+    isFinal ? moneyPuckShots(db, gameId) : [],
+    isToday ? injuriesByPlayer(db, scratchedIds) : new Map<number, PlayerInjury>(),
+  ]);
+  const body = buildLiveGame({
+    gameId, landing, boxscore, playByPlay, rightRail, shifts, standings, clubStats: { away, home }, referenceXg, injuries,
+  });
   // Finished games stop changing, so they can sit in the CDN much longer.
   return json(body, isFinalState(body.meta.gameState) ? CacheTier.semiStatic : CacheTier.live);
 }

@@ -7,6 +7,7 @@ import { addDays, groupBy, round, sum, todayUtc } from "@/server/api/format";
 import { DangerZones, GameState, isFinalState, isLiveState } from "@/server/api/constants";
 import { calculateDeserveToWin } from "@/server/api/deserve-to-win";
 import { allTimeRecord } from "@/server/api/history";
+import { teamInjuries } from "@/server/api/injuries";
 import {
   getBoxscore,
   getGameLanding,
@@ -879,6 +880,12 @@ export async function getGamePreview({ db, params }: ApiContext) {
     .filter((g) => isFinalRegularSeason(g) && (g.homeTeam?.abbrev === away || g.awayTeam?.abbrev === away))
     .sort(byDateDesc);
 
+  // Injuries are today's: only an upcoming game (or today's) shows them.
+  const upcoming = game.gameDate >= todayEastern();
+  const [homeInjured, awayInjured] = upcoming ? await Promise.all([teamInjuries(db, home), teamInjuries(db, away)]) : [[], []];
+  const injuryOf = new Map([...homeInjured, ...awayInjured].filter((p) => p.playerId !== null).map((p) => [p.playerId!, p.injury]));
+  const withInjury = <T extends { playerId: number }>(rows: T[]) => rows.map((r) => ({ ...r, injury: injuryOf.get(r.playerId) ?? null }));
+
   return {
     game: {
       id: game.gameId,
@@ -894,8 +901,9 @@ export async function getGamePreview({ db, params }: ApiContext) {
       home: teamPreviewStats(home, homeStats, standings.get(home), specialTeams.get(home)),
       away: teamPreviewStats(away, awayStats, standings.get(away), specialTeams.get(away)),
     },
-    hotPlayers: { home: homeHot, away: awayHot },
-    goalieMatchup: { home: homeGoalies, away: awayGoalies },
+    hotPlayers: { home: withInjury(homeHot), away: withInjury(awayHot) },
+    goalieMatchup: { home: withInjury(homeGoalies), away: withInjury(awayGoalies) },
+    injuries: { home: homeInjured, away: awayInjured },
   };
 }
 

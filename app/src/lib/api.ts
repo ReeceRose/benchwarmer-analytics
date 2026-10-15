@@ -62,6 +62,8 @@ import type {
   PlayerTrackingResponse,
   TeamTrackingResponse,
   MilestonesResponse,
+  TeamInjuriesResponse,
+  TransactionsResponse,
   DraftResponse,
   FranchiseHistoryResponse,
   GoalReplayResponse,
@@ -738,6 +740,16 @@ export async function getTeamTracking(abbrev: string, season?: number): Promise<
 }
 
 // NHL records
+
+export async function getTeamInjuries(abbrev: string): Promise<TeamInjuriesResponse> {
+  const { data } = await api.get<TeamInjuriesResponse>(`/teams/${abbrev}/injuries`);
+  return data;
+}
+
+export async function getTeamTransactions(abbrev: string, limit?: number): Promise<TransactionsResponse> {
+  const { data } = await api.get<TransactionsResponse>(`/teams/${abbrev}/transactions`, { params: { limit } });
+  return data;
+}
 
 export async function getMilestones(): Promise<MilestonesResponse> {
   const { data } = await api.get<MilestonesResponse>("/milestones");

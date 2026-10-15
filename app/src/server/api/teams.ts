@@ -16,6 +16,7 @@ import type { ApiContext } from "@/server/api/handler";
 import { ApiError, badRequest, notFound } from "@/server/api/errors";
 import { groupBy, headshotUrl, round, seasonLabel, sum, todayUtc } from "@/server/api/format";
 import { currentSeason } from "@/server/ingestion/normalize";
+import { injuriesByPlayer } from "@/server/api/injuries";
 import { GameState, isFinalState, VALID_SITUATIONS } from "@/server/api/constants";
 import { alias } from "drizzle-orm/pg-core";
 
@@ -110,6 +111,12 @@ const NO_STATS = {
   goalsSavedAboveExpected: null,
 };
 
+// Each player's current injury (null when healthy).
+async function withInjuries<T extends { id: number }>(db: Database, players: T[]) {
+  const injuries = await injuriesByPlayer(db, players.map((p) => p.id));
+  return players.map((p) => ({ ...p, injury: injuries.get(p.id) ?? null }));
+}
+
 export async function getRoster({ db, params, query }: ApiContext) {
   const abbrev = params.abbrev;
   const season = query.int("season");
@@ -124,7 +131,7 @@ export async function getRoster({ db, params, query }: ApiContext) {
       .orderBy(asc(players.position), asc(players.name));
     return {
       teamAbbreviation: abbrev,
-      players: rows.map((p) => ({ ...rosterPlayerBase(p), ...NO_STATS })),
+      players: await withInjuries(db, rows.map((p) => ({ ...rosterPlayerBase(p), ...NO_STATS }))),
       season: null,
       playoffs: playoffs ?? null,
     };
@@ -202,7 +209,9 @@ export async function getRoster({ db, params, query }: ApiContext) {
   }
   dtos.sort((a, b) => (b.iceTimeSeconds ?? 0) - (a.iceTimeSeconds ?? 0));
 
-  return { teamAbbreviation: abbrev, players: dtos, season, playoffs: playoffs ?? null };
+  // Injuries are today's, so only the current season's roster shows them.
+  const rosterPlayers = season === currentSeason() ? await withInjuries(db, dtos) : dtos;
+  return { teamAbbreviation: abbrev, players: rosterPlayers, season, playoffs: playoffs ?? null };
 }
 
 // A team's skater season rows (with player info), most ice time first.

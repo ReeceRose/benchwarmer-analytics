@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { EntityHero, HeroBadge, HeroStat } from "@/components/layout";
+import { describeInjury, injuryReason } from "@/lib/injuries";
 import {
   formatHeight,
   formatOrdinal,
@@ -72,6 +73,13 @@ export function PlayerHero({ player, season }: PlayerHeroProps) {
       badges={
         <>
           {player.position && <HeroBadge>{formatPosition(player.position)}</HeroBadge>}
+          {player.injury && (
+            <span className="inline-flex" title={player.injury.comment ?? describeInjury(player.injury)}>
+              <HeroBadge>
+                {player.injury.label} · {injuryReason(player.injury)}
+              </HeroBadge>
+            </span>
+          )}
           {player.hallOfFame && (
             <HeroBadge>Hall of Fame{player.hallOfFame.inductedYear ? ` ${player.hallOfFame.inductedYear}` : ""}</HeroBadge>
           )}

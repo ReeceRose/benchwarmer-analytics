@@ -1,3 +1,4 @@
+import type { PlayerInjury } from "@/types/injuries";
 // NHL records: milestones, the entry draft, franchise history and goal replays.
 
 /** An active player closing in on a round career number. */
@@ -13,6 +14,8 @@ export interface Milestone {
   remaining: number;
   /** Games until the target at the player's career rate; null when there's no rate yet. */
   gamesAway: number | null;
+  /** Day-to-day injury, if any. Players on IR or out aren't listed. */
+  injury?: PlayerInjury | null;
 }
 
 export interface MilestonesResponse {

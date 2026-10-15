@@ -1,36 +1,12 @@
 import { Readable } from "node:stream";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { Unzip, UnzipInflate } from "fflate";
+import { fetchWithRetry } from "@/server/ingestion/http";
 
 const BASE_URL = "https://moneypuck.com/moneypuck/playerData";
 const SHOTS_URL = "https://peter-tanner.com/moneypuck/downloads";
-const USER_AGENT = "benchwarmer-analytics (personal hockey analytics project)";
 
 export type SeasonDataset = "teams" | "skaters" | "goalies" | "lines";
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// GET with retries on network errors, 429 and 5xx (exponential backoff).
-// Returns null on 404: playoff files don't exist for seasons without playoffs yet.
-export async function fetchWithRetry(url: string, attempts = 4): Promise<Response | null> {
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      const response = await fetch(url, {
-        headers: { "user-agent": USER_AGENT },
-        signal: AbortSignal.timeout(120_000),
-      });
-      if (response.status === 404) return null;
-      if (response.ok) return response;
-      lastError = new Error(`HTTP ${response.status} for ${url}`);
-      if (response.status !== 429 && response.status < 500) break;
-    } catch (error) {
-      lastError = error;
-    }
-    if (attempt < attempts) await sleep(1000 * 2 ** attempt);
-  }
-  throw lastError instanceof Error ? lastError : new Error(String(lastError));
-}
 
 export function seasonSummaryUrl(dataset: SeasonDataset, season: number, playoffs: boolean): string {
   return `${BASE_URL}/seasonSummary/${season}/${playoffs ? "playoffs" : "regular"}/${dataset}.csv`;

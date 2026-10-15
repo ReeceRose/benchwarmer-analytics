@@ -1,6 +1,6 @@
 import { games } from "@/server/db/schema";
 import { upsert, type Queryable, type UpsertRow } from "@/server/ingestion/db";
-import { fetchWithRetry } from "@/server/ingestion/moneypuck";
+import { fetchWithRetry } from "@/server/ingestion/http";
 
 const NHL_API = "https://api-web.nhle.com/v1";
 

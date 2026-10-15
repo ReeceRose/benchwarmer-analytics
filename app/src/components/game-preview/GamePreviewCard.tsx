@@ -5,6 +5,8 @@ import { TeamComparisonSection } from "@/components/game-preview/TeamComparisonS
 import { HotPlayersSection } from "@/components/game-preview/HotPlayersSection";
 import { GoalieMatchupSection } from "@/components/game-preview/GoalieMatchupSection";
 import { WinChanceSection } from "@/components/game-preview/WinChanceSection";
+import { TeamHeading } from "@/components/game-preview/TeamHeading";
+import { InjuryList } from "@/components/injuries";
 import type { GamePreview, GoalieRecentFormResponse } from "@/types";
 
 interface GamePreviewSectionsProps {
@@ -20,9 +22,11 @@ export function GamePreviewSections({
   preview,
   goalieRecentForm,
 }: GamePreviewSectionsProps) {
-  const { game, headToHead, teamComparison, hotPlayers, goalieMatchup } =
+  const { game, headToHead, teamComparison, hotPlayers, goalieMatchup, injuries } =
     preview;
   const { home, away } = teamComparison;
+  // Browsers may hold a response from before injuries existed for a few minutes after a deploy.
+  const injured = { away: injuries?.away ?? [], home: injuries?.home ?? [] };
 
   return (
     <div className="space-y-8">
@@ -49,6 +53,23 @@ export function GamePreviewSections({
           </Panel>
         </Section>
       </div>
+
+      {(injured.away.length > 0 || injured.home.length > 0) && (
+        <Section title="Injuries" description="Players on each team's injury list, most serious first. Updated twice a day.">
+          <Panel>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="min-w-0">
+                <TeamHeading team={game.awayTeam} />
+                <InjuryList players={injured.away} team={game.awayTeam} empty="None reported." />
+              </div>
+              <div className="min-w-0">
+                <TeamHeading team={game.homeTeam} />
+                <InjuryList players={injured.home} team={game.homeTeam} empty="None reported." />
+              </div>
+            </div>
+          </Panel>
+        </Section>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         <Section title="Hot and cold" description="Goals vs expected goals at 5v5">

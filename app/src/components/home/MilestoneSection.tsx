@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Panel, Section } from "@/components/layout";
+import { InjuryBadge } from "@/components/shared";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMilestones } from "@/hooks";
@@ -39,7 +40,10 @@ function MilestoneRow({ m }: { m: Milestone }) {
           <AvatarFallback className="text-[10px]">{getPlayerInitials(m.name)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium group-hover:text-link">{m.name}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium group-hover:text-link">{m.name}</span>
+            <InjuryBadge injury={m.injury} />
+          </div>
           <div className="truncate text-xs text-muted-foreground">
             {m.team ? `${m.team} · ` : ""}
             {m.current.toLocaleString()} {unit(m, m.current)}
@@ -89,7 +93,7 @@ export function MilestoneSection() {
   return (
     <Section
       title="Milestone watch"
-      description="Active players closest to a big career number, in regular-season games, at their career pace."
+      description="Active players closest to a big career number, in regular-season games, at their career pace. Players on IR or out are left off."
     >
       <Panel>
         {isLoading || !data ? (

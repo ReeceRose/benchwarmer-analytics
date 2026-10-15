@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Benchwarmer Analytics is a hockey analytics platform for exploring NHL data, line combinations, and player performance. It ingests data from MoneyPuck and the NHL API and presents it through a web interface with visualizations.
+Benchwarmer Analytics is a hockey analytics platform for exploring NHL data, line combinations, and player performance. It ingests data from MoneyPuck, the NHL API and ESPN (injuries, transactions, sportsbook lines for model benchmarking) and presents it through a web interface with visualizations.
 
 **Status:** In production at https://benchwarmer.reecerose.com (Vercel + Neon).
 
@@ -13,7 +13,7 @@ Benchwarmer Analytics is a hockey analytics platform for exploring NHL data, lin
 - **App:** TanStack Start (React 19, TypeScript, Vite), TanStack Router/Query, shadcn/ui, Tailwind CSS
 - **Server:** TanStack Start server routes under `/api/*`, deployed to Vercel via Nitro
 - **Database:** Neon Postgres 18, Drizzle ORM (`drizzle-orm/neon-http` in request handlers), migrations via `drizzle-kit`
-- **Ingestion:** MoneyPuck CSVs + NHL API via Vercel Cron routes (`/api/cron/*`) and a local backfill CLI; node-postgres on the direct connection
+- **Ingestion:** MoneyPuck CSVs + NHL API + ESPN (unofficial, zod-checked) via Vercel Cron routes (`/api/cron/*`) and a local backfill CLI; node-postgres on the direct connection
 
 ## Commands
 
@@ -54,6 +54,7 @@ app/                          # the app (TanStack Start)
 ├── src/server/db/            # schema.ts (Drizzle) + client.ts (getDb)
 ├── src/server/ingestion/     # MoneyPuck/NHL downloads, CSV specs, importers, steps
 ├── src/server/cron.ts        # cron route auth/wrapper (CRON_SECRET)
+├── src/server/cron-jobs.ts   # daily jobs, shared by the cron routes and the catch-up cron
 ├── src/server/api/           # API handlers by group, NHL API client, query/error/cache helpers
 ├── src/server/projections/   # team ratings, pregame model, season simulation (playoff odds)
 ├── src/server/http.ts        # shared Response helpers

@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { cronHandler } from "@/server/cron";
-import { syncRecentGames } from "@/server/ingestion/steps";
+import { DAILY_JOBS } from "@/server/cron-jobs";
 import { methodNotAllowed } from "@/server/http";
 
-// NHL schedule/scores for yesterday and today (ET).
+// See DAILY_JOBS.schedule for what this job does.
 export const Route = createFileRoute("/api/cron/schedule")({
   server: {
     handlers: {
-      GET: cronHandler(async (db) => ({ ...(await syncRecentGames(db)) })),
+      GET: cronHandler(DAILY_JOBS.schedule.run),
       ANY: methodNotAllowed,
     },
   },

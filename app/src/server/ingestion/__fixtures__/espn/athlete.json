@@ -1,0 +1,11 @@
+{
+ "id": "5080145",
+ "firstName": "Cutter",
+ "lastName": "Gauthier",
+ "displayName": "Cutter Gauthier",
+ "dateOfBirth": "2004-01-19T08:00Z",
+ "active": true,
+ "position": {
+  "abbreviation": "LW"
+ }
+}

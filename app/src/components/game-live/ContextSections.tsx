@@ -1,5 +1,6 @@
 import { Card, TeamLabel } from "@/components/game-live/parts";
 import { SIDES, fmt, signed, titleCase } from "@/components/game-live/live-utils";
+import { injuryReason } from "@/lib/injuries";
 import { cn } from "@/lib/utils";
 import type { LiveGameResponse } from "@/types";
 
@@ -120,7 +121,16 @@ export function GameInfoSection({ data }: { data: LiveGameResponse }) {
           {SIDES.map((side) => (
             <div key={side}>
               <div className="mb-0.5 text-xs text-muted-foreground"><TeamLabel side={side}>{data[side].abbrev} scratches</TeamLabel></div>
-              {data[side].scratches.length ? data[side].scratches.map((n) => <div key={n}>{n}</div>) : <div className="text-muted-foreground">None</div>}
+              {data[side].scratches.length ? (
+                data[side].scratches.map((s) => (
+                  <div key={s.playerId ?? s.name} className="flex items-baseline gap-1.5">
+                    <span>{s.name}</span>
+                    {s.injury && <span className="text-xs text-muted-foreground">{injuryReason(s.injury)}</span>}
+                  </div>
+                ))
+              ) : (
+                <div className="text-muted-foreground">None</div>
+              )}
             </div>
           ))}
           <div>

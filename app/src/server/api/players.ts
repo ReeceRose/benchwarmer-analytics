@@ -15,6 +15,7 @@ import { shotColumns, shotSummary, toShotDto } from "@/server/api/shots";
 import { playerGameScores, type PlayerGameScore } from "@/server/api/game-scores";
 import type { GoalieGameLogEntry, SkaterGameLogEntry } from "@/types";
 import { currentSeason } from "@/server/ingestion/normalize";
+import { playerInjury, playerTransactions } from "@/server/api/injuries";
 
 type PlayerRow = typeof players.$inferSelect;
 type SkaterSeasonRow = typeof skaterSeasons.$inferSelect;
@@ -88,12 +89,14 @@ export function toPlayerDetail(p: PlayerRow) {
 
 export async function getPlayer({ db, params }: ApiContext) {
   const player = await requirePlayer(db, params.id);
-  const [draft, awards, records] = await Promise.all([
+  const [draft, awards, records, injury, transactions] = await Promise.all([
     playerDraft(db, player.id),
     playerAwards(db, player.id),
     playerRecords(db, player.id),
+    playerInjury(db, player.id),
+    playerTransactions(db, player.id),
   ]);
-  return { ...toPlayerDetail(player), draft, awards, ...records };
+  return { ...toPlayerDetail(player), draft, awards, ...records, injury, transactions };
 }
 
 // Skater/goalie season rows for a player, newest first (Get*ByPlayerAsync).

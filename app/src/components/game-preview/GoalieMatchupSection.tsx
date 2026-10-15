@@ -2,7 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { Flame } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TeamHeading } from "@/components/game-preview/TeamHeading";
+import { InjuryBadge } from "@/components/shared";
 import { formatSavePct } from "@/lib/formatters";
+import { isOut } from "@/lib/injuries";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
 import { cn } from "@/lib/utils";
 import type { GoalieMatchup, GoaliePreview, GoalieRecentForm } from "@/types";
@@ -36,7 +38,10 @@ function GoalieRow({
     <Link
       to="/players/$id"
       params={{ id: goalie.playerId.toString() }}
-      className="group -mx-2 block rounded-xl px-2 py-2 transition-colors hover:bg-muted/60"
+      className={cn(
+        "group -mx-2 block rounded-xl px-2 py-2 transition-colors hover:bg-muted/60",
+        isOut(goalie.injury) && "opacity-60",
+      )}
     >
       <div className="flex items-center gap-2.5">
         <Avatar className="size-9">
@@ -44,7 +49,10 @@ function GoalieRow({
           <AvatarFallback className="text-xs">{getPlayerInitials(goalie.name)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium group-hover:text-link">{goalie.name}</div>
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium group-hover:text-link">{goalie.name}</span>
+            <InjuryBadge injury={goalie.injury} />
+          </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span>{goalie.gamesPlayed} GP</span>
             {recentForm && recentForm.gamesPlayed > 0 && (
@@ -92,6 +100,8 @@ function TeamGoalies({
   recentForms?: GoalieRecentForm[];
 }) {
   const recentFormMap = new Map(recentForms?.map((rf) => [rf.playerId, rf]) ?? []);
+  // Goalies who won't play go last, so the top of each column is who can start.
+  const ordered = [...goalies].sort((a, b) => Number(isOut(a.injury)) - Number(isOut(b.injury)));
 
   return (
     <div className="min-w-0">
@@ -100,7 +110,7 @@ function TeamGoalies({
         <p className="text-sm text-muted-foreground">No goalie data</p>
       ) : (
         <div className="space-y-1">
-          {goalies.map((goalie) => (
+          {ordered.map((goalie) => (
             <GoalieRow
               key={goalie.playerId}
               goalie={goalie}

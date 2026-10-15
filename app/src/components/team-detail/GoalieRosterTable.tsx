@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { HeaderWithTooltip } from "@/components/shared";
+import { HeaderWithTooltip, InjuryBadge } from "@/components/shared";
 import {
   formatHeight,
   formatWeight,
@@ -86,6 +86,7 @@ export function GoalieRosterTable({ title, players, showStats = false }: GoalieR
                         </AvatarFallback>
                       </Avatar>
                       <span className="font-medium">{player.name}</span>
+                      <InjuryBadge injury={player.injury} />
                     </Link>
                   </TableCell>
                   <TableCell>

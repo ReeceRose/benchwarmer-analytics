@@ -1,18 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { cronHandler } from "@/server/cron";
-import { refreshViews, syncScoreStates } from "@/server/ingestion/steps";
+import { DAILY_JOBS } from "@/server/cron-jobs";
 import { methodNotAllowed } from "@/server/http";
 
-// Full-season score-state recompute (only changed rows are written) and
-// materialized view refresh.
+// See DAILY_JOBS.derived for what this job does.
 export const Route = createFileRoute("/api/cron/derived")({
   server: {
     handlers: {
-      GET: cronHandler(async (db, season) => {
-        const scoreState = await syncScoreStates(db, season);
-        await refreshViews(db);
-        return { season, rowsWritten: { scoreState: scoreState.rowsWritten } };
-      }),
+      GET: cronHandler(DAILY_JOBS.derived.run),
       ANY: methodNotAllowed,
     },
   },

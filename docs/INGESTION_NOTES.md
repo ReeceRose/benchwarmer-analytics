@@ -12,10 +12,14 @@ data quirks it handles.
 | Team games | `moneypuck.com/moneypuck/playerData/careers/gameByGame/all_teams.csv` | Every season in one file (~130 MB, ~30 MB gzipped); one row per team, game and situation |
 | Shots | `peter-tanner.com/moneypuck/downloads/shots_{season}.zip` | MoneyPuck's official shot-data mirror; ~20 MB zip / ~120k rows per season |
 | Games | `api-web.nhle.com/v1/schedule/{date}` | Returns one week per request |
+| ESPN injuries | `site.api.espn.com/apis/site/v2/sports/hockey/nhl/injuries` | Undocumented. A snapshot of every team's list; entries name ESPN athletes only (ID in the player-card link) |
+| ESPN athletes | `sports.core.api.espn.com/v2/sports/hockey/leagues/nhl/athletes/{id}` | Date of birth, for matching ESPN athletes to our players; asked once per athlete |
+| ESPN transactions | `site.api.espn.com/.../transactions?dates=YYYYMMDD-YYYYMMDD&limit=500&page=n` | Free text with a date and team, no IDs |
+| ESPN scoreboard and odds | `site.api.espn.com/.../scoreboard?dates=YYYYMMDD`, `sports.core.api.espn.com/.../events/{id}/competitions/{id}/odds` | Sportsbook moneylines with open and close, kept after the game; from 2022-23 |
 | NHL records | `records.nhl.com/site/api/{franchise,franchise-season-results,all-time-record-vs-franchise,draft,skater-career-scoring-regular-season,goalie-career-stats,trophy,award-details}` | Each list comes back whole with `limit=-1` (the draft is ~13k rows); career lists use `franchiseId=null` for whole-career rows |
 
 Downloads are sequential, with a descriptive User-Agent and exponential
-backoff on network errors, 429 and 5xx.
+backoff on network errors, 429 and 5xx (`ingestion/http.ts`).
 
 ## Steps
 
@@ -37,6 +41,9 @@ All steps are idempotent upserts. Unchanged rows aren't rewritten
 | `skater_games` | final games without rows → NHL shift chart, box score and play-by-play → `skater_games` (per-game Game Score), newest first, up to 45 games a run |
 | `projections` | NHL standings + `team_games` ratings + remaining `games` → 20,000-season simulation → `playoff_odds`, `playoff_odds_games` |
 | `nhl_records` | NHL records → `franchises`, `franchise_seasons` (regular seasons with playoff result), `franchise_head_to_head`, `draft_picks`, `player_careers` (with goalie playoff records), `trophies`, `award_winners`, `franchise_people`, `hall_of_fame`, `milestone_moments`, `officials`, `coaches`, `league_attendance`, `draft_lotteries`; ~55k rows, one request per list |
+| `espn_injuries` | ESPN injury list → `player_injuries` stints (reconciled: new players open a stint, listed ones update, missing ones resolve) and `espn_players` |
+| `espn_transactions` | ESPN transactions for the last 3 days (ET) → `transactions` |
+| `espn_odds` | Yesterday's and today's games: ESPN scoreboard (event IDs, matched on date and teams) → each event's odds → `game_odds` |
 | `views` | `REFRESH MATERIALIZED VIEW CONCURRENTLY` both views, then `ANALYZE` (Neon resets autovacuum's counters when the compute scales to zero, so planner stats would otherwise go stale) |
 
 Order within a season matters: lines resolve players through that season's
@@ -57,8 +64,17 @@ it) and accepts `?season=YYYY` for manual re-runs.
 | `/api/cron/derived` | 14:00 daily | full-season score-state (only changes written) + view refresh + `ANALYZE` |
 | `/api/cron/game-scores` | 15:00 daily | `skater_games` for final games without rows (last night's plus any backlog) |
 | `/api/cron/projections` | 16:00 daily | today's playoff odds (same day and inputs → same seed → re-runs write nothing) |
+| `/api/cron/espn-morning` | 13:00 daily | ESPN injuries, transactions and odds (last night's closing lines, today's openers), each step run even if another fails |
 | `/api/cron/bios` | Sun 17:00 | player bios |
 | `/api/cron/history` | Sun 18:00 | NHL records: franchise history, head-to-head, draft picks, careers |
+| `/api/cron/espn-evening` | 21:00 daily | ESPN injuries and transactions again, for same-day news |
+| `/api/cron/catch-up` | 22:00 daily | re-runs any daily job (schedule through projections, plus the ESPN morning job) with a step that hasn't succeeded today (UTC), in the usual order, within a 150 s budget; nothing to do on a normal day |
+
+The ESPN times are 9 AM and 5 PM Eastern in daylight time (8 AM and 4 PM in
+winter: cron schedules are UTC). The jobs live in `src/server/cron-jobs.ts`,
+shared by the routes and the catch-up. A job whose steps are independent
+(the ESPN ones) runs them all and answers 500 if any failed
+(`runIndependently`), still invalidating the cache for the ones that worked.
 
 Incremental shots: rows are imported only for games with no stored shots,
 plus games from the last 3 days (MoneyPuck revises recent data). The season
@@ -87,6 +103,60 @@ it per season (one download each). Views are always refreshed at the end. The ba
 and score-state for every season too. It runs outside Vercel, so it can't
 purge the API cache; run `vercel cache invalidate --tag api` afterwards (see
 `DEPLOY_NOTES.md`).
+
+ESPN (`scripts/espn.ts`): `injuries` runs the injury step;
+`transactions --from 2022-09-01` backfills a month per request; `odds
+--from 2022-10-01` backfills lines a date at a time (about 900 dates, ~35
+minutes, 200 ms between games), skipping games that already have a closing
+line unless `--force`, so it resumes. Injury history can't be backfilled:
+ESPN only has today's list, so stints start from 2026-10-14.
+
+## ESPN
+
+ESPN's endpoints are unofficial and can change or vanish, so the code in
+`ingestion/espn/` treats them defensively:
+
+- **Checked shape.** Every response is parsed with zod. A wrong top-level
+  shape fails the step with nothing written. Individual entries that don't
+  parse are skipped and counted, but more than 10% (and more than two)
+  fails the step, since that means the format changed.
+- **No mass recovery.** Injuries are a snapshot, and players missing from
+  it are marked recovered. If the list has fewer than half the open stints
+  (once 20+ are open), or is empty, listed players are still updated but
+  nobody is resolved and the step fails (`shouldResolve`). The update,
+  insert and resolve are one SQL statement, so a run applies all or nothing.
+- **Player matching.** ESPN gives only names and its own IDs. A match is
+  name plus date of birth (one athlete request each, stored), then a
+  same-last-name player born that day ("Mitch" vs "Mitchell"), then a unique
+  name on the team, then a unique name; a unique name with a different
+  birthday is no match. Unmatched athletes (about 1 in 10, almost all
+  prospects with no NHL games, who aren't in `players`) are stored with a
+  null player and re-matched each run. A failed athlete lookup matches on
+  name alone that run. Matching never fails a step.
+- **Injury IDs.** ESPN's injury `id` isn't unique (different players share
+  one), so stints key on the athlete. Statuses: "Injured Reserve" (LTIR
+  too) → `ir`, "Out", "Day-To-Day", "Suspension"; fields reading "Not
+  Specified" are dropped, and comments under 20 characters ("ir") too.
+- **Transactions.** No IDs, so the date, team and text are the key. The
+  kind comes from the most specific sentence (IR moves first, then trades,
+  waivers, recalls, assignments, signings), and the player from a position
+  code followed by a capitalised name in that sentence ("Placed D Mattias
+  Ekholm on injured reserve"). Plural codes ("Ds X and Y") yield only the
+  first player. About 80% of rows get a player; the rest are mostly AHL
+  players we don't have.
+- **Odds.** Only ESPN BET (58), DraftKings (100), Caesars (45) and MGM (47)
+  are kept. Older games list a dozen books, several of which (DraftKings'
+  old ID 40, PointsBet, Unibet, Bet365) report puck-line prices as
+  moneylines, and "Live Odds" entries are in-game prices. Each open or close
+  pair must be within ±2000 with implied probabilities summing to 1.00-1.10,
+  or that line is dropped. Probabilities are stored with the margin removed.
+  Lines are only matched to stored regular-season and playoff games (by
+  date and teams), so preseason and international games are skipped.
+- **Per-game failures.** An odds request that fails is logged and the
+  others go on; the step fails only if more than half did. The morning job
+  runs injuries, transactions and odds independently.
+- **Team codes.** ESPN uses NJ, SJ, TB, LA and UTAH; the injury list names
+  teams by ESPN team ID only (`ESPN_TEAM_IDS`).
 
 ## Data quirks and decisions
 
@@ -152,6 +222,9 @@ purge the API cache; run `vercel cache invalidate --tag api` afterwards (see
   in case the NHL fills them in. The UI says how many games are missing.
 - **84-game season.** 2026-27 has 1,344 regular-season games (84 per team);
   the simulation takes the schedule from `games`, so nothing assumes 82.
+- **Market benchmark.** `scripts/evaluate-pregame-vs-market.ts` compares the
+  pregame model with sportsbook lines (`game_odds`) by log loss and
+  calibration, and fits a blend leaving one season out. Read-only.
 - **Models.** `scripts/fit-win-probability.ts` and
   `scripts/fit-pregame-model.ts` regenerate the coefficient files
   (`win-probability-model.ts`, `projections/pregame-model.ts`) from our own

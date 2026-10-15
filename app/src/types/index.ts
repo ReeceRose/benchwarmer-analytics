@@ -18,3 +18,4 @@ export * from "@/types/tracking";
 export * from "@/types/history";
 export * from "@/types/situations";
 export * from "@/types/home-away";
+export * from "@/types/injuries";

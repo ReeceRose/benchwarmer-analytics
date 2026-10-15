@@ -20,7 +20,7 @@ import {
   trophies,
 } from "@/server/db/schema";
 import { upsert, type Queryable, type UpsertRow } from "@/server/ingestion/db";
-import { fetchWithRetry } from "@/server/ingestion/moneypuck";
+import { fetchWithRetry } from "@/server/ingestion/http";
 import { round } from "@/server/api/format";
 
 const RECORDS_API = "https://records.nhl.com/site/api";
