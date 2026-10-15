@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
+import { TooltipTitle } from "@/components/game-live/ChartTooltip";
 import { Rink } from "@/components/game-live/Rink";
+import { useChartTooltip } from "@/components/game-live/useChartTooltip";
 import { Swatch, TeamLabel } from "@/components/game-live/parts";
-import { periodName, teamColour } from "@/components/game-live/live-utils";
+import { fmt, mmss, periodName, teamColour } from "@/components/game-live/live-utils";
 import { SegmentedControl } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +24,7 @@ const TRAIL_SECONDS = 2;
 
 interface Positioned {
   key: string;
+  playerId: number | null;
   x: number;
   y: number;
   side: TeamSide | null;
@@ -45,6 +48,7 @@ function positionsAt(frames: GoalReplayFrame[], t: number, sideOf: (team: string
     const q = next.get(p.playerId) ?? p;
     return {
       key: String(p.playerId),
+      playerId: p.playerId,
       x: lerp(p.x, q.x),
       y: lerp(p.y, q.y),
       side: sideOf(p.team),
@@ -62,6 +66,48 @@ function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+const POSITION_NAMES: Record<string, string> = { C: "Centre", L: "Left wing", R: "Right wing", D: "Defence", G: "Goalie" };
+
+// Who a dot is and how their night is going, from the game's box score.
+function PlayerTooltip({ data, goal, playerId, side }: { data: LiveGameResponse; goal: LiveGoal; playerId: number; side: TeamSide | null }) {
+  const skater = data.skaters.find((s) => s.playerId === playerId);
+  const goalie = data.goalies.find((g) => g.playerId === playerId);
+  const rostered = data.roster.find((r) => r.playerId === playerId);
+  const name = skater?.name ?? goalie?.name ?? rostered?.name ?? "Unknown player";
+  const number = skater?.number ?? goalie?.number ?? rostered?.number;
+  const position = goalie ? "G" : (skater?.position ?? rostered?.position);
+  const role =
+    playerId === goal.scorerId
+      ? "Scored this goal"
+      : goal.assists.some((a) => a.name === name)
+        ? "Assisted on this goal"
+        : null;
+
+  return (
+    <>
+      <TooltipTitle colour={side ? teamColour(side) : undefined}>
+        {number != null && `#${number} `}
+        {name}
+      </TooltipTitle>
+      <div className="text-muted-foreground">
+        {[side && data[side].abbrev, position && (POSITION_NAMES[position] ?? position)].filter(Boolean).join(" · ")}
+      </div>
+      {role && <div className="font-medium">{role}</div>}
+      {skater && (
+        <div className="tabular-nums">
+          Tonight: {skater.goals} G · {skater.assists} A · {skater.shotsOnGoal} SOG · {mmss(skater.toiSeconds)} TOI
+        </div>
+      )}
+      {goalie && (
+        <div className="tabular-nums">
+          Tonight: {goalie.saves}/{goalie.shotsAgainst} saves
+          {goalie.savePct != null && ` · ${fmt(goalie.savePct, 3).replace(/^0/, "")}`}
+        </div>
+      )}
+    </>
+  );
+}
+
 function ReplayPlayer({ data, goal }: { data: LiveGameResponse; goal: LiveGoal }) {
   const { data: replay, isLoading, error } = useGoalReplay(String(data.meta.gameId), goal.eventId);
   const frames = useMemo(() => replay?.frames ?? [], [replay]);
@@ -70,6 +116,7 @@ function ReplayPlayer({ data, goal }: { data: LiveGameResponse; goal: LiveGoal }
   const [t, setTState] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>("1");
+  const { bind, tooltip } = useChartTooltip();
   // The animation loop reads and advances time through a ref.
   const time = useRef(0);
   const setT = (value: number) => {
@@ -138,7 +185,11 @@ function ReplayPlayer({ data, goal }: { data: LiveGameResponse; goal: LiveGoal }
           />
         )}
         {players.map((p) => (
-          <g key={p.key} transform={`translate(${p.x} ${p.y})`}>
+          <g
+            key={p.key}
+            transform={`translate(${p.x} ${p.y})`}
+            {...(p.playerId != null ? bind(<PlayerTooltip data={data} goal={goal} playerId={p.playerId} side={p.side} />) : {})}
+          >
             <circle
               r={2.2}
               fill={p.side ? teamColour(p.side) : "var(--muted-foreground)"}
@@ -146,7 +197,7 @@ function ReplayPlayer({ data, goal }: { data: LiveGameResponse; goal: LiveGoal }
               strokeWidth={p.isScorer ? 0.6 : 0.4}
             />
             {p.number != null && (
-              <text textAnchor="middle" dominantBaseline="central" fontSize={1.9} fontWeight={700} fill="white">
+              <text pointerEvents="none" textAnchor="middle" dominantBaseline="central" fontSize={1.9} fontWeight={700} fill="white">
                 {p.number}
               </text>
             )}
@@ -154,6 +205,7 @@ function ReplayPlayer({ data, goal }: { data: LiveGameResponse; goal: LiveGoal }
         ))}
         {puck && <circle cx={puck.x} cy={puck.y} r={0.9} fill="var(--foreground)" stroke="var(--card)" strokeWidth={0.3} />}
       </Rink>
+      {tooltip}
 
       <div className="flex flex-wrap items-center gap-3">
         <Button
