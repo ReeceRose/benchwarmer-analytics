@@ -1,0 +1,1 @@
+DROP TABLE "playoff_odds_experimental" CASCADE;

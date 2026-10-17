@@ -16,7 +16,7 @@ export function WinChanceSection({ game }: { game: GamePreviewGame }) {
   return (
     <Section
       title="Win chance"
-      description="From both teams' ratings (5v5 expected goals and goal differential) and home ice."
+      description="From both teams' ratings (5v5 expected goals, goal differential, roster and goaltending), home ice and rest."
       action={<Link to="/playoff-odds" className="text-link">Playoff odds</Link>}
     >
       <Panel>

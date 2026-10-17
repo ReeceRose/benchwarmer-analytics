@@ -5,9 +5,11 @@ import type { WorkloadWindow } from "@/types";
 
 interface WorkloadWindowCardProps {
   window: WorkloadWindow;
+  /** "Last" for recent windows, "Final" for a finished season's closing stretch. */
+  prefix?: "Last" | "Final";
 }
 
-export function WorkloadWindowCard({ window }: WorkloadWindowCardProps) {
+export function WorkloadWindowCard({ window, prefix = "Last" }: WorkloadWindowCardProps) {
   return (
     <div
       className={cn(
@@ -16,7 +18,7 @@ export function WorkloadWindowCard({ window }: WorkloadWindowCardProps) {
       )}
     >
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        Last {window.days} days
+        {prefix} {window.days} days
         {window.isHighWorkload && <AlertTriangle className="size-3.5 text-warning" />}
       </div>
       <div className="mt-0.5 font-display text-2xl font-bold tabular-nums">

@@ -18,20 +18,70 @@ function TooltipProvider({
   )
 }
 
+// Radix tooltips only open on hover and focus, so on touch screens a tap
+// toggles them instead.
+const TooltipTapContext = React.createContext<{
+  open: boolean
+  setOpen: (open: boolean) => void
+} | null>(null)
+
 function Tooltip({
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
+  const open = openProp ?? uncontrolledOpen
+  const setOpen = React.useCallback(
+    (next: boolean) => {
+      if (openProp === undefined) setUncontrolledOpen(next)
+      onOpenChange?.(next)
+    },
+    [openProp, onOpenChange]
+  )
+  const tap = React.useMemo(() => ({ open, setOpen }), [open, setOpen])
   return (
     <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+      <TooltipTapContext.Provider value={tap}>
+        <TooltipPrimitive.Root
+          data-slot="tooltip"
+          open={open}
+          onOpenChange={setOpen}
+          {...props}
+        />
+      </TooltipTapContext.Provider>
     </TooltipProvider>
   )
 }
 
 function TooltipTrigger({
+  onPointerDown,
+  onClick,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+  const tap = React.useContext(TooltipTapContext)
+  const touchTap = React.useRef<{ wasOpen: boolean } | null>(null)
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      onPointerDown={(event) => {
+        touchTap.current =
+          event.pointerType === "touch" && tap ? { wasOpen: tap.open } : null
+        onPointerDown?.(event)
+      }}
+      onClick={(event) => {
+        onClick?.(event)
+        const pending = touchTap.current
+        touchTap.current = null
+        // Radix closes the tooltip on click; reopen it after that.
+        if (pending && tap && !pending.wasOpen) {
+          queueMicrotask(() => tap.setOpen(true))
+        }
+      }}
+      {...props}
+    />
+  )
 }
 
 function TooltipContent({

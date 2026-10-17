@@ -9,6 +9,9 @@ import {
   ShotsAgainstChart,
   SavePercentageChart,
 } from "@/components/goalie-workload";
+import { getCurrentSeason } from "@/lib/date-utils";
+import { formatSeason } from "@/lib/formatters";
+import { formatGameDateLong } from "@/lib/game-formatters";
 import { cn } from "@/lib/utils";
 import type { GoalieGameStats } from "@/types";
 
@@ -78,27 +81,50 @@ export function GoalieWorkloadMonitor({
     return null;
   }
 
-  const trend = TREND[data.workloadTrend];
+  const currentSeason = getCurrentSeason();
+  const isPastSeason = data.season < currentSeason;
+  const notPlaying = !isPastSeason && data.last30Days.gamesPlayed === 0;
+  const trend = notPlaying
+    ? { label: "Not playing", className: "bg-muted text-muted-foreground" }
+    : TREND[data.workloadTrend];
+  const prefix = isPastSeason ? "Final" : "Last";
 
   return (
     <Panel className={cn("space-y-6", className)}>
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold">Recent workload</h3>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-            trend.className
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-semibold">
+            {isPastSeason ? `End of the ${formatSeason(data.season)} season` : "Recent workload"}
+          </h3>
+          {!isPastSeason && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+                trend.className
+              )}
+            >
+              {data.workloadTrend === "heavy" && !notPlaying && <AlertTriangle className="size-3" />}
+              {trend.label}
+            </span>
           )}
-        >
-          {data.workloadTrend === "heavy" && <AlertTriangle className="size-3" />}
-          {trend.label}
-        </span>
+        </div>
+        {isPastSeason && (
+          <p className="text-xs text-muted-foreground">
+            No games in {formatSeason(currentSeason)} yet. These windows end at the last game played,{" "}
+            {data.lastGameDate && formatGameDateLong(data.lastGameDate)}.
+          </p>
+        )}
+        {notPlaying && data.lastGameDate && (
+          <p className="text-xs text-muted-foreground">
+            No games in the last 30 days. Last game {formatGameDateLong(data.lastGameDate)}.
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <WorkloadWindowCard window={data.last7Days} />
-        <WorkloadWindowCard window={data.last14Days} />
-        <WorkloadWindowCard window={data.last30Days} />
+        <WorkloadWindowCard window={data.last7Days} prefix={prefix} />
+        <WorkloadWindowCard window={data.last14Days} prefix={prefix} />
+        <WorkloadWindowCard window={data.last30Days} prefix={prefix} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

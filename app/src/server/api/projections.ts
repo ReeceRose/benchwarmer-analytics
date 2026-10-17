@@ -1,13 +1,13 @@
-import { and, asc, eq, inArray, lt, lte, max } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt, lte, max } from "drizzle-orm";
 import type { Database } from "@/server/db/client";
-import { games, playoffOdds, playoffOddsGames } from "@/server/db/schema";
+import { games, playoffOdds, playoffOddsGames, projectionInputs } from "@/server/db/schema";
 import type { ApiContext } from "@/server/api/handler";
 import { badRequest } from "@/server/api/errors";
 import { GameState } from "@/server/api/constants";
 import { round } from "@/server/api/format";
 import { currentSeason } from "@/server/ingestion/normalize";
 import { PREGAME_COEFFICIENTS } from "@/server/projections/pregame-model";
-import { pregameHomeWinProbability } from "@/server/projections/ratings";
+import { dayBefore, pregameHomeWinProbability, restGap } from "@/lib/projections/ratings";
 import { SIMULATIONS } from "@/server/projections/run";
 
 async function latestRunDate(db: Database, season: number, onOrBefore?: string): Promise<string | null> {
@@ -85,7 +85,8 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Pregame win probability for one day's games (default today, ET), from the
- * team ratings of the latest run on or before that day.
+ * team ratings of the latest run on or before that day and whether each team
+ * played the day before.
  */
 export async function getGameProjections({ db, query }: ApiContext) {
   const date = query.string("date");
@@ -99,11 +100,25 @@ export async function getGameProjections({ db, query }: ApiContext) {
   const season = dayGames[0].season;
   const runDate = await latestRunDate(db, season, date);
   if (!runDate) return { date, runDate: null, games: [] };
-  const ratings = await db
-    .select({ team: playoffOdds.team, xgd: playoffOdds.ratingXgd, gd: playoffOdds.ratingGd, gamesPlayed: playoffOdds.gamesPlayed })
-    .from(playoffOdds)
-    .where(and(eq(playoffOdds.season, season), eq(playoffOdds.runDate, runDate)));
+  const [ratings, yesterday] = await Promise.all([
+    db
+      .select({
+        team: playoffOdds.team,
+        xgd: playoffOdds.ratingXgd,
+        gd: playoffOdds.ratingGd,
+        roster: playoffOdds.ratingRoster,
+        goalie: playoffOdds.ratingGoalie,
+        gamesPlayed: playoffOdds.gamesPlayed,
+      })
+      .from(playoffOdds)
+      .where(and(eq(playoffOdds.season, season), eq(playoffOdds.runDate, runDate))),
+    db
+      .select({ home: games.homeTeamCode, away: games.awayTeamCode })
+      .from(games)
+      .where(and(eq(games.gameDate, dayBefore(date)), inArray(games.gameType, [GameState.regularSeason, GameState.playoffs]))),
+  ]);
   const byTeam = new Map(ratings.map((r) => [r.team, r]));
+  const playedYesterday = new Set(yesterday.flatMap((g) => [g.home, g.away]));
   return {
     date,
     runDate,
@@ -111,7 +126,20 @@ export async function getGameProjections({ db, query }: ApiContext) {
       const home = byTeam.get(g.home);
       const away = byTeam.get(g.away);
       if (!home || !away) return [];
-      return [{ gameId: g.gameId, homeWinProbability: round(pregameHomeWinProbability(home, away, PREGAME_COEFFICIENTS), 4) }];
+      const rest = restGap(playedYesterday.has(g.home), playedYesterday.has(g.away));
+      return [{ gameId: g.gameId, homeWinProbability: round(pregameHomeWinProbability(home, away, PREGAME_COEFFICIENTS, rest), 4) }];
     }),
   };
+}
+
+/** What the playoff odds sandbox simulates from: the latest run's inputs. */
+export async function getSandboxInputs({ db, query }: ApiContext) {
+  const season = query.int("season") ?? currentSeason();
+  const [row] = await db
+    .select({ inputs: projectionInputs.inputs })
+    .from(projectionInputs)
+    .where(eq(projectionInputs.season, season))
+    .orderBy(desc(projectionInputs.runDate))
+    .limit(1);
+  return { season, inputs: row?.inputs ?? null };
 }

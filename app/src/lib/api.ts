@@ -58,6 +58,7 @@ import type {
   NightlyGameScoresResponse,
   SingleGameRecordsResponse,
   PlayoffOddsResponse,
+  SandboxResponse,
   GameProjectionsResponse,
   PlayerTrackingResponse,
   TeamTrackingResponse,
@@ -719,6 +720,11 @@ export async function getSingleGameRecords(
 
 export async function getPlayoffOdds(season?: number): Promise<PlayoffOddsResponse> {
   const { data } = await api.get<PlayoffOddsResponse>("/projections/playoff-odds", { params: { season } });
+  return data;
+}
+
+export async function getSandboxInputs(season?: number): Promise<SandboxResponse> {
+  const { data } = await api.get<SandboxResponse>("/projections/sandbox", { params: { season } });
   return data;
 }
 

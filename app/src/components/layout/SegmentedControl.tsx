@@ -20,7 +20,7 @@ export function SegmentedControl<T extends string>({
       role="radiogroup"
       aria-label={props["aria-label"]}
       className={cn(
-        "inline-flex h-9 items-center rounded-full bg-muted p-[3px]",
+        "inline-flex h-9 max-w-full items-center overflow-x-auto rounded-full bg-muted p-[3px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className,
       )}
     >
@@ -34,7 +34,7 @@ export function SegmentedControl<T extends string>({
             aria-checked={selected}
             onClick={() => onValueChange(option.value)}
             className={cn(
-              "h-full rounded-full px-3 text-sm whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              "h-full shrink-0 rounded-full px-2.5 text-sm sm:px-3 whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
               selected
                 ? "bg-card font-medium text-foreground shadow-xs dark:bg-accent"
                 : "text-muted-foreground hover:text-foreground",

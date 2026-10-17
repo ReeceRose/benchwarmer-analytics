@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { getGameProjections, getPlayoffOdds } from "@/lib/api";
+import { getGameProjections, getPlayoffOdds, getSandboxInputs } from "@/lib/api";
 
 export function playoffOddsQueryOptions(season?: number) {
   return queryOptions({
@@ -12,6 +12,15 @@ export function playoffOddsQueryOptions(season?: number) {
 /** The latest playoff odds run. */
 export function usePlayoffOdds(season?: number) {
   return useQuery(playoffOddsQueryOptions(season));
+}
+
+/** What the playoff odds sandbox simulates from (the latest run's inputs). */
+export function useSandboxInputs(season?: number) {
+  return useQuery({
+    queryKey: ["projections", "sandbox", { season }],
+    queryFn: () => getSandboxInputs(season),
+    staleTime: 1000 * 60 * 30,
+  });
 }
 
 /** Pregame win probability for one day's games, keyed by game ID. */

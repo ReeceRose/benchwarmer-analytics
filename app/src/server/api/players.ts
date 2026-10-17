@@ -14,7 +14,7 @@ import { playerRecords } from "@/server/api/records";
 import { shotColumns, shotSummary, toShotDto } from "@/server/api/shots";
 import { playerGameScores, type PlayerGameScore } from "@/server/api/game-scores";
 import type { GoalieGameLogEntry, SkaterGameLogEntry } from "@/types";
-import { currentSeason } from "@/server/ingestion/normalize";
+import { currentSeason, seasonForDate } from "@/server/ingestion/normalize";
 import { playerInjury, playerTransactions } from "@/server/api/injuries";
 
 type PlayerRow = typeof players.$inferSelect;
@@ -568,6 +568,15 @@ export function estimateGameDate(gameId: string, season: number): string | undef
   return addDays(`${season}-10-01`, Math.trunc((gameNumber / 1312) * 197));
 }
 
+// The current season's windows end today, so a goalie who has stopped playing
+// shows empty windows; a past season's end at its last game, so it still shows
+// the final stretch.
+export function workloadReferenceDate(gamesList: readonly GoalieGame[], season: number, today: string): string {
+  if (season >= seasonForDate(new Date(`${today}T00:00:00Z`))) return today;
+  const latest = gamesList.find((g) => g.gameDate !== MIN_DATE);
+  return latest?.gameDate ?? today;
+}
+
 export async function getGoalieWorkload({ db, params, query }: ApiContext) {
   const player = await requirePlayer(db, params.id);
   if (player.position !== "G") badRequest({ error: "Player is not a goalie" });
@@ -579,6 +588,7 @@ export async function getGoalieWorkload({ db, params, query }: ApiContext) {
   if (gameIds.length === 0) {
     return {
       playerId: player.id, playerName: player.name, season, gamesIncluded: 0, games: [],
+      windowEnd: todayUtc(), lastGameDate: null,
       last7Days: emptyWorkloadWindow(7), last14Days: emptyWorkloadWindow(14), last30Days: emptyWorkloadWindow(30),
       backToBackSplits: backToBackSplits([]), workloadTrend: "light",
     };
@@ -610,8 +620,7 @@ export async function getGoalieWorkload({ db, params, query }: ApiContext) {
 
   const gamesList = goaliePerGameStats(shotRows, gameDates);
   markBackToBacks(gamesList);
-  // Windows end at the latest game, so past seasons still show their final stretch.
-  const referenceDate = gamesList.length > 0 && gamesList[0].gameDate !== MIN_DATE ? gamesList[0].gameDate : todayUtc();
+  const referenceDate = workloadReferenceDate(gamesList, season, todayUtc());
   const last7Days = workloadWindow(gamesList, referenceDate, 7);
 
   return {
@@ -620,6 +629,8 @@ export async function getGoalieWorkload({ db, params, query }: ApiContext) {
     season,
     gamesIncluded: gamesList.length,
     games: gamesList,
+    windowEnd: referenceDate,
+    lastGameDate: gamesList.find((g) => g.gameDate !== MIN_DATE)?.gameDate ?? null,
     last7Days,
     last14Days: workloadWindow(gamesList, referenceDate, 14),
     last30Days: workloadWindow(gamesList, referenceDate, 30),

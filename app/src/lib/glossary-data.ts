@@ -79,9 +79,20 @@ export const metrics: MetricDefinition[] = [
     isCalculated: true,
     description:
       "Each team's chance of making the playoffs and of reaching each round, from 20,000 simulations of the rest of the season run every morning. Every remaining game is played out from current standings: the winner is drawn from the pregame win probability, 22% of games go to overtime (a point for the loser), and the playoffs are seeded and played as best-of-seven series.",
-    formula: "Pregame win % = logistic(home ice + 0.63 × 5v5 xG gap per game + 0.52 × goal gap per game)",
+    formula:
+      "Pregame win % = logistic(home ice + 0.65 × 5v5 xG gap + 0.62 × goal gap + 0.76 × roster gap + 0.13 × goaltending gap ± 0.26 when only one team played yesterday)",
     interpretation:
-      "Team strength blends this season's per-game 5v5 expected goal and goal differentials with half of last season's, which counts as 40 games of evidence, and each simulation draws it with some uncertainty that shrinks as games are played. Tested on 2015-2024, each team's middle-80% points range held its final total 80% of the time.",
+      "Team strength blends this season's per-game 5v5 expected goal and goal differentials with about a third of last season's, which counts as 60 games of evidence. Roster talent (this season's skaters, weighted by ice time, rated by their 5v5 on-ice expected goal share over the last two seasons) catches trades and signings early on and fades after about 10 games. Goaltending is the team's goalies' career goals saved above expected, weighted by starts. Each simulation draws team strength with some uncertainty that shrinks as games are played. Replaying 2013-2025 (without the bubble and 2021 seasons), each team's middle-80% points range held its final total 80% of the time.",
+  },
+  {
+    name: "Goalie injuries (sandbox)",
+    category: "derived",
+    isCalculated: true,
+    description:
+      "An option in the playoff odds sandbox (Tune your own) that knows about goalie injuries. It runs the same simulation from the same ratings, but each remaining game uses the goalie expected to start it: an injured goalie sits until the earliest return date ESPN gives (two weeks if there's none), and his starts go to the team's other goalies in proportion to their starts this season, with a quarter weight on last season's so a goalie coming back with no starts yet still counts. A call-up with no NHL record counts as slightly below average.",
+    formula: "Game logit += 0.54 × (expected starter's goals saved above expected per game − the team's usual goaltending), for each side",
+    interpretation:
+      "Over 2010-2025, knowing who actually started in net made pregame predictions better than knowing only who usually starts, and that's the weight used here. What's untested is the injury list itself (we only have it from October 2026) and the assumption that players return on their earliest date, which is why it's off in our published odds. Skater injuries aren't included.",
   },
   {
     name: "Goals per 60",

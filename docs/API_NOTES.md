@@ -216,10 +216,13 @@ and the cache tag `api` (`Vercel-Cache-Tag`):
   that night's games are missing (no NHL shift data). `/single-games` takes
   `season`, `position` (`F`/`D`) and `playoffs`.
 - `/api/projections/playoff-odds` serves the latest run, with
-  `makePlayoffsChange` against the previous run (null on the first) and that
-  day's games with each team's odds if it wins or loses. `/games?date=`
+  `makePlayoffsChange` against the previous run (null on the first), that
+  day's games with each team's odds if it wins or loses.
+  `/api/projections/sandbox` serves the latest run's `SandboxInputs` (about
+  110 KB of JSON) for the playoff odds sandbox, which simulates in the
+  browser. `/games?date=`
   (required) computes pregame odds from the ratings of the latest run on or
-  before that date; the game centre applies them to `winProbability` in the
+  before that date and the day before's schedule (back-to-backs); the game centre applies them to `winProbability` in the
   browser (the model's pregame shift fades linearly to zero by the end of
   regulation, so this is exact and live polling stays off the database).
 - Player game log (`/api/players/{id}/game-log?season=&playoffs=`): the

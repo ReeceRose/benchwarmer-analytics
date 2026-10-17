@@ -1,4 +1,4 @@
-import { pregameFeatures, type Rating } from "@/server/projections/ratings";
+import { REST_FEATURE, teamStrength, type Rating } from "@/lib/projections/ratings";
 
 // Monte Carlo of the rest of the regular season and the playoffs.
 
@@ -11,12 +11,18 @@ export interface SimTeam {
   /** Regulation wins, the first standings tiebreaker after points. */
   regulationWins: number;
   rating: Rating;
+  /** Extra logit for this team in playoff games (the experimental injury model). */
+  playoffAdjust?: number;
 }
 
 export interface SimGame {
   gameId: string;
   home: string;
   away: string;
+  /** Rest gap (restGap in ratings.ts). */
+  rest?: number;
+  /** Extra logit for the home team (the experimental injury model). */
+  adjust?: number;
 }
 
 export interface SimOptions {
@@ -103,10 +109,9 @@ export function simulateSeason(teams: readonly SimTeam[], remaining: readonly Si
   // Each team's strength on the logit scale (the model's rating terms), so a
   // game's logit is home ice + strength(home) - strength(away).
   const homeIce = coef[0];
-  const strength = teams.map((t) => {
-    const f = pregameFeatures(t.rating, { xgd: 0, gd: 0, gamesPlayed: 0 });
-    return f.slice(1).reduce((s, v, i) => s + v * coef[i + 1], 0);
-  });
+  const restCoef = coef[REST_FEATURE] ?? 0;
+  const strength = teams.map((t) => teamStrength(t.rating, coef));
+  const playoffAdjust = teams.map((t) => t.playoffAdjust ?? 0);
   const priorGames = options.priorGames ?? 40;
   const sd = teams.map((t) => (options.strengthSd ?? 0) * Math.sqrt(priorGames / (t.gamesPlayed + priorGames)));
   const offset = new Float64Array(n);
@@ -116,13 +121,14 @@ export function simulateSeason(teams: readonly SimTeam[], remaining: readonly Si
     const h = index.get(g.home);
     const a = index.get(g.away);
     if (h === undefined || a === undefined) return [];
-    return [{ id: g.gameId, h, a, p: sigmoid(homeIce + strength[h] - strength[a]) }];
+    const base = homeIce + restCoef * (g.rest ?? 0) + (g.adjust ?? 0);
+    return [{ id: g.gameId, h, a, base, p: sigmoid(base + strength[h] - strength[a]) }];
   });
 
   // Series odds for a pairing in this simulated season, the first team
   // holding home ice.
   const series = (hi: number, lo: number) => {
-    const gap = strength[hi] + offset[hi] - strength[lo] - offset[lo];
+    const gap = strength[hi] + offset[hi] + playoffAdjust[hi] - strength[lo] - offset[lo] - playoffAdjust[lo];
     return seriesWinProbability(sigmoid(homeIce + gap), 1 - sigmoid(homeIce - gap));
   };
 
@@ -156,7 +162,7 @@ export function simulateSeason(teams: readonly SimTeam[], remaining: readonly Si
     }
     let w = 0;
     for (const g of games) {
-      const p = sd[g.h] > 0 || sd[g.a] > 0 ? sigmoid(homeIce + strength[g.h] + offset[g.h] - strength[g.a] - offset[g.a]) : g.p;
+      const p = sd[g.h] > 0 || sd[g.a] > 0 ? sigmoid(g.base + strength[g.h] + offset[g.h] - strength[g.a] - offset[g.a]) : g.p;
       const homeWins = random() < p;
       const overtime = random() < options.overtimeRate;
       const [win, lose] = homeWins ? [g.h, g.a] : [g.a, g.h];

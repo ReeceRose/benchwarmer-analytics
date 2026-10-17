@@ -23,7 +23,10 @@ const LABELS: Record<InjuryStatus, string> = {
 // Most serious first.
 const ORDER: Record<InjuryStatus, number> = { ir: 0, out: 1, suspended: 2, day_to_day: 3, other: 4 };
 
-export function toPlayerInjury(row: InjuryRow): PlayerInjury {
+/** The columns `toPlayerInjury` reads. */
+export type InjuryFields = Pick<InjuryRow, "status" | "injuryType" | "detail" | "side" | "comment" | "expectedReturn" | "reportedAt" | "firstSeenAt">;
+
+export function toPlayerInjury(row: InjuryFields): PlayerInjury {
   const status = row.status as InjuryStatus;
   return {
     status,

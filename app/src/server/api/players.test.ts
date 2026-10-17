@@ -8,6 +8,7 @@ import {
   latestSkaterStat,
   markBackToBacks,
   rollingSummary,
+  workloadReferenceDate,
   workloadTrend,
   workloadWindow,
   type GoalieShot,
@@ -113,6 +114,13 @@ describe("goalie workload", () => {
     expect(games[0].gameId).toBe("2024020001");
     expect(games[2].gameDate).toBe(MIN_DATE);
     expect(workloadWindow(games, "2024-10-08", 30).gamesPlayed).toBe(1);
+  });
+
+  it("current-season windows end today; past seasons end at their last game", () => {
+    const games = goaliePerGameStats(shots, dates);
+    expect(workloadReferenceDate(games, 2024, "2024-11-20")).toBe("2024-11-20");
+    expect(workloadReferenceDate(games, 2024, "2025-10-16")).toBe(games[0].gameDate);
+    expect(workloadReferenceDate([], 2024, "2025-10-16")).toBe("2025-10-16");
   });
 
   it("trend", () => {

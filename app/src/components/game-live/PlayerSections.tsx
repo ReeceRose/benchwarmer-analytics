@@ -67,13 +67,23 @@ function GoalieCard({ goalie }: { goalie: LiveGoalie }) {
   );
 }
 
+const playedInGame = (g: LiveGoalie) => g.shotsAgainst > 0 || /[1-9]/.test(g.toi);
+
+// Once the game is under way, drop the backup who hasn't played; before puck drop
+// (nobody has TOI yet) show both. A goalie who's subbed in gets TOI and appears.
+function goaliesFor(data: LiveGameResponse, side: TeamSide) {
+  const goalies = data.goalies.filter((g) => g.team === side);
+  const played = goalies.filter(playedInGame);
+  return played.length ? played : goalies;
+}
+
 export function GoaltendingSection({ data }: { data: LiveGameResponse }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {SIDES.map((side) => (
         <Card key={side} title={<TeamLabel side={side}>{data[side].name}</TeamLabel>}>
           <div className="space-y-3">
-            {data.goalies.filter((g) => g.team === side).map((g) => (
+            {goaliesFor(data, side).map((g) => (
               <GoalieCard key={g.playerId} goalie={g} />
             ))}
           </div>

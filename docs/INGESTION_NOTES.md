@@ -39,7 +39,7 @@ All steps are idempotent upserts. Unchanged rows aren't rewritten
 | `games` | NHL schedule → `games` |
 | `score_state` | `shots` goals → `game_score_state_times` |
 | `skater_games` | final games without rows → NHL shift chart, box score and play-by-play → `skater_games` (per-game Game Score), newest first, up to 45 games a run |
-| `projections` | NHL standings + `team_games` ratings + remaining `games` → 20,000-season simulation → `playoff_odds`, `playoff_odds_games` |
+| `projections` | NHL standings + `team_games` ratings + roster talent (`skater_seasons`/`skater_season_advanced`) + goaltending (`shots`) + remaining `games` (with back-to-backs) → 20,000-season simulation → `playoff_odds`, `playoff_odds_games` |
 | `nhl_records` | NHL records → `franchises`, `franchise_seasons` (regular seasons with playoff result), `franchise_head_to_head`, `draft_picks`, `player_careers` (with goalie playoff records), `trophies`, `award_winners`, `franchise_people`, `hall_of_fame`, `milestone_moments`, `officials`, `coaches`, `league_attendance`, `draft_lotteries`; ~55k rows, one request per list |
 | `espn_injuries` | ESPN injury list → `player_injuries` stints (reconciled: new players open a stint, listed ones update, missing ones resolve) and `espn_players` |
 | `espn_transactions` | ESPN transactions for the last 3 days (ET) → `transactions` |
@@ -229,8 +229,41 @@ ESPN's endpoints are unofficial and can change or vanish, so the code in
   `scripts/fit-pregame-model.ts` regenerate the coefficient files
   (`win-probability-model.ts`, `projections/pregame-model.ts`) from our own
   data; `scripts/calibrate-season-sims.ts` backtests the simulation's
-  `STRENGTH_SD` (`projections/run.ts`). All three are read-only. Refit once a
+  `STRENGTH_SD` (`projections/run.ts`) against real playoff, round and Cup
+  outcomes (`franchise_seasons`). All three are read-only. Refit once a
   season, after the playoffs.
+- **Pregame model inputs** (`projections/ratings.ts`, fitted October 2026).
+  Team stats (5v5 xG and goal differential, blended with last season), roster
+  talent (`roster.ts`), goaltending (`goalies.ts`) and back-to-backs. Held out
+  one season at a time over 2010-2025, rest improved log loss by 0.0016 and
+  roster by 0.0004 in the first 20 games; goaltending added almost nothing
+  once goal differential is in, so its weight is small. Season replays from
+  ~8 games improved most (Cup log loss 0.129 → 0.124); from mid-season on
+  the old and new models tie. Fading a rating's edge for later games (as
+  MoneyPuck does) made backtests worse: the edge holds all season. The
+  history walk (`projections/history.ts`) rates every game as of puck drop,
+  except roster weights, which use the season's full ice time (per-game ice
+  time only exists from 2025), so the roster term looks slightly better in
+  backtests than it can be live.
+- **Playoff odds sandbox** (`/playoff-odds/tune`). The projections step also
+  saves what the sandbox simulates from (`SandboxInputs`: standings, each
+  team's rating parts, the remaining schedule with back-to-backs, goalie
+  injuries) in `projection_inputs`, keeping only the latest run. The browser
+  re-blends the ratings with the reader's settings and runs
+  `lib/projections/simulate.ts` in a web worker (`sandbox.worker.ts`), 5,000
+  seasons a run. With default settings it matches the published odds to
+  within simulation noise.
+- **Goalie injuries (sandbox option)** (`projections/injuries.ts`,
+  `lib/projections/goalie-outlook.ts`): goalies listed as out sit until
+  ESPN's earliest return (two weeks without one; day-to-day goalies play)
+  and their starts go to the team's other goalies. Its one weight,
+  `STARTER_GAP_COEFFICIENT`, is fitted on top of the main model from who
+  actually started in net (2010-2025, log loss 0.66898 → 0.66854 held out by
+  season). The injury list itself can't be backtested (it starts October
+  2026), so it's off in the published odds.
+- **MoneyPuck comparison.** `scripts/compare-moneypuck.ts` runs today's
+  simulation against MoneyPuck's published odds and team ratings (one
+  download of each CSV). Read-only.
 - **Backfills.** `npx tsx scripts/backfill-skater-games.ts --season 2026`
   fills a season's `skater_games` in one pass; `npx tsx
   scripts/run-projections.ts` runs today's projection by hand.

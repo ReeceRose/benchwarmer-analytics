@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { seriesWinProbability, simulateSeason, type SimGame, type SimTeam } from "@/server/projections/simulate";
+import { seriesWinProbability, simulateSeason, type SimGame, type SimTeam } from "@/lib/projections/simulate";
 
 const COEF = [0.18, 0.63, 0.52];
 

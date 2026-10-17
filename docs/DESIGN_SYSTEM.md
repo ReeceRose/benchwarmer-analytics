@@ -426,6 +426,14 @@ the hero and scoreboard.
   the number beside it. A dashed row border marks a cut line (playoff
   spots). Day-over-day change uses ▲/▼ and is `success`/`error` only past
   `NOTABLE_CHANGE`, stated in the caption.
+- Sandbox (`routes/playoff-odds_.tune.tsx`, `projections/sandbox/`): a
+  settings `Panel` on the left (presets as `rounded-full` buttons, the
+  matching one filled; native range inputs with `accent-foreground`, the
+  value bold and "Our model: …" in the hint once it differs; a `Switch` for
+  on/off options) and results on the right behind a `ViewToggle`. Results
+  compare with our model run the same way, as `OddsChange` "vs ours"
+  columns. Settings live in the URL, leaving out anything at our model's
+  value. Say plainly that only our model's settings are tested.
 - Pregame win chance: on a game card, a footer like the xG share (two
   percentages over a split bar in team mark colours, favourite bold); in the
   game preview, a `Section` with `TeamLabel`s, display-font percentages and
@@ -494,6 +502,7 @@ the hero and scoreboard.
 - **Colour by series, never by rank or position.** A single-measure bar chart
   is one colour (`chart-1`); fade bars below a reference instead of
   colouring rank buckets. No pies: a ranked list with share bars reads better.
+  The one exception is the playoff odds rings (below).
 - **Don't chart a total next to its parts.** Points = goals + assists, so
   stack goals and assists and let the stack's height be points (career
   stats, `player-detail/CareerTotalsChart.tsx`), in one hue (see Data
@@ -527,6 +536,20 @@ the hero and scoreboard.
   stated threshold, and say in the caption why smaller moves are noise.
   Points against expected points uses the same rows (muted dot = expected,
   `chart-1` dot = actual, sorted by the gap, notable gaps bold, not coloured).
+- Playoff odds rings (`projections/PlayoffOddsRings.tsx`, MoneyPuck style):
+  an SVG with one ring per round, playoffs outside to Cup in the centre. Each
+  ring is split into team wedges sized by the team's share of that round's
+  spots, in each team's first vivid brand colour (`getBrandPalette`, skipping
+  black, grey and white by `colourChroma`; Bruins gold, Kraken ice blue),
+  stepping to the next when `coloursAreSimilar` to a neighbour. They're drawn
+  unclamped, not through `teamMarkColour`: big seamed fills stay vivid in
+  both themes, where clamping washes them out in dark mode,
+  with 1.5px `card` seams. Teams sit by conference and division; logos are
+  evenly spaced outside with leader lines to their outer wedge. Wedge labels
+  are white with a dark halo and only where the arc is wide enough. Hover
+  (mouse) or tap (pins) traces one team through every ring and fills the
+  readout beside it, so there's no floating tooltip and touch works. This is
+  the only pie on the site: the tables under it carry the exact numbers.
 - One measure ranked across teams or players (points %, PP%, PK%, top 10
   leaders): `RankedBars` (`components/charts`), with `RankedTeamLabel` or
   `RankedPlayerLabel` and `niceAxis` for round ticks. Each row is a link:

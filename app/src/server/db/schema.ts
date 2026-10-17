@@ -7,6 +7,7 @@
 // Materialized views are declared with .existing(): their DDL lives as custom
 // SQL in drizzle/0000_init.sql, so drizzle-kit never tries to manage them.
 import { sql } from "drizzle-orm";
+import type { SandboxInputs } from "@/types";
 import {
   bigint,
   boolean,
@@ -14,6 +15,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgMaterializedView,
   pgTable,
@@ -704,6 +706,8 @@ export const playoffOdds = pgTable(
     points: integer("points").notNull(),
     ratingXgd: numeric("rating_xgd", { mode: "number" }).notNull(),
     ratingGd: numeric("rating_gd", { mode: "number" }).notNull(),
+    ratingRoster: numeric("rating_roster", { mode: "number" }).notNull().default(0),
+    ratingGoalie: numeric("rating_goalie", { mode: "number" }).notNull().default(0),
     pointsAvg: numeric("points_avg", { mode: "number" }).notNull(),
     pointsP10: integer("points_p10").notNull(),
     pointsP90: integer("points_p90").notNull(),
@@ -741,6 +745,22 @@ export const playoffOddsGames = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("ix_playoff_odds_games_run_date_game_id").on(t.runDate, t.gameId)],
+);
+
+// What the playoff odds sandbox simulates from (SandboxInputs): the latest
+// run's standings, rating parts, schedule and goalie injuries. Older runs are
+// deleted, since only today's is served.
+export const projectionInputs = pgTable(
+  "projection_inputs",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    season: integer("season").notNull(),
+    runDate: date("run_date").notNull(),
+    inputs: jsonb("inputs").$type<SandboxInputs>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("ix_projection_inputs_season_run_date").on(t.season, t.runDate)],
 );
 
 export const gameScoreStateTimes = pgTable(

@@ -297,6 +297,9 @@ export interface GoalieWorkloadResponse {
   season: number;
   gamesIncluded: number;
   games: GoalieGameStats[];
+  /** Last day of the windows: today for the current season, else the season's last game. */
+  windowEnd: string;
+  lastGameDate: string | null;
   last7Days: WorkloadWindow;
   last14Days: WorkloadWindow;
   last30Days: WorkloadWindow;

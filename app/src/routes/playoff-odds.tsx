@@ -3,7 +3,9 @@ import * as z from "zod/mini";
 import { usePageTitle, usePlayoffOdds } from "@/hooks";
 import { ErrorState, TableSkeleton } from "@/components/shared";
 import { EmptyState, PageHeader, Panel, SegmentedControl, StatTile } from "@/components/layout";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PlayoffOddsRings } from "@/components/projections/PlayoffOddsRings";
 import { PlayoffOddsTable } from "@/components/projections/PlayoffOddsTable";
 import { formatOdds, NOTABLE_CHANGE } from "@/lib/odds";
 import { formatGameDateLong } from "@/lib/game-formatters";
@@ -122,6 +124,11 @@ function PlayoffOddsPage() {
             ? `${data.simulations.toLocaleString()} simulations of the rest of the season, as of ${formatGameDateLong(data.runDate)}.`
             : "Simulations of the rest of the season, updated every morning."
         }
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/playoff-odds/tune">Tune your own</Link>
+          </Button>
+        }
       />
 
       {error ? (
@@ -139,6 +146,7 @@ function PlayoffOddsPage() {
         <>
           <Tiles data={data} />
           {data.games.length > 0 && <BiggestGames games={data.games} />}
+          <PlayoffOddsRings teams={data.teams} season={data.season} />
           <SegmentedControl
             aria-label="Grouping"
             value={view}
@@ -156,12 +164,12 @@ function PlayoffOddsPage() {
           </div>
           <p className="text-xs text-muted-foreground">
             Each simulation plays out every remaining game from today's standings. Team strength comes from 5v5 expected
-            goals and goal differential per game, blended with last season early on, and is drawn with some uncertainty in
-            each simulation so early-season odds aren't overconfident.
+            goals and goal differential per game, blended with last season early on, plus roster talent, goaltending and
+            back-to-backs, and is drawn with some uncertainty in each simulation so early-season odds aren't overconfident.
             {view === "wildcard" && " The dashed line marks each conference's eight playoff spots."}
             {view === "division" && " The dashed line marks each division's three automatic spots."} Δ is colour-coded only
             for moves of {Math.round(NOTABLE_CHANGE * 100)} points or more; smaller daily moves are mostly noise.{" "}
-            <Link to="/glossary" hash="Playoff Odds" className="text-link">How it works</Link>
+            <Link to="/glossary" hash="Playoff odds" className="text-link">How it works</Link>
           </p>
         </>
       )}

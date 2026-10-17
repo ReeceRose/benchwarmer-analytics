@@ -49,7 +49,7 @@ export { usePageTitle } from "@/hooks/usePageTitle";
 export { useMediaQuery } from "@/hooks/useMediaQuery";
 export { useSeriesColours } from "@/hooks/useSeriesColours";
 export { useNightlyGameScores, useSingleGameRecords } from "@/hooks/useGameScores";
-export { usePlayoffOdds, useGameProjections } from "@/hooks/useProjections";
+export { usePlayoffOdds, useGameProjections, useSandboxInputs } from "@/hooks/useProjections";
 export {
   usePlayerTracking,
   useTeamTracking,
