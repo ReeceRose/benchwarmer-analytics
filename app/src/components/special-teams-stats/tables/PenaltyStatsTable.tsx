@@ -144,7 +144,7 @@ export function PenaltyStatsTable({ players, season }: PenaltyStatsTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead className="w-12">#</TableHead>
-            <TableHead className="w-64">Player</TableHead>
+            <TableHead className="sticky left-0 z-10 bg-card sm:w-64">Player</TableHead>
             <TableHead>Team</TableHead>
             <TableHead>Pos</TableHead>
             <SortableHeader
@@ -219,7 +219,7 @@ export function PenaltyStatsTable({ players, season }: PenaltyStatsTableProps) {
               <TableCell className="text-muted-foreground tabular-nums">
                 {index + 1}
               </TableCell>
-              <TableCell>
+              <TableCell className="sticky left-0 z-10 bg-card">
                 <Link
                   to="/players/$id"
                   params={{ id: String(player.playerId) }}

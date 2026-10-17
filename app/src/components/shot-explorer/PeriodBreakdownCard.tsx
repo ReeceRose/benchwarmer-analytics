@@ -106,7 +106,7 @@ export function PeriodBreakdownCard({ shots }: PeriodBreakdownCardProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16">Period</TableHead>
+                <TableHead className="sticky left-0 z-10 bg-card w-16">Period</TableHead>
                 <HeaderWithTooltip label="Shots" tooltip="Total shot attempts" className="text-right" />
                 <HeaderWithTooltip label="On goal" tooltip="Shots on goal" className="text-right" />
                 <HeaderWithTooltip label="Goals" tooltip="Goals scored" className="text-right" />
@@ -129,7 +129,7 @@ export function PeriodBreakdownCard({ shots }: PeriodBreakdownCardProps) {
 
                 return (
                   <TableRow key={stats.period}>
-                    <TableCell className="font-medium">
+                    <TableCell className="sticky left-0 z-10 bg-card font-medium">
                       {stats.periodLabel}
                     </TableCell>
                     <TableCell className="text-right">

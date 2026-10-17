@@ -37,7 +37,7 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead>Season</TableHead>
+              <TableHead className="sticky left-0 z-10 bg-card">Season</TableHead>
               <TableHead>Team</TableHead>
               <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
               <HeaderWithTooltip label="TOI" tooltip="Total time on ice" className="text-right hidden md:table-cell" />
@@ -66,7 +66,7 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
         <TableBody>
           {rows.map((row) => (
             <TableRow key={`${row.season}-${row.team}`} className="hover:bg-muted/30">
-              <TableCell className="font-medium">{formatSeason(row.season)}</TableCell>
+              <TableCell className="sticky left-0 z-10 bg-card font-medium">{formatSeason(row.season)}</TableCell>
               <TableCell>
                 <TeamTag abbrev={row.team} season={row.season} />
               </TableCell>

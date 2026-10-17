@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -46,7 +47,7 @@ export function GoalieRosterTable({ title, players, showStats = false }: GoalieR
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className={showStats ? "w-[25%]" : "w-[40%]"}>Name</TableHead>
+                <TableHead className={cn("sticky left-0 z-10 bg-card", showStats ? "w-[25%]" : "w-[40%]")}>Name</TableHead>
                 <HeaderWithTooltip label="Pos" tooltip="Position" />
                 {showStats ? (
                   <>
@@ -70,7 +71,7 @@ export function GoalieRosterTable({ title, players, showStats = false }: GoalieR
             <TableBody>
               {players.map((player) => (
                 <TableRow key={player.id}>
-                  <TableCell>
+                  <TableCell className="sticky left-0 z-10 bg-card">
                     <Link
                       to="/players/$id"
                       params={{ id: String(player.id) }}

@@ -184,7 +184,7 @@ export function AdvancedSkatersTable({ data }: { data: LiveGameResponse }) {
           <thead>
             <tr className="border-b text-xs text-muted-foreground">
               <th className="py-2 pr-2 text-left font-medium">#</th>
-              <th className="py-2 pr-2 text-left font-medium">Player</th>
+              <th className="sticky left-0 z-10 bg-card py-2 pr-2 text-left font-medium">Player</th>
               <th className="py-2 pr-2 text-left font-medium">Pos</th>
               {columns.map((c) => (
                 <SortableTableHeader
@@ -204,7 +204,7 @@ export function AdvancedSkatersTable({ data }: { data: LiveGameResponse }) {
             {rows.map((r) => (
               <tr key={r.playerId} className="border-b last:border-0">
                 <td className="py-1.5 pr-2 text-muted-foreground">{r.number}</td>
-                <td className="py-1.5 pr-2 font-medium whitespace-nowrap">
+                <td className="sticky left-0 z-10 bg-card py-1.5 pr-2 font-medium whitespace-nowrap">
                   <Link to="/players/$id" params={{ id: String(r.playerId) }} className="hover:text-link">{r.name}</Link>
                 </td>
                 <td className="py-1.5 pr-2 text-muted-foreground">{r.position}</td>

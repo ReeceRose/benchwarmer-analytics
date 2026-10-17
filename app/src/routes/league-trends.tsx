@@ -162,7 +162,7 @@ function SeasonTable({ seasons, inProgress }: { seasons: SeasonTrend[]; inProgre
           <Table className="min-w-160">
             <TableHeader>
               <TableRow>
-                <TableHead>Season</TableHead>
+                <TableHead className="sticky left-0 z-10 bg-card">Season</TableHead>
                 <TableHead className="text-right">Players</TableHead>
                 <TableHead className="text-right">GP</TableHead>
                 <TableHead className="text-right">Goals</TableHead>
@@ -176,7 +176,7 @@ function SeasonTable({ seasons, inProgress }: { seasons: SeasonTrend[]; inProgre
             <TableBody>
               {[...seasons].reverse().map((s) => (
                 <TableRow key={s.season}>
-                  <TableCell className="font-medium">
+                  <TableCell className="sticky left-0 z-10 bg-card font-medium">
                     {formatSeason(s.season)}
                     {inProgress && s.season === latest && (
                       <span className="ml-1.5 text-xs font-normal text-muted-foreground">so far</span>

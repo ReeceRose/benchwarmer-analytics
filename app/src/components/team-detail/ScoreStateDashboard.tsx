@@ -175,7 +175,7 @@ function ScoreStateTable({ data }: ScoreStateTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b">
-            <th className="py-3 pr-4 pl-5 text-left">State</th>
+            <th className="sticky left-0 z-10 bg-card py-3 pr-4 pl-5 text-left">State</th>
             {COLUMNS.map((c, i) => (
               <th
                 key={c}
@@ -192,7 +192,7 @@ function ScoreStateTable({ data }: ScoreStateTableProps) {
               key={row.label}
               className={cn("border-b last:border-0", row.isTotal && "border-t font-semibold")}
             >
-              <td className="py-2.5 pr-4 pl-5">{row.label}</td>
+              <td className="sticky left-0 z-10 bg-card py-2.5 pr-4 pl-5 whitespace-nowrap">{row.label}</td>
               <td className="px-3 text-right">
                 {row.timeSeconds != null ? formatTime(row.timeSeconds) : "–"}
               </td>

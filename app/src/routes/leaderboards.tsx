@@ -343,7 +343,7 @@ function TableView({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">#</TableHead>
-                <TableHead className="w-44">Player</TableHead>
+                <TableHead className="sticky left-0 z-10 w-44 bg-card">Player</TableHead>
                 <TableHead className="w-20">Pos</TableHead>
                 <TableHead className="w-16">Team</TableHead>
                 <SortableTableHeader

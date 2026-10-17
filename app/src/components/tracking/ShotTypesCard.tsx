@@ -30,42 +30,44 @@ export function ShotTypesCard({ target }: { target: { playerId: number } | { tea
           ))}
         </div>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-xs">
-              <th className="pb-2 text-left font-medium">Type</th>
-              <th className="pb-2 text-left font-medium">Share of shots</th>
-              <th className="pb-2 pl-3 text-right font-medium">SOG</th>
-              <th className="pb-2 pl-3 text-right font-medium">G</th>
-              <th className="pb-2 pl-3 text-right font-medium">Sh%</th>
-              <th className="pb-2 pl-3 text-right font-medium">League</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.types.map((t) => {
-              const beats = t.shootingPct != null && t.leagueShootingPct != null && t.shootingPct > t.leagueShootingPct;
-              return (
-                <tr key={t.type}>
-                  <td className="py-1 pr-3 whitespace-nowrap">{t.label}</td>
-                  <td className="w-full py-1 pr-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full rounded-full bg-chart-1" style={{ width: `${(100 * t.shots) / max}%` }} />
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs">
+                <th className="pb-2 text-left font-medium">Type</th>
+                <th className="pb-2 text-left font-medium">Share of shots</th>
+                <th className="pb-2 pl-2 sm:pl-3 text-right font-medium">SOG</th>
+                <th className="pb-2 pl-2 sm:pl-3 text-right font-medium">G</th>
+                <th className="pb-2 pl-2 sm:pl-3 text-right font-medium">Sh%</th>
+                <th className="pb-2 pl-2 sm:pl-3 text-right font-medium">League</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.types.map((t) => {
+                const beats = t.shootingPct != null && t.leagueShootingPct != null && t.shootingPct > t.leagueShootingPct;
+                return (
+                  <tr key={t.type}>
+                    <td className="py-1 pr-3 whitespace-nowrap">{t.label}</td>
+                    <td className="w-full py-1 pr-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                          <div className="h-full rounded-full bg-chart-1" style={{ width: `${(100 * t.shots) / max}%` }} />
+                        </div>
+                        <span className="w-9 text-right text-xs text-muted-foreground tabular-nums">
+                          {total > 0 ? `${Math.round((100 * t.shots) / total)}%` : "–"}
+                        </span>
                       </div>
-                      <span className="w-9 text-right text-xs text-muted-foreground tabular-nums">
-                        {total > 0 ? `${Math.round((100 * t.shots) / total)}%` : "–"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-1 pl-3 text-right">{t.shots}</td>
-                  <td className="py-1 pl-3 text-right">{t.goals}</td>
-                  <td className={cn("py-1 pl-3 text-right", beats && "font-semibold")}>{formatPercent(t.shootingPct)}</td>
-                  <td className="py-1 pl-3 text-right text-muted-foreground">{formatPercent(t.leagueShootingPct)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="py-1 pl-2 sm:pl-3 text-right">{t.shots}</td>
+                    <td className="py-1 pl-2 sm:pl-3 text-right">{t.goals}</td>
+                    <td className={cn("py-1 pl-2 sm:pl-3 text-right", beats && "font-semibold")}>{formatPercent(t.shootingPct)}</td>
+                    <td className="py-1 pl-2 sm:pl-3 text-right text-muted-foreground">{formatPercent(t.leagueShootingPct)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </UsageCard>
   );

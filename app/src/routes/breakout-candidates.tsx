@@ -164,7 +164,7 @@ function BreakoutCandidatesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">#</TableHead>
-                      <TableHead>Player</TableHead>
+                      <TableHead className="sticky left-0 z-10 bg-card">Player</TableHead>
                       <TableHead>Pos</TableHead>
                       <TableHead>Team</TableHead>
                       <HeaderWithTooltip

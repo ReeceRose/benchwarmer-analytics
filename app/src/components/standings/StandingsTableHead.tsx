@@ -22,7 +22,7 @@ function GroupHead({
 // first header row, which here is the group row, so they live in a colgroup.
 const COLUMN_WIDTHS = [
   3.5, 14, 2.75, 2.5, 2.5, 2.5, 2.75, 3.25, 2.75, 2.75, 3, 4, 4, 3.5, 3, 3, 3,
-  3, 3, 3.25, 3.25, 3.25, 3, 3, 3.25, 3,
+  3, 3, 3.25, 3.25, 3.25, 3.25, 3, 3.25, 3,
 ];
 
 /** Two-row header shared by every standings grouping. */

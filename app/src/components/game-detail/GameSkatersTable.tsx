@@ -54,7 +54,7 @@ function SkaterRow({
       className="hover:bg-muted/50 cursor-pointer"
       onClick={handleClick}
     >
-      <TableCell className="font-medium">
+      <TableCell className="sticky left-0 z-10 bg-card font-medium">
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
             <AvatarImage
@@ -129,7 +129,7 @@ function GoalieRow({
       className="hover:bg-muted/50 cursor-pointer"
       onClick={handleClick}
     >
-      <TableCell className="font-medium">
+      <TableCell className="sticky left-0 z-10 bg-card font-medium">
         <div className="flex items-center gap-2">
           <Avatar className="h-6 w-6">
             <AvatarImage
@@ -205,7 +205,7 @@ function TeamSkatersTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Player</TableHead>
+            <TableHead className="sticky left-0 z-10 bg-card">Player</TableHead>
             <HeaderWithTooltip label="G" tooltip="Goals" className="text-center" />
             <HeaderWithTooltip label="A" tooltip="Assists" className="text-center" />
             <HeaderWithTooltip label="P" tooltip="Points" className="text-center" />
@@ -237,7 +237,7 @@ function TeamSkatersTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Player</TableHead>
+                <TableHead className="sticky left-0 z-10 bg-card">Player</TableHead>
                 <HeaderWithTooltip label="SV" tooltip="Saves" className="text-center" />
                 <HeaderWithTooltip label="SA" tooltip="Shots against" className="text-center" />
                 <HeaderWithTooltip label="GA" tooltip="Goals against" className="text-center" />

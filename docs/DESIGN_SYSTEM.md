@@ -683,7 +683,13 @@ the hero and scoreboard.
   above its neighbour. Short cards can sit three across at `xl` and share a row
   at `lg` (see `TeamStatsSection`, `ShotProfile`).
 - Heroes shorten team names to codes below `sm`.
-- Wide tables scroll horizontally inside their surface. Pin the first column.
+- Wide tables scroll horizontally inside their surface. Pin the name column
+  (player, team, season) with `sticky left-0 z-10 bg-card`, even when a rank
+  column comes before it.
+- `SegmentedControl` scrolls sideways when its options don't fit, so a long
+  option list never widens the page.
+- Tooltips (`components/ui/tooltip`) open on tap on touch screens, so
+  `HeaderWithTooltip` definitions work on phones too.
 - Fixed-width centre columns (e.g. `MirroredBar`'s label column) squeeze bars
   on phones, so keep them as narrow as the labels allow.
 

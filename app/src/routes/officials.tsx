@@ -16,7 +16,7 @@ function OfficialsTable({ officials }: { officials: Official[] }) {
         <thead>
           <tr className="border-b text-xs">
             <th className="w-12 px-3 py-2 text-right font-medium">#</th>
-            <th className="px-3 py-2 text-left font-medium">Name</th>
+            <th className="sticky left-0 z-10 bg-card px-3 py-2 text-left font-medium">Name</th>
             <th className="px-3 py-2 text-left font-medium">First NHL game</th>
             <th className="px-3 py-2 text-left font-medium">First playoff game</th>
             <th className="px-3 py-2 text-left font-medium">From</th>
@@ -26,7 +26,7 @@ function OfficialsTable({ officials }: { officials: Official[] }) {
           {officials.map((o) => (
             <tr key={o.id} className="border-b last:border-0">
               <td className="px-3 py-2 text-right font-semibold tabular-nums">{o.sweaterNumber ?? "–"}</td>
-              <td className="px-3 py-2 font-medium whitespace-nowrap">{o.name}</td>
+              <td className="sticky left-0 z-10 bg-card px-3 py-2 font-medium whitespace-nowrap">{o.name}</td>
               <td className="px-3 py-2 text-muted-foreground">{o.firstSeason ? formatSeason(o.firstSeason) : "–"}</td>
               <td className="px-3 py-2 text-muted-foreground">{o.firstPlayoffSeason ? formatSeason(o.firstPlayoffSeason) : "–"}</td>
               <td className="px-3 py-2 text-muted-foreground">{o.countryCode ?? "–"}</td>

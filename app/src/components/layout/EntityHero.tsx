@@ -110,7 +110,7 @@ export function HeroStat({
   return (
     <div className="min-w-0 px-2 py-1.5 sm:min-w-17 sm:px-4">
       <dt className="truncate text-xs text-white/75">{label}</dt>
-      <dd className="font-display text-2xl leading-tight font-bold tabular-nums sm:text-3xl">
+      <dd className="font-display text-lg leading-tight font-bold tabular-nums min-[420px]:text-2xl sm:text-3xl">
         {value}
       </dd>
       {note && (

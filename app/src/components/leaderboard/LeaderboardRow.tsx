@@ -36,7 +36,7 @@ export function LeaderboardRow({
       <TableCell className="font-medium text-muted-foreground tabular-nums">
         {rank}
       </TableCell>
-      <TableCell>
+      <TableCell className="sticky left-0 z-10 bg-card">
         <Link
           to="/players/$id"
           params={{ id: String(entry.playerId) }}

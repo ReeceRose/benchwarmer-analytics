@@ -131,7 +131,7 @@ export function SpecialTeamsPlayerTable({
     : [];
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <CardTitle className="text-base">Player stats</CardTitle>
@@ -167,7 +167,7 @@ export function SpecialTeamsPlayerTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-50">Player</TableHead>
+                <TableHead className="sticky left-0 z-10 bg-card w-50">Player</TableHead>
                 <HeaderWithTooltip label="Pos" tooltip="Position" />
                 <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
                 <SortableHeader field="toi" label="TOI" tooltip="Total time on ice in situation" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
@@ -183,7 +183,7 @@ export function SpecialTeamsPlayerTable({
             <TableBody>
               {sortedPlayers.map((player) => (
                 <TableRow key={player.playerId}>
-                  <TableCell>
+                  <TableCell className="sticky left-0 z-10 bg-card">
                     <Link
                       to="/players/$id"
                       params={{ id: String(player.playerId) }}

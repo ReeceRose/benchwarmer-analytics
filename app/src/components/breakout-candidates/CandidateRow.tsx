@@ -30,7 +30,7 @@ export function CandidateRow({ candidate, rank }: CandidateRowProps) {
   return (
     <TableRow>
       <TableCell className="font-medium text-muted-foreground">{rank}</TableCell>
-      <TableCell>
+      <TableCell className="sticky left-0 z-10 bg-card">
         <Link
           to="/players/$id"
           params={{ id: String(candidate.playerId) }}

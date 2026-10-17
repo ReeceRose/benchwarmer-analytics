@@ -54,7 +54,7 @@ export function RookieTable({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">#</TableHead>
-                <TableHead>Player</TableHead>
+                <TableHead className="sticky left-0 z-10 bg-card">Player</TableHead>
                 <TableHead>Pos</TableHead>
                 <TableHead>Team</TableHead>
                 <SortableTableHeader
@@ -192,7 +192,7 @@ function RookieRow({ rookie, rank }: { rookie: Rookie; rank: number }) {
   return (
     <TableRow>
       <TableCell className="font-medium text-muted-foreground">{rank}</TableCell>
-      <TableCell>
+      <TableCell className="sticky left-0 z-10 bg-card">
         <Link
           to="/players/$id"
           params={{ id: String(rookie.playerId) }}
