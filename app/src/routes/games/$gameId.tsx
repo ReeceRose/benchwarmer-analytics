@@ -31,6 +31,7 @@ import {
   useGoalieRecentForm,
   useDeserveToWin,
   useGameLive,
+  useGoalAlert,
   usePageTitle,
 } from "@/hooks";
 import { getSeasonFromDate } from "@/lib/date-utils";
@@ -61,9 +62,11 @@ function GameDetailPage() {
     refetch,
   } = useGame(gameId);
 
-  // Set page title with team matchup
+  const goalAlert = useGoalAlert(game);
+
+  // Set page title with team matchup (and the goal, for readers in another tab)
   const gameTitle = game
-    ? `${game.away.teamCode} @ ${game.home.teamCode}`
+    ? `${goalAlert ? `${goalAlert.teamCode} goal! ` : ""}${game.away.teamCode} @ ${game.home.teamCode}`
     : undefined;
   usePageTitle(gameTitle);
 
@@ -135,6 +138,7 @@ function GameDetailPage() {
         <GameDetailHeader
           game={game}
           preview={previewData}
+          goalAlert={goalAlert}
           action={liveData && <ShareGameButton data={liveData} />}
         />
       ) : null}

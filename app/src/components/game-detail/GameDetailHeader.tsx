@@ -12,6 +12,7 @@ import {
 import { coloursAreSimilar, getTeamColours } from "@/lib/team-colours";
 import { getTeamName } from "@/lib/team-names";
 import { cn } from "@/lib/utils";
+import type { ActiveGoalAlert } from "@/hooks/useGoalAlert";
 import type { GameSummary, GamePreview } from "@/types";
 
 interface GameDetailHeaderProps {
@@ -19,6 +20,8 @@ interface GameDetailHeaderProps {
   preview?: GamePreview;
   /** Shown after the date and series line, e.g. the share button. */
   action?: ReactNode;
+  /** A goal just scored: flashes the scorer's half and pops their score. */
+  goalAlert?: ActiveGoalAlert | null;
 }
 
 function seriesSummary(
@@ -45,7 +48,7 @@ function seriesSummary(
  * Split scoreboard: the away team's colours on the left, the home team's on
  * the right, the score in the middle.
  */
-export function GameDetailHeader({ game, preview, action }: GameDetailHeaderProps) {
+export function GameDetailHeader({ game, preview, action, goalAlert }: GameDetailHeaderProps) {
   const gameState = game?.gameState ?? (preview ? "FUT" : null);
   const isFuture = gameState === "FUT" || gameState === "PRE";
   const isLive = gameState === "LIVE" || gameState === "CRIT";
@@ -84,6 +87,13 @@ export function GameDetailHeader({ game, preview, action }: GameDetailHeaderProp
   }
 
   const series = seriesSummary(game, preview, homeCode, awayCode);
+  const goalText = goalAlert
+    ? [`${goalAlert.teamCode} goal`, goalAlert.goal?.scorerName].filter(Boolean).join(": ")
+    : "";
+  const scoreClass = (side: "home" | "away", lost: boolean) =>
+    cn(lost && "opacity-55", goalAlert?.side === side && "motion-safe:animate-goal-pop");
+  const scoreKey = (side: "home" | "away") =>
+    goalAlert?.side === side ? goalAlert.key : side;
 
   const awaySide = {
     code: awayCode,
@@ -104,10 +114,23 @@ export function GameDetailHeader({ game, preview, action }: GameDetailHeaderProp
 
   return (
     <div
-      className="text-white"
+      className="relative overflow-hidden text-white"
       style={{ backgroundImage: background }}
     >
-      <div className="container py-6 sm:py-8">
+      {goalAlert && (
+        <div
+          key={goalAlert.key}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-0 motion-safe:animate-goal-flash"
+          style={{
+            backgroundImage: `linear-gradient(${goalAlert.side === "away" ? 100 : 280}deg, white 0 50%, transparent 50%)`,
+          }}
+        />
+      )}
+      <span className="sr-only" aria-live="polite">
+        {goalText}
+      </span>
+      <div className="relative container py-6 sm:py-8">
         <div className="mb-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-white/80">
           <Link to="/games" search={gameDate ? { date: gameDate } : {}} className="hover:text-white">
             {gameDate ? formatGameDateLong(gameDate) : "Games"}
@@ -122,25 +145,31 @@ export function GameDetailHeader({ game, preview, action }: GameDetailHeaderProp
               <div className="font-display text-3xl font-bold sm:text-4xl">@</div>
             ) : (
               <div className="flex items-center gap-2 font-display text-5xl leading-none font-bold tabular-nums sm:gap-4 sm:text-7xl">
-                <span className={cn(awaySide.lost && "opacity-55")}>
+                <span key={scoreKey("away")} className={scoreClass("away", awaySide.lost)}>
                   {awayGoals ?? "–"}
                 </span>
                 <span className="text-2xl opacity-60 sm:text-4xl">–</span>
-                <span className={cn(homeSide.lost && "opacity-55")}>
+                <span key={scoreKey("home")} className={scoreClass("home", homeSide.lost)}>
                   {homeGoals ?? "–"}
                 </span>
               </div>
             )}
-            <div
-              className={cn(
-                "mt-3 inline-flex items-center gap-1.5 rounded-full bg-black/25 px-3 py-1 text-sm font-semibold",
-              )}
-            >
-              {isLive && (
-                <span className="size-2 animate-pulse rounded-full bg-strip-live" />
-              )}
-              {status}
-            </div>
+            {goalAlert ? (
+              <div
+                key={goalAlert.key}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-sm font-semibold text-black motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75"
+              >
+                <span className="size-2 animate-ping rounded-full bg-strip-live" />
+                {goalText}
+              </div>
+            ) : (
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-black/25 px-3 py-1 text-sm font-semibold">
+                {isLive && (
+                  <span className="size-2 animate-pulse rounded-full bg-strip-live" />
+                )}
+                {status}
+              </div>
+            )}
           </div>
           <TeamSide side={homeSide} season={season} align="start" />
         </div>

@@ -46,6 +46,7 @@ export { useSortableTable } from "@/hooks/useSortableTable";
 export { useRookies } from "@/hooks/useRookies";
 export { useChartSelection } from "@/hooks/useChartSelection";
 export { usePageTitle } from "@/hooks/usePageTitle";
+export { useGoalAlert } from "@/hooks/useGoalAlert";
 export { useMediaQuery } from "@/hooks/useMediaQuery";
 export { useSeriesColours } from "@/hooks/useSeriesColours";
 export { useNightlyGameScores, useSingleGameRecords } from "@/hooks/useGameScores";

@@ -99,6 +99,12 @@ Rules:
 - Where two team colours sit side by side (the `GameDetailHeader` split),
   check `coloursAreSimilar(a, b)` and mark the seam with a thin dark line
   when they'd blur together (OTT/NJD reds, navy vs navy).
+- Goal alert (`useGoalAlert` + `GameDetailHeader`): when a poll brings in a
+  new goal (never for goals already on the board at page load), the scoring
+  team's half of the split flashes white three times like a goal light, their
+  score pops, and the status pill turns white with "WSH goal: I. Protas" for
+  8 seconds. The tab title reads "WSH goal! NJD @ WSH" meanwhile. Flash and
+  pop are `motion-safe:` only; the pill text and an `aria-live` line are not.
 - For small marks on the page surface (game card stripes, dots), draw it
   through `teamMarkColour(hex)`, which keeps hue and chroma but clamps OKLCH
   lightness to `--team-l-min`/`--team-l-max` (navy brightens in dark mode,
