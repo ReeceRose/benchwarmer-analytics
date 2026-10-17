@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, lte, or, sql } from "drizzle-orm";
 import type { Database } from "@/server/db/client";
 import { games, goalieSeasons, players, shots, skaterSeasons, teamSeasons } from "@/server/db/schema";
 import { CacheTier, json, type ApiContext } from "@/server/api/handler";
@@ -717,33 +717,106 @@ export async function getGameBoxscore({ params }: ApiContext) {
   return json(body, isFinalState(box.gameState) ? CacheTier.semiStatic : CacheTier.live);
 }
 
-const isOvertime = (g: NhlClubScheduleGame) => g.periodDescriptor?.periodType === "OT" || g.periodDescriptor?.periodType === "SO";
+const isOvertimeType = (t: string | null | undefined) => t === "OT" || t === "SO";
 
-// Season series from the home team's schedule (newest first).
-export function headToHeadRecord(meetings: readonly NhlClubScheduleGame[], homeTeam: string, awayTeam: string) {
+// A final game between two teams, from the NHL schedule or the games table.
+export interface Meeting {
+  gameId: string;
+  date: string;
+  isPlayoffs: boolean;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  periodType: string | null;
+}
+
+export function meetingFromSchedule(g: NhlClubScheduleGame): Meeting {
+  return {
+    gameId: String(g.id ?? ""),
+    date: g.gameDate ?? "",
+    isPlayoffs: g.gameType === GameState.playoffs,
+    homeTeam: g.homeTeam?.abbrev ?? "",
+    awayTeam: g.awayTeam?.abbrev ?? "",
+    homeScore: g.homeTeam?.score ?? 0,
+    awayScore: g.awayTeam?.score ?? 0,
+    periodType: g.periodDescriptor?.periodType ?? null,
+  };
+}
+
+// Season series (regular season only) for the header, from the home team's side.
+export function seasonSeriesRecord(meetings: readonly Meeting[], homeTeam: string) {
   let homeWins = 0;
   let awayWins = 0;
   let overtime = 0;
-  for (const g of meetings) {
-    const homeWon = (g.homeTeam?.score ?? 0) > (g.awayTeam?.score ?? 0);
-    const gameHome = g.homeTeam?.abbrev;
-    if ((gameHome === homeTeam && homeWon) || (gameHome === awayTeam && !homeWon)) homeWins++;
+  for (const m of meetings) {
+    if (m.isPlayoffs) continue;
+    const homeWon = m.homeScore > m.awayScore;
+    if ((m.homeTeam === homeTeam) === homeWon) homeWins++;
     else awayWins++;
-    if (isOvertime(g)) overtime++;
+    if (isOvertimeType(m.periodType)) overtime++;
   }
-  return {
-    season: { homeWins, awayWins, overtimeLosses: overtime },
-    lastFive: meetings.slice(0, 5).map((g) => {
-      const homeScore = g.homeTeam?.score ?? 0;
-      const awayScore = g.awayTeam?.score ?? 0;
-      return {
-        date: g.gameDate ?? "",
-        score: `${g.homeTeam?.abbrev ?? ""} ${homeScore} - ${g.awayTeam?.abbrev ?? ""} ${awayScore}`,
-        winner: (homeScore > awayScore ? g.homeTeam?.abbrev : g.awayTeam?.abbrev) ?? "",
-        overtimeType: isOvertime(g) ? (g.periodDescriptor?.periodType ?? null) : null,
-      };
-    }),
+  return { homeWins, awayWins, overtimeLosses: overtime };
+}
+
+// Meetings over one span, scored from the preview's sides (away on the left).
+// `meetings` newest first.
+export function headToHeadSpan(meetings: readonly Meeting[], homeTeam: string) {
+  const games = meetings.map((m) => {
+    const atHome = m.homeTeam === homeTeam;
+    return {
+      gameId: m.gameId,
+      date: m.date,
+      isPlayoffs: m.isPlayoffs,
+      atHome,
+      homeScore: atHome ? m.homeScore : m.awayScore,
+      awayScore: atHome ? m.awayScore : m.homeScore,
+      overtimeType: isOvertimeType(m.periodType) ? m.periodType : null,
+    };
+  });
+  const record = (playoffs: boolean) => {
+    const rows = games.filter((g) => g.isPlayoffs === playoffs);
+    if (rows.length === 0) return null;
+    return {
+      gamesPlayed: rows.length,
+      awayWins: rows.filter((g) => g.awayScore > g.homeScore).length,
+      homeWins: rows.filter((g) => g.homeScore > g.awayScore).length,
+      overtime: rows.filter((g) => g.overtimeType !== null).length,
+      awayGoals: sum(rows, (g) => g.awayScore),
+      homeGoals: sum(rows, (g) => g.homeScore),
+    };
   };
+  return { regular: record(false), playoffs: record(true), games };
+}
+
+// Final regular-season and playoff meetings in [fromSeason, toSeason], newest first.
+function pastMeetings(db: Database, home: string, away: string, fromSeason: number, toSeason: number): Promise<(Meeting & { season: number })[]> {
+  return db
+    .select({
+      gameId: games.gameId,
+      season: games.season,
+      date: games.gameDate,
+      isPlayoffs: sql<boolean>`${games.gameType} = ${GameState.playoffs}`,
+      homeTeam: games.homeTeamCode,
+      awayTeam: games.awayTeamCode,
+      homeScore: games.homeScore,
+      awayScore: games.awayScore,
+      periodType: games.periodType,
+    })
+    .from(games)
+    .where(
+      and(
+        gte(games.season, fromSeason),
+        lte(games.season, toSeason),
+        inArray(games.gameType, [GameState.regularSeason, GameState.playoffs]),
+        inArray(games.gameState, [GameState.final, GameState.finalAlt]),
+        or(
+          and(eq(games.homeTeamCode, home), eq(games.awayTeamCode, away)),
+          and(eq(games.homeTeamCode, away), eq(games.awayTeamCode, home)),
+        ),
+      ),
+    )
+    .orderBy(desc(games.gameDate));
 }
 
 type TeamSeasonRow = typeof teamSeasons.$inferSelect;
@@ -861,7 +934,7 @@ export async function getGamePreview({ db, params }: ApiContext) {
   if (!game) throw gameNotFound();
   const { homeTeamCode: home, awayTeamCode: away, season } = game;
 
-  const [homeSchedule, homeStats, awayStats, standings, specialTeams, homeHot, awayHot, homeGoalies, awayGoalies, allTime] =
+  const [homeSchedule, homeStats, awayStats, standings, specialTeams, homeHot, awayHot, homeGoalies, awayGoalies, allTime, earlier] =
     await Promise.all([
       getTeamSeasonGames(home, season),
       teamSeasonAll(db, home, season),
@@ -874,11 +947,19 @@ export async function getGamePreview({ db, params }: ApiContext) {
       teamGoalies(db, away, season),
       // The away team's side, matching the page (away on the left).
       allTimeRecord(db, away, home),
+      // The four seasons before this one; this season's come from the live schedule.
+      pastMeetings(db, home, away, season - 4, season - 1),
     ]);
 
   const meetings = homeSchedule
-    .filter((g) => isFinalRegularSeason(g) && (g.homeTeam?.abbrev === away || g.awayTeam?.abbrev === away))
-    .sort(byDateDesc);
+    .filter(
+      (g) =>
+        isFinalState(g.gameState) &&
+        (g.gameType === GameState.regularSeason || g.gameType === GameState.playoffs) &&
+        (g.homeTeam?.abbrev === away || g.awayTeam?.abbrev === away),
+    )
+    .sort(byDateDesc)
+    .map(meetingFromSchedule);
 
   // Injuries are today's: only an upcoming game (or today's) shows them.
   const upcoming = game.gameDate >= todayEastern();
@@ -896,7 +977,15 @@ export async function getGamePreview({ db, params }: ApiContext) {
       awayTeamName: teamName(away),
       startTimeUtc: game.startTimeUtc?.toISOString() ?? null,
     },
-    headToHead: { ...headToHeadRecord(meetings, home, away), allTime },
+    headToHead: {
+      season: seasonSeriesRecord(meetings, home),
+      spans: {
+        season: headToHeadSpan(meetings, home),
+        lastSeason: headToHeadSpan(earlier.filter((m) => m.season === season - 1), home),
+        fiveSeasons: headToHeadSpan([...meetings, ...earlier], home),
+      },
+      allTime,
+    },
     teamComparison: {
       home: teamPreviewStats(home, homeStats, standings.get(home), specialTeams.get(home)),
       away: teamPreviewStats(away, awayStats, standings.get(away), specialTeams.get(away)),

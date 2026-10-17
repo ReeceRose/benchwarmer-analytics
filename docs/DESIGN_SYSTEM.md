@@ -289,11 +289,19 @@ the hero and scoreboard.
   context, not performance (GP, TOI), get no emphasis.
 - `TeamHeading` (`game-preview/TeamHeading.tsx`): logo + code above each
   team's column.
-- All-time records (game preview "Head to head",
-  `game-preview/HeadToHeadSection.tsx`): one `StackedBar` per record (away
-  wins, ties in `muted-foreground`, home wins), games and goals as a muted
-  line above, and `TeamLabel`s with win counts below, the side with more
-  wins bold.
+- Head to head (game preview, `game-preview/HeadToHeadSection.tsx`), a
+  full-width section: a `SegmentedControl` inside the panel picks the range
+  (this season and last by year, "Last 5", "All-time"; in the URL as `h2h`,
+  default Last 5, which is rarely empty). Each record (regular season, then
+  playoffs when they met) is one `StackedBar` (away wins, ties in
+  `muted-foreground`, home wins), games and goals as a muted line above, and
+  `TeamLabel`s with win counts below, the side with more wins bold; OT/SO
+  results are a muted count between them, not a bar segment, because they're
+  already in the wins. From `lg` up the records sit left and the meetings
+  right: list rows linking to the game (date with year, score with the
+  preview's away team first, muted "at COL · Playoffs", OT/SO chip, winner
+  logo + code), five shown with a ghost "Show all". All-time has no list,
+  and puts regular season and playoffs side by side.
 - `GameScorecard` (`game-live/GameScorecard.tsx`): one game at a glance
   (score, goals and shots by period, five `StackedBar` share rows with the
   better side bold, last goal). It's the share card: the Share button on the
@@ -667,6 +675,7 @@ the hero and scoreboard.
 - Use hockey abbreviations people know (xG, CF%, PP, GSAx) and define them in
   `MetricGuide` or the glossary rather than inline.
 - Dates: `formatGameDate` / `formatGameDateLong` (`lib/game-formatters.ts`),
+  or `formatGameDateWithYear` ("Mar 24, 2026") in lists that span seasons,
   which parse `YYYY-MM-DD` at noon to avoid off-by-one-day bugs. Don't call
   `new Date("2026-10-12")` directly.
 - Numbers: `lib/formatters.ts`. `formatPercent(v)` expects a fraction (0.521);

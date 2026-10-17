@@ -1,17 +1,20 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Panel, Section } from "@/components/layout";
-import { HeadToHeadSection } from "@/components/game-preview/HeadToHeadSection";
+import { HeadToHeadSection, type HeadToHeadRange } from "@/components/game-preview/HeadToHeadSection";
 import { TeamComparisonSection } from "@/components/game-preview/TeamComparisonSection";
 import { HotPlayersSection } from "@/components/game-preview/HotPlayersSection";
 import { GoalieMatchupSection } from "@/components/game-preview/GoalieMatchupSection";
 import { WinChanceSection } from "@/components/game-preview/WinChanceSection";
 import { TeamHeading } from "@/components/game-preview/TeamHeading";
 import { InjuryList } from "@/components/injuries";
+import { cn } from "@/lib/utils";
 import type { GamePreview, GoalieRecentFormResponse } from "@/types";
 
 interface GamePreviewSectionsProps {
   preview: GamePreview;
   goalieRecentForm?: GoalieRecentFormResponse;
+  headToHeadRange: HeadToHeadRange;
+  onHeadToHeadRangeChange: (range: HeadToHeadRange) => void;
 }
 
 /**
@@ -21,6 +24,8 @@ interface GamePreviewSectionsProps {
 export function GamePreviewSections({
   preview,
   goalieRecentForm,
+  headToHeadRange,
+  onHeadToHeadRangeChange,
 }: GamePreviewSectionsProps) {
   const { game, headToHead, teamComparison, hotPlayers, goalieMatchup, injuries } =
     preview;
@@ -71,32 +76,40 @@ export function GamePreviewSections({
         </Section>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Section title="Hot and cold" description="Goals vs expected goals at 5v5">
-          <Panel>
-            <HotPlayersSection
-              data={hotPlayers}
-              homeTeam={game.homeTeam}
-              awayTeam={game.awayTeam}
-            />
-          </Panel>
-        </Section>
+      <Section title="Hot and cold" description="Goals vs expected goals at 5v5">
+        <Panel>
+          <HotPlayersSection
+            data={hotPlayers}
+            homeTeam={game.homeTeam}
+            awayTeam={game.awayTeam}
+          />
+        </Panel>
+      </Section>
 
-        <Section title="Head to head" description="All-time franchise records and this season's meetings">
-          <Panel>
-            <HeadToHeadSection data={headToHead} awayTeam={game.awayTeam} homeTeam={game.homeTeam} />
-          </Panel>
-        </Section>
-      </div>
+      <Section title="Head to head" description="Results between these two teams, regular season and playoffs">
+        <Panel>
+          <HeadToHeadSection
+            data={headToHead}
+            awayTeam={game.awayTeam}
+            homeTeam={game.homeTeam}
+            season={seasonFromGameId(game.id)}
+            range={headToHeadRange}
+            onRangeChange={onHeadToHeadRangeChange}
+          />
+        </Panel>
+      </Section>
     </div>
   );
 }
+
+// NHL game IDs start with the season's start year (2026020119).
+const seasonFromGameId = (id: string) => Number(id.slice(0, 4));
 
 function SectionSkeleton({ height }: { height: string }) {
   return (
     <div className="space-y-3">
       <Skeleton className="h-7 w-48" />
-      <Skeleton className={`w-full rounded-2xl ${height}`} />
+      <Skeleton className={cn("w-full rounded-2xl", height)} />
     </div>
   );
 }
@@ -108,10 +121,8 @@ export function GamePreviewSectionsSkeleton() {
         <SectionSkeleton height="h-64" />
         <SectionSkeleton height="h-64" />
       </div>
-      <div className="grid gap-8 lg:grid-cols-2">
-        <SectionSkeleton height="h-48" />
-        <SectionSkeleton height="h-48" />
-      </div>
+      <SectionSkeleton height="h-40" />
+      <SectionSkeleton height="h-64" />
     </div>
   );
 }

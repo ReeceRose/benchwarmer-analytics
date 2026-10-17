@@ -137,8 +137,10 @@ export interface GamePreviewGame {
 }
 
 export interface HeadToHead {
+  /** This season's regular-season series, from the home team's side (for the header). */
   season: SeasonRecord;
-  lastFive: PastGame[];
+  /** Meetings over recent spans, from the preview's sides; the current season counts as one. */
+  spans: { season: HeadToHeadSpan; lastSeason: HeadToHeadSpan; fiveSeasons: HeadToHeadSpan };
   /** Franchise records against each other, from the away team's side (NHL records). */
   allTime: { regular: AllTimeRecord | null; playoffs: AllTimeRecord | null };
 }
@@ -149,10 +151,33 @@ export interface SeasonRecord {
   overtimeLosses: number;
 }
 
+export interface HeadToHeadSpan {
+  regular: MeetingRecord | null;
+  playoffs: MeetingRecord | null;
+  /** Regular-season and playoff meetings, newest first. */
+  games: PastGame[];
+}
+
+/** Results over a span; away and home are the preview's sides, wherever each game was played. */
+export interface MeetingRecord {
+  gamesPlayed: number;
+  awayWins: number;
+  homeWins: number;
+  /** Games decided in overtime or a shootout (already counted as wins above). */
+  overtime: number;
+  awayGoals: number;
+  homeGoals: number;
+}
+
 export interface PastGame {
+  gameId: string;
   date: string;
-  score: string;
-  winner: string;
+  isPlayoffs: boolean;
+  /** Played at the preview's home team's rink. */
+  atHome: boolean;
+  /** The preview's home and away teams' goals. */
+  homeScore: number;
+  awayScore: number;
   overtimeType: string | null;
 }
 

@@ -175,6 +175,11 @@ and the cache tag `api` (`Vercel-Cache-Tag`):
   picks of its last 15 drafts. Game previews add
   `headToHead.allTime.{regular,playoffs}` from the away team's side; player
   detail adds `draft` (latest selection, null if undrafted). `ingested` tier.
+  Previews also carry `headToHead.spans.{season,lastSeason,fiveSeasons}`:
+  regular-season and playoff meetings scored from the preview's sides, with
+  this season's from the live NHL schedule and earlier seasons from `games`
+  (matched on current team codes, so a relocated team's old code isn't
+  counted, same as NHL franchise records treat Utah).
 
 - Injuries and transactions (ESPN, refreshed by the `espn-*` crons, `ingested`
   tier): `/api/teams/{abbrev}/injuries` (current injuries, most serious

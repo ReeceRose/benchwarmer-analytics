@@ -11,7 +11,9 @@ import {
   buildGameStats,
   findGwgIndex,
   goalieRecentForm,
-  headToHeadRecord,
+  headToHeadSpan,
+  meetingFromSchedule,
+  seasonSeriesRecord,
   landingGoals,
   seasonFromGameId,
   seasonSeriesText,
@@ -144,11 +146,21 @@ describe("season series", () => {
     expect(seasonSeriesText({ home: "TOR", away: "MTL", season: 2024 }, undefined)).toBe("");
   });
 
-  it("head-to-head record and last five", () => {
-    const meetings = schedule.slice(0, 3).reverse();
-    const h2h = headToHeadRecord(meetings, "TOR", "MTL");
-    expect(h2h.season).toEqual({ homeWins: 2, awayWins: 1, overtimeLosses: 1 });
-    expect(h2h.lastFive[1]).toEqual({ date: "2024-11-09", score: "MTL 4 - TOR 1", winner: "MTL", overtimeType: "OT" });
+  it("season series and head-to-head span from the preview's sides", () => {
+    const meetings = [
+      ...schedule.slice(0, 3).reverse(),
+      scheduleGame("MTL", 3, "TOR", 2, { id: 2024030111, gameDate: "2025-04-20", gameType: 3, periodDescriptor: { periodType: "SO" } }),
+    ].map(meetingFromSchedule);
+    expect(seasonSeriesRecord(meetings, "TOR")).toEqual({ homeWins: 2, awayWins: 1, overtimeLosses: 1 });
+
+    const span = headToHeadSpan(meetings, "TOR");
+    expect(span.regular).toEqual({ gamesPlayed: 3, awayWins: 1, homeWins: 2, overtime: 1, awayGoals: 6, homeGoals: 9 });
+    expect(span.playoffs).toEqual({ gamesPlayed: 1, awayWins: 1, homeWins: 0, overtime: 1, awayGoals: 3, homeGoals: 2 });
+    expect(span.games[1]).toEqual({
+      gameId: "", date: "2024-11-09", isPlayoffs: false, atHome: false, homeScore: 1, awayScore: 4, overtimeType: "OT",
+    });
+    expect(span.games[3].gameId).toBe("2024030111");
+    expect(headToHeadSpan([], "TOR")).toEqual({ regular: null, playoffs: null, games: [] });
   });
 });
 

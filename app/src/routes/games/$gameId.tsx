@@ -1,4 +1,5 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
+import * as z from "zod/mini";
 import { ChevronLeft } from "lucide-react";
 import { ErrorState } from "@/components/shared";
 import {
@@ -17,8 +18,10 @@ import {
   DeserveToWinChartSkeleton,
 } from "@/components/game-detail";
 import {
+  DEFAULT_HEAD_TO_HEAD_RANGE,
   GamePreviewSections,
   GamePreviewSectionsSkeleton,
+  HEAD_TO_HEAD_RANGES,
 } from "@/components/game-preview";
 import {
   useGame,
@@ -34,13 +37,20 @@ import { getSeasonFromDate } from "@/lib/date-utils";
 import { EmptyState } from "@/components/layout";
 import { GameCentre, ShareGameButton } from "@/components/game-live";
 
+const searchSchema = z.object({
+  h2h: z.optional(z.enum(HEAD_TO_HEAD_RANGES)),
+});
+
 export const Route = createFileRoute("/games/$gameId")({
   component: GameDetailPage,
+  validateSearch: searchSchema,
 });
 
 function GameDetailPage() {
   const router = useRouter();
   const { gameId } = Route.useParams();
+  const { h2h = DEFAULT_HEAD_TO_HEAD_RANGE } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
 
   // Load ALL queries in parallel for faster page load
   // Each query starts immediately rather than waiting for game state
@@ -141,6 +151,14 @@ function GameDetailPage() {
           <GamePreviewSections
             preview={previewData}
             goalieRecentForm={goalieFormData}
+            headToHeadRange={h2h}
+            onHeadToHeadRangeChange={(range) =>
+              navigate({
+                search: (prev) => ({ ...prev, h2h: range === DEFAULT_HEAD_TO_HEAD_RANGE ? undefined : range }),
+                replace: true,
+                resetScroll: false,
+              })
+            }
           />
         ) : previewError ? (
           <ErrorState

@@ -36,6 +36,16 @@ export function formatGameDate(dateStr: string): string {
   });
 }
 
+/** "Mar 24, 2026": for lists that span seasons. */
+export function formatGameDateWithYear(dateStr: string): string {
+  const date = new Date(dateStr + "T12:00:00");
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function formatGameDateLong(dateStr: string): string {
   const date = new Date(dateStr + "T12:00:00");
   return date.toLocaleDateString("en-US", {

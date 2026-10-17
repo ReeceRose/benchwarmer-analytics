@@ -107,7 +107,7 @@ function TeamGoalies({
     <div className="min-w-0">
       <TeamHeading team={team} />
       {goalies.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No goalie data</p>
+        <p className="text-sm text-muted-foreground">No goalies have played for them yet this season</p>
       ) : (
         <div className="space-y-1">
           {ordered.map((goalie) => (

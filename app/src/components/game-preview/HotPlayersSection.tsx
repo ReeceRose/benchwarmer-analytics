@@ -59,7 +59,9 @@ function TeamColumn({ team, players }: { team: string; players: HotPlayer[] }) {
       {players.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nobody running hot or cold</p>
       ) : (
-        players.map((player) => <PlayerRow key={player.playerId} player={player} team={team} />)
+        <div className="space-y-1">
+          {players.map((player) => <PlayerRow key={player.playerId} player={player} team={team} />)}
+        </div>
       )}
     </div>
   );
@@ -67,7 +69,7 @@ function TeamColumn({ team, players }: { team: string; players: HotPlayer[] }) {
 
 export function HotPlayersSection({ data, homeTeam, awayTeam }: HotPlayersSectionProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
+    <div className="grid gap-6 md:grid-cols-2">
       <TeamColumn team={awayTeam} players={data.away} />
       <TeamColumn team={homeTeam} players={data.home} />
     </div>
