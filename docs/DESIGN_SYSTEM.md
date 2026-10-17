@@ -443,7 +443,9 @@ the hero and scoreboard.
   columns. Settings live in the URL, leaving out anything at our model's
   value. Say plainly that only our model's settings are tested.
 - Pregame win chance: on a game card, a footer like the xG share (two
-  percentages over a split bar in team mark colours, favourite bold); in the
+  percentages over a split bar in team mark colours, favourite bold), then
+  the same label/value rows on every upcoming card (season series, then each
+  team's streak on its own line, "–" when missing) so cards line up; in the
   game preview, a `Section` with `TeamLabel`s, display-font percentages and
   a `StackedBar` in the side colours.
 

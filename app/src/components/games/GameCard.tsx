@@ -75,18 +75,16 @@ export function GameCard({ game, homeWinProbability }: GameCardProps) {
         <XgShare away={game.away} home={game.home} />
       )}
 
-      {!isCompleted && !isLive && (homeWinProbability !== undefined || game.away.streak || game.home.streak) && (
+      {!isCompleted && !isLive && (
         <CardFooter className="text-xs text-muted-foreground">
           {homeWinProbability !== undefined && (
             <WinChance away={game.away} home={game.home} homeWinProbability={homeWinProbability} />
           )}
-          {game.seasonSeries && <div className="mb-0.5">{game.seasonSeries}</div>}
-          {(game.away.streak || game.home.streak) && (
-            <>
-              Streaks: {game.away.teamCode} {game.away.streak || "–"}, {game.home.teamCode}{" "}
-              {game.home.streak || "–"}
-            </>
-          )}
+          <dl className="space-y-0.5">
+            <FooterRow label="Season series" value={game.seasonSeries} />
+            <FooterRow label={`${game.away.teamCode} streak`} value={game.away.streak} />
+            <FooterRow label={`${game.home.teamCode} streak`} value={game.home.streak} />
+          </dl>
         </CardFooter>
       )}
     </Link>
@@ -107,6 +105,19 @@ function CardFooter({
   return (
     <div className="mt-auto pt-3">
       <div className={cn("border-t pt-3", className)}>{children}</div>
+    </div>
+  );
+}
+
+/**
+ * One label/value line in a pregame footer. Every card shows the same rows
+ * (with "–" for a missing value) so cards in a grid row line up.
+ */
+function FooterRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt>{label}</dt>
+      <dd className="tabular-nums text-foreground">{value || "–"}</dd>
     </div>
   );
 }
