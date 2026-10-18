@@ -6,12 +6,16 @@ import { topLinesQueryOptions } from "@/hooks/useTopLines";
 import { teamsQueryOptions } from "@/hooks/useTeams";
 import { nightlyGameScoresQueryOptions } from "@/hooks/useGameScores";
 import { milestonesQueryOptions } from "@/hooks/useHistory";
+import { leagueInjuriesQueryOptions, leagueTransactionsQueryOptions } from "@/hooks/useInjuries";
 import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import * as z from "zod/mini";
 import { usePageTitle } from "@/hooks";
 import { SeasonSelector } from "@/components/shared";
 import { PageHeader, SegmentedControl } from "@/components/layout";
 import {
+  HOME_INJURIES,
+  HOME_TRANSACTIONS,
+  InjuryReportSection,
   LastNightSection,
   LeaderStripSection,
   MilestoneSection,
@@ -59,6 +63,8 @@ export const Route = createFileRoute("/")({
       queryClient.prefetchQuery(teamsQueryOptions),
       queryClient.prefetchQuery(nightlyGameScoresQueryOptions()),
       queryClient.prefetchQuery(milestonesQueryOptions),
+      queryClient.prefetchQuery(leagueInjuriesQueryOptions(HOME_INJURIES)),
+      queryClient.prefetchQuery(leagueTransactionsQueryOptions(HOME_TRANSACTIONS)),
     ]);
   },
 });
@@ -125,6 +131,8 @@ function HomePage() {
       {isCurrentSeason && <LastNightSection />}
 
       {isCurrentSeason && <MilestoneSection />}
+
+      {isCurrentSeason && <InjuryReportSection />}
 
       <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         <TopLinesSection season={effectiveSeason} />

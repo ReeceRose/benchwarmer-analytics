@@ -36,6 +36,18 @@ export interface TeamInjuriesResponse {
   injuries: InjuredPlayer[];
 }
 
+/** An injured player anywhere in the league. */
+export interface LeagueInjuredPlayer extends InjuredPlayer {
+  team: string;
+}
+
+export interface LeagueInjuriesResponse {
+  /** Newest to the list first (by `since`), most serious first within a day. */
+  injuries: LeagueInjuredPlayer[];
+  /** Everyone on the list league-wide, not just the ones returned. */
+  total: number;
+}
+
 export type TransactionKind = "ir_place" | "ir_activate" | "trade" | "waivers" | "recall" | "assign" | "sign" | "other";
 
 export interface Transaction {

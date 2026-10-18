@@ -382,12 +382,17 @@ the hero and scoreboard.
   as when they will. Players with no NHL games have no page, so their rows don't link.
   In a game preview, two columns under `TeamHeading`s, away on the left, and
   the section only appears when someone is listed. Goalies who won't play
-  sort last in the goalie matchup at 60% opacity.
+  sort last in the goalie matchup at 60% opacity. On the homepage ("New
+  injuries", `home/InjuryReportSection.tsx`) it's league-wide: the eight
+  newest additions, the team code leading the meta line, and the league
+  total in the description.
 - Transactions (`components/injuries/TransactionList.tsx`, team page and the
   player career tab): no avatars; a muted date column, then the kind
   ("To IR", "Recalled") as a muted label over ESPN's text. Rows link to the
   player the move is about when we have them. Eight shown (five on a player
-  page) with a ghost "Show all".
+  page) with a ghost "Show all". League-wide (homepage, beside "New
+  injuries") passes `showTeam`, which leads the label with an `xs`
+  `TeamLogo` and code, since ESPN's text doesn't name the team.
 - Current-day data (injuries, transactions) shows only for the current
   season and for games today or later, never on past seasons or games.
 - Draft picks (`components/draft/`): `DraftPickRows` uses the row pattern

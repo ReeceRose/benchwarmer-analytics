@@ -5,11 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatPositionShort } from "@/lib/formatters";
 import { earliestReturn, injuryReason, shortDate } from "@/lib/injuries";
 import { getPlayerHeadshotUrl, getPlayerInitials } from "@/lib/player-headshots";
-import type { InjuredPlayer } from "@/types";
+import type { InjuredPlayer, LeagueInjuredPlayer } from "@/types";
 
 const rowClass = "-mx-2 flex items-center gap-3 rounded-xl px-2 py-1.5";
 
-function InjuryRow({ player, team }: { player: InjuredPlayer; team: string }) {
+type ListedPlayer = InjuredPlayer | LeagueInjuredPlayer;
+
+function InjuryRow({ player, team }: { player: ListedPlayer; team: string }) {
   const { injury } = player;
   const earliest = earliestReturn(injury);
   const content = (
@@ -21,6 +23,7 @@ function InjuryRow({ player, team }: { player: InjuredPlayer; team: string }) {
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium group-hover:text-link">{player.name}</div>
         <div className="truncate text-xs text-muted-foreground" title={injury.comment ?? undefined}>
+          {"team" in player ? `${player.team} · ` : ""}
           {player.position ? `${formatPositionShort(player.position)} · ` : ""}
           {injuryReason(injury)}
         </div>
@@ -50,13 +53,23 @@ function InjuryRow({ player, team }: { player: InjuredPlayer; team: string }) {
  * Injured players as list rows: headshot, name, position and reason, the
  * status chip, and the earliest they can return (or when they went on the list).
  * Players with no NHL games yet have no page, so their rows don't link.
+ * League-wide lists pass players with their own `team`, which the meta line
+ * then leads with.
  */
-export function InjuryList({ players, team, empty = "No injuries reported." }: { players: InjuredPlayer[]; team: string; empty?: string }) {
+export function InjuryList({
+  players,
+  team,
+  empty = "No injuries reported.",
+}: {
+  players: InjuredPlayer[] | LeagueInjuredPlayer[];
+  team?: string;
+  empty?: string;
+}) {
   if (players.length === 0) return <p className="text-sm text-muted-foreground">{empty}</p>;
   return (
     <ol className="space-y-1">
       {players.map((p) => (
-        <InjuryRow key={`${p.playerId ?? p.name}`} player={p} team={team} />
+        <InjuryRow key={`${p.playerId ?? p.name}`} player={p} team={"team" in p ? p.team : (team ?? "")} />
       ))}
     </ol>
   );

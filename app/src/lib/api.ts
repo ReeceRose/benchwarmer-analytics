@@ -64,6 +64,7 @@ import type {
   TeamTrackingResponse,
   MilestonesResponse,
   TeamInjuriesResponse,
+  LeagueInjuriesResponse,
   TransactionsResponse,
   DraftResponse,
   FranchiseHistoryResponse,
@@ -754,6 +755,16 @@ export async function getTeamInjuries(abbrev: string): Promise<TeamInjuriesRespo
 
 export async function getTeamTransactions(abbrev: string, limit?: number): Promise<TransactionsResponse> {
   const { data } = await api.get<TransactionsResponse>(`/teams/${abbrev}/transactions`, { params: { limit } });
+  return data;
+}
+
+export async function getLeagueInjuries(limit?: number): Promise<LeagueInjuriesResponse> {
+  const { data } = await api.get<LeagueInjuriesResponse>("/injuries", { params: { limit } });
+  return data;
+}
+
+export async function getLeagueTransactions(limit?: number): Promise<TransactionsResponse> {
+  const { data } = await api.get<TransactionsResponse>("/transactions", { params: { limit } });
   return data;
 }
 

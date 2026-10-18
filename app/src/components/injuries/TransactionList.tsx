@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { TeamLogo } from "@/components/team-detail/TeamLogo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { shortDate, TRANSACTION_LABELS } from "@/lib/injuries";
@@ -7,12 +8,20 @@ import type { Transaction } from "@/types";
 
 const rowClass = "-mx-2 grid grid-cols-[3.25rem_1fr] gap-3 rounded-xl px-2 py-1.5 text-sm";
 
-function TransactionRow({ t }: { t: Transaction }) {
+function TransactionRow({ t, showTeam }: { t: Transaction; showTeam: boolean }) {
   const content = (
     <>
       <span className="pt-px text-xs text-muted-foreground tabular-nums">{shortDate(t.date)}</span>
       <div className="min-w-0">
-        <div className="text-xs text-muted-foreground">{TRANSACTION_LABELS[t.kind]}</div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {showTeam && (
+            <>
+              <TeamLogo abbrev={t.team} size="xs" />
+              <span>{t.team} ·</span>
+            </>
+          )}
+          {TRANSACTION_LABELS[t.kind]}
+        </div>
         <p className="group-hover:text-link">{t.description}</p>
       </div>
     </>
@@ -34,14 +43,18 @@ function TransactionRow({ t }: { t: Transaction }) {
  * Transactions newest first: date in a muted column, the kind as a small
  * label over ESPN's text. Rows link to the player the move is about when we
  * know them. Long lists show `shown` rows and a ghost "Show all".
+ * League-wide lists set `showTeam` to lead the label with the team's logo
+ * and code, since ESPN's text doesn't name the team.
  */
 export function TransactionList({
   transactions,
   shown = 8,
+  showTeam = false,
   empty = "No recent transactions.",
 }: {
   transactions: Transaction[];
   shown?: number;
+  showTeam?: boolean;
   empty?: string;
 }) {
   const [showAll, setShowAll] = useState(false);
@@ -51,7 +64,7 @@ export function TransactionList({
     <>
       <ol className="space-y-1">
         {rows.map((t, i) => (
-          <TransactionRow key={`${t.date}-${i}`} t={t} />
+          <TransactionRow key={`${t.date}-${i}`} t={t} showTeam={showTeam} />
         ))}
       </ol>
       {transactions.length > shown && (

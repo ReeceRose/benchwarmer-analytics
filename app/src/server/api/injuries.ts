@@ -8,7 +8,16 @@ import { playerInjuries, transactions } from "@/server/db/schema";
 import type { ApiContext } from "@/server/api/handler";
 import { requireTeam } from "@/server/api/teams";
 import { todayEastern } from "@/server/ingestion/nhl";
-import type { InjuredPlayer, InjuryStatus, PlayerInjury, TeamInjuriesResponse, Transaction, TransactionKind, TransactionsResponse } from "@/types";
+import type {
+  InjuredPlayer,
+  InjuryStatus,
+  LeagueInjuriesResponse,
+  PlayerInjury,
+  TeamInjuriesResponse,
+  Transaction,
+  TransactionKind,
+  TransactionsResponse,
+} from "@/types";
 
 type InjuryRow = typeof playerInjuries.$inferSelect;
 
@@ -85,6 +94,24 @@ export async function getTeamInjuries({ db, params }: ApiContext): Promise<TeamI
   return { team: team.abbreviation, injuries: await teamInjuries(db, team.abbreviation) };
 }
 
+/** The newest additions to the injury list league-wide, and how many are on it. */
+export async function getLeagueInjuries({ db, query }: ApiContext): Promise<LeagueInjuriesResponse> {
+  const limit = Math.min(Math.max(query.int("limit") ?? 10, 1), 50);
+  const rows = await db.select().from(playerInjuries).where(isNull(playerInjuries.resolvedAt));
+  const injuries = rows
+    .map((r) => ({ row: r, injury: toPlayerInjury(r) }))
+    .sort((a, b) => b.injury.since.localeCompare(a.injury.since) || compareInjuries(a.row, b.row))
+    .slice(0, limit)
+    .map(({ row, injury }) => ({
+      playerId: row.playerId,
+      name: row.playerName,
+      team: row.team,
+      position: row.position,
+      injury,
+    }));
+  return { injuries, total: rows.length };
+}
+
 const toTransaction = (r: typeof transactions.$inferSelect): Transaction => ({
   date: r.transactionDate,
   team: r.team,
@@ -102,6 +129,17 @@ export async function getTeamTransactions({ db, params, query }: ApiContext): Pr
     .select()
     .from(transactions)
     .where(eq(transactions.team, team.abbreviation))
+    .orderBy(...transactionOrder)
+    .limit(limit);
+  return { transactions: rows.map(toTransaction) };
+}
+
+/** The league's most recent transactions, newest first. */
+export async function getLeagueTransactions({ db, query }: ApiContext): Promise<TransactionsResponse> {
+  const limit = Math.min(Math.max(query.int("limit") ?? 25, 1), 100);
+  const rows = await db
+    .select()
+    .from(transactions)
     .orderBy(...transactionOrder)
     .limit(limit);
   return { transactions: rows.map(toTransaction) };

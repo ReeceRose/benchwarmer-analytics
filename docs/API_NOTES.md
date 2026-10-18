@@ -185,7 +185,10 @@ and the cache tag `api` (`Vercel-Cache-Tag`):
   tier): `/api/teams/{abbrev}/injuries` (current injuries, most serious
   first: IR, out, suspended, day-to-day) and
   `/api/teams/{abbrev}/transactions?limit=` (newest first, default 25, max
-  100). Every endpoint that shows availability reads the same open stints
+  100). League-wide, for the homepage: `/api/injuries?limit=` (newest
+  additions by `since`, most serious first within a day, default 10, max 50,
+  plus `total` on the list) and `/api/transactions?limit=` (same limits as
+  the team route). Every endpoint that shows availability reads the same open stints
   through `injuriesByPlayer` (`src/server/api/injuries.ts`): player detail
   adds `injury` and `transactions`; current-season rosters add `injury` per
   player (older seasons don't, since injuries are today's); game previews of

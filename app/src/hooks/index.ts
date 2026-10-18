@@ -75,3 +75,4 @@ export {
   useAttendance,
   useStreaks,
 } from "@/hooks/useHistory";
+export { useLeagueInjuries, useLeagueTransactions } from "@/hooks/useInjuries";

@@ -148,6 +148,17 @@ export function ShiftChart({ data }: { data: LiveGameResponse }) {
   );
 }
 
+// Forwards, then defence, then goalie, like a lineup card (wingers either side of the centre).
+const FORWARD_ORDER: Record<string, number> = { L: 0, C: 1, R: 2 };
+
+function onIceRows<P extends { position: string }>(players: P[]): P[][] {
+  const forwards = players.filter((p) => p.position in FORWARD_ORDER).sort((a, b) => FORWARD_ORDER[a.position] - FORWARD_ORDER[b.position]);
+  const defence = players.filter((p) => p.position === "D");
+  const goalies = players.filter((p) => p.position === "G");
+  const other = players.filter((p) => !(p.position in FORWARD_ORDER) && p.position !== "D" && p.position !== "G");
+  return [[...forwards, ...other], defence, goalies].filter((row) => row.length > 0);
+}
+
 export function OnIceNow({ data }: { data: LiveGameResponse }) {
   const { situation, meta } = data;
   return (
@@ -159,24 +170,31 @@ export function OnIceNow({ data }: { data: LiveGameResponse }) {
               <TeamLabel side={side}><b>{data[side].name}</b></TeamLabel>
               {situation && <span className="text-muted-foreground"> · {side === "away" ? situation.awaySkaters : situation.homeSkaters} skaters</span>}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {data.onIce[side].length === 0 && <span className="text-sm text-muted-foreground">–</span>}
-              {data.onIce[side].map((p) => (
-                <div key={p.playerId} className="flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-sm">
-                  {p.headshot ? (
-                    <img src={p.headshot} alt="" className="size-8 rounded-full bg-muted" style={{ outline: `2px solid ${teamColour(side)}`, outlineOffset: 1 }} />
-                  ) : (
-                    <span className="size-8 rounded-full bg-muted" />
-                  )}
-                  <span>
-                    <span className="block leading-tight">
-                      #{p.number} {p.name} <span className="text-muted-foreground">{p.position}</span>
-                    </span>
-                    {p.toiSeconds != null && <span className="block text-[11px] leading-tight text-muted-foreground tabular-nums">{mmss(p.toiSeconds)} TOI</span>}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {data.onIce[side].length === 0 ? (
+              <span className="text-sm text-muted-foreground">–</span>
+            ) : (
+              <div className="space-y-2">
+                {onIceRows(data.onIce[side]).map((row, i) => (
+                  <div key={i} className="flex flex-wrap justify-center gap-2">
+                    {row.map((p) => (
+                      <div key={p.playerId} className="flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-sm">
+                        {p.headshot ? (
+                          <img src={p.headshot} alt="" className="size-8 rounded-full bg-muted" style={{ outline: `2px solid ${teamColour(side)}`, outlineOffset: 1 }} />
+                        ) : (
+                          <span className="size-8 rounded-full bg-muted" />
+                        )}
+                        <span>
+                          <span className="block leading-tight">
+                            #{p.number} {p.name} <span className="text-muted-foreground">{p.position}</span>
+                          </span>
+                          {p.toiSeconds != null && <span className="block text-[11px] leading-tight text-muted-foreground tabular-nums">{mmss(p.toiSeconds)} TOI</span>}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         <p className="text-xs text-muted-foreground lg:col-span-2">
