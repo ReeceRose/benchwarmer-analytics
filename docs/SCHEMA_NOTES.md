@@ -63,7 +63,14 @@ views).
 ## Materialized views
 
 Declared with `.existing()` in `schema.ts`, so they are typed for queries but
-`drizzle-kit` never generates or drops them. Their DDL is custom SQL appended
-to `0000_init.sql`. They are created populated (instant on empty tables)
+`drizzle-kit` never generates or drops them. Their DDL is custom SQL:
+`chemistry_pairs` and `season_percentiles` in `0000_init.sql`, `goalie_pulls`
+in `0013_goalie_pulls.sql`. They are created populated (instant on empty tables)
 because `REFRESH MATERIALIZED VIEW CONCURRENTLY` requires a populated view and
 a unique index. Any future change to a view needs a hand-written migration.
+
+`goalie_pulls` counts starts and times pulled per goalie season from `shots`.
+A goalie started if they faced the team's first shot, and was pulled if a
+teammate faced a shot after their last one. `goalie_player_id = 0` is an
+empty net and is excluded. Injury exits count as pulls, and a starter
+pulled late without the reliever facing a shot isn't counted.

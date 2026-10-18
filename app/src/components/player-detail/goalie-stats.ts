@@ -4,6 +4,9 @@ export interface GoalieSeasonRow {
   season: number;
   team: string;
   gp: number;
+  /** Starts and times pulled; null outside the "all" situation. */
+  gs: number | null;
+  pulled: number | null;
   toi: number;
   ga: number;
   sa: number;
@@ -18,6 +21,8 @@ export interface GoalieSeasonRow {
 
 export interface GoalieCareerTotals {
   gp: number;
+  gs: number | null;
+  pulled: number | null;
   toi: number;
   ga: number;
   sa: number;
@@ -74,11 +79,16 @@ export function buildGoalieSeasonRows(stats: GoalieStats[], situation: string): 
       { gp: 0, ga: 0, sa: 0 }
     );
 
+    const sumOrNull = (values: (number | null | undefined)[]) =>
+      values.some((v) => v != null) ? values.reduce<number>((sum, v) => sum + (v ?? 0), 0) : null;
+
     if (reg.gp > 0) {
       rows.push({
         season,
         team,
         gp: reg.gp,
+        gs: sumOrNull(data.regular.map((s) => s.gamesStarted)),
+        pulled: sumOrNull(data.regular.map((s) => s.timesPulled)),
         toi: reg.toi,
         ga: reg.ga,
         sa: reg.sa,
@@ -111,8 +121,13 @@ export function calculateGoalieTotals(rows: GoalieSeasonRow[]): GoalieCareerTota
     { gp: 0, toi: 0, ga: 0, sa: 0, gsax: 0, playoffGp: 0, playoffGa: 0, playoffSa: 0 }
   );
 
+  const sumOrNull = (values: (number | null)[]) =>
+    values.some((v) => v != null) ? values.reduce<number>((sum, v) => sum + (v ?? 0), 0) : null;
+
   return {
     ...totals,
+    gs: sumOrNull(rows.map((r) => r.gs)),
+    pulled: sumOrNull(rows.map((r) => r.pulled)),
     svPct: totals.sa > 0 ? (totals.sa - totals.ga) / totals.sa : null,
     gaa: totals.toi > 0 ? (totals.ga / (totals.toi / 3600)) : null,
     playoffSvPct: totals.playoffSa > 0 ? (totals.playoffSa - totals.playoffGa) / totals.playoffSa : null,

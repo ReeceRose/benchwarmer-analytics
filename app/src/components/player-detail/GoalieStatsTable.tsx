@@ -40,6 +40,8 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
               <TableHead className="sticky left-0 z-10 bg-card">Season</TableHead>
               <TableHead>Team</TableHead>
               <HeaderWithTooltip label="GP" tooltip="Games played" className="text-right" />
+              <HeaderWithTooltip label="GS" tooltip="Games started (faced the team's first shot)" className="text-right hidden md:table-cell" />
+              <HeaderWithTooltip label="Pulled" tooltip="Starts where another goalie took over mid-game (includes injuries)" className="text-right" />
               <HeaderWithTooltip label="TOI" tooltip="Total time on ice" className="text-right hidden md:table-cell" />
               <HeaderWithTooltip label="GA" tooltip="Goals against" className="text-right" />
               <HeaderWithTooltip label="SA" tooltip="Shots against" className="text-right" />
@@ -57,7 +59,7 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
             </TableRow>
           {hasPlayoffData && (
             <TableRow className="hover:bg-transparent">
-              <TableHead colSpan={5} className="text-xs text-muted-foreground py-1">Regular season</TableHead>
+              <TableHead colSpan={7} className="text-xs text-muted-foreground py-1">Regular season</TableHead>
               <TableHead colSpan={4} className="text-xs text-muted-foreground py-1 hidden md:table-cell" />
               <TableHead colSpan={4} className="text-xs text-muted-foreground py-1 border-l">Playoffs</TableHead>
             </TableRow>
@@ -71,6 +73,8 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
                 <TeamTag abbrev={row.team} season={row.season} />
               </TableCell>
               <TableCell className="text-right tabular-nums">{row.gp}</TableCell>
+              <TableCell className="text-right tabular-nums hidden md:table-cell">{row.gs ?? "–"}</TableCell>
+              <TableCell className="text-right tabular-nums">{row.pulled ?? "–"}</TableCell>
               <TableCell className="text-right tabular-nums hidden md:table-cell">{formatToi(row.toi)}</TableCell>
               <TableCell className="text-right tabular-nums">{row.ga}</TableCell>
               <TableCell className="text-right tabular-nums">{row.sa}</TableCell>
@@ -91,6 +95,8 @@ export function GoalieStatsTable({ rows, totals }: GoalieStatsTableProps) {
             <TableCell>Totals</TableCell>
             <TableCell></TableCell>
             <TableCell className="text-right tabular-nums">{totals.gp}</TableCell>
+            <TableCell className="text-right tabular-nums hidden md:table-cell">{totals.gs ?? "–"}</TableCell>
+            <TableCell className="text-right tabular-nums">{totals.pulled ?? "–"}</TableCell>
             <TableCell className="text-right tabular-nums hidden md:table-cell">{formatToi(totals.toi)}</TableCell>
             <TableCell className="text-right tabular-nums">{totals.ga}</TableCell>
             <TableCell className="text-right tabular-nums">{totals.sa}</TableCell>

@@ -130,6 +130,9 @@ export interface GoalieStats {
   // Rebound control fields
   expectedRebounds?: number;
   rebounds: number;
+  /** From the shots faced; only on the "all" situation row of GET /api/players/:id/stats. */
+  gamesStarted?: number | null;
+  timesPulled?: number | null;
 }
 
 /** Response from GET /api/players (search) */

@@ -164,6 +164,7 @@ export function refreshViews(db: Queryable, logger = consoleLogger) {
   return runStep(db, "views", null, async () => {
     await db.query("REFRESH MATERIALIZED VIEW CONCURRENTLY chemistry_pairs");
     await db.query("REFRESH MATERIALIZED VIEW CONCURRENTLY season_percentiles");
+    await db.query("REFRESH MATERIALIZED VIEW CONCURRENTLY goalie_pulls");
     await db.query("ANALYZE");
     return { rowsWritten: 0 };
   }, logger);

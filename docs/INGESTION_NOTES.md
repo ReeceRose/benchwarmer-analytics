@@ -44,7 +44,7 @@ All steps are idempotent upserts. Unchanged rows aren't rewritten
 | `espn_injuries` | ESPN injury list → `player_injuries` stints (reconciled: new players open a stint, listed ones update, missing ones resolve) and `espn_players` |
 | `espn_transactions` | ESPN transactions for the last 3 days (ET) → `transactions` |
 | `espn_odds` | Yesterday's and today's games: ESPN scoreboard (event IDs, matched on date and teams) → each event's odds → `game_odds` |
-| `views` | `REFRESH MATERIALIZED VIEW CONCURRENTLY` both views, then `ANALYZE` (Neon resets autovacuum's counters when the compute scales to zero, so planner stats would otherwise go stale) |
+| `views` | `REFRESH MATERIALIZED VIEW CONCURRENTLY` the three views (`chemistry_pairs`, `season_percentiles`, `goalie_pulls`), then `ANALYZE` (Neon resets autovacuum's counters when the compute scales to zero, so planner stats would otherwise go stale) |
 
 Order within a season matters: lines resolve players through that season's
 skater rows (name fallback only), and score-state reads shots. `team_games`

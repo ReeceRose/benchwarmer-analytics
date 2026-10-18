@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import type { Database } from "@/server/db/client";
-import { chemistryPairs, games, goalieSeasons, players, shots, skaterSeasonAdvanced, skaterSeasons } from "@/server/db/schema";
+import { chemistryPairs, games, goaliePulls, goalieSeasons, players, shots, skaterSeasonAdvanced, skaterSeasons } from "@/server/db/schema";
 import type { ApiContext } from "@/server/api/handler";
 import { ApiError, badRequest, HttpError, notFound } from "@/server/api/errors";
 import { addDays, dayNumber, groupBy, headshotUrl, MIN_DATE, round, sum, todayUtc } from "@/server/api/format";
@@ -228,8 +228,23 @@ export async function getPlayerStats({ db, params, query }: ApiContext) {
   const situation = query.string("situation");
 
   if (player.position === "G") {
-    const rows = await goalieSeasonsForPlayer(db, player.id, season, situation);
-    return { playerId: player.id, playerName: player.name, stats: rows.map(toGoalieStatsDto) };
+    const [rows, pulls] = await Promise.all([
+      goalieSeasonsForPlayer(db, player.id, season, situation),
+      db
+        .select()
+        .from(goaliePulls)
+        .where(and(eq(goaliePulls.playerId, player.id), season === undefined ? undefined : eq(goaliePulls.season, season))),
+    ]);
+    const pullsBySeason = new Map(pulls.map((p) => [`${p.season}-${p.isPlayoffs}`, p]));
+    return {
+      playerId: player.id,
+      playerName: player.name,
+      stats: rows.map((g) => {
+        // Game counts, so only the "all" row carries them.
+        const p = g.situation === "all" ? pullsBySeason.get(`${g.season}-${g.isPlayoffs}`) : undefined;
+        return { ...toGoalieStatsDto(g), gamesStarted: p?.gamesStarted ?? null, timesPulled: p?.timesPulled ?? null };
+      }),
+    };
   }
 
   const [rows, advanced] = await Promise.all([

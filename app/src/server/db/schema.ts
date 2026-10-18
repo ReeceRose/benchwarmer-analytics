@@ -812,6 +812,15 @@ export const seasonPercentiles = pgMaterializedView("season_percentiles", {
   goalsPer60: numeric("goals_per_60", { mode: "number" }).notNull(),
 }).existing();
 
+// Starts and times pulled per goalie season, from shots (see 0013_goalie_pulls.sql).
+export const goaliePulls = pgMaterializedView("goalie_pulls", {
+  playerId: integer("player_id").notNull(),
+  season: integer("season").notNull(),
+  isPlayoffs: boolean("is_playoffs").notNull(),
+  gamesStarted: integer("games_started").notNull(),
+  timesPulled: integer("times_pulled").notNull(),
+}).existing();
+
 // Ingestion run log: one row per sync step (and season, for backfills).
 // Used for visibility into cron runs and to make the backfill resumable.
 export const syncRuns = pgTable(
