@@ -3,9 +3,9 @@ import { Link } from "@tanstack/react-router";
 import { SegmentedControl } from "@/components/layout";
 import { SortableTableHeader } from "@/components/shared";
 import { Card, Swatch, TeamLabel } from "@/components/game-live/parts";
-import { SIDES, fmt, mmss, share, signed, teamColour } from "@/components/game-live/live-utils";
+import { SIDES, fmt, gameClock, mmss, share, signed, teamColour } from "@/components/game-live/live-utils";
 import { cn } from "@/lib/utils";
-import type { LiveGameResponse, LiveGoalie, LiveSkater, TeamSide } from "@/types";
+import type { LiveEmptyNet, LiveGameResponse, LiveGoalie, LiveSkater, TeamSide } from "@/types";
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "good" | "bad" }) {
   return (
@@ -67,6 +67,32 @@ function GoalieCard({ goalie }: { goalie: LiveGoalie }) {
   );
 }
 
+function EmptyNetCard({ emptyNet }: { emptyNet: LiveEmptyNet }) {
+  const net = emptyNet.goalsFor - emptyNet.goalsAgainst;
+  return (
+    <div className="rounded-xl border border-dashed p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="font-semibold">Goalie pulled</span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {emptyNet.pulls.length === 1 ? "1 pull" : `${emptyNet.pulls.length} pulls`} · {mmss(emptyNet.seconds)}
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Stat label="Goals for" value={String(emptyNet.goalsFor)} />
+        <Stat label="EN goals against" value={String(emptyNet.goalsAgainst)} />
+        <Stat label="Net" value={signed(net)} tone={net > 0 ? "good" : net < 0 ? "bad" : undefined} />
+        <Stat label="xG for" value={fmt(emptyNet.xgFor, 2)} />
+      </div>
+      <p className="mt-3 text-sm text-muted-foreground tabular-nums">
+        Shots {emptyNet.shotsFor} for · {emptyNet.shotsAgainst} against
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+        {emptyNet.pulls.map((p) => `${gameClock(p.start)} (${mmss(p.end - p.start)})`).join(" · ")}
+      </p>
+    </div>
+  );
+}
+
 const playedInGame = (g: LiveGoalie) => g.shotsAgainst > 0 || /[1-9]/.test(g.toi);
 
 // Once the game is under way, drop the backup who hasn't played; before puck drop
@@ -86,6 +112,7 @@ export function GoaltendingSection({ data }: { data: LiveGameResponse }) {
             {goaliesFor(data, side).map((g) => (
               <GoalieCard key={g.playerId} goalie={g} />
             ))}
+            {data.emptyNet[side].pulls.length > 0 && <EmptyNetCard emptyNet={data.emptyNet[side]} />}
           </div>
         </Card>
       ))}

@@ -154,6 +154,19 @@ export interface StrengthSegment {
   emptyNet: boolean;
 }
 
+/** Time a team played with its goalie pulled for an extra attacker (delayed penalties excluded). */
+export interface LiveEmptyNet {
+  seconds: number;
+  /** Each pull, in game seconds. */
+  pulls: { start: number; end: number }[];
+  /** Shots on goal and goals for and against while the net was empty. */
+  shotsFor: number;
+  goalsFor: number;
+  xgFor: number;
+  shotsAgainst: number;
+  goalsAgainst: number;
+}
+
 export interface LiveGoal {
   t: number;
   period: number;
@@ -341,6 +354,7 @@ export interface LiveGameResponse {
   /** Total seconds at each skater count, keyed "5v5", "5v4" (away v home). */
   timeBySkaters: Record<string, number>;
   strengthSegments: StrengthSegment[];
+  emptyNet: Record<TeamSide, LiveEmptyNet>;
   /** Home team's win probability (0-1) by game second, from the in-game model. */
   winProbability: { t: number; home: number }[];
   goals: LiveGoal[];

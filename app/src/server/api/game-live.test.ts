@@ -160,6 +160,27 @@ describe("buildLiveGame", () => {
     expect(result.stoppages).toEqual({ icing: 1 });
   });
 
+  it("summarizes pulled-goalie stretches, skipping delayed penalties", () => {
+    const result = buildLiveGame(inputs([
+      play(1, "05:00", "faceoff", { eventOwnerTeamId: AWAY_ID, winningPlayerId: 1, losingPlayerId: 11, zoneCode: "N" }, "1551"),
+      play(1, "06:00", "hit", { eventOwnerTeamId: AWAY_ID, hittingPlayerId: 1, hitteePlayerId: 11 }, "0651"),
+      play(1, "06:10", "penalty", { eventOwnerTeamId: HOME_ID, duration: 2 }, "1551"),
+      play(3, "18:00", "faceoff", { eventOwnerTeamId: AWAY_ID, winningPlayerId: 1, losingPlayerId: 11, zoneCode: "O" }, "0651"),
+      play(3, "18:30", "shot-on-goal", { eventOwnerTeamId: AWAY_ID, shootingPlayerId: 1, xCoord: -80, yCoord: 0 }, "0651"),
+      play(3, "19:00", "goal", { eventOwnerTeamId: HOME_ID, scoringPlayerId: 11, xCoord: 80, yCoord: 0 }, "0651"),
+      play(3, "19:05", "faceoff", { eventOwnerTeamId: AWAY_ID, winningPlayerId: 1, losingPlayerId: 11, zoneCode: "N" }, "1551"),
+    ]));
+    expect(result.emptyNet.away).toMatchObject({
+      seconds: 65,
+      pulls: [{ start: 3480, end: 3545 }],
+      shotsFor: 1,
+      goalsFor: 0,
+      shotsAgainst: 1,
+      goalsAgainst: 1,
+    });
+    expect(result.emptyNet.home.pulls).toEqual([]);
+  });
+
   it("credits on-ice players from shifts and finds lines", () => {
     const shift = (playerId: number, start: string, end: string) => ({ playerId, period: 1, startTime: start, endTime: end, typeCode: 517 });
     const awaySkaters = [1, 2, 3, 4, 5].map((id) => shift(id, "00:00", "01:00"));

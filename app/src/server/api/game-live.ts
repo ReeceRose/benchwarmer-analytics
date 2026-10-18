@@ -37,6 +37,7 @@ import {
 import type {
   LiveGameResponse,
   LiveGoal,
+  LiveEmptyNet,
   LiveGoalie,
   LiveOnIcePlayer,
   LivePenalty,
@@ -414,6 +415,8 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
 
   // --- shots ---
   const shots: LiveShot[] = [];
+  // Situation code of each shot, by index, for empty-net splits.
+  const shotCodes: (string | null)[] = [];
   const lastAttempt: Record<TeamSide, number> = { away: -99, home: -99 };
   for (const p of plays) {
     const result = SHOT_RESULTS[p.typeDescKey ?? ""];
@@ -437,6 +440,7 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
       if (result !== "BLOCK") xg = expectedGoal({ distance, angle, shotType: d.shotType ?? null, rebound, state });
     }
     const ice = onIceAt(t);
+    shotCodes.push(p.situationCode ?? null);
     shots.push({
       t,
       period,
@@ -585,6 +589,46 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
       emptyNet: s.awayGoalie === 0 || s.homeGoalie === 0,
     });
   }
+
+  // Stretches with a team's goalie pulled for an extra attacker. Delayed
+  // penalties also empty the net; those stretches end at the opponent's penalty.
+  const penaltyTimes: Record<TeamSide, number[]> = { away: [], home: [] };
+  for (const p of plays) {
+    const side = p.typeDescKey === "penalty" ? sideByTeamId.get(p.details?.eventOwnerTeamId ?? -1) : undefined;
+    if (side) penaltyTimes[side].push(tOf(p));
+  }
+  const emptyNet = Object.fromEntries(
+    SIDES.map((side): [TeamSide, LiveEmptyNet] => {
+      const goalieOut = (code: string | null) => {
+        const s = parseSituation(code);
+        return s != null && (side === "home" ? s.homeGoalie : s.awayGoalie) === 0;
+      };
+      const pulls: { start: number; end: number }[] = [];
+      let start: number | null = null;
+      for (let t = 0; t <= elapsed; t++) {
+        const out = t < elapsed && goalieOut(situationAt[t]);
+        if (out && start == null) start = t;
+        if (!out && start != null) {
+          const end = t;
+          if (!penaltyTimes[opposite(side)].some((p) => Math.abs(p - end) <= 2)) pulls.push({ start, end });
+          start = null;
+        }
+      }
+      const inPull = shots.filter((s, i) => goalieOut(shotCodes[i]) && pulls.some((p) => s.t >= p.start && s.t <= p.end));
+      const forUs = inPull.filter((s) => s.team === side);
+      const against = inPull.filter((s) => s.team !== side);
+      const onNet = (s: LiveShot) => s.result === "SOG" || s.result === "GOAL";
+      return [side, {
+        seconds: pulls.reduce((sum, p) => sum + p.end - p.start, 0),
+        pulls,
+        shotsFor: forUs.filter(onNet).length,
+        goalsFor: forUs.filter((s) => s.result === "GOAL").length,
+        xgFor: round(forUs.reduce((sum, s) => sum + (s.result !== "BLOCK" ? (s.xg ?? 0) : 0), 0), 2),
+        shotsAgainst: against.filter(onNet).length,
+        goalsAgainst: against.filter((s) => s.result === "GOAL").length,
+      }];
+    }),
+  ) as Record<TeamSide, LiveEmptyNet>;
 
   // --- per player ---
   interface Acc {
@@ -982,6 +1026,7 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
     ) as Record<TeamSide, LiveTeamStats>,
     timeBySkaters,
     strengthSegments,
+    emptyNet,
     winProbability,
     goals,
     shots,
