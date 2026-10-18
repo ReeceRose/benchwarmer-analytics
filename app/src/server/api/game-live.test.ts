@@ -24,6 +24,7 @@ function roster() {
     spot(AWAY_ID, 4, "AwayD1", "D", 2), spot(AWAY_ID, 5, "AwayD2", "D", 3), spot(AWAY_ID, 6, "AwayG", "G", 30),
     spot(HOME_ID, 11, "HomeC", "C", 20), spot(HOME_ID, 12, "HomeL", "L", 21), spot(HOME_ID, 13, "HomeR", "R", 22),
     spot(HOME_ID, 14, "HomeD1", "D", 4), spot(HOME_ID, 15, "HomeD2", "D", 5), spot(HOME_ID, 16, "HomeG", "G", 31),
+    spot(HOME_ID, 17, "HomeG2", "G", 1),
   ];
 }
 
@@ -179,6 +180,29 @@ describe("buildLiveGame", () => {
       goalsAgainst: 1,
     });
     expect(result.emptyNet.home.pulls).toEqual([]);
+  });
+
+  it("marks a pulled starter and the reliever, but not an extra-attacker pull", () => {
+    const shift = (playerId: number, period: number, start: string, end: string) => ({ playerId, period, startTime: start, endTime: end, typeCode: 517 });
+    const result = buildLiveGame(inputs([
+      play(3, "19:00", "stoppage", { reason: "icing" }),
+    ], {
+      shifts: [
+        shift(6, 1, "00:00", "20:00"), shift(6, 2, "00:00", "20:00"), shift(6, 3, "00:00", "18:00"),
+        shift(16, 1, "00:00", "20:00"), shift(16, 2, "00:00", "05:00"),
+        shift(17, 2, "05:00", "20:00"), shift(17, 3, "00:00", "19:00"),
+      ],
+      boxscore: {
+        playerByGameStats: {
+          awayTeam: { goalies: [{ playerId: 6 }] },
+          homeTeam: { goalies: [{ playerId: 17 }, { playerId: 16 }] },
+        },
+      },
+    }));
+    const byId = new Map(result.goalies.map((g) => [g.playerId, g]));
+    expect(byId.get(6)).toMatchObject({ pulledAt: null, reliefAt: null });
+    expect(byId.get(16)).toMatchObject({ pulledAt: 1500, reliefAt: null });
+    expect(byId.get(17)).toMatchObject({ pulledAt: null, reliefAt: 1500 });
   });
 
   it("credits on-ice players from shifts and finds lines", () => {

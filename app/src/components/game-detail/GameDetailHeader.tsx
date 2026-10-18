@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link } from "@tanstack/react-router";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TeamLogo } from "@/components/team-detail/TeamLogo";
+import { GameStickyScorebar } from "@/components/game-detail/GameStickyScorebar";
 import { Panel, Section } from "@/components/layout";
 import {
   formatGameDateLong,
@@ -44,11 +45,37 @@ function seriesSummary(
   return overtimeLosses > 0 ? `${base} (${overtimeLosses} OT)` : base;
 }
 
+/** Height of the sticky site header (`h-16` + its bottom border). */
+const SITE_HEADER_OFFSET = 65;
+
+/** True once the element has scrolled up behind the sticky site header. */
+function useScrolledPast(ref: RefObject<HTMLElement | null>): boolean {
+  const [scrolledPast, setScrolledPast] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) =>
+        setScrolledPast(
+          !entry.isIntersecting && entry.boundingClientRect.top < SITE_HEADER_OFFSET,
+        ),
+      { rootMargin: `-${SITE_HEADER_OFFSET}px 0px 0px 0px` },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+  return scrolledPast;
+}
+
 /**
  * Split scoreboard: the away team's colours on the left, the home team's on
- * the right, the score in the middle.
+ * the right, the score in the middle. Once the score scrolls away, a compact
+ * copy (GameStickyScorebar) pins under the site header.
  */
 export function GameDetailHeader({ game, preview, action, goalAlert }: GameDetailHeaderProps) {
+  const scoreRef = useRef<HTMLDivElement>(null);
+  const showScorebar = useScrolledPast(scoreRef);
+
   const gameState = game?.gameState ?? (preview ? "FUT" : null);
   const isFuture = gameState === "FUT" || gameState === "PRE";
   const isLive = gameState === "LIVE" || gameState === "CRIT";
@@ -113,68 +140,81 @@ export function GameDetailHeader({ game, preview, action, goalAlert }: GameDetai
   };
 
   return (
-    <div
-      className="relative overflow-hidden text-white"
-      style={{ backgroundImage: background }}
-    >
-      {goalAlert && (
-        <div
-          key={goalAlert.key}
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-0 motion-safe:animate-goal-flash"
-          style={{
-            backgroundImage: `linear-gradient(${goalAlert.side === "away" ? 100 : 280}deg, white 0 50%, transparent 50%)`,
-          }}
-        />
-      )}
-      <span className="sr-only" aria-live="polite">
-        {goalText}
-      </span>
-      <div className="relative container py-6 sm:py-8">
-        <div className="mb-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-white/80">
-          <Link to="/games" search={gameDate ? { date: gameDate } : {}} className="hover:text-white">
-            {gameDate ? formatGameDateLong(gameDate) : "Games"}
-          </Link>
-          {series && <span>{series}</span>}
-          {action}
-        </div>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-8">
-          <TeamSide side={awaySide} season={season} align="end" />
-          <div className="text-center">
-            {isFuture ? (
-              <div className="font-display text-3xl font-bold sm:text-4xl">@</div>
-            ) : (
-              <div className="flex items-center gap-2 font-display text-5xl leading-none font-bold tabular-nums sm:gap-4 sm:text-7xl">
-                <span key={scoreKey("away")} className={scoreClass("away", awaySide.lost)}>
-                  {awayGoals ?? "–"}
-                </span>
-                <span className="text-2xl opacity-60 sm:text-4xl">–</span>
-                <span key={scoreKey("home")} className={scoreClass("home", homeSide.lost)}>
-                  {homeGoals ?? "–"}
-                </span>
-              </div>
-            )}
-            {goalAlert ? (
-              <div
-                key={goalAlert.key}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-sm font-semibold text-black motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75"
-              >
-                <span className="size-2 animate-ping rounded-full bg-strip-live" />
-                {goalText}
-              </div>
-            ) : (
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-black/25 px-3 py-1 text-sm font-semibold">
-                {isLive && (
-                  <span className="size-2 animate-pulse rounded-full bg-strip-live" />
-                )}
-                {status}
-              </div>
-            )}
+    <>
+      <GameStickyScorebar
+        visible={showScorebar}
+        background={background}
+        away={{ code: awayCode, goals: awayGoals, lost: awaySide.lost }}
+        home={{ code: homeCode, goals: homeGoals, lost: homeSide.lost }}
+        status={status}
+        isLive={isLive}
+        isFuture={isFuture}
+        season={season}
+        goalAlert={goalAlert}
+      />
+      <div
+        className="relative overflow-hidden text-white"
+        style={{ backgroundImage: background }}
+      >
+        {goalAlert && (
+          <div
+            key={goalAlert.key}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-0 motion-safe:animate-goal-flash"
+            style={{
+              backgroundImage: `linear-gradient(${goalAlert.side === "away" ? 100 : 280}deg, white 0 50%, transparent 50%)`,
+            }}
+          />
+        )}
+        <span className="sr-only" aria-live="polite">
+          {goalText}
+        </span>
+        <div className="relative container py-6 sm:py-8">
+          <div className="mb-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-white/80">
+            <Link to="/games" search={gameDate ? { date: gameDate } : {}} className="hover:text-white">
+              {gameDate ? formatGameDateLong(gameDate) : "Games"}
+            </Link>
+            {series && <span>{series}</span>}
+            {action}
           </div>
-          <TeamSide side={homeSide} season={season} align="start" />
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-8">
+            <TeamSide side={awaySide} season={season} align="end" />
+            <div ref={scoreRef} className="text-center">
+              {isFuture ? (
+                <div className="font-display text-3xl font-bold sm:text-4xl">@</div>
+              ) : (
+                <div className="flex items-center gap-2 font-display text-5xl leading-none font-bold tabular-nums sm:gap-4 sm:text-7xl">
+                  <span key={scoreKey("away")} className={scoreClass("away", awaySide.lost)}>
+                    {awayGoals ?? "–"}
+                  </span>
+                  <span className="text-2xl opacity-60 sm:text-4xl">–</span>
+                  <span key={scoreKey("home")} className={scoreClass("home", homeSide.lost)}>
+                    {homeGoals ?? "–"}
+                  </span>
+                </div>
+              )}
+              {goalAlert ? (
+                <div
+                  key={goalAlert.key}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-sm font-semibold text-black motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75"
+                >
+                  <span className="size-2 animate-ping rounded-full bg-strip-live" />
+                  {goalText}
+                </div>
+              ) : (
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-black/25 px-3 py-1 text-sm font-semibold">
+                  {isLive && (
+                    <span className="size-2 animate-pulse rounded-full bg-strip-live" />
+                  )}
+                  {status}
+                </div>
+              )}
+            </div>
+            <TeamSide side={homeSide} season={season} align="start" />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

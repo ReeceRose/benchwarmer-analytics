@@ -18,15 +18,23 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "go
   );
 }
 
+function GoalieChip({ children }: { children: React.ReactNode }) {
+  return <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground tabular-nums">{children}</span>;
+}
+
 function GoalieCard({ goalie }: { goalie: LiveGoalie }) {
   const gsax = goalie.xgAgainst - goalie.goalsAgainst;
   const pct = (v: number | null) => (v == null ? "–" : v.toFixed(3).replace(/^0/, ""));
   return (
     <div className="rounded-xl border p-4">
       <div className="flex items-baseline justify-between gap-2">
-        <Link to="/players/$id" params={{ id: String(goalie.playerId) }} className="font-semibold hover:text-link">
-          #{goalie.number} {goalie.name}
-        </Link>
+        <div className="flex flex-wrap items-baseline gap-2">
+          <Link to="/players/$id" params={{ id: String(goalie.playerId) }} className="font-semibold hover:text-link">
+            #{goalie.number} {goalie.name}
+          </Link>
+          {goalie.pulledAt != null && <GoalieChip>Pulled {gameClock(goalie.pulledAt)}</GoalieChip>}
+          {goalie.reliefAt != null && <GoalieChip>Relief {gameClock(goalie.reliefAt)}</GoalieChip>}
+        </div>
         <span className="text-xs text-muted-foreground tabular-nums">
           TOI {goalie.toi}
           {goalie.decision && ` · ${goalie.decision}`}
@@ -100,7 +108,8 @@ const playedInGame = (g: LiveGoalie) => g.shotsAgainst > 0 || /[1-9]/.test(g.toi
 function goaliesFor(data: LiveGameResponse, side: TeamSide) {
   const goalies = data.goalies.filter((g) => g.team === side);
   const played = goalies.filter(playedInGame);
-  return played.length ? played : goalies;
+  // Starter first, then relievers in the order they came in.
+  return played.length ? played.sort((a, b) => (a.reliefAt ?? -1) - (b.reliefAt ?? -1)) : goalies;
 }
 
 export function GoaltendingSection({ data }: { data: LiveGameResponse }) {

@@ -776,6 +776,18 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
       });
     }
     const seasonGoalies = new Map((input.clubStats[side]?.goalies ?? []).map((g) => [g.playerId, g]));
+    // When each goalie was in net: shift charts, else the shots they faced.
+    const spans = new Map<number, { in: number; out: number }>();
+    for (const g of team?.goalies ?? []) {
+      if (g.playerId == null) continue;
+      const own = shifts.filter((sh) => sh.playerId === g.playerId);
+      const times = own.length
+        ? own.flatMap((sh) => [sh.start, sh.end])
+        : shots.filter((sh) => sh.team !== side && sh.goalieId === g.playerId).map((sh) => sh.t);
+      if (times.length) spans.set(g.playerId, { in: Math.min(...times), out: Math.max(...times) });
+    }
+    const starterId = [...spans.entries()].sort((a, b) => a[1].in - b[1].in)[0]?.[0];
+    const lastOut = Math.max(...[...spans.values()].map((sp) => sp.out));
     for (const g of team?.goalies ?? []) {
       if (g.playerId == null) continue;
       const faced = shots.filter((s) => s.team !== side && (s.result === "SOG" || s.result === "GOAL") && s.goalieId === g.playerId);
@@ -797,6 +809,10 @@ export function buildLiveGame(input: LiveGameInputs): LiveGameResponse {
         highDangerShots: faced.filter((s) => s.highDanger).length,
         highDangerGoals: faced.filter((s) => s.highDanger && s.result === "GOAL").length,
         decision: g.decision ?? null,
+        // A starter who left before a teammate's last shift was pulled; any
+        // other goalie who played came on in relief.
+        pulledAt: g.playerId === starterId && spans.get(g.playerId)!.out < lastOut ? spans.get(g.playerId)!.out : null,
+        reliefAt: g.playerId !== starterId && spans.has(g.playerId) ? spans.get(g.playerId)!.in : null,
         season: season
           ? {
               gamesPlayed: season.gamesPlayed ?? 0,

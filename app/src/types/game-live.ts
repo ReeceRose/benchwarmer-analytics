@@ -287,6 +287,10 @@ export interface LiveGoalie {
   highDangerShots: number;
   highDangerGoals: number;
   decision: string | null;
+  /** Game second the starter was pulled, if another goalie replaced them. */
+  pulledAt: number | null;
+  /** Game second a non-starter came in. */
+  reliefAt: number | null;
   season: { gamesPlayed: number; wins: number; gaa: number; savePct: number; shutouts: number } | null;
 }
 
